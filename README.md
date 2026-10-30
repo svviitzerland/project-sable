@@ -1,122 +1,65 @@
-# Jude — evidence-grounded courtroom workspace
+# Jude
 
-Jude helps lawyers inspect relationships between testimony and case evidence in Indonesian criminal proceedings. The introduction lives at `/`; the working product lives at `/workspace`.
+An evidence-grounded workspace for hearing preparation, testimony review, and courtroom practice. The existing landing page is at `/`; the authenticated product is at `/workspace`.
 
-Create an account and case, upload authorized documents, upload a hearing transcript or stream audio, inspect source-linked findings, save review notes, and export the record. A synthetic hearing demonstrates all four finding states without provider credentials. It uses authored findings, not AI output.
-
-## Deploy on Vercel
-
-Both applications have Vercel configurations: frontend root `fe`, backend root `be`. Hosted mode uses Supabase PostgreSQL/private Storage, signed QStash analysis deliveries, database leases/events, ticketed direct WebSockets, and chunked large-file transfers. See [the complete deployment and environment guide](docs/DEPLOY_VERCEL.md). Migration 005 must be applied before deployment. The supplied per-minute recovery cron requires a suitable Vercel plan.
+Jude now uses **Svelte 5, SvelteKit 3, and TypeScript for both frontend and backend**. One Vercel project serves the UI and `/api/v1` API. There is no Python server or proxy to deploy. The complete application lives in `app/`. Set the Vercel project's Root Directory to `app`.
 
 ## Run locally
 
-Requirements: Node.js 22+, pnpm 11.25, Python 3.11+, and uv. Two processes are required:
+Use Node **24.x** and pnpm 11.25.0:
 
 ```bash
-cd be
-uv sync --frozen
-cp .env.example .env
-uv run uvicorn app.main:app --env-file .env --reload --port 8000
-```
-
-```bash
-cd fe
+cd app
 pnpm install --frozen-lockfile
 cp .env.example .env.local
 pnpm dev
 ```
 
-Open http://localhost:3000/workspace. Choose **Open a synthetic case** for a temporary demo account, or register to sign back in later. Demo accounts cannot be recovered after sign-out. SQLite and original documents persist under `be/.data/`; do not commit that directory. `API_INTERNAL_URL` in `fe/.env.local` controls the backend proxy and must be set before building the frontend.
+Open http://localhost:3000/workspace. Register an account or open a clearly labeled synthetic case. Local SQLite and private original files persist in `app/.data/`. Run one local process; hosted operation uses shared PostgreSQL coordination instead. To continue using an existing local database and originals, set `JUDE_DATA_DIR` to the absolute path of the previous `be/.data` directory. Account hashes, sessions, case tables, and `.jude` version 1 remain compatible.
 
-## What works
+## Deploy
 
-- Account sessions, private cases, owner-checked HTTP and WebSocket access.
-- PDF, DOCX, TXT, and Markdown ingestion; original downloads; exact source passages; keyword search and optional hybrid retrieval. Limits: 6 MB, 200 PDF pages, 400,000 extracted characters, 40 documents per case. Text-based PDFs only; DOCX uses sections rather than invented page numbers.
-- Dedicated hearing library with file previews, native `.jude`/JSON/CSV/TXT/SRT/VTT parsing, and optional OpenRouter conversion of unfamiliar readable layouts. Converted testimony must match source wording; review speaker turns before import. Originals are retained.
-- Evidence map with inspectable passages, cited hearing statements, suggested/confirmed connections, manual linking, and natural-language retrieval with cited answers. Only confirmed evidence links expand retrieval.
-- Persistent **Case assistant** with current-case retrieval, explicit evidence references, inspectable quotations, follow-up history, optional legal discovery, and conversation export. Sources-only mode is explicit when AI is unavailable.
-- **Courtroom practice** as defense, opposing counsel, or judge, with AI-suggested and manually editable trial conditions, saved dialogue, and debriefs. A labeled scripted drill works without AI; simulated speech never becomes case evidence.
-- Hearing search across titles/dates/transcript text, review-state filtering, highlighted transcript search with speaker filters, review progress, and next-unreviewed navigation. Search pauses auto-follow without stopping transcript capture.
-- Eight-turn synthetic hearing with supported, potential inconsistency, context needed, and insufficient evidence examples.
-- Manual transcript capture, progressive analysis states, retry after provider failure, case-specific speaker labels, review notes, filters, and portable `.jude` export/import.
-- Speechmatics microphone/prepared-audio integration with diarization, timestamps, confidence, and final-buffer flushing. Voice IDs are not courtroom identities.
-- Bounded OpenRouter claim extraction, evidence analysis, independent adversarial review, and synthesis. Exact quotations and required citation relations are validated before publishing a finding. Transcription continues during analysis.
-- Pasal.id metadata discovery with links to original legislation. Metadata is not verified legal text.
-- Keyboard-accessible tabs and mobile case navigation; finding selection brings the inspector into view on stacked layouts.
+Import the repository in Vercel, select **SvelteKit**, Root Directory **`app`**, and Node **24.x**. Apply the Supabase migrations and add the private environment variables described in [DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md). Existing databases need the new `006_typescript_audio.sql` migration after 001–005.
 
-## Connect providers
+Supabase PostgreSQL/private Storage and QStash remain required hosted services. OpenRouter, Speechmatics, and Pasal.id enable their respective features. Recovery can run from QStash's scheduler, so this repository does not impose a per-minute Vercel Cron requirement on Hobby projects. Configure the schedule after deployment using the documented script. No deployment or live-provider verification has been performed without credentials.
 
-All credentials belong in the backend environment. Never prefix them with `NEXT_PUBLIC_`.
+## Product
 
-| Capability | Backend configuration |
-| --- | --- |
-| AI findings, transcript conversion, cited answers, case conversations, courtroom practice and relationship classification | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` (must support strict structured output) |
-| Embeddings | `OPENROUTER_API_KEY`, `OPENROUTER_EMBEDDING_MODEL` (default `openai/text-embedding-3-small`); model must return 1536 dimensions |
-| Live speech | `SPEECHMATICS_API_KEY`, optional `SPEECHMATICS_URL`; Indonesian and English supported |
-| Legal discovery | `PASAL_API_KEY` |
-| PostgreSQL | `DATABASE_URL` using a backend-only table-owner credential and TLS |
-| Private originals | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, optional `SUPABASE_STORAGE_BUCKET` |
+- Authenticated, owner-isolated cases; PDF, DOCX, TXT and Markdown ingestion with original downloads and page provenance.
+- Dedicated hearings; reviewed transcript upload, native CSV/TXT/SRT/VTT/JSON/`.jude` parsing, and optional verbatim-checked AI formatting.
+- Live microphone/prepared-audio transcription; finalized testimony persists independently of analysis.
+- Four-step analysis with an independent reviewer and exact-quotation verification; review notes, speaker labels, search, and review queues.
+- Evidence graph, confirmed connections, natural-language search, and optional OpenRouter embeddings.
+- Case-wide assistant and separate courtroom practice with editable conditions, role selection, saved exchanges and debriefs.
+- Portable `.jude` case/hearing archives and separate conversation JSON exports.
 
-Use **Find connections** to index existing/imported passages and suggest relationships. Switching embedding models invalidates the old vectors for retrieval until rebuilt. See [the Jude interchange format](docs/JUDE_FORMAT.md) for case archives and hearing templates.
+Without provider keys, keyword search, manual testimony, source inspection, archive workflows, the authored synthetic hearing, sources-only assistant replies, and guided practice work locally. Scanned PDFs still require OCR before upload. Provider configuration is not proof of service availability or model quality.
 
-Without OpenRouter, testimony remains saved with analysis unavailable. Embedding failure falls back to labeled keyword search. Without Speechmatics or Pasal, their controls show the missing connection. “Configured” only means configuration is present, not that an external request succeeded.
-
-The browser streams PCM through the backend; Jude does not retain raw audio. Configured providers receive the corresponding audio, extracted evidence, or testimony. Review their own retention settings and terms before processing authorized material.
-
-## Supabase setup
-
-On a new Supabase project, run `be/migrations/001_schema.sql` followed by `002_vectors_and_storage.sql` then `003_hearings_and_evidence.sql`, `004_case_dialogues.sql`, and `005_vercel_runtime.sql` as the backend table owner. The first creates application tables, enables RLS, and revokes browser-role access. The second installs pgvector in `extensions`, synchronizes the 1536-dimensional vector column with embedding JSON, adds an HNSW index, and creates a private `jude-documents` bucket. If pgvector already exists in another schema, reconcile its schema before applying the second migration. The third adds hearings, evidence links, and embedding-model provenance; startup groups legacy testimony into an Earlier hearing. The fourth adds private assistant/practice conversations and messages. The fifth adds shared runtime coordination and transfer metadata, and permits private temporary case exports up to 64 MB in the bucket. Change the bucket identifier in both SQL and configuration if needed.
-
-Jude uses application-owned sessions, **not Supabase Auth**. There are no browser table policies; `auth.uid()` is not used for case isolation. FastAPI checks ownership using its server-side database credential. Keep that credential and the Storage service key private. For an existing Supabase project, inspect pre-existing Storage policies: a private bucket alone does not revoke unrelated permissive policies. Use a dedicated project/bucket without browser object policies.
-
-Migrations have been tested twice for idempotency against disposable PostgreSQL 16 + pgvector, including vector sync, retrieval, and denial for the `anon` and `authenticated` roles. Hosted Supabase Storage has not been verified with a real account.
-
-## Checks and evaluation
+## Checks
 
 ```bash
-cd be
-uv run pytest
-uv run ruff check .
-uv run python -m app.evaluate --predictions evaluation/predictions.fixture.json --fixture --output /tmp/jude-evaluation.json
-```
-
-```bash
-cd fe
+cd app
 pnpm lint
 pnpm typecheck
-node --test tests/audio-worklet.test.mjs
+pnpm test
 pnpm build
+pnpm check:bundle
+pnpm evaluate --predictions evaluation/predictions.fixture.json --fixture --output /tmp/jude-evaluation.json
 ```
 
-The evaluation fixture deliberately contains false positives, a missed inconsistency, and an invalid citation so the metrics exercise failure paths. Its scores are **not AI performance**. See `be/evaluation/README.md` for live evaluation and annotation requirements.
-
-Browser acceptance requires both apps running with no provider keys, development mode, and Python Playwright:
+With the app running in another terminal:
 
 ```bash
-cd fe
-uv run --no-project --with playwright python -m playwright install chromium
-uv run --no-project --with playwright python tests/acceptance.py
-uv run --no-project --with playwright python tests/dialogue_acceptance.py
-# For an existing system Chromium: CHROMIUM_EXECUTABLE=/usr/bin/chromium ...
+pnpm exec playwright install chromium
+pnpm test:e2e
 ```
 
-The script creates a new synthetic test account and case data. It verifies registration/sign-in, simulation, notes/review/filter persistence, document upload/search/download, `.jude` round-trips, hearing upload/preview, evidence discovery, isolation, unavailable-analysis behavior, keyboard navigation, clipboard errors, and responsive layouts. Screenshots go to ignored `.impeccable/review/`.
+Set `CHROMIUM_EXECUTABLE` to an installed Chromium path if needed; `JUDE_TEST_URL` selects another app URL. The TypeScript browser suites cover workspace, landing, conversations/practice, chunked uploads and mocked direct speech rotation. Provider mocks are explicitly test-only.
 
-The dialogue script checks evidence handoff, quotation inspection, saved history/export, failed-message retry, manual trial conditions, role switching, guided turns, saved debriefs, and desktop/mobile layouts. Backend tests mock structured AI responses to verify proposal overrides, role boundaries, citation rejection, case isolation, and atomic retries; live model quality remains unverified.
+For PostgreSQL, provision a disposable database named `jude_test*` on a server with pgvector and run `JUDE_TEST_DATABASE_URL=... pnpm test`. This verifies migrations, RLS denial, vectors, shared locks/rates, jobs and cross-connection persistence; it does not emulate hosted Supabase Storage. See [evaluation guidance](app/evaluation/README.md) before interpreting metrics.
 
-The landing-page check needs only the frontend. It covers the original landing composition, finite animation, offscreen pausing, reduced motion, keyboard navigation, source links, synthetic review states, responsive layouts, and content without JavaScript:
+## Architecture and boundaries
 
-```bash
-cd fe
-JUDE_TEST_URL=http://localhost:3000 uv run --no-project --with playwright python tests/landing_acceptance.py
-```
+Server-only modules live in `app/src/lib/server`; Zod validates request and model-output contracts. SvelteKit's `/api/v1/[...path]` endpoint enforces account ownership and delegates to those modules. PostgreSQL migrations run separately, never on hosted cold starts. Private keys are declared in `app/src/env.ts` and never exported to browser environment variables.
 
-Use `localhost` with the development server so Next.js permits its HMR connection. For a production preview, build and run `pnpm exec next start --port 3010`, then set `JUDE_TEST_URL=http://127.0.0.1:3010`.
-
-For the opt-in PostgreSQL test, create a disposable database named `jude_test*`, install pgvector on its server, and set `JUDE_TEST_DATABASE_URL` before running `uv run pytest tests/test_postgres.py`. It emulates Supabase roles and bucket metadata only; it does not test hosted Storage.
-
-## Deployment boundary
-
-This is an MVP with locally verified deployment adapters, not a verified operational courtroom deployment. In local mode, run **one FastAPI worker**; process-local jobs/events remain available for development. In Vercel mode, shared PostgreSQL state and signed QStash delivery coordinate concurrent functions, and cold starts never reset another instance's work. See [DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md) for required services, recovery scheduling, connection rotation, and deployment checks.
-
-For a controlled hosted trial, set `JUDE_ENV=production` (Secure cookies; demo sign-in and synthetic seeding disabled), exact HTTPS `ALLOWED_ORIGINS`, and the hosted configuration in `docs/DEPLOY_VERCEL.md`. Provider setup and an authorized live-audio test are still required. Configure backups, retention, account recovery, and operational monitoring before handling real proceedings. This branch does not merge or deploy the product.
+The app supports human verification, not determinations of guilt, honesty, credibility, or legal outcomes. Legal search returns discovery metadata and links, not verified statute text. Practice output is hypothetical and never enters the evidence record. See [the product spec](docs/PRODUCT_SPEC.md), [architecture](docs/ARCHITECTURE.md), and [portable format](docs/JUDE_FORMAT.md).

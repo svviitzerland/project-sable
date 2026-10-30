@@ -1,8 +1,8 @@
 ---
 version: 1
 slug: "fe-src-app-page-tsx"
-primary_target: "fe/src/app/page.tsx"
-related_targets: ["fe/src/components/jude-site.tsx", "fe/src/components/landing-motion.ts"]
+primary_target: "app/src/routes/+page.svelte"
+related_targets: ["app/src/components/JudeSite.svelte", "app/src/components/landing-motion.svelte.ts"]
 ---
 
 # Original Jude landing page with motion

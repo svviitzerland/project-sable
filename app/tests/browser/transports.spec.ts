@@ -1,0 +1,209 @@
+import { test, expect } from "@playwright/test";
+import { mkdtemp, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { randomUUID } from "node:crypto";
+import { zipSync, strToU8 } from "fflate";
+import { register } from "./helpers";
+import { settings } from "../../src/lib/server/config";
+import { connectDatabase } from "../../src/lib/server/database";
+import { handleApi } from "../../src/lib/server/api";
+import type { Runtime } from "../../src/lib/server/runtime";
+test("hosted chunked uploads and direct speech rotation save finalized testimony", async ({
+  page,
+  context,
+}) => {
+  const dir = await mkdtemp(join(tmpdir(), "jude-browser-")),
+    config = settings({ JUDE_DATA_DIR: dir });
+  const rt: Runtime = {
+    config,
+    db: await connectDatabase(config),
+    fetch: async () => {
+      throw new Error("Unmocked provider");
+    },
+    tasks: new Set(),
+    simulations: new Map(),
+  };
+  Object.assign(config, {
+    hosted: true,
+    speechKey: "server-secret",
+    supabaseUrl: "https://storage.test",
+    storageKey: "storage-secret",
+  });
+  const objects = new Map<string, Uint8Array>();
+  rt.fetch = async (input, init) => {
+    const url = new URL(String(input));
+    if (url.hostname === "mp.speechmatics.com")
+      return Response.json({ key_value: randomUUID() });
+    const key = url.pathname
+      .replace("/storage/v1/object/authenticated/", "")
+      .replace("/storage/v1/object/", "");
+    if (init?.method === "POST") {
+      objects.set(key, new Uint8Array(init.body as Buffer));
+      return Response.json({});
+    }
+    return new Response(Buffer.from(objects.get(key) || []));
+  };
+  const parts: number[] = [],
+    errors: string[] = [],
+    connections: string[] = [],
+    stops: number[] = [],
+    binary: number[] = [];
+  let sessions = 0;
+  await context.grantPermissions(["microphone"]);
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.route("**/api/v1/**", async (route) => {
+    const req = route.request(),
+      url = new URL(req.url());
+    if (url.pathname.endsWith("/events")) {
+      await route.fulfill({
+        contentType: "text/event-stream",
+        body: 'data: {"type":"connected"}\n\n',
+      });
+      return;
+    }
+    const response = await handleApi(
+      rt,
+      new Request(req.url(), {
+        method: req.method(),
+        headers: await req.allHeaders(),
+        body: ["GET", "HEAD"].includes(req.method())
+          ? undefined
+          : req.postDataBuffer()
+            ? new Uint8Array(req.postDataBuffer()!)
+            : undefined,
+      }),
+    );
+    if (url.pathname.includes("/parts/"))
+      parts.push(req.postDataBuffer()?.length || 0);
+    if (url.pathname.endsWith("/audio-sessions") && response.ok) {
+      const data = await response.json();
+      data.rotate_after = sessions++ === 0 ? 0.3 : 0;
+      await route.fulfill({
+        status: response.status,
+        headers: Object.fromEntries(response.headers),
+        body: JSON.stringify(data),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: response.status,
+      headers: Object.fromEntries(response.headers),
+      body: Buffer.from(await response.arrayBuffer()),
+    });
+  });
+  await page.routeWebSocket(/wss:\/\/eu\.rt\.speechmatics\.com/, (ws) => {
+    const index = connections.length;
+    connections.push(ws.url());
+    let count = 0;
+    ws.onMessage((data) => {
+      if (typeof data !== "string") {
+        binary.push(index);
+        ws.send(JSON.stringify({ message: "AudioAdded", seq_no: ++count }));
+        return;
+      }
+      const message = JSON.parse(data);
+      if (message.message === "StartRecognition")
+        ws.send(JSON.stringify({ message: "RecognitionStarted" }));
+      else if (message.message === "EndOfStream") {
+        stops.push(index);
+        expect(message.last_seq_no).toBe(count);
+        ws.send(
+          JSON.stringify({
+            message: "AddTranscript",
+            results: [
+              {
+                type: "word",
+                start_time: 0,
+                end_time: 0.2,
+                alternatives: [
+                  {
+                    content: `Final words ${index}`,
+                    speaker: "S1",
+                    confidence: 0.9,
+                  },
+                ],
+              },
+            ],
+          }),
+        );
+        ws.send(JSON.stringify({ message: "EndOfTranscript" }));
+      }
+    });
+  });
+  try {
+    await register(page);
+    await page.getByRole("button", { name: "New case", exact: true }).click();
+    await page.getByLabel("Case title").fill("Vercel transport case");
+    await page
+      .getByRole("button", { name: "Create case", exact: true })
+      .click();
+    await page.getByRole("tab", { name: "Case documents" }).click();
+    const docx = zipSync(
+      {
+        "word/document.xml": strToU8(
+          '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>The hosted witness arrived at eight.</w:t></w:r></w:p></w:body></w:document>',
+        ),
+        "word/media/padding.bin": new Uint8Array(4 * 1024 * 1024),
+      },
+      { level: 0 },
+    );
+    await page
+      .locator("input[type=file]")
+      .last()
+      .setInputFiles({
+        name: "large-source.docx",
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        buffer: Buffer.from(docx),
+      });
+    await expect(
+      page.getByText("large-source.docx", { exact: true }).first(),
+    ).toBeVisible();
+    expect(parts).toHaveLength(3);
+    expect(parts.every((n) => n <= 2 * 1024 * 1024)).toBe(true);
+    await page.getByRole("tab", { name: "Hearings", exact: true }).click();
+    await page
+      .getByRole("button", { name: "New hearing", exact: true })
+      .click();
+    await page
+      .getByLabel("Hearing title", { exact: true })
+      .fill("Live rehearsal");
+    await page
+      .getByRole("button", { name: "Create hearing", exact: true })
+      .click();
+    await page
+      .getByLabel("I am authorized to process this audio", { exact: false })
+      .check();
+    await page
+      .getByRole("button", { name: "Start microphone", exact: true })
+      .click();
+    await expect.poll(() => connections.length).toBe(2);
+    await expect.poll(() => binary.includes(1)).toBe(true);
+    expect(stops).toEqual([0]);
+    await page.getByRole("button", { name: "Stop", exact: false }).click();
+    await expect(
+      page.getByRole("button", { name: "Start microphone", exact: true }),
+    ).toBeVisible();
+    expect(stops).toEqual([0, 1]);
+    expect(new Set(connections).size).toBe(2);
+    const segments = await rt.db.all(
+      "segments",
+      "origin=?",
+      ["speechmatics"],
+      "ORDER BY start",
+    );
+    expect(segments).toHaveLength(2);
+    expect(segments.map((s) => s.text)).toEqual([
+      "Final words 0",
+      "Final words 1",
+    ]);
+    expect(segments[1].start).toBeGreaterThan(segments[0].start);
+    expect(segments[0].speaker).not.toBe(segments[1].speaker);
+    expect(errors).toEqual([]);
+  } finally {
+    await page.close();
+    await rt.db.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});

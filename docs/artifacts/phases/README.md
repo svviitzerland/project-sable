@@ -11,3 +11,5 @@ Keep plans and results for each project phase here. Suggested file format name: 
 - [Case assistant and courtroom practice](2026-10-30-assistant-practice.md): case-scoped dialogue, editable rehearsal conditions, roles, and debriefs.
 
 - [Vercel runtime](2026-10-30-vercel-runtime.md): deploy both applications with durable analysis delivery, shared coordination, and hosted file/audio transports.
+
+- [SvelteKit migration](2026-10-30-sveltekit.md): native Svelte frontend, preserved product flows, server API proxy, and updated Vercel setup.

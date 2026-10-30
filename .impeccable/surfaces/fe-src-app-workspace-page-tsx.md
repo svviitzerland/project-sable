@@ -1,8 +1,8 @@
 ---
 version: 1
 slug: "fe-src-app-workspace-page-tsx"
-primary_target: "fe/src/app/workspace/page.tsx"
-related_targets: ["fe/src/components/workspace.tsx", "fe/src/components/casebook.tsx"]
+primary_target: "app/src/routes/workspace/+page.svelte"
+related_targets: ["app/src/components/Workspace.svelte", "app/src/components/EvidenceWorkspace.svelte"]
 ---
 
 # Jude courtroom workspace

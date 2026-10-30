@@ -1,34 +1,27 @@
 # Agent guide
 
-This is Jude's courtroom workspace and marketing introduction on Next.js and FastAPI. Read `PRODUCT.md` and `docs/PRODUCT_SPEC.md` when changing product scope or behavior, and `README.md` when setup or commands matter. Keep this file accurate when commands or conventions change.
+Jude is a SvelteKit + TypeScript courtroom workspace and marketing introduction. Read `PRODUCT.md` and `docs/PRODUCT_SPEC.md` when changing behavior, and `README.md` for setup. Keep this guide accurate.
 
 ## Layout
 
-- `fe/`: Next.js App Router, React, TypeScript, Tailwind CSS, shadcn/ui. Pages and layouts live in `fe/src/app`; shared UI lives in `fe/src/components`; helpers live in `fe/src/lib`.
-- `be/`: FastAPI app in `be/app`, tests in `be/tests`. Keep request and response contracts explicit with Pydantic models.
-- `docs/`: product and architecture documentation. Put dated or phase-specific work in `docs/artifacts/phases/`.
-- `.agents/skills/`: reusable skills. Read a skill's `SKILL.md` when its description fits the task; these skills are optional, not global instructions.
-- Impeccable is installed at `.agents/skills/impeccable/SKILL.md` for frontend design and review. Invoke it in Codex with `$impeccable` (for example, `$impeccable audit`).
+- `app/`: the complete app and Vercel root. Svelte 5/SvelteKit 3, TypeScript, Tailwind. Routes in `src/routes`, UI in `src/components`, browser helpers in `src/lib`, server-only modules in `src/lib/server`.
+- `app/migrations/`: separately applied PostgreSQL migrations. `app/evaluation/` and `app/scripts/evaluate.ts`: synthetic evaluation.
+- `docs/`: architecture, portable format, deployment and product docs; dated work in `docs/artifacts/phases/`.
+- `.agents/skills/`: optional reusable skills. Impeccable is at `.agents/skills/impeccable/SKILL.md` for frontend design/review.
 
 ## Commands
 
-- Backend setup (once): `cd be && uv sync && cp .env.example .env`
-- Backend development: `cd be && uv run uvicorn app.main:app --env-file .env --reload --port 8000`
-- Backend checks: `cd be && uv run pytest && uv run ruff check .`
-- Frontend setup (once): `cd fe && pnpm install && cp .env.example .env.local`
-- Frontend development: `cd fe && pnpm dev`
-- Frontend checks: `cd fe && pnpm lint && pnpm typecheck && pnpm build`
-- shadcn/ui: `cd fe && pnpm dlx shadcn@latest add <component>`
+- Node 24.x and pnpm 11.25.0. Setup: `cd app && pnpm install --frozen-lockfile && cp .env.example .env.local`.
+- Development: `cd app && pnpm dev` (one process for frontend and backend).
+- Checks: `cd app && pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
+- Browser checks against the running app: `cd app && pnpm test:e2e`. Set `CHROMIUM_EXECUTABLE` for system Chromium or install it with Playwright. `JUDE_TEST_URL` overrides the URL.
+- PostgreSQL checks: set `JUDE_TEST_DATABASE_URL` to a disposable database named `jude_test*` before `pnpm test`.
 
 ## Conventions
 
-- Use `/api/v1` for backend routes and maintain typed response models. The frontend calls `/api/v1/*` through the Next.js rewrite; avoid hardcoded backend URLs in browser code.
-- Keep server-only secrets on the backend or in non-public Next.js environment variables. Do not commit local `.env` files.
-- Prefer small, reversible additions for hackathon speed. Add dependencies only for a concrete need.
-- Keep marketing-demo evidence explicitly synthetic. Distinguish synthetic findings, configured integrations, and actually verified provider requests. Findings support human verification, not credibility or guilt determinations.
-- Write a test for backend behavior that could regress. Run checks relevant to the change; run both apps' checks before a demo or release.
-- Update the product spec and phase artifact when scope or delivery priorities change.
-
-- Local mode uses one backend worker. Vercel mode (`JUDE_RUNTIME=vercel` or `VERCEL=1`) requires PostgreSQL, private Supabase Storage, QStash, and authenticated recovery. Read `docs/DEPLOY_VERCEL.md`; apply migrations separately, never on function startup.
-- Database bootstrap lives in `be/migrations/`; evaluation in `be/app/evaluate.py` and `be/evaluation/`.
-- Browser acceptance: with both apps running and no provider keys, `cd fe && uv run --no-project --with playwright python tests/acceptance.py`. Set `CHROMIUM_EXECUTABLE` for system Chromium. Assistant/practice acceptance: `python tests/dialogue_acceptance.py` in the same Playwright environment.
+- Preserve typed `/api/v1` contracts and validate input/model output with Zod. Never expose storage, queue, database or provider secrets to browser environment variables.
+- Keep synthetic fixtures labeled. Distinguish configured integrations, mocks and real-provider verification. Findings support human verification, never guilt or credibility determinations.
+- Add meaningful tests for backend behavior that can regress; run relevant browser workflows before release. Preserve the existing visual identity when refactoring.
+- Local mode uses one SQLite process. Hosted mode requires PostgreSQL, private Storage, signed QStash jobs and authenticated scheduled recovery. Read `docs/DEPLOY_VERCEL.md`. Never migrate or globally reset hosted state at cold start.
+- Native browser speech connects with temporary credentials; finalized batches save through authenticated API routes. SSE supplies advisory updates and the UI polls authoritative records.
+- Update product spec and phase artifact when scope or deployment changes.
