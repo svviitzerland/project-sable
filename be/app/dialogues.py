@@ -3,7 +3,6 @@
 import asyncio
 from typing import Literal
 from uuid import UUID
-from weakref import WeakValueDictionary
 
 from fastapi import Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -13,6 +12,7 @@ from sqlalchemy import func, select
 from .auth import current_user
 from .database import owned_case
 from .models import Citation, Contract, Dialogue, DialogueMessage
+from .runtime import locks
 from .services.case_context import case_context, inventory
 from .services.providers import ProviderError
 
@@ -205,7 +205,7 @@ ASSISTANT_ROLE = """You are the case-wide assistant. Answer the user's latest qu
 
 def register_dialogues(app):
     user_dep = Depends(current_user)
-    app.state.dialogue_locks = WeakValueDictionary()
+    app.state.dialogue_locks = locks(app, "dialogue")
 
     @app.get(
         "/api/v1/cases/{case_id}/assistant/context", response_model=ContextInventory

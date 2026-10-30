@@ -3,9 +3,10 @@ import json
 
 import websockets
 from fastapi import WebSocketDisconnect
+from sqlalchemy import func, select
 
-from ..models import Segment
-from .analysis import investigate, schedule
+from ..jobs import enqueue, stage_job
+from ..models import Segment, uid
 from .providers import ProviderError
 
 
@@ -83,7 +84,30 @@ async def stream_speech(app, ws, case_id, config, authorize=None, hearing_id=Non
             raise ProviderError(
                 "Speech provider could not start recognition. Check language, credentials, and quota."
             )
-        await ws.send_json({"type": "ready"})
+        with app.state.db() as db:
+            previous_end = (
+                db.scalar(
+                    select(func.max(Segment.end)).where(
+                        Segment.hearing_id == hearing_id
+                    )
+                )
+                or 0
+            )
+        supplied_offset = config.get("start_offset", 0)
+        if (
+            not isinstance(supplied_offset, (int, float))
+            or not 0 <= supplied_offset <= 604800
+        ):
+            raise ProviderError("Invalid audio timeline offset.")
+        offset = max(previous_end, supplied_offset) if settings.serverless else 0
+        speaker_prefix = uid()[:8] + ":" if settings.serverless else ""
+        await ws.send_json(
+            {
+                "type": "ready",
+                "rotate_after": 210 if settings.serverless else 0,
+                "start_offset": offset,
+            }
+        )
         sent, acknowledged = 0, 0
 
         async def send_audio():
@@ -134,6 +158,9 @@ async def stream_speech(app, ws, case_id, config, authorize=None, hearing_id=Non
                             continue
                         if authorize:
                             authorize()
+                        item["start"] += offset
+                        item["end"] += offset
+                        item["speaker"] = speaker_prefix + item["speaker"]
                         with app.state.db() as db:
                             segment = Segment(
                                 case_id=case_id,
@@ -142,11 +169,14 @@ async def stream_speech(app, ws, case_id, config, authorize=None, hearing_id=Non
                                 **item,
                             )
                             db.add(segment)
+                            db.flush()
+                            if settings.serverless:
+                                stage_job(db, segment.id)
                             db.commit()
                         await app.state.events.publish(
                             case_id, {"type": "transcript", "segment_id": segment.id}
                         )
-                        schedule(app, investigate(app, segment.id))
+                        await enqueue(app, segment.id)
                 elif kind == "Error":
                     raise ProviderError(
                         "Speech provider reported an error. Check connection settings and quota."

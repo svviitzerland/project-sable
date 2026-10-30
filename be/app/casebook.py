@@ -2,7 +2,6 @@
 
 import asyncio
 from typing import Literal
-from weakref import WeakValueDictionary
 
 from fastapi import Depends, Form, HTTPException, UploadFile
 from fastapi.responses import Response
@@ -13,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from .auth import current_user
 from .database import case_hearing, owned_case
 from .dialogues import register_dialogues
+from .jobs import enqueue, stage_job
 from .models import (
     CaseOut,
     Contract,
@@ -22,9 +22,11 @@ from .models import (
     HearingOut,
     Segment,
 )
+from .runtime import locks
 from .services import evidence, hearing_import, jude_archive
 from .services.analysis import investigate, schedule
 from .services.documents import MAX_BYTES, ingest
+from .transfers import resolve_upload
 
 
 class AskRequest(Contract):
@@ -55,7 +57,8 @@ async def read_file(file, limit=MAX_BYTES):
 def register_casebook(app):
     register_dialogues(app)
     user_dep = Depends(current_user)
-    app.state.graph_locks = WeakValueDictionary()
+    upload_dep = Depends(resolve_upload)
+    app.state.graph_locks = locks(app, "graph")
 
     @app.get("/api/v1/hearing-template")
     def template():
@@ -82,7 +85,7 @@ def register_casebook(app):
         )
 
     @app.post("/api/v1/cases/import", response_model=CaseOut)
-    async def import_portable(file: UploadFile, user=user_dep):
+    async def import_portable(file: UploadFile = upload_dep, user=user_dep):
         app.state.limiter.check(f"archive:{user.id}", limit=5)
         case = await jude_archive.import_case(
             app, user, await read_file(file, jude_archive.MAX_ARCHIVE)
@@ -114,7 +117,10 @@ def register_casebook(app):
 
     @app.post("/api/v1/cases/{case_id}/hearings/preview")
     async def preview_hearing(
-        case_id: str, file: UploadFile, convert: bool = Form(False), user=user_dep
+        case_id: str,
+        file: UploadFile = upload_dep,
+        convert: bool = Form(False),
+        user=user_dep,
     ):
         with app.state.db() as db:
             owned_case(db, case_id, user.id)
@@ -126,7 +132,10 @@ def register_casebook(app):
 
     @app.post("/api/v1/cases/{case_id}/hearings/import", response_model=HearingOut)
     async def import_hearing(
-        case_id: str, file: UploadFile, transcript: str = Form(...), user=user_dep
+        case_id: str,
+        file: UploadFile = upload_dep,
+        transcript: str = Form(...),
+        user=user_dep,
     ):
         with app.state.db() as db:
             case = owned_case(db, case_id, user.id)
@@ -218,13 +227,19 @@ def register_casebook(app):
             ids = [s.id for s in segments]
             for segment in segments:
                 segment.analysis_state = "queued"
+                if app.state.settings.serverless:
+                    stage_job(db, segment.id)
             db.commit()
 
         async def run():
             for id in ids:
                 await investigate(app, id)
 
-        schedule(app, run())
+        if app.state.settings.serverless:
+            # The remaining outbox entries are picked up by scheduled recovery.
+            await asyncio.gather(*(enqueue(app, id) for id in ids[:20]))
+        else:
+            schedule(app, run())
         return {"queued": len(ids)}
 
     @app.get("/api/v1/cases/{case_id}/graph")

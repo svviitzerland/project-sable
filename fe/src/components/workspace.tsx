@@ -211,9 +211,20 @@ export function Workspace() {
     let socket: WebSocket | null = null;
     let reconnect: ReturnType<typeof setTimeout>;
     let debounce: ReturnType<typeof setTimeout>;
-    function connect() {
+    async function connect() {
       if (disposed) return;
-      socket = new WebSocket(wsUrl(`/cases/${caseId}/events`));
+      let url: string;
+      try {
+        url = await wsUrl(`/cases/${caseId}/events`);
+      } catch {
+        if (!disposed) {
+          setConnected(false);
+          reconnect = setTimeout(connect, 4000);
+        }
+        return;
+      }
+      if (disposed) return;
+      socket = new WebSocket(url);
       socket.onopen = () => {
         if (disposed) return;
         setConnected(true);

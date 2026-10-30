@@ -4,6 +4,10 @@ Jude helps lawyers inspect relationships between testimony and case evidence in 
 
 Create an account and case, upload authorized documents, upload a hearing transcript or stream audio, inspect source-linked findings, save review notes, and export the record. A synthetic hearing demonstrates all four finding states without provider credentials. It uses authored findings, not AI output.
 
+## Deploy on Vercel
+
+Both applications have Vercel configurations: frontend root `fe`, backend root `be`. Hosted mode uses Supabase PostgreSQL/private Storage, signed QStash analysis deliveries, database leases/events, ticketed direct WebSockets, and chunked large-file transfers. See [the complete deployment and environment guide](docs/DEPLOY_VERCEL.md). Migration 005 must be applied before deployment. The supplied per-minute recovery cron requires a suitable Vercel plan.
+
 ## Run locally
 
 Requirements: Node.js 22+, pnpm 11.25, Python 3.11+, and uv. Two processes are required:
@@ -61,7 +65,7 @@ The browser streams PCM through the backend; Jude does not retain raw audio. Con
 
 ## Supabase setup
 
-On a new Supabase project, run `be/migrations/001_schema.sql` followed by `002_vectors_and_storage.sql` then `003_hearings_and_evidence.sql` and `004_case_dialogues.sql` as the backend table owner. The first creates application tables, enables RLS, and revokes browser-role access. The second installs pgvector in `extensions`, synchronizes the 1536-dimensional vector column with embedding JSON, adds an HNSW index, and creates a private `jude-documents` bucket. If pgvector already exists in another schema, reconcile its schema before applying the second migration. The third adds hearings, evidence links, and embedding-model provenance; startup groups legacy testimony into an Earlier hearing. The fourth adds private assistant/practice conversations and messages. Change the bucket identifier in both SQL and configuration if needed.
+On a new Supabase project, run `be/migrations/001_schema.sql` followed by `002_vectors_and_storage.sql` then `003_hearings_and_evidence.sql`, `004_case_dialogues.sql`, and `005_vercel_runtime.sql` as the backend table owner. The first creates application tables, enables RLS, and revokes browser-role access. The second installs pgvector in `extensions`, synchronizes the 1536-dimensional vector column with embedding JSON, adds an HNSW index, and creates a private `jude-documents` bucket. If pgvector already exists in another schema, reconcile its schema before applying the second migration. The third adds hearings, evidence links, and embedding-model provenance; startup groups legacy testimony into an Earlier hearing. The fourth adds private assistant/practice conversations and messages. The fifth adds shared runtime coordination and transfer metadata, and permits private temporary case exports up to 64 MB in the bucket. Change the bucket identifier in both SQL and configuration if needed.
 
 Jude uses application-owned sessions, **not Supabase Auth**. There are no browser table policies; `auth.uid()` is not used for case isolation. FastAPI checks ownership using its server-side database credential. Keep that credential and the Storage service key private. For an existing Supabase project, inspect pre-existing Storage policies: a private bucket alone does not revoke unrelated permissive policies. Use a dedicated project/bucket without browser object policies.
 
@@ -113,6 +117,6 @@ For the opt-in PostgreSQL test, create a disposable database named `jude_test*`,
 
 ## Deployment boundary
 
-This is a verified local MVP, not an operational courtroom deployment. Run **one FastAPI worker**: jobs, event subscriptions, upload locks, hearing locks, and dialogue locks are process-local. A restart marks interrupted analysis for retry. Multiple workers/replicas require a durable job queue, shared event transport, and distributed hearing coordination first.
+This is an MVP with locally verified deployment adapters, not a verified operational courtroom deployment. In local mode, run **one FastAPI worker**; process-local jobs/events remain available for development. In Vercel mode, shared PostgreSQL state and signed QStash delivery coordinate concurrent functions, and cold starts never reset another instance's work. See [DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md) for required services, recovery scheduling, connection rotation, and deployment checks.
 
-For a controlled hosted trial, set `JUDE_ENV=production` (Secure cookies; demo sign-in and synthetic seeding disabled), exact HTTPS `ALLOWED_ORIGINS`, persistent storage, and a reverse proxy that supports `/api/v1/*` HTTP and WebSocket upgrades. Provider setup and an authorized live-audio test are still required. Configure backups, retention, account recovery, and operational monitoring before handling real proceedings. This branch does not merge or deploy the product.
+For a controlled hosted trial, set `JUDE_ENV=production` (Secure cookies; demo sign-in and synthetic seeding disabled), exact HTTPS `ALLOWED_ORIGINS`, and the hosted configuration in `docs/DEPLOY_VERCEL.md`. Provider setup and an authorized live-audio test are still required. Configure backups, retention, account recovery, and operational monitoring before handling real proceedings. This branch does not merge or deploy the product.

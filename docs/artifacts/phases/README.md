@@ -9,3 +9,5 @@ Keep plans and results for each project phase here. Suggested file format name: 
 - [Hearing discovery and review](2026-10-30-hearing-review.md): search, speaker filters, and review queue navigation.
 
 - [Case assistant and courtroom practice](2026-10-30-assistant-practice.md): case-scoped dialogue, editable rehearsal conditions, roles, and debriefs.
+
+- [Vercel runtime](2026-10-30-vercel-runtime.md): deploy both applications with durable analysis delivery, shared coordination, and hosted file/audio transports.

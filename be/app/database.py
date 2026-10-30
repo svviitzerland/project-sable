@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, event, inspect, select, text, update
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 from .models import Base, Case, Hearing, Segment
 
@@ -10,7 +11,13 @@ def database(settings):
         if settings.database_url.startswith("sqlite")
         else {"pool_pre_ping": True}
     )
+    if settings.serverless:
+        kwargs["poolclass"] = NullPool
     engine = create_engine(settings.database_url, **kwargs)
+    if settings.serverless:
+        # Apply SQL migrations before deployment. A cold start must never reset
+        # another instance's jobs/hearings or run competing schema migrations.
+        return sessionmaker(engine, expire_on_commit=False)
     if engine.dialect.name == "sqlite":
 
         @event.listens_for(engine, "connect")

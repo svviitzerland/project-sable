@@ -178,7 +178,7 @@ class Storage:
             "apikey": self.settings.supabase_key,
         }
 
-    async def save(self, key, data, mime):
+    async def save(self, key, data, mime, upsert=False):
         if self.settings.supabase_url and self.settings.supabase_key:
             try:
                 async with httpx.AsyncClient(timeout=45) as client:
@@ -188,7 +188,7 @@ class Storage:
                         headers={
                             **self.headers(),
                             "Content-Type": mime,
-                            "x-upsert": "false",
+                            "x-upsert": "true" if upsert else "false",
                         },
                     )
                     r.raise_for_status()

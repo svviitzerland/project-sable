@@ -2,7 +2,6 @@ import asyncio
 import json
 from contextlib import asynccontextmanager
 from urllib.parse import quote
-from weakref import WeakValueDictionary
 
 from fastapi import (
     Depends,
@@ -28,11 +27,11 @@ from .auth import (
     hash_password,
     issue_session,
     revoke,
-    session_user,
 )
 from .casebook import register_casebook
 from .config import Settings
 from .database import case_hearing, database, owned_case
+from .jobs import enqueue, register_jobs, stage_job
 from .middleware import RequestSizeLimit
 from .models import (
     Capabilities,
@@ -62,12 +61,21 @@ from .models import (
     UserOut,
     uid,
 )
+from .runtime import (
+    Lease,
+    SharedEvents,
+    SharedRateLimiter,
+    locks,
+    register_runtime,
+    websocket_session,
+)
 from .services.analysis import Events, investigate, schedule
 from .services.documents import MAX_BYTES, ingest
 from .services.providers import OpenRouter, Pasal, ProviderError, Storage
 from .services.retrieval import retrieve
 from .services.simulation import DOCUMENTS, SCRIPT
 from .services.speech import stream_speech
+from .transfers import redirect_large_response, register_transfers, resolve_upload
 
 USER_DEPENDENCY = Depends(current_user)
 
@@ -87,6 +95,7 @@ def create_app(settings=None):
             task.cancel()
         await asyncio.gather(*app.state.tasks, return_exceptions=True)
 
+    upload_dep = Depends(resolve_upload)
     app = FastAPI(title="Jude API", version="0.2.0", lifespan=lifespan)
     app.add_middleware(RequestSizeLimit, limit=64 * 1024 * 1024 + 65536)
     app.state.settings = settings
@@ -94,12 +103,14 @@ def create_app(settings=None):
     app.state.llm = OpenRouter(settings)
     app.state.pasal = Pasal(settings)
     app.state.storage = Storage(settings)
-    app.state.events = Events()
+    app.state.events = SharedEvents(app.state.db) if settings.serverless else Events()
     app.state.tasks = set()
     app.state.hearings = {}
-    app.state.document_locks = WeakValueDictionary()
+    app.state.document_locks = locks(app, "documents")
     app.state.analysis_slots = asyncio.Semaphore(3)
-    app.state.limiter = RateLimiter()
+    app.state.limiter = (
+        SharedRateLimiter(app.state.db) if settings.serverless else RateLimiter()
+    )
 
     @app.middleware("http")
     async def origin_guard(request, call_next):
@@ -124,6 +135,7 @@ def create_app(settings=None):
                 {"detail": "This origin is not allowed."}, status_code=403
             )
         response = await call_next(request)
+        response = await redirect_large_response(app, request, response)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Cache-Control"] = "no-store"
         return response
@@ -330,7 +342,7 @@ def create_app(settings=None):
             return case
 
     @app.post("/api/v1/cases/{case_id}/documents", response_model=DocumentOut)
-    async def upload(case_id: str, file: UploadFile, user=USER_DEPENDENCY):
+    async def upload(case_id: str, file: UploadFile = upload_dep, user=USER_DEPENDENCY):
         with app.state.db() as db:
             case = owned_case(db, case_id, user.id)
         app.state.limiter.check(f"upload:{user.id}", limit=10)
@@ -456,8 +468,11 @@ def create_app(settings=None):
             )
             segment.text = segment.text.strip()
             db.add(segment)
+            db.flush()
+            if settings.serverless:
+                stage_job(db, segment.id)
             db.commit()
-        schedule(app, investigate(app, segment.id))
+        await enqueue(app, segment.id)
         await app.state.events.publish(case_id, {"type": "transcript"})
         return segment
 
@@ -482,13 +497,15 @@ def create_app(settings=None):
             if not settings.ai_enabled and segment.origin != "simulation":
                 raise HTTPException(503, "Connect OpenRouter before retrying analysis.")
             segment.analysis_state = "queued"
+            if settings.serverless:
+                stage_job(db, segment.id)
             db.commit()
         fixture = (
             next((f for _, text, _, f in SCRIPT if text == segment.text), None)
             if segment.origin == "simulation"
             else None
         )
-        schedule(app, investigate(app, segment_id, fixture))
+        await enqueue(app, segment_id, fixture)
         return Message(message="Analysis queued")
 
     @app.patch(
@@ -625,7 +642,7 @@ def create_app(settings=None):
     def websocket_user(ws, case_id):
         if ws.headers.get("origin") not in settings.origins:
             raise HTTPException(403, "Origin not allowed")
-        user = session_user(app.state.db, ws.cookies.get(COOKIE))
+        user = websocket_session(app, ws, case_id)
         with app.state.db() as db:
             owned_case(db, case_id, user.id)
         return user
@@ -641,7 +658,10 @@ def create_app(settings=None):
         queue = app.state.events.subscribe(case_id)
         try:
             await ws.send_json({"type": "connected"})
-            while True:
+            deadline = asyncio.get_running_loop().time() + (
+                240 if settings.serverless else 86400
+            )
+            while asyncio.get_running_loop().time() < deadline:
                 try:
                     item = await asyncio.wait_for(queue.get(), timeout=10)
                 except TimeoutError:
@@ -674,6 +694,21 @@ def create_app(settings=None):
             )
             await ws.close()
             return
+        audio_lease = (
+            Lease(app.state.db, f"audio:{case_id}") if settings.serverless else None
+        )
+        if audio_lease:
+            try:
+                await audio_lease.__aenter__()
+            except HTTPException:
+                await ws.send_json(
+                    {
+                        "type": "error",
+                        "message": "Another audio connection is active. Wait briefly and reconnect.",
+                    }
+                )
+                await ws.close()
+                return
         hearing_id = None
         task = asyncio.current_task()
         app.state.hearings[case_id] = task
@@ -699,7 +734,7 @@ def create_app(settings=None):
                     hearing_id=hearing_id,
                     authorize=lambda: websocket_user(ws, case_id),
                 ),
-                3600,
+                270 if settings.serverless else 3600,
             )
         except (WebSocketDisconnect, RuntimeError):
             pass
@@ -723,10 +758,15 @@ def create_app(settings=None):
                     db.get(Hearing, hearing_id).status = "paused"
                 db.commit()
             await app.state.events.publish(case_id, {"type": "session"})
+            if audio_lease:
+                await audio_lease.__aexit__()
             try:
                 await ws.close()
             except RuntimeError:
                 pass
 
+    register_transfers(app)
+    register_runtime(app)
+    register_jobs(app)
     register_casebook(app)
     return app

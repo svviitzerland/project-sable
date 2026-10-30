@@ -124,10 +124,60 @@ export class ApiError extends Error {
     super(message);
   }
 }
+const stagedFiles = new WeakMap<File, { id: string; expires: number }>();
+
+async function stageFiles(form: FormData): Promise<FormData> {
+  const file = form.get("file");
+  if (
+    process.env.NEXT_PUBLIC_HOSTED_UPLOADS !== "1" ||
+    !(file instanceof File) ||
+    file.size <= 3 * 1024 * 1024
+  )
+    return form;
+  let staged = stagedFiles.get(file);
+  if (!staged || staged.expires < Date.now()) {
+    const transfer = await api<{ id: string; part_size: number }>(
+      "/transfers",
+      {
+        method: "POST",
+        body: JSON.stringify({ name: file.name, size: file.size }),
+      },
+    );
+    for (
+      let offset = 0, index = 0;
+      offset < file.size;
+      offset += transfer.part_size, index++
+    ) {
+      const response = await fetch(
+        `/api/v1/transfers/${transfer.id}/parts/${index}`,
+        {
+          method: "PUT",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/octet-stream" },
+          body: file.slice(offset, offset + transfer.part_size),
+        },
+      );
+      if (!response.ok)
+        throw new Error(
+          "File transfer failed. Your case has not changed; retry the upload.",
+        );
+    }
+    staged = { id: transfer.id, expires: Date.now() + 50 * 60 * 1000 };
+    stagedFiles.set(file, staged);
+  }
+  const result = new FormData();
+  for (const [key, value] of form.entries())
+    if (key !== "file") result.append(key, value);
+  result.set("upload_id", staged.id);
+  return result;
+}
+
 export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  if (options.body instanceof FormData)
+    options = { ...options, body: await stageFiles(options.body) };
   const response = await fetch(`/api/v1${path}`, {
     ...options,
     credentials: "same-origin",
@@ -150,9 +200,24 @@ export async function api<T>(
     );
   return data as T;
 }
-export function wsUrl(path: string) {
-  return `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/api/v1${path}`;
+export async function wsUrl(path: string) {
+  const origin = process.env.NEXT_PUBLIC_API_WS_URL;
+  if (!origin)
+    return `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/api/v1${path}`;
+  const match = path.match(/^\/cases\/([^/]+)\/(events|audio)$/);
+  if (!match) throw new Error("Unsupported realtime endpoint.");
+  const { ticket } = await api<{ ticket: string }>(
+    `/cases/${match[1]}/socket-ticket`,
+    {
+      method: "POST",
+      body: JSON.stringify({ purpose: match[2] }),
+    },
+  );
+  const url = new URL(`/api/v1${path}`, origin);
+  url.searchParams.set("ticket", ticket);
+  return url.toString();
 }
+
 export function timestamp(value: number) {
   return new Date(value * 1000).toISOString().slice(11, 19);
 }

@@ -8,11 +8,13 @@ from uuid import uuid4
 
 import psycopg
 import pytest
+from fastapi import HTTPException
 from sqlalchemy import select, text
 
 from app.config import Settings
 from app.factory import create_app
 from app.models import Case, Chunk, User
+from app.runtime import Lease, SharedEvents
 from app.services.documents import ingest
 from app.services.retrieval import retrieve
 
@@ -45,13 +47,26 @@ def test_postgres_bootstrap_vector_sync_and_browser_denial(tmp_path):
         assert connection.execute(
             "SELECT public FROM storage.buckets WHERE id='jude-documents'"
         ).fetchone() == (False,)
-        for table in ("jude_dialogues", "jude_dialogue_messages"):
+        assert connection.execute(
+            "SELECT file_size_limit FROM storage.buckets WHERE id='jude-documents'"
+        ).fetchone() == (67108864,)
+        private_tables = (
+            "jude_dialogues",
+            "jude_dialogue_messages",
+            "jude_runtime_leases",
+            "jude_runtime_events",
+            "jude_runtime_rates",
+            "jude_socket_tickets",
+            "jude_analysis_jobs",
+            "jude_file_transfers",
+        )
+        for table in private_tables:
             assert connection.execute(
                 "SELECT relrowsecurity FROM pg_class WHERE relname = %s", (table,)
             ).fetchone() == (True,)
         for role in ("anon", "authenticated"):
             connection.execute(f"SET ROLE {role}")
-            for table in ("jude_chunks", "jude_dialogues", "jude_dialogue_messages"):
+            for table in ("jude_chunks", *private_tables):
                 with pytest.raises(psycopg.errors.InsufficientPrivilege):
                     connection.execute(f"SELECT * FROM {table}")
             connection.execute("RESET ROLE")
@@ -111,3 +126,29 @@ def test_postgres_bootstrap_vector_sync_and_browser_denial(tmp_path):
             text("SELECT embedding_vector IS NULL FROM jude_chunks WHERE id=:id"),
             {"id": chunk.id},
         )
+
+    hosted = Settings(
+        data_dir=tmp_path,
+        database_url=url,
+        serverless=True,
+        backend_url="https://backend.example",
+        supabase_url="https://storage.example",
+        supabase_key="test",
+        qstash_token="test",
+        qstash_current_key="test",
+        qstash_next_key="test",
+        cron_secret="test",
+    )
+    one, two = create_app(hosted), create_app(hosted)
+
+    async def shared():
+        async with Lease(one.state.db, "postgres-cross-instance"):
+            with pytest.raises(HTTPException) as conflict:
+                async with Lease(two.state.db, "postgres-cross-instance"):
+                    pass
+            assert conflict.value.status_code == 409
+        reader = SharedEvents(one.state.db).subscribe(case.id)
+        await SharedEvents(two.state.db).publish(case.id, {"type": "finding"})
+        assert await reader.get() == {"type": "finding"}
+
+    asyncio.run(shared())

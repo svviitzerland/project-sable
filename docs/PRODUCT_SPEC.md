@@ -47,6 +47,15 @@ Without AI, an explicitly selected guided drill provides scripted reflection pro
 
 ## Constraints and decisions
 
-One backend worker; in-process tasks are recoverable by manual retry after restart, not durable distributed jobs. Sessions are application-owned, not Supabase Auth. Backend ownership checks protect every case route. No OCR, native courtroom recording, account recovery, multi-user case sharing, speaker identity inference, or operational prosecutor/judge workflow (practice roles are supported). Configured providers receive relevant material; no unverified privacy, accuracy, latency, customer, or commercial claims.
+Local mode uses one backend worker and recoverable in-process tasks. Hosted Vercel mode uses a transactional analysis outbox, signed QStash callbacks, PostgreSQL leases/rate limits/coalesced events, and scheduled recovery. Cold starts perform no migrations or global status resets. Sessions are application-owned, not Supabase Auth. Backend ownership checks protect every case route. No OCR, native courtroom recording, account recovery, multi-user case sharing, speaker identity inference, or operational prosecutor/judge workflow (practice roles are supported). Configured providers receive relevant material; no unverified privacy, accuracy, latency, customer, or commercial claims.
 
 Original brief: “Jude - Evidence-Grounded AI for Courtroom Intelligence.” The portable scope and implementation map are recorded in `docs/artifacts/phases/2026-10-30-product-handoff.md`; its initial failure list is superseded by the completion record.
+
+
+## Vercel deployment behavior
+
+Both frontend and backend deploy as Vercel projects; no persistent FastAPI server is required. Supabase PostgreSQL and private Storage remain external durable services. See [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md) for the exact environment contract and migration order.
+
+Saved testimony and its analysis job commit together. Signed callbacks validate the request body and destination, enforce a shared lease, and retry transient analysis failures within a bounded attempt count. The recovery sweep redelivers stale/unsent work. WebSocket tickets are single-use, short-lived, case/purpose-bound, and tied to a revocable session. Live notifications coalesce through PostgreSQL while the UI refreshes authoritative records.
+
+Audio rotates before invocation expiry, preserving final-buffer flushing and bounding reconnect buffering; interruption is explicit when recovery cannot keep up. Speaker identifiers are scoped to each provider connection, with timeline offsets maintained across rotations. Large uploads use authenticated 2 MB parts with integrity checks; large responses use expiring signed private-storage links. Temporary parts/exports are cleaned by recovery. These adapters have local and mocked contract checks; real Vercel/provider behavior remains a deployment acceptance requirement.

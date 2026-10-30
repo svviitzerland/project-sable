@@ -29,6 +29,6 @@ This is Jude's courtroom workspace and marketing introduction on Next.js and Fas
 - Write a test for backend behavior that could regress. Run checks relevant to the change; run both apps' checks before a demo or release.
 - Update the product spec and phase artifact when scope or delivery priorities change.
 
-- Run only one backend worker until jobs/events/locks are distributed.
+- Local mode uses one backend worker. Vercel mode (`JUDE_RUNTIME=vercel` or `VERCEL=1`) requires PostgreSQL, private Supabase Storage, QStash, and authenticated recovery. Read `docs/DEPLOY_VERCEL.md`; apply migrations separately, never on function startup.
 - Database bootstrap lives in `be/migrations/`; evaluation in `be/app/evaluate.py` and `be/evaluation/`.
 - Browser acceptance: with both apps running and no provider keys, `cd fe && uv run --no-project --with playwright python tests/acceptance.py`. Set `CHROMIUM_EXECUTABLE` for system Chromium. Assistant/practice acceptance: `python tests/dialogue_acceptance.py` in the same Playwright environment.

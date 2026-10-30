@@ -33,3 +33,5 @@ Preview: `POST /api/v1/cases/{case}/hearings/preview` with multipart `file` and 
 Limits: 64 MB compressed and expanded; 12 MB manifest; 40 originals, each up to 6 MB; 100 hearings; 2,000 transcript turns/findings; 14,000 source passages; 1,000 evidence links. Duplicate paths, traversal paths, encryption, duplicate IDs/content, missing references, invalid quotes, and hash mismatches are rejected. An export over these limits fails explicitly; it is never silently truncated.
 
 Archives are portable copies of case material and originals. A checksum detects byte changes; it does not authenticate the author, establish the truth of extracted passages, or prove a finding. Review imported content against the original files.
+
+On Vercel, large archives use authenticated chunked intake and expiring private download links to stay below the function payload envelope. The archive schema and validation limits are unchanged. See [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md).

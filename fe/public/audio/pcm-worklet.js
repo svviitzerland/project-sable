@@ -6,7 +6,7 @@ class JudePCM extends AudioWorkletProcessor {
     this.stopped = false;
     this.port.onmessage = (event) => {
       if (event.data.type === "flush") {
-        this.stopped = true;
+        this.stopped = event.data.continueCapture !== true;
         this.flush();
         this.port.postMessage({ type: "flushed" });
       }

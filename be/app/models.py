@@ -384,3 +384,63 @@ class DialogueMessage(Base):
         UniqueConstraint("dialogue_id", "sequence"),
         UniqueConstraint("dialogue_id", "request_id"),
     )
+
+
+class RuntimeLease(Base):
+    __tablename__ = "jude_runtime_leases"
+    key: Mapped[str] = mapped_column(String(200), primary_key=True)
+    owner: Mapped[str] = mapped_column(String(36))
+    expires: Mapped[float] = mapped_column(Float, index=True)
+
+
+class RuntimeEvent(Base):
+    __tablename__ = "jude_runtime_events"
+    case_id: Mapped[str] = mapped_column(
+        ForeignKey("jude_cases.id", ondelete="CASCADE"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(default=1)
+    payload: Mapped[dict] = mapped_column(JSON)
+
+
+class RuntimeRate(Base):
+    __tablename__ = "jude_runtime_rates"
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    hits: Mapped[int]
+    expires: Mapped[float] = mapped_column(Float, index=True)
+
+
+class SocketTicket(Base):
+    __tablename__ = "jude_socket_tickets"
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_hash: Mapped[str] = mapped_column(
+        ForeignKey("jude_sessions.token_hash", ondelete="CASCADE")
+    )
+    case_id: Mapped[str] = mapped_column(
+        ForeignKey("jude_cases.id", ondelete="CASCADE")
+    )
+    purpose: Mapped[str] = mapped_column(String(12))
+    expires: Mapped[float] = mapped_column(Float, index=True)
+
+
+class AnalysisJob(Base):
+    __tablename__ = "jude_analysis_jobs"
+    segment_id: Mapped[str] = mapped_column(
+        ForeignKey("jude_segments.id", ondelete="CASCADE"), primary_key=True
+    )
+    status: Mapped[str] = mapped_column(String(20), default="queued")
+    attempts: Mapped[int] = mapped_column(default=0)
+    dispatched_at: Mapped[float] = mapped_column(Float, default=0)
+    created_at: Mapped[float] = mapped_column(Float)
+
+
+class FileTransfer(Base):
+    __tablename__ = "jude_file_transfers"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    owner_id: Mapped[str] = mapped_column(
+        ForeignKey("jude_users.id", ondelete="CASCADE")
+    )
+    name: Mapped[str] = mapped_column(String(200))
+    size: Mapped[int]
+    kind: Mapped[str] = mapped_column(String(12), default="upload")
+    parts: Mapped[dict] = mapped_column(JSON, default=dict)
+    expires: Mapped[float] = mapped_column(Float, index=True)
