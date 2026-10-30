@@ -99,6 +99,50 @@ async function fixture(t: TestContext) {
   const record = await a.json("/cases", "POST", { title: "Test case" });
   return { rt, a, record, client, dir };
 }
+test("sign-in database failures log safe diagnostics with a matching reference", async (t) => {
+  const { rt, client } = await fixture(t);
+  const logs: string[] = [];
+  t.mock.method(console, "error", (entry: string) => logs.push(entry));
+  const secret = "postgresql://owner:private-password@private-host/postgres";
+  for (const code of [
+    "28P01",
+    "42P01",
+    "SELF_SIGNED_CERT_IN_CHAIN",
+    "UNKNOWN_CODE",
+  ]) {
+    const query = t.mock.method(rt.db, "query", async () => {
+      throw new Error(secret, {
+        cause: Object.assign(new Error(secret), { code }),
+      });
+    });
+    const response = await client().call("/auth/login", "POST", {
+      email: "counsel@example.test",
+      password: "private-account-password",
+    });
+    assert.equal(response.status, 500);
+    const text = await response.text();
+    const log = JSON.parse(logs.at(-1)!);
+    assert.equal(log.event, "jude_request_failed");
+    assert.equal(log.code, code === "UNKNOWN_CODE" ? "UNKNOWN" : code);
+    assert.match(log.reference, /^[0-9a-f-]{36}$/);
+    assert.ok(text.includes(log.reference));
+    assert.ok(!text.includes(code));
+    for (const output of [text, logs.at(-1)!]) {
+      assert.ok(!output.includes("private-password"));
+      assert.ok(!output.includes("private-host"));
+      assert.ok(!output.includes("private-account-password"));
+      assert.ok(!output.includes("counsel@example.test"));
+    }
+    query.mock.restore();
+  }
+  const response = await client().call("/auth/login", "POST", {
+    email: "missing-account@example.test",
+    password: "private-account-password",
+  });
+  assert.equal(response.status, 401);
+  assert.equal(logs.length, 4);
+});
+
 function upload(
   name: string,
   text: string | Uint8Array,

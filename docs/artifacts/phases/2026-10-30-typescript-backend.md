@@ -37,3 +37,7 @@ Changed the recovery setup script's default to every 15 minutes and documented t
 ## Landing workspace access
 
 Added a primary Open workspace link beside the landing demo action, with explicit account-entry guidance. Desktop and mobile navigation now say Sign in. All entry links use the existing `/workspace` authentication flow and native anchors; the sample demo remains available separately.
+
+## Hosted sign-in diagnostics
+
+Unexpected API errors previously returned a generic response without logging the failure. Added a matching client reference and server log containing allowlisted database/network/TLS error codes and setup hints. Raw errors, request bodies and connection strings are excluded. Injected sign-in failures verify correlation and credential redaction; ordinary wrong-password responses stay unchanged. The actual production sign-in failure still needs a runtime log from the deployed app.

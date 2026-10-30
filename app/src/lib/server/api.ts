@@ -27,7 +27,7 @@ import {
   type Case,
   type User,
 } from "./contracts";
-import { assert, HttpError } from "./errors";
+import { assert, HttpError, reportUnexpectedError } from "./errors";
 import {
   caseOutput,
   documentOutput,
@@ -976,6 +976,7 @@ export async function handleApi(
         : error instanceof z.ZodError || error instanceof SyntaxError
           ? 422
           : 500;
+    const reference = status === 500 ? reportUnexpectedError(error) : undefined;
     return json(
       {
         detail:
@@ -983,7 +984,7 @@ export async function handleApi(
             ? error.message
             : status === 422
               ? "The request does not match the expected format."
-              : "The request could not be completed. Please try again.",
+              : `The request could not be completed. Please try again. Reference: ${reference}`,
       },
       status,
       { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },

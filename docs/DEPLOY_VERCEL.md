@@ -89,6 +89,12 @@ If your Vercel plan supports your desired cron frequency, you may instead add a 
 
 These steps require real credentials and have not been represented as completed live-provider verification. Local TypeScript contract, browser, PostgreSQL and build tests are separate evidence.
 
+## Troubleshoot sign-in
+
+A missing-setting error in Vercel logs means startup configuration is incomplete; add the named Production environment variable and redeploy. A response with a reference ID means the API encountered an unexpected error. Retry once, then search Vercel runtime logs for that reference or `jude_request_failed`.
+
+The structured log contains only an allowlisted error code and setup hint, not passwords, connection strings, SQL parameters or case contents. `28P01` indicates database password authentication failure; `42P01` indicates a missing table (confirm migrations 001–006 ran in the same Supabase project that `DATABASE_URL` uses). Network codes point to hostname/connectivity issues; TLS codes point to certificate trust. Use the Supabase transaction-pooler URL and keep TLS verification enabled. `UNKNOWN` requires further investigation; it does not establish a database diagnosis. Normal wrong-password responses remain separate.
+
 ## Cutover from the former two-project setup
 
 Update the existing frontend project's preset/root/environment as above, apply migration 006, then deploy and configure recovery on its URL. Saved PostgreSQL cases/accounts, private originals, password hashes, and `.jude` files continue to work. Allow existing queue deliveries to drain, verify the unified deployment, then retire the former FastAPI project and its recovery schedule. No database export/re-import is required. Old socket-ticket rows can expire naturally; the new app uses cookie-authenticated SSE and authenticated HTTP audio saves.
