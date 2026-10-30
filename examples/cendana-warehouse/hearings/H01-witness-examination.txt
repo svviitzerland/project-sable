@@ -1,0 +1,26 @@
+[00:00:00] Judge: This is a fictional training hearing. All names and events are invented. We will distinguish observations, records and assumptions.
+[00:00:20] Opposing counsel: When did you first arrive at Cendana warehouse on 14 October 2026?
+[00:00:40] Raka Pradana: I first arrived at 21:30 WIB. I had not been at the site earlier that evening.
+[00:01:00] Defense counsel: Your earlier interview gives a different time. What did you use to estimate your arrival?
+[00:01:20] Raka Pradana: I may now be remembering a time on the camera display. In the earlier interview I said I had checked my phone. I cannot reconcile those memories today.
+[00:01:40] Opposing counsel: What did dispatch permit you to collect?
+[00:02:00] Raka Pradana: Maya authorized me to collect two cartons of tablets that evening.
+[00:02:20] Defense counsel: Did you open the cartons or receive a completed contents checklist?
+[00:02:40] Raka Pradana: I did not open either carton. I asked who had checked them, but I did not receive confirmation of their contents.
+[00:03:00] Opposing counsel: Was the gate continuously watched while you were there?
+[00:03:20] Raka Pradana: Dimas stayed at the gate the entire time. He never left for a patrol.
+[00:03:40] Judge: Dimas, describe only what you personally observed.
+[00:04:00] Dimas Arya: I left the gate for a perimeter inspection at about 20:20 and returned around 20:45. Near the bay I saw two brown cartons being moved, but I could not see inside them.
+[00:04:20] Opposing counsel: Do the CCTV and gate times prove there were two separate visits?
+[00:04:40] Nila Sasmita: Not by themselves. CAM-2 was 64 minutes fast. If that offset was stable, a display of 21:12 corresponds to about 20:08 WIB. The face in the described frame is obscured.
+[00:05:00] Defense counsel: Does card DR-17 conclusively identify the person at the gate?
+[00:05:20] Sari Ananta: The card was assigned to Raka. The reader recorded the credential, not a face or biometric identity.
+[00:05:40] Opposing counsel: How many tablets were missing, and when was that discovered?
+[00:06:00] Bima Nusa: The recorded counts were twenty tablets at 18:00 on 14 October and eight at 08:15 the next morning. The discrepancy is twelve tablets, discovered on 15 October.
+[00:06:20] Defense counsel: Can you establish that the twelve tablets were inside those two cartons?
+[00:06:40] Bima Nusa: No. The count difference does not tell me the carton contents, the exact time of movement, or who moved the tablets.
+[00:07:00] Opposing counsel: What happened at the returns desk?
+[00:07:20] Raka Pradana: The returns desk signed a receipt for both cartons at 09:00 on 15 October. I do not have that receipt with me.
+[00:07:40] Defense counsel: Was it raining that evening?
+[00:08:00] Raka Pradana: Yes. It was already raining before I arrived.
+[00:08:20] Judge: The receipt claim needs verification. The exercise does not establish guilt, intent, the contents of the cartons, or a legal conclusion.

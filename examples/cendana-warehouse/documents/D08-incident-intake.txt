@@ -1,0 +1,15 @@
+D08 | Incident intake and material received
+
+FICTIONAL TRAINING MATERIAL — All people, organizations, records and events are invented. Not a real case or official record.
+
+Training case TRAINING-CW-014. Fictional organization: Cendana Warehouse. Location: an invented Indonesian logistics facility. Incident report opened 15 October 2026 at 08:40 WIB.
+
+Issue reported: a shelf count of tablets fell from 20 to 8 between an evening count and the following morning. Dispatch records also describe an empty-packaging collection during the evening. Whether these events are causally connected is disputed.
+
+Persons mentioned: Raka Pradana (delivery driver), Maya Kirana (dispatch coordinator), Dimas Arya (security guard), Bima Nusa (stock controller), Nila Sasmita (technician) and Sari Ananta (administrator). All identities are invented for this exercise.
+
+Material supplied: D01 earlier driver statement; D02 gate and duty extract; D03 CCTV clock assessment; D04 dispatch authorization; D05 stock reconciliation; D06 selected messages; D07 security witness account. The later hearing is a separate record.
+
+Material not supplied: original CCTV/video files; complete message exports; carton inspection record; seal identifiers; overnight access list; serial-number reconciliation; original stock scan history; returns-desk receipt. Do not treat an absent record as proof that the recorded event did not occur.
+
+No charge, statutory element, applicable enactment date or admissibility ruling is established by this exercise. Legal questions require separate research and human verification. Neither the shortage nor a witness inconsistency establishes guilt or dishonesty.

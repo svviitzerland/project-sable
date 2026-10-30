@@ -35,6 +35,10 @@ Supabase PostgreSQL/private Storage and QStash remain required hosted services. 
 
 Without provider keys, keyword search, manual testimony, source inspection, archive workflows, the authored synthetic hearing, sources-only assistant replies, and guided practice work locally. Scanned PDFs still require OCR before upload. Provider configuration is not proof of service availability or model quality.
 
+## Sample files
+
+For upload/import practice, use the [fictional Cendana warehouse sample pack](examples/cendana-warehouse/START-HERE.txt). It includes a complete `.jude` case, eight PDF/DOCX/TXT source documents, a hearing in four supported formats, an AI-conversion exercise, and review guidance kept outside the evidence archive. [Download all files](examples/cendana-warehouse-sample-pack.zip) or [import the complete case](examples/cendana-warehouse/Cendana-warehouse-complete.jude).
+
 ## Checks
 
 ```bash

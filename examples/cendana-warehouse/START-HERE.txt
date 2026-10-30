@@ -1,0 +1,92 @@
+JUDE EXAMPLE CASE: CENDANA WAREHOUSE
+=================================
+
+Entirely fictional training material. All names, organizations and events are invented.
+No real court documents, personal data, statutory quotations, audio or video are included.
+English-language materials; invented Indonesian setting. Incident wall-clock times use WIB (UTC+7).
+
+QUICKEST START — IMPORT THE COMPLETE CASE
+
+1. Sign in to Jude at /workspace.
+2. Use "Import .jude" in the case navigation.
+3. Select Cendana-warehouse-complete.jude (NOT the outer ZIP).
+4. Open the imported case, "SYNTHETIC — Cendana warehouse loss".
+
+The archive includes 8 source documents, their originals and searchable passages,
+one 26-turn hearing, and 4 authored evidence connections. The connections start
+unreviewed. Inspect their quotations before confirming them. There are no prewritten
+AI findings, embeddings, account credentials or conversations in the archive.
+
+MANUAL UPLOAD — TRY THE DOCUMENT AND HEARING IMPORT FLOWS
+
+Use a separate new case if you have already imported the complete archive.
+Suggested title: SYNTHETIC — Cendana warehouse loss.
+Suggested reference: TRAINING-CW-014.
+
+1. Upload the 8 files under documents/ to Case documents. There are two text-based
+   PDFs, one DOCX and five TXT files. Their D01–D08 labels identify source exhibits.
+2. Open Hearings and import hearings/H01-witness-examination.json. Review the preview,
+   then confirm. H01 also comes as CSV, speaker-labeled TXT and a hearing-only .jude.
+   Choose ONE version: these formats contain the same hearing.
+3. For the AI formatter, try H02-unstructured-for-AI-conversion.txt in a separate
+   hearing or separate test case. It intentionally requires "Convert with AI" and
+   contains a shortened alternative to H01, not an additional independent witness.
+   Check that the formatter preserves the source wording and uncertainty.
+
+Hearing start/end values are invented relative playback positions for the exercise.
+They are not actual recording timestamps and are distinct from incident times stated
+in testimony. The TXT variant has turn start times only; JSON/CSV/.jude include ends.
+No audio recording is supplied.
+
+THINGS TO TRY
+
+Evidence search:
+  - "64 minutes" or "DR-17" for keyword search without AI.
+  - "Which records help establish when the driver arrived?"
+  - "Was taking tablets authorized, or only empty packaging?"
+
+Evidence graph:
+  - Inspect the four imported connections and their exact source quotes.
+  - Confirm a connection only after checking its sources. Imported connections are
+    authored exercise suggestions, not independently discovered or verified facts.
+  - Use Find connections with OpenRouter configured to index passages and suggest
+    further relationships. Do not equate a relationship with proof of guilt.
+
+Hearings:
+  - Read Raka's arrival account beside D01 and D02.
+  - Use Analyze hearing when the analysis model and hosted job delivery are configured.
+  - Review quotations, alternative explanations and missing context in each finding.
+  - Analysis is an explicit action and uses model/queue quota. The 26 turns include
+    questions and procedural remarks, not just factual assertions.
+
+Case assistant:
+  - "Build a timeline. Separate witness estimates from machine timestamps and cite sources."
+  - "How does the CCTV clock error affect the arrival-time inconsistency?"
+  - "What evidence is missing before we can connect the tablets to the cartons?"
+  - "Prepare five non-leading questions for the security guard. Cite their factual basis."
+  - "Which Indonesian legal issues need research? Do not invent statute text or a charge."
+    Legal discovery, when configured, supplies links/metadata that need independent review.
+
+Courtroom practice:
+  - Role: defense counsel. Stage: witness examination.
+  - Setting: fictional Indonesian criminal-hearing exercise; English language.
+  - Goal: distinguish personal observations from assumptions and test timing/authorization.
+  - Manually review any AI-suggested trial conditions. This pack establishes no charge,
+    applicable statutory elements or admissibility ruling.
+  - Ask for a debrief on questions and gaps, not a verdict or credibility score.
+
+PROVIDER EXPECTATIONS
+
+File import, source inspection and keyword search work without an AI provider.
+Natural-language semantic retrieval, AI conversion, analysis and generative answers
+need the relevant OpenRouter configuration. Hosted analysis also needs working QStash.
+Without those providers, the sample still imports but does not magically create AI output.
+
+KEEP THE EXERCISE NOTES OUT OF THE EVIDENCE
+
+Do not upload START-HERE.txt or REVIEWER-NOTES.txt as evidence. The latter contains
+discussion targets and suggested questions, not a source document. Uploading it would
+contaminate retrieval with the author's answer guide. The complete .jude excludes both.
+
+The outer ZIP is a download bundle. Extract it before selecting files in Jude.
+Use a fresh case to compare alternate import formats and avoid duplicating testimony.
