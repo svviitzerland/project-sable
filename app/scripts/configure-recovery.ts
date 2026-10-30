@@ -16,7 +16,7 @@ await client.schedules.create({
   scheduleId,
   destination,
   method: "GET",
-  cron: process.env.JUDE_RECOVERY_CRON || "* * * * *",
+  cron: process.env.JUDE_RECOVERY_CRON || "*/15 * * * *",
   headers: { Authorization: `Bearer ${CRON_SECRET}` },
   retries: 3,
   timeout: "240s",

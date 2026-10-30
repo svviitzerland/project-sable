@@ -29,3 +29,7 @@ The native-library trace lists optional packages for other operating systems plu
 ## Application directory follow-up — 2026-10-31
 
 Renamed the unified application directory from `fe/` to `app/`, including local data and development files. Updated current documentation, commands and design surface targets. Existing Vercel projects must change Root Directory to `app` in their project settings.
+
+## Recovery schedule allowance
+
+Changed the recovery setup script's default to every 15 minutes and documented the override in the environment template. This uses 96 scheduled deliveries per day before analysis jobs/retries, while ordinary analysis dispatch remains immediate. Existing hosted schedules require rerunning the setup script with the same app URL. No QStash token, HTTPS application URL or recovery secret was configured in this workspace, so the live schedule could not be updated here.

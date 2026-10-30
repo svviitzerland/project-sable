@@ -73,7 +73,9 @@ The repository no longer commits a per-minute Vercel Cron. Use QStash's schedule
 node --env-file=.env.local --import tsx scripts/configure-recovery.ts
 ```
 
-This creates or updates a stable schedule for that app URL: `GET /api/v1/internal/recover` every minute with `Authorization: Bearer <CRON_SECRET>`. The script prints only the schedule ID. It uses the official QStash TypeScript SDK. Schedule delivery counts against QStash quotas; `JUDE_RECOVERY_CRON` can override the expression if you accept a longer recovery delay. Re-run after changing the origin or recovery secret. Remove the old origin's schedule after a domain migration.
+This creates or updates a stable schedule for that app URL: `GET /api/v1/internal/recover` every 15 minutes with `Authorization: Bearer <CRON_SECRET>`. The default `JUDE_RECOVERY_CRON="*/15 * * * *"` produces 96 scheduled deliveries per day; analysis jobs and retries consume additional quota. Normal analysis still dispatches immediately; stuck or undispatched jobs may wait until the next recovery run. The script prints only the schedule ID and uses the official QStash TypeScript SDK. Set `JUDE_RECOVERY_CRON` to override the interval.
+
+For an existing every-minute schedule, update any explicit `JUDE_RECOVERY_CRON` override to `*/15 * * * *` and rerun the command above with the same app URL. Changing the code or environment variable alone does not update an existing QStash schedule. Re-run after changing the origin or recovery secret. Remove the old origin's schedule after a domain migration.
 
 If your Vercel plan supports your desired cron frequency, you may instead add a `crons` entry to `app/vercel.json` for `/api/v1/internal/recover`; Vercel supplies `CRON_SECRET` as its Bearer token. Configure one scheduler, not duplicate sweeps.
 
