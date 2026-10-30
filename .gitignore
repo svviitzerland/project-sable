@@ -23,3 +23,6 @@ __pycache__/
 .impeccable/questions/
 .impeccable/review/
 .impeccable/build/
+
+# Jude application data (documents, sessions, database)
+.data/
