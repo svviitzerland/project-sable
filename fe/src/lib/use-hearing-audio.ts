@@ -16,6 +16,7 @@ type AudioSession = {
 export function useHearingAudio(
   caseId: string | null,
   onError: (message: string) => void,
+  hearingId?: string | null,
 ) {
   const [status, setStatus] = useState<
     "idle" | "connecting" | "recording" | "stopping"
@@ -64,7 +65,7 @@ export function useHearingAudio(
       }, 25000);
     } else cleanup(s);
   }, [cleanup, onError]);
-  useEffect(() => () => cleanup(), [caseId, cleanup]);
+  useEffect(() => () => cleanup(), [caseId, hearingId, cleanup]);
   async function start(language: string, file?: File) {
     if (!caseId || session.current) return;
     const s: AudioSession = {};
@@ -120,6 +121,7 @@ export function useHearingAudio(
               sample_rate: context.sampleRate,
               language,
               authorized: true,
+              hearing_id: hearingId,
             }),
           );
       };

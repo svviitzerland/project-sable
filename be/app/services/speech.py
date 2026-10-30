@@ -43,7 +43,7 @@ def normalize_transcript(message):
     return groups
 
 
-async def stream_speech(app, ws, case_id, config, authorize=None):
+async def stream_speech(app, ws, case_id, config, authorize=None, hearing_id=None):
     settings = app.state.settings
     if not settings.speechmatics_key:
         raise ProviderError(
@@ -136,7 +136,10 @@ async def stream_speech(app, ws, case_id, config, authorize=None):
                             authorize()
                         with app.state.db() as db:
                             segment = Segment(
-                                case_id=case_id, origin="speechmatics", **item
+                                case_id=case_id,
+                                hearing_id=hearing_id,
+                                origin="speechmatics",
+                                **item,
                             )
                             db.add(segment)
                             db.commit()

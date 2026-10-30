@@ -30,8 +30,9 @@ from .auth import (
     revoke,
     session_user,
 )
+from .casebook import register_casebook
 from .config import Settings
-from .database import database, owned_case
+from .database import case_hearing, database, owned_case
 from .middleware import RequestSizeLimit
 from .models import (
     Capabilities,
@@ -47,6 +48,8 @@ from .models import (
     Finding,
     FindingOut,
     FindingUpdate,
+    Hearing,
+    HearingOut,
     LegalOut,
     Message,
     SearchOut,
@@ -85,7 +88,7 @@ def create_app(settings=None):
         await asyncio.gather(*app.state.tasks, return_exceptions=True)
 
     app = FastAPI(title="Jude API", version="0.2.0", lifespan=lifespan)
-    app.add_middleware(RequestSizeLimit, limit=MAX_BYTES + 65536)
+    app.add_middleware(RequestSizeLimit, limit=64 * 1024 * 1024 + 65536)
     app.state.settings = settings
     app.state.db = database(settings)
     app.state.llm = OpenRouter(settings)
@@ -101,7 +104,12 @@ def create_app(settings=None):
     @app.middleware("http")
     async def origin_guard(request, call_next):
         length = request.headers.get("content-length", "0")
-        if not length.isdigit() or int(length) > MAX_BYTES + 65536:
+        limit = (
+            64 * 1024 * 1024
+            if request.url.path == "/api/v1/cases/import"
+            else MAX_BYTES
+        ) + 65536
+        if not length.isdigit() or int(length) > limit:
             return JSONResponse(
                 {"detail": "Request is too large. Files must be at most 6 MB."},
                 status_code=413,
@@ -217,6 +225,14 @@ def create_app(settings=None):
             )
             db.add(case)
             db.commit()
+            db.add(
+                Hearing(
+                    case_id=case.id,
+                    title="The warehouse examination",
+                    kind="simulation",
+                )
+            )
+            db.commit()
         for name, text in DOCUMENTS:
             await ingest(app, case, name, text.encode())
         return case
@@ -266,6 +282,14 @@ def create_app(settings=None):
     def detail(db, case):
         return CaseDetail(
             case=CaseOut.model_validate(case),
+            hearings=[
+                HearingOut.model_validate(h)
+                for h in db.scalars(
+                    select(Hearing)
+                    .where(Hearing.case_id == case.id)
+                    .order_by(Hearing.created_at)
+                ).all()
+            ],
             documents=[
                 DocumentOut.model_validate(x)
                 for x in db.scalars(
@@ -414,9 +438,11 @@ def create_app(settings=None):
             raise HTTPException(422, "End time cannot precede start time.")
         with app.state.db() as db:
             owned_case(db, case_id, user.id)
+            hearing = case_hearing(db, case_id, body.hearing_id)
             segment = db.scalar(
                 select(Segment).where(
                     Segment.case_id == case_id,
+                    Segment.hearing_id == hearing.id,
                     Segment.text == body.text.strip(),
                     Segment.speaker == body.speaker,
                     Segment.start == body.start,
@@ -425,7 +451,9 @@ def create_app(settings=None):
             )
             if segment:
                 return segment
-            segment = Segment(case_id=case_id, **body.model_dump())
+            segment = Segment(
+                case_id=case_id, **{**body.model_dump(), "hearing_id": hearing.id}
+            )
             segment.text = segment.text.strip()
             db.add(segment)
             db.commit()
@@ -483,13 +511,14 @@ def create_app(settings=None):
         await app.state.events.publish(case_id, {"type": "finding"})
         return finding
 
-    async def run_simulation(case_id):
+    async def run_simulation(case_id, hearing_id):
         try:
             with app.state.db() as db:
                 offset = len(
                     db.scalars(
                         select(Segment.id).where(
-                            Segment.case_id == case_id, Segment.origin == "simulation"
+                            Segment.hearing_id == hearing_id,
+                            Segment.origin == "simulation",
                         )
                     ).all()
                 )
@@ -498,6 +527,7 @@ def create_app(settings=None):
                 with app.state.db() as db:
                     segment = Segment(
                         case_id=case_id,
+                        hearing_id=hearing_id,
                         text=text,
                         speaker=speaker,
                         start=start,
@@ -515,17 +545,21 @@ def create_app(settings=None):
                 count = len(
                     db.scalars(
                         select(Segment.id).where(
-                            Segment.case_id == case_id, Segment.origin == "simulation"
+                            Segment.hearing_id == hearing_id,
+                            Segment.origin == "simulation",
                         )
                     ).all()
                 )
                 case.status = "complete" if count == len(SCRIPT) else "paused"
+                db.get(Hearing, hearing_id).status = case.status
                 db.commit()
             app.state.hearings.pop(case_id, None)
             await app.state.events.publish(case_id, {"type": "session"})
 
     @app.post("/api/v1/cases/{case_id}/simulation", response_model=Message)
-    async def simulate(case_id: str, user=USER_DEPENDENCY):
+    async def simulate(
+        case_id: str, hearing_id: str | None = None, user=USER_DEPENDENCY
+    ):
         with app.state.db() as db:
             case = owned_case(db, case_id, user.id)
             if not case.synthetic or settings.production:
@@ -533,16 +567,20 @@ def create_app(settings=None):
                     400,
                     "Simulation is available only for synthetic demonstration cases.",
                 )
-            if case.status == "complete":
+            hearing = case_hearing(db, case_id, hearing_id)
+            hearing_id = hearing.id
+            if hearing.kind != "simulation":
+                raise HTTPException(400, "Choose the synthetic demonstration hearing.")
+            if hearing.status == "complete":
                 raise HTTPException(
                     409,
                     "This simulation is complete. Create another synthetic case to repeat it.",
                 )
             if case_id in app.state.hearings:
                 raise HTTPException(409, "A hearing is already running.")
-            case.status = "simulation"
+            case.status = hearing.status = "simulation"
             db.commit()
-        app.state.hearings[case_id] = schedule(app, run_simulation(case_id))
+        app.state.hearings[case_id] = schedule(app, run_simulation(case_id, hearing_id))
         return Message(message="Synthetic hearing started")
 
     @app.post("/api/v1/cases/{case_id}/pause", response_model=Message)
@@ -636,6 +674,7 @@ def create_app(settings=None):
             )
             await ws.close()
             return
+        hearing_id = None
         task = asyncio.current_task()
         app.state.hearings[case_id] = task
         try:
@@ -645,6 +684,9 @@ def create_app(settings=None):
                     "Confirm that you are authorized to process this audio."
                 )
             with app.state.db() as db:
+                hearing = case_hearing(db, case_id, config.get("hearing_id"))
+                hearing_id = hearing.id
+                hearing.status = "live"
                 db.get(Case, case_id).status = "live"
                 db.commit()
             await app.state.events.publish(case_id, {"type": "session"})
@@ -654,6 +696,7 @@ def create_app(settings=None):
                     ws,
                     case_id,
                     config,
+                    hearing_id=hearing_id,
                     authorize=lambda: websocket_user(ws, case_id),
                 ),
                 3600,
@@ -676,6 +719,8 @@ def create_app(settings=None):
             app.state.hearings.pop(case_id, None)
             with app.state.db() as db:
                 db.get(Case, case_id).status = "paused"
+                if hearing_id:
+                    db.get(Hearing, hearing_id).status = "paused"
                 db.commit()
             await app.state.events.publish(case_id, {"type": "session"})
             try:
@@ -683,4 +728,5 @@ def create_app(settings=None):
             except RuntimeError:
                 pass
 
+    register_casebook(app)
     return app

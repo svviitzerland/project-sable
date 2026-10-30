@@ -20,13 +20,12 @@ import {
   ExternalLink,
   FileText,
   FolderOpen,
+  GitBranch,
   LogOut,
   Menu,
-  Mic,
   Pause,
   Play,
   Plus,
-  Radio,
   RefreshCw,
   Search,
   Settings,
@@ -53,16 +52,25 @@ import {
 } from "@/lib/workspace-api";
 import { useHearingAudio } from "@/lib/use-hearing-audio";
 import styles from "./workspace.module.css";
+import book from "./casebook.module.css";
+import {
+  ArchiveImport,
+  EvidenceWorkspace,
+  HearingAudio,
+  HearingLibrary,
+} from "./casebook";
 
-type Tab = "hearing" | "documents" | "references" | "settings";
+type Tab = "evidence" | "hearing" | "documents" | "references" | "settings";
 const icons = {
+  evidence: GitBranch,
   hearing: AudioLines,
   documents: FileText,
   references: BookOpen,
   settings: Settings,
 };
 const titles: Record<Tab, string> = {
-  hearing: "Hearing",
+  evidence: "Evidence",
+  hearing: "Hearings",
   documents: "Case documents",
   references: "Legal references",
   settings: "Session & connections",
@@ -75,7 +83,8 @@ export function Workspace() {
   const [cases, setCases] = useState<Case[]>([]);
   const [caseId, setCaseId] = useState<string | null>(null);
   const [detail, setDetail] = useState<CaseDetail | null>(null);
-  const [tab, setTab] = useState<Tab>("hearing");
+  const [tab, setTab] = useState<Tab>("evidence");
+  const [hearingId, setHearingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState("all");
   const [error, setError] = useState("");
@@ -89,7 +98,7 @@ export function Workspace() {
   const refreshVersion = useRef(0);
   const activeCase = useRef<string | null>(null);
   const fail = useCallback((message: string) => setError(message), []);
-  const audio = useHearingAudio(caseId, fail);
+  const audio = useHearingAudio(caseId, fail, hearingId);
   const refresh = useCallback(async () => {
     const id = activeCase.current;
     if (!id) return;
@@ -121,6 +130,8 @@ export function Workspace() {
     refreshVersion.current++;
     activeCase.current = id;
     setCaseId(id);
+    setHearingId(null);
+    setTab("evidence");
     setDetail(null);
     setSelected(null);
     setPartial("");
@@ -257,30 +268,42 @@ export function Workspace() {
       setBusy(false);
     }
   }
+  const hearing = detail?.hearings.find((h) => h.id === hearingId);
+  const hearingSegments =
+    detail?.segments.filter((s) => s.hearing_id === hearingId) ?? [];
+  const hearingFindings =
+    detail?.findings.filter((f) =>
+      hearingSegments.some((s) => s.id === f.segment_id),
+    ) ?? [];
+  const visibleFindings = hearingFindings
+    .filter(
+      (f) =>
+        filter === "all" ||
+        (filter === "unreviewed" ? !f.reviewed : f.status === filter),
+    )
+    .slice()
+    .reverse();
   const finding =
-    detail?.findings.find((f) => f.id === selected) ??
-    detail?.findings[0] ??
+    visibleFindings.find((f) => f.id === selected) ??
+    visibleFindings[0] ??
     null;
-  const visibleFindings =
-    detail?.findings
-      .filter(
-        (f) =>
-          filter === "all" ||
-          (filter === "unreviewed" ? !f.reviewed : f.status === filter),
-      )
-      .slice()
-      .reverse() ?? [];
-  const pending =
-    detail?.segments.filter((s) =>
-      [
-        "queued",
-        "extracting",
-        "retrieving",
-        "analyzing",
-        "reviewing",
-        "synthesizing",
-      ].includes(s.analysis_state),
-    ).length ?? 0;
+  const pending = hearingSegments.filter((s) =>
+    [
+      "queued",
+      "extracting",
+      "retrieving",
+      "analyzing",
+      "reviewing",
+      "synthesizing",
+    ].includes(s.analysis_state),
+  ).length;
+  function openHearing(id: string) {
+    setHearingId(id);
+    setTab("hearing");
+    setSelected(null);
+    setFilter("all");
+    setPartial("");
+  }
   const session = detail?.case;
   if (booting)
     return (
@@ -315,7 +338,7 @@ export function Workspace() {
           ) {
             const controls = Array.from(
               e.currentTarget.querySelectorAll<HTMLElement>(
-                "a[href], button:not(:disabled)",
+                "a[href], button:not(:disabled), input:not(:disabled)",
               ),
             );
             const first = controls[0],
@@ -353,6 +376,12 @@ export function Workspace() {
           <Plus size={17} />
           New case
         </button>
+        <ArchiveImport
+          onImport={async (id) => {
+            await loadCases(id);
+            setTab("evidence");
+          }}
+        />
         <nav aria-label="Your cases" className={styles.caseList}>
           {cases.map((c) => (
             <button
@@ -361,7 +390,6 @@ export function Workspace() {
               aria-current={c.id === caseId ? "page" : undefined}
               onClick={() => {
                 chooseCase(c.id);
-                setTab("hearing");
                 closeSidebar();
               }}
             >
@@ -503,42 +531,11 @@ export function Workspace() {
               <div className={styles.headerActions}>
                 <a
                   className={styles.secondary}
-                  href={`/api/v1/cases/${caseId}/export`}
+                  href={`/api/v1/cases/${caseId}/export.jude`}
                 >
                   <Download size={15} />
-                  Export record
+                  Export .jude
                 </a>
-                {session?.synthetic && (
-                  <button
-                    className={styles.primary}
-                    disabled={
-                      busy ||
-                      session.status === "complete" ||
-                      audio.status !== "idle"
-                    }
-                    onClick={() =>
-                      action(() =>
-                        api(
-                          `/cases/${caseId}/${session.status === "simulation" ? "pause" : "simulation"}`,
-                          { method: "POST" },
-                        ),
-                      )
-                    }
-                  >
-                    {session.status === "simulation" ? (
-                      <Pause size={16} />
-                    ) : (
-                      <Play size={16} />
-                    )}
-                    {session.status === "simulation"
-                      ? "Pause hearing"
-                      : session.status === "complete"
-                        ? "Simulation complete"
-                        : session.status === "paused"
-                          ? "Resume simulation"
-                          : "Start simulated hearing"}
-                  </button>
-                )}
               </div>
             </header>
             <div
@@ -593,8 +590,96 @@ export function Workspace() {
               className={styles.panel}
               tabIndex={0}
             >
-              {tab === "hearing" && (
+              {tab === "evidence" && (
+                <EvidenceWorkspace
+                  key={caseId}
+                  caseId={caseId}
+                  openHearing={openHearing}
+                />
+              )}
+              {tab === "hearing" && !hearing && (
+                <HearingLibrary
+                  key={caseId}
+                  detail={detail}
+                  onOpen={openHearing}
+                  refresh={refresh}
+                  configured={!!caps?.analysis.configured}
+                />
+              )}
+              {tab === "hearing" && hearing && (
                 <>
+                  <div className={book.hearingDetailHeader}>
+                    <button
+                      className={book.hearingBack}
+                      onClick={() => {
+                        audio.stop();
+                        setHearingId(null);
+                      }}
+                    >
+                      <ArrowLeft size={15} />
+                      All hearings
+                    </button>
+                    <h2>{hearing.title}</h2>
+                    <div>
+                      <a
+                        className={styles.secondary}
+                        href={`/api/v1/cases/${caseId}/hearings/${hearing.id}/export.jude`}
+                      >
+                        <Download size={15} />
+                        Export hearing
+                      </a>
+                      {hearing.kind === "simulation" ? (
+                        <button
+                          className={styles.primary}
+                          disabled={
+                            busy ||
+                            hearing.status === "complete" ||
+                            audio.status !== "idle"
+                          }
+                          onClick={() =>
+                            action(() =>
+                              api(
+                                `/cases/${caseId}/${hearing.status === "simulation" ? "pause" : "simulation"}?hearing_id=${hearing.id}`,
+                                { method: "POST" },
+                              ),
+                            )
+                          }
+                        >
+                          {hearing.status === "simulation" ? (
+                            <Pause size={16} />
+                          ) : (
+                            <Play size={16} />
+                          )}{" "}
+                          {hearing.status === "complete"
+                            ? "Simulation complete"
+                            : hearing.status === "simulation"
+                              ? "Pause hearing"
+                              : "Start simulated hearing"}
+                        </button>
+                      ) : (
+                        <button
+                          className={styles.primary}
+                          disabled={
+                            busy ||
+                            pending > 0 ||
+                            !hearingSegments.length ||
+                            !caps?.analysis.configured
+                          }
+                          onClick={() =>
+                            action(() =>
+                              api(
+                                `/cases/${caseId}/hearings/${hearing.id}/analyze`,
+                                { method: "POST" },
+                              ),
+                            )
+                          }
+                        >
+                          <ShieldCheck size={16} />
+                          Analyze hearing
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <div className={styles.sessionBar}>
                     <span>
                       <i
@@ -602,11 +687,11 @@ export function Workspace() {
                           connected ? styles.onlineDot : styles.offlineDot
                         }
                       />
-                      {session?.status === "simulation"
+                      {hearing.status === "simulation"
                         ? "Simulated hearing running"
-                        : session?.status === "live"
+                        : hearing.status === "live"
                           ? "Live audio session"
-                          : session?.status === "complete"
+                          : hearing.status === "complete"
                             ? "Hearing complete"
                             : "Ready for testimony"}
                       <small>
@@ -618,10 +703,21 @@ export function Workspace() {
                     <span>
                       {pending > 0
                         ? `${pending} statement${pending > 1 ? "s" : ""} being examined`
-                        : "All saved testimony is up to date"}
+                        : hearingSegments.some(
+                              (s) => s.analysis_state === "pending",
+                            )
+                          ? "Saved transcript · ready for analysis"
+                          : "All saved testimony is up to date"}
                     </span>
                   </div>
-                  {session?.synthetic && (
+                  {hearing.kind !== "simulation" &&
+                    !caps?.analysis.configured && (
+                      <p className={styles.notice}>
+                        Transcript saved. Connect an OpenRouter analysis model
+                        to examine this hearing.
+                      </p>
+                    )}
+                  {hearing.kind === "simulation" && (
                     <p className={styles.notice}>
                       <CircleHelp size={15} />
                       Simulation uses prepared testimony and authored findings.
@@ -635,10 +731,10 @@ export function Workspace() {
                     >
                       <div className={styles.paneHeading}>
                         <h2 id="transcript-heading">Transcript</h2>
-                        <span>{detail.segments.length} segments</span>
+                        <span>{hearingSegments.length} segments</span>
                       </div>
                       <Transcript
-                        segments={detail.segments}
+                        segments={hearingSegments}
                         speakers={session?.speakers ?? {}}
                         partial={partial}
                         caseId={caseId}
@@ -650,21 +746,24 @@ export function Workspace() {
                           )
                         }
                         select={(id) => {
-                          const f = detail.findings.find(
+                          const f = hearingFindings.find(
                             (f) => f.segment_id === id,
                           );
                           if (f) inspectFinding(f.id);
                         }}
-                        findings={detail.findings}
+                        findings={hearingFindings}
                       />
                       <ManualTranscript
-                        key={caseId}
+                        key={hearing.id}
                         busy={busy}
                         submit={(body) =>
                           action(() =>
                             api(`/cases/${caseId}/transcripts`, {
                               method: "POST",
-                              body: JSON.stringify(body),
+                              body: JSON.stringify({
+                                ...body,
+                                hearing_id: hearing.id,
+                              }),
                             }),
                           )
                         }
@@ -679,7 +778,7 @@ export function Workspace() {
                           Findings
                         </h2>
                         <span>
-                          {detail.findings.filter((f) => !f.reviewed).length} to
+                          {hearingFindings.filter((f) => !f.reviewed).length} to
                           review
                         </span>
                       </div>
@@ -718,7 +817,9 @@ export function Workspace() {
                               <small>
                                 {f.mode === "simulation"
                                   ? "Scripted example"
-                                  : "AI · source-validated"}{" "}
+                                  : f.mode === "imported"
+                                    ? "Imported finding · verify sources"
+                                    : "AI · source-validated"}{" "}
                                 · {f.citations.length} source
                                 {f.citations.length !== 1 ? "s" : ""}
                                 <ChevronRight size={14} />
@@ -768,7 +869,7 @@ export function Workspace() {
                         <FindingInspector
                           key={finding.id}
                           finding={finding}
-                          segment={detail.segments.find(
+                          segment={hearingSegments.find(
                             (s) => s.id === finding.segment_id,
                           )}
                           caseId={caseId}
@@ -807,6 +908,13 @@ export function Workspace() {
                       )}
                     </section>
                   </div>
+                  {hearing.kind !== "simulation" && (
+                    <HearingAudio
+                      key={hearing.id}
+                      audio={audio}
+                      configured={!!caps?.speech.configured}
+                    />
+                  )}
                   <p className={styles.bottomNote}>
                     Findings describe evidence relationships. They do not
                     determine credibility, guilt, or legal outcomes.
@@ -835,17 +943,7 @@ export function Workspace() {
                   caps={caps}
                   detail={detail}
                   busy={busy}
-                  audio={audio}
                   run={action}
-                  newSimulation={() =>
-                    action(async () => {
-                      const c = await api<Case>("/cases/synthetic", {
-                        method: "POST",
-                      });
-                      await loadCases(c.id);
-                      setTab("hearing");
-                    })
-                  }
                 />
               )}
             </div>
@@ -1132,7 +1230,11 @@ function Transcript({
               <article className={styles.segment} key={s.id}>
                 <div>
                   <strong>{speakers[s.speaker] ?? s.speaker}</strong>
-                  <time>{timestamp(s.start)}</time>
+                  <time>
+                    {s.origin === "imported" && !s.start && !s.end
+                      ? "Time not supplied"
+                      : timestamp(s.start)}
+                  </time>
                 </div>
                 <p>{s.text}</p>
                 <div className={styles.segmentMeta}>
@@ -1141,9 +1243,11 @@ function Transcript({
                       ? "Scripted"
                       : s.origin === "manual"
                         ? "Manually entered"
-                        : s.confidence === null
-                          ? "Confidence unavailable"
-                          : `${Math.round(s.confidence * 100)}% word confidence`}
+                        : s.origin === "imported"
+                          ? "Imported transcript"
+                          : s.confidence === null
+                            ? "Confidence unavailable"
+                            : `${Math.round(s.confidence * 100)}% word confidence`}
                     {!speakers[s.speaker] && s.origin === "speechmatics"
                       ? " · Role unconfirmed"
                       : ""}
@@ -1346,7 +1450,9 @@ function FindingInspector({
           <summary>
             {finding.mode === "simulation"
               ? "About this scripted finding"
-              : "Independent review"}
+              : finding.mode === "imported"
+                ? "Imported review · not re-run"
+                : "Independent review"}
           </summary>
           <p>{finding.review.summary}</p>
           {finding.review.alternative_explanations?.map((item, i) => (
@@ -1362,7 +1468,9 @@ function FindingInspector({
           <small>
             {finding.mode === "simulation"
               ? "Authored fixture · not an AI evaluation"
-              : `Source verification passed · ${finding.review.retrieval} retrieval · ${(finding.elapsed_ms / 1000).toFixed(1)}s`}
+              : finding.mode === "imported"
+                ? "Imported finding · verify against the original sources"
+                : `Source verification passed · ${finding.review.retrieval} retrieval · ${(finding.elapsed_ms / 1000).toFixed(1)}s`}
           </small>
         </details>
         {finding.legal.length > 0 && (
@@ -1770,122 +1878,16 @@ function SessionSettings({
   caps,
   detail,
   busy,
-  audio,
   run,
-  newSimulation,
 }: {
   caps: Capabilities | null;
   detail: CaseDetail;
   busy: boolean;
-  audio: ReturnType<typeof useHearingAudio>;
   run: (action: () => Promise<unknown>) => Promise<boolean>;
-  newSimulation: () => void;
 }) {
-  const [authorized, setAuthorized] = useState(false);
-  const [language, setLanguage] = useState("id");
   const speakers = [...new Set(detail.segments.map((s) => s.speaker))];
   return (
     <div className={styles.settingsPage}>
-      <section>
-        <h2>Bring the hearing into view.</h2>
-        <p>
-          Stream authorized audio through the backend to Speechmatics. Finalized
-          statements are saved and sent to the configured analysis pipeline.
-        </p>
-        <label>
-          Recognition language
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            disabled={audio.status !== "idle"}
-          >
-            <option value="id">Bahasa Indonesia</option>
-            <option value="en">English</option>
-          </select>
-        </label>
-        <label className={styles.authorization}>
-          <input
-            type="checkbox"
-            checked={authorized}
-            onChange={(e) => setAuthorized(e.target.checked)}
-            disabled={audio.status !== "idle"}
-          />
-          I am authorized to process this audio with the configured speech and
-          AI providers.
-        </label>
-        <div className={styles.audioActions}>
-          {audio.status === "idle" ? (
-            <>
-              <button
-                className={styles.primary}
-                disabled={
-                  !authorized ||
-                  !caps?.speech.configured ||
-                  detail.case.status === "simulation"
-                }
-                onClick={() => audio.start(language)}
-              >
-                <Mic size={16} />
-                Start microphone
-              </button>
-              <label
-                className={`${styles.secondary} ${!authorized || !caps?.speech.configured ? styles.disabled : ""}`}
-              >
-                <Upload size={16} />
-                Prepared audio
-                <input
-                  className={styles.srOnly}
-                  type="file"
-                  accept="audio/*"
-                  disabled={
-                    !authorized ||
-                    !caps?.speech.configured ||
-                    detail.case.status === "simulation"
-                  }
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void audio.start(language, file);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-            </>
-          ) : (
-            <button
-              className={styles.primary}
-              onClick={audio.stop}
-              disabled={audio.status === "stopping"}
-            >
-              <Pause size={16} />
-              {audio.status === "recording"
-                ? "Stop recording"
-                : audio.status === "connecting"
-                  ? "Cancel connection"
-                  : "Finishing transcript…"}
-            </button>
-          )}
-        </div>
-        <p className={styles.audioState} role="status">
-          <Radio size={15} />
-          {audio.status === "idle"
-            ? "Microphone is off. Raw audio is streamed, not saved by Jude."
-            : audio.status === "recording"
-              ? "Recording and streaming · keep this tab open"
-              : audio.status === "connecting"
-                ? "Connecting to speech recognition…"
-                : "Waiting for final transcript…"}
-        </p>
-        {caps?.demo_available && (
-          <button
-            className={styles.secondary}
-            disabled={busy || audio.status !== "idle"}
-            onClick={newSimulation}
-          >
-            <Play size={15} />
-            Open a fresh synthetic hearing
-          </button>
-        )}
-      </section>
       <section>
         <h2>Speaker labels</h2>
         <p>

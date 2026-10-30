@@ -79,14 +79,14 @@ def chunk_pages(pages):
     return chunks
 
 
-async def ingest(app, case, name, data):
+async def ingest(app, case, name, data, extracted=None):
     # Single-worker app: serialize duplicate and quota checks through commit.
     lock = app.state.document_locks.setdefault(case.id, asyncio.Lock())
     async with lock:
-        return await _ingest(app, case, name, data)
+        return await _ingest(app, case, name, data, extracted)
 
 
-async def _ingest(app, case, name, data):
+async def _ingest(app, case, name, data, extracted=None):
     if not data or len(data) > MAX_BYTES:
         raise HTTPException(413, "Upload a non-empty file up to 6 MB.")
     name = (
@@ -107,7 +107,7 @@ async def _ingest(app, case, name, data):
         )
         if count >= 40:
             raise HTTPException(422, "This MVP supports up to 40 documents per case.")
-    pages, mime = await asyncio.to_thread(extract_pages, name, data)
+    pages, mime = extracted or await asyncio.to_thread(extract_pages, name, data)
     slices = chunk_pages(pages)
     vectors = None
     if app.state.settings.openrouter_key:
@@ -149,6 +149,9 @@ async def _ingest(app, case, name, data):
                         else "",
                         text=text,
                         embedding=vectors[index] if vectors else None,
+                        embedding_model=app.state.settings.embedding_model
+                        if vectors
+                        else "",
                     )
                 )
             db.commit()

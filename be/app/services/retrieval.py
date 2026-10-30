@@ -41,7 +41,7 @@ def cosine(a, b):
     return sum(x * y for x, y in zip(a, b)) / denom if denom else 0
 
 
-async def retrieve(app, case_id, query, limit=8):
+async def retrieve(app, case_id, query, limit=8, exclude_document_id=None):
     vector = None
     if app.state.settings.openrouter_key:
         try:
@@ -53,6 +53,10 @@ async def retrieve(app, case_id, query, limit=8):
         rows = db.execute(
             select(Chunk, Document.name).join(Document).where(Chunk.case_id == case_id)
         ).all()
+        rows = [(c, n) for c, n in rows if c.document_id != exclude_document_id]
+        for chunk, _ in rows:
+            if chunk.embedding_model != app.state.settings.embedding_model:
+                chunk.embedding = None
         query_tokens = tokens(query)
         scored = []
         pg_scores = {}
@@ -62,9 +66,13 @@ async def retrieve(app, case_id, query, limit=8):
                 pg_scores = dict(
                     db.execute(
                         sql_text(
-                            "SELECT id, 1 - (embedding_vector OPERATOR(extensions.<=>) CAST(:v AS extensions.vector)) FROM jude_chunks WHERE case_id=:c AND embedding_vector IS NOT NULL ORDER BY embedding_vector OPERATOR(extensions.<=>) CAST(:v AS extensions.vector) LIMIT 50"
+                            "SELECT id, 1 - (embedding_vector OPERATOR(extensions.<=>) CAST(:v AS extensions.vector)) FROM jude_chunks WHERE case_id=:c AND embedding_model=:m AND embedding_vector IS NOT NULL ORDER BY embedding_vector OPERATOR(extensions.<=>) CAST(:v AS extensions.vector) LIMIT 50"
                         ),
-                        {"v": str(vector), "c": case_id},
+                        {
+                            "v": str(vector),
+                            "c": case_id,
+                            "m": app.state.settings.embedding_model,
+                        },
                     ).all()
                 )
             except SQLAlchemyError:

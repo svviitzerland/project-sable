@@ -79,10 +79,53 @@ class Chunk(Base):
     section: Mapped[str] = mapped_column(String(100), default="")
     text: Mapped[str] = mapped_column(Text)
     embedding: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    embedding_model: Mapped[str] = mapped_column(String(200), default="")
+
+
+class Hearing(Base):
+    __tablename__ = "jude_hearings"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    case_id: Mapped[str] = mapped_column(
+        ForeignKey("jude_cases.id", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(160))
+    date: Mapped[str] = mapped_column(String(40), default="")
+    kind: Mapped[str] = mapped_column(String(24), default="manual")
+    status: Mapped[str] = mapped_column(String(24), default="ready")
+    source_document_id: Mapped[str | None] = mapped_column(
+        ForeignKey("jude_documents.id"), nullable=True
+    )
+    created_at: Mapped[str] = mapped_column(String(40), default=now)
+
+
+class EvidenceLink(Base):
+    __tablename__ = "jude_evidence_links"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    case_id: Mapped[str] = mapped_column(
+        ForeignKey("jude_cases.id", ondelete="CASCADE"), index=True
+    )
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("jude_chunks.id", ondelete="CASCADE")
+    )
+    target_id: Mapped[str] = mapped_column(
+        ForeignKey("jude_chunks.id", ondelete="CASCADE")
+    )
+    relation: Mapped[str] = mapped_column(String(24), default="related")
+    explanation: Mapped[str] = mapped_column(Text, default="")
+    basis: Mapped[str] = mapped_column(String(24), default="manual")
+    confirmed: Mapped[bool] = mapped_column(default=False)
+    score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source_quote: Mapped[str] = mapped_column(Text, default="")
+    target_quote: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[str] = mapped_column(String(40), default=now)
+    __table_args__ = (UniqueConstraint("case_id", "source_id", "target_id"),)
 
 
 class Segment(Base):
     __tablename__ = "jude_segments"
+    hearing_id: Mapped[str | None] = mapped_column(
+        ForeignKey("jude_hearings.id"), nullable=True, index=True
+    )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     case_id: Mapped[str] = mapped_column(
         ForeignKey("jude_cases.id", ondelete="CASCADE"), index=True
@@ -159,7 +202,7 @@ class CaseOut(CaseCreate):
     id: str
     synthetic: bool
     status: str
-    created_at: str
+    created_at: str = Field(max_length=40)
     speakers: dict[str, str]
 
 
@@ -169,7 +212,7 @@ class DocumentOut(Contract):
     name: str
     mime: str
     pages: int
-    created_at: str
+    created_at: str = Field(max_length=40)
 
 
 class SourceOut(Contract):
@@ -183,6 +226,7 @@ class SourceOut(Contract):
 
 
 class SegmentIn(Contract):
+    hearing_id: str | None = Field(default=None, max_length=36)
     text: str = Field(min_length=3, max_length=6000)
     speaker: str = Field(default="Unknown", min_length=1, max_length=80)
     start: float = Field(default=0, ge=0, le=86400)
@@ -197,12 +241,13 @@ class SegmentIn(Contract):
 
 
 class SegmentOut(SegmentIn):
+    text: str = Field(min_length=1, max_length=6000)
     id: str
     confidence: float | None
     origin: str
     analysis_state: str
     analysis_error: str | None
-    created_at: str
+    created_at: str = Field(max_length=40)
 
 
 Status = Literal[
@@ -235,7 +280,7 @@ class FindingOut(Conclusion):
     elapsed_ms: int
     reviewed: bool
     note: str
-    created_at: str
+    created_at: str = Field(max_length=40)
 
 
 class FindingUpdate(Contract):
@@ -248,7 +293,29 @@ class SpeakerUpdate(Contract):
     label: str = Field(min_length=1, max_length=80)
 
 
+class HearingCreate(Contract):
+    title: str = Field(min_length=1, max_length=160)
+    date: str = Field(default="", max_length=40)
+
+    @field_validator("title")
+    @classmethod
+    def not_blank(cls, value):
+        if not value.strip():
+            raise ValueError("Enter a hearing title")
+        return value.strip()
+
+
+class HearingOut(HearingCreate):
+    id: str
+    case_id: str
+    kind: str
+    status: str
+    source_document_id: str | None
+    created_at: str = Field(max_length=40)
+
+
 class CaseDetail(Contract):
+    hearings: list[HearingOut] = Field(default_factory=list)
     case: CaseOut
     documents: list[DocumentOut]
     segments: list[SegmentOut]
