@@ -30,3 +30,7 @@ __pycache__/
 # SvelteKit and Vercel build artifacts
 .svelte-kit/
 .vercel/
+
+# Browser test artifacts
+test-results/
+playwright-report/

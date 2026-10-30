@@ -28,7 +28,6 @@
     api,
     ApiError,
     labels,
-    wsUrl,
     type Capabilities,
     type Case,
     type CaseDetail,
@@ -143,6 +142,9 @@
     () => caseId,
     fail,
     () => hearingId,
+    (text) => {
+      partial = text;
+    },
   );
 
   const refresh = async () => {
@@ -210,7 +212,7 @@
       .catch(
         () =>
           (error =
-            "The Jude backend is unavailable. Start FastAPI, then reload the workspace."),
+            "The Jude server is unavailable. Please try reloading the workspace."),
       )
       .finally(() => (booting = false));
   });
@@ -242,51 +244,28 @@
       if (!caseId) return;
       void refresh();
       let disposed = false;
-      let socket: WebSocket | null = null;
-      let reconnect: ReturnType<typeof setTimeout>;
+      const socket = new EventSource(`/api/v1/cases/${caseId}/events`);
       let debounce: ReturnType<typeof setTimeout>;
-      async function connect() {
-        if (disposed) return;
-        let url: string;
-        try {
-          url = await wsUrl(`/cases/${caseId}/events`);
-        } catch {
-          if (!disposed) {
-            connected = false;
-            reconnect = setTimeout(connect, 4000);
-          }
-          return;
-        }
-        if (disposed) return;
-        socket = new WebSocket(url);
-        socket.onopen = () => {
-          if (disposed) return;
+      socket.onopen = () => {
+        if (!disposed) {
           connected = true;
           void refresh();
-        };
-        socket.onmessage = (event) => {
-          if (disposed) return;
-          const message = JSON.parse(event.data);
-          if (message.type === "partial") partial = message.text;
-          else if (message.type !== "heartbeat") {
-            if (message.type === "transcript") partial = "";
-            clearTimeout(debounce);
-            debounce = setTimeout(() => void refresh(), 100);
-          }
-        };
-        socket.onclose = () => {
-          if (!disposed) {
-            connected = false;
-            reconnect = setTimeout(connect, 4000);
-          }
-        };
-        socket.onerror = () => socket?.close();
-      }
-      connect();
+        }
+      };
+      socket.onmessage = (event) => {
+        if (disposed) return;
+        const message = JSON.parse(event.data);
+        if (message.type !== "heartbeat") {
+          clearTimeout(debounce);
+          debounce = setTimeout(() => void refresh(), 100);
+        }
+      };
+      socket.onerror = () => {
+        if (!disposed) connected = false;
+      };
       const poll = setInterval(() => void refresh(), 5000);
       return () => {
         disposed = true;
-        clearTimeout(reconnect);
         clearTimeout(debounce);
         clearInterval(poll);
         socket?.close();

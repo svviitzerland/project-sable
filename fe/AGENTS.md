@@ -1,7 +1,7 @@
-# Svelte frontend
+# SvelteKit application
 
-This frontend uses Svelte 5 runes and SvelteKit. Routes are in `src/routes`, components in `src/components`, and shared browser logic in `src/lib`. Preserve the existing case workflow and visual identity when refactoring.
+This folder contains both the Svelte 5 frontend and TypeScript backend. Preserve the existing case workflow and visual identity. Use native components, runes and lifecycle cleanup.
 
-Use native Svelte components, `$state`/`$derived` and lifecycle cleanup. HTTP API calls use `/api/v1` through `src/hooks.server.ts`; development also proxies WebSockets with Vite. Hosted sockets use `PUBLIC_API_WS_URL` and single-use tickets. Keep private credentials out of `PUBLIC_*` variables.
+HTTP calls use same-origin `/api/v1`; its endpoint delegates to `src/lib/server`. SSE carries case updates. Browser speech connects directly to Speechmatics with short-lived credentials minted by the API, then posts finalized transcript batches. Keep all permanent keys in private `src/env.ts` declarations.
 
-Run `pnpm lint`, `pnpm typecheck`, `pnpm build`, and the relevant browser acceptance suites before shipping. Static assets live in `static/`. Vercel uses the SvelteKit preset and `@sveltejs/adapter-vercel`.
+Use Node 24. Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, and relevant `pnpm test:e2e` browser checks before shipping. Static browser worklet assets live in `static/audio/`. Vercel uses the SvelteKit preset and `@sveltejs/adapter-vercel` with this folder as its root.

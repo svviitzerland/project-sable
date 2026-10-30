@@ -1,8 +1,9 @@
 import { untrack } from "svelte";
-import { wsUrl } from "./workspace-api";
+import { api } from "./workspace-api";
+import { SpeechConnection, type SpeechCredentials } from "./speech-connection";
 
 type AudioSession = {
-  ws?: WebSocket;
+  ws?: SpeechConnection;
   context?: AudioContext;
   stream?: MediaStream;
   node?: AudioWorkletNode;
@@ -23,6 +24,7 @@ export function createHearingAudio(
   caseId: () => string | null,
   onError: (message: string) => void,
   hearingId: () => string | null,
+  onPartial: (text: string) => void,
 ) {
   let status = $state<"idle" | "connecting" | "recording" | "stopping">("idle");
   const setStatus = (value: typeof status) => {
@@ -153,9 +155,29 @@ export function createHearingAudio(
       };
       async function connect() {
         if (!active()) return;
-        const url = await wsUrl(`/cases/${caseId()}/audio`);
-        if (!active()) return;
-        const ws = new WebSocket(url);
+        const currentCaseId = caseId()!;
+        const credentials = await api<SpeechCredentials>(
+          `/cases/${currentCaseId}/audio-sessions`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              sample_rate: context.sampleRate,
+              language,
+              authorized: true,
+              hearing_id: hearingId(),
+              start_offset:
+                s.baseOffset + s.sentBytes / (2 * context.sampleRate),
+            }),
+          },
+        );
+        if (!active()) {
+          await api(
+            `/cases/${currentCaseId}/audio-sessions/${credentials.id}/stop`,
+            { method: "POST" },
+          );
+          return;
+        }
+        const ws = new SpeechConnection(currentCaseId, credentials, onPartial);
         s.ws = ws;
         clearTimeout(s.timeout);
         s.timeout = window.setTimeout(

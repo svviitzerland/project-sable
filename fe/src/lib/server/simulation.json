@@ -1,0 +1,64 @@
+{
+  "documents": [
+    [
+      "Witness statement — synthetic.txt",
+      "SYNTHETIC TRAINING MATERIAL — NOT A REAL CASE\nEarlier witness statement\nInterview concerning the warehouse on 12 September.\fThe witness was asked to describe the sequence of events. Times are approximate and require clarification.\fThe interviewer recorded the account without independent verification.\fI arrived shortly after 8:00 PM.\nI remember seeing a security guard near the entrance.\fNo independent arrival log was provided with this statement.\fWe discussed the documents inside the office."
+    ],
+    [
+      "Investigation notes — synthetic.txt",
+      "SYNTHETIC TRAINING MATERIAL — NOT A REAL CASE\nWarehouse inquiry\nThese notes identify questions for follow-up, not established facts.\nThe identity of the person carrying the envelope has not been established.\nNo vehicle registration record was obtained.\nAn exchange outside and a discussion inside could have happened at different times."
+    ]
+  ],
+  "script": [
+    ["Counsel", "Please describe when you arrived at the warehouse.", 0, null],
+    ["Witness", "I arrived at 9:30 PM.", 6, "arrival"],
+    ["Counsel", "Who did you see at the entrance?", 12, null],
+    ["Witness", "A security guard was at the entrance.", 17, "guard"],
+    ["Counsel", "What happened with the documents?", 24, null],
+    ["Witness", "He handed me the envelope outside.", 29, "envelope"],
+    ["Counsel", "Do you recall a vehicle registration number?", 36, null],
+    ["Witness", "The car registration was B 1234 CD.", 41, "vehicle"]
+  ],
+  "expected": {
+    "arrival": {
+      "status": "potential_inconsistency",
+      "title": "The accounts describe different arrival times.",
+      "explanation": "The testimony gives 9:30 PM; the earlier account says shortly after 8:00 PM. This difference warrants clarification before drawing an inference.",
+      "uncertainty": "The excerpts may refer to different arrivals or approximate times. Neither account independently establishes when the witness arrived.",
+      "verification": "Confirm the location, date, and event described in both accounts.",
+      "question": "When you say 9:30 PM, which arrival and location are you referring to?",
+      "quote": "I arrived shortly after 8:00 PM.",
+      "relation": "conflicts"
+    },
+    "guard": {
+      "status": "supported",
+      "title": "Both accounts place a guard at the entrance.",
+      "explanation": "The earlier statement supports this specific detail in the testimony.",
+      "uncertainty": "Agreement between accounts is not independent corroboration and says nothing about the rest of the testimony.",
+      "verification": "Identify the guard and seek independent attendance records.",
+      "question": "Can you describe the guard and explain how you recognized them?",
+      "quote": "I remember seeing a security guard near the entrance.",
+      "relation": "supports"
+    },
+    "envelope": {
+      "status": "context_needed",
+      "title": "The statements may describe different moments.",
+      "explanation": "An exchange outside and a discussion inside can both have occurred. The excerpts do not establish their order.",
+      "uncertainty": "The other person and the timing remain unclear.",
+      "verification": "Clarify who was present and the sequence of the exchange and discussion.",
+      "question": "Who handed you the envelope, and was this before or after the discussion inside?",
+      "quote": "We discussed the documents inside the office.",
+      "relation": "context"
+    },
+    "vehicle": {
+      "status": "insufficient_evidence",
+      "title": "No registration evidence is available.",
+      "explanation": "The uploaded investigation notes say no vehicle registration record was obtained. The testimony cannot be checked against a registration record in this case file.",
+      "uncertainty": "Absence of a record is not evidence that the testimony is false.",
+      "verification": "Obtain an authorized vehicle record or a contemporaneous observation.",
+      "question": "What is the basis of your recollection of the registration number?",
+      "quote": "No vehicle registration record was obtained.",
+      "relation": "context"
+    }
+  }
+}

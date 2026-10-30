@@ -20,6 +20,7 @@ export default ts.config(
     files: ["**/*.svelte", "**/*.svelte.ts", "**/*.svelte.js"],
     languageOptions: { parserOptions: { parser: ts.parser } },
   },
+  { files: ["src/lib/server/*.ts"], rules: { "no-control-regex": "off" } },
   { files: ["**/*.ts", "**/*.svelte"], rules: { "no-undef": "off" } },
   {
     files: ["static/audio/*.js"],
