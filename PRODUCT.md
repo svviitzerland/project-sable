@@ -8,7 +8,7 @@ web
 
 ## Users
 
-Lawyers working on Indonesian criminal proceedings. The initial product scenario is a simulated hearing using synthetic or appropriately authorized documents and audio. Future prosecutor and judge roles are outside the initial scope.
+Lawyers working on Indonesian criminal proceedings. The initial product scenario is a simulated hearing using synthetic or appropriately authorized documents and audio. Operational prosecutor and judge workspaces are outside the initial scope; courtroom practice lets a lawyer rehearse as defense counsel, opposing counsel, or judge.
 
 ## Product Purpose
 
@@ -24,9 +24,13 @@ Lawyers listen to testimony while consulting investigation reports, witness stat
 
 ## Capabilities and Constraints
 
-The supplied brief proposes live transcription and speaker attribution, contextual claim extraction, case-filtered retrieval, legal-reference lookup, bounded adversarial review, and progressive findings. These are intended MVP capabilities, not verified production integrations. Findings use Supported, Potential Inconsistency, Context Needed, and Insufficient Evidence statuses. Never equate an inconsistency with dishonesty or a finding with guilt.
+The supplied brief proposes live transcription and speaker attribution, contextual claim extraction, case-filtered retrieval, legal-reference lookup, bounded adversarial review, and progressive findings. The local workspace implements these MVP paths; external provider integrations still require validation with real accounts. Findings use Supported, Potential Inconsistency, Context Needed, and Insufficient Evidence statuses. Never equate an inconsistency with dishonesty or a finding with guilt.
 
-The current deliverable is a marketing website introducing Jude, confirmed by the user. Build in the existing Next.js repository. Use a clearly labeled synthetic example; do not imply working courtroom audio, legal retrieval, authentication, or evidence storage on the marketing site.
+The current deliverable is the working lawyer workspace at `/workspace`, alongside the preserved marketing introduction at `/`. It includes authenticated cases, document ingestion and originals, saved transcripts, qualified source-linked findings, review notes with unsaved-change feedback, speaker labels, searchable transcripts, review progress and queue navigation, a dedicated hearing library with reviewed file imports, portable `.jude` archives, and an evidence graph with natural-language search. Optional OpenRouter models convert unfamiliar readable transcripts, embed evidence, suggest relationships, and answer with source quotations. A clearly labeled synthetic hearing runs without providers. Speechmatics, OpenRouter, Pasal.id, and Supabase integration paths are implemented; live service verification remains outstanding. Local SQLite/private files and PostgreSQL/pgvector migrations are verified.
+
+Case assistant conversations retrieve across the current case's documents, hearings, findings, and confirmed evidence connections. Users can reference material, inspect quotations, ask follow-up questions, and optionally request legal discovery. Courtroom practice supports AI-suggested, manually editable trial conditions, three user roles, saved dialogue, and a debrief. Hypothetical practice stays outside the evidence record. Without configured providers, the assistant exposes sources and practice offers clearly labeled scripted drills.
+
+The hosted target is Vercel for both Next.js and FastAPI. Supabase supplies durable data, shared coordination, and private file transfers; QStash delivers bounded analysis jobs. Deployment configuration and local cross-instance tests are supplied. Live hosted validation is still required.
 
 ## Brand Commitments
 

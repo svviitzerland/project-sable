@@ -1,4 +1,5 @@
 import json
+import math
 from urllib.parse import urlparse
 
 import httpx
@@ -96,7 +97,13 @@ class OpenRouter:
                 item["embedding"]
                 for item in sorted(data["data"], key=lambda x: x["index"])
             ]
-            if len(vectors) != len(texts) or any(len(v) != 1536 for v in vectors):
+            if sorted(item["index"] for item in data["data"]) != list(
+                range(len(texts))
+            ) or any(
+                len(v) != 1536
+                or any(type(x) not in (int, float) or not math.isfinite(x) for x in v)
+                for v in vectors
+            ):
                 raise ValueError("Embedding dimensions mismatch")
             return vectors
         except (ValueError, TypeError, KeyError) as exc:
@@ -171,7 +178,7 @@ class Storage:
             "apikey": self.settings.supabase_key,
         }
 
-    async def save(self, key, data, mime):
+    async def save(self, key, data, mime, upsert=False):
         if self.settings.supabase_url and self.settings.supabase_key:
             try:
                 async with httpx.AsyncClient(timeout=45) as client:
@@ -181,7 +188,7 @@ class Storage:
                         headers={
                             **self.headers(),
                             "Content-Type": mime,
-                            "x-upsert": "false",
+                            "x-upsert": "true" if upsert else "false",
                         },
                     )
                     r.raise_for_status()
@@ -211,3 +218,15 @@ class Storage:
                     "Original document could not be loaded from storage."
                 ) from exc
         return (self.root / document.storage_key).read_bytes()
+
+    async def delete(self, key, storage):
+        """Remove an uncommitted original after database ingestion fails."""
+        if storage == "supabase":
+            await request_json(
+                "DELETE",
+                f"{self.settings.supabase_url}/storage/v1/object/{self.settings.bucket}",
+                headers=self.headers(),
+                json={"prefixes": [key]},
+            )
+        else:
+            (self.root / key).unlink(missing_ok=True)

@@ -1,59 +1,122 @@
-# Jude — courtroom intelligence
+# Jude — evidence-grounded courtroom workspace
 
-A marketing website for Jude, an evidence-grounded AI courtroom copilot concept for Indonesian legal professionals. The site includes a responsive editorial landing page and an interactive, explicitly synthetic evidence demonstration. Live transcription, AI analysis, document uploads, and legal retrieval are not connected in this prototype.
+Jude helps lawyers inspect relationships between testimony and case evidence in Indonesian criminal proceedings. The introduction lives at `/`; the working product lives at `/workspace`.
 
-The project retains its Next.js + FastAPI foundation. The marketing page runs independently of the backend; Next.js forwards browser requests under `/api/*` to FastAPI when backend features are added.
+Create an account and case, upload authorized documents, upload a hearing transcript or stream audio, inspect source-linked findings, save review notes, and export the record. A synthetic hearing demonstrates all four finding states without provider credentials. It uses authored findings, not AI output.
 
-## Stack
+## Deploy on Vercel
 
-- `fe/`: Next.js App Router, React, TypeScript, Tailwind CSS, shadcn/ui
-- `be/`: FastAPI, Uvicorn, Pydantic
-- `.agents/skills/`: reusable agent skills 
-- `docs/`: project decisions and artifacts
+Both applications have Vercel configurations: frontend root `fe`, backend root `be`. Hosted mode uses Supabase PostgreSQL/private Storage, signed QStash analysis deliveries, database leases/events, ticketed direct WebSockets, and chunked large-file transfers. See [the complete deployment and environment guide](docs/DEPLOY_VERCEL.md). Migration 005 must be applied before deployment. The supplied per-minute recovery cron requires a suitable Vercel plan.
 
-## Get started
+## Run locally
 
-Requirements: Node.js 20.9+, pnpm 9+, Python 3.11+, and [uv](https://docs.astral.sh/uv/).
-
-In separate terminals:
+Requirements: Node.js 22+, pnpm 11.25, Python 3.11+, and uv. Two processes are required:
 
 ```bash
 cd be
-uv sync
+uv sync --frozen
 cp .env.example .env
-uv run uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --env-file .env --reload --port 8000
 ```
 
 ```bash
 cd fe
-pnpm install
+pnpm install --frozen-lockfile
 cp .env.example .env.local
 pnpm dev
 ```
 
-Open http://localhost:3000 to explore Jude. The demo supports three example findings, original-source excerpt selection, per-example review state for the current visit, and copying suggested questions. All material is synthetic and no data is submitted. FastAPI's interactive docs remain at http://127.0.0.1:8000/docs. Set `API_INTERNAL_URL` in `fe/.env.local` if the backend runs elsewhere. Restart Next.js after changing it.
+Open http://localhost:3000/workspace. Choose **Open a synthetic case** for a temporary demo account, or register to sign back in later. Demo accounts cannot be recovered after sign-out. SQLite and original documents persist under `be/.data/`; do not commit that directory. `API_INTERNAL_URL` in `fe/.env.local` controls the backend proxy and must be set before building the frontend.
 
-If port 3000 is occupied, run `cd fe && pnpm dev --port 3001` and use `http://localhost:3001`. Use the printed localhost URL for development.
+## What works
 
-## Checks
+- Account sessions, private cases, owner-checked HTTP and WebSocket access.
+- PDF, DOCX, TXT, and Markdown ingestion; original downloads; exact source passages; keyword search and optional hybrid retrieval. Limits: 6 MB, 200 PDF pages, 400,000 extracted characters, 40 documents per case. Text-based PDFs only; DOCX uses sections rather than invented page numbers.
+- Dedicated hearing library with file previews, native `.jude`/JSON/CSV/TXT/SRT/VTT parsing, and optional OpenRouter conversion of unfamiliar readable layouts. Converted testimony must match source wording; review speaker turns before import. Originals are retained.
+- Evidence map with inspectable passages, cited hearing statements, suggested/confirmed connections, manual linking, and natural-language retrieval with cited answers. Only confirmed evidence links expand retrieval.
+- Persistent **Case assistant** with current-case retrieval, explicit evidence references, inspectable quotations, follow-up history, optional legal discovery, and conversation export. Sources-only mode is explicit when AI is unavailable.
+- **Courtroom practice** as defense, opposing counsel, or judge, with AI-suggested and manually editable trial conditions, saved dialogue, and debriefs. A labeled scripted drill works without AI; simulated speech never becomes case evidence.
+- Hearing search across titles/dates/transcript text, review-state filtering, highlighted transcript search with speaker filters, review progress, and next-unreviewed navigation. Search pauses auto-follow without stopping transcript capture.
+- Eight-turn synthetic hearing with supported, potential inconsistency, context needed, and insufficient evidence examples.
+- Manual transcript capture, progressive analysis states, retry after provider failure, case-specific speaker labels, review notes, filters, and portable `.jude` export/import.
+- Speechmatics microphone/prepared-audio integration with diarization, timestamps, confidence, and final-buffer flushing. Voice IDs are not courtroom identities.
+- Bounded OpenRouter claim extraction, evidence analysis, independent adversarial review, and synthesis. Exact quotations and required citation relations are validated before publishing a finding. Transcription continues during analysis.
+- Pasal.id metadata discovery with links to original legislation. Metadata is not verified legal text.
+- Keyboard-accessible tabs and mobile case navigation; finding selection brings the inspector into view on stacked layouts.
+
+## Connect providers
+
+All credentials belong in the backend environment. Never prefix them with `NEXT_PUBLIC_`.
+
+| Capability | Backend configuration |
+| --- | --- |
+| AI findings, transcript conversion, cited answers, case conversations, courtroom practice and relationship classification | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` (must support strict structured output) |
+| Embeddings | `OPENROUTER_API_KEY`, `OPENROUTER_EMBEDDING_MODEL` (default `openai/text-embedding-3-small`); model must return 1536 dimensions |
+| Live speech | `SPEECHMATICS_API_KEY`, optional `SPEECHMATICS_URL`; Indonesian and English supported |
+| Legal discovery | `PASAL_API_KEY` |
+| PostgreSQL | `DATABASE_URL` using a backend-only table-owner credential and TLS |
+| Private originals | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, optional `SUPABASE_STORAGE_BUCKET` |
+
+Use **Find connections** to index existing/imported passages and suggest relationships. Switching embedding models invalidates the old vectors for retrieval until rebuilt. See [the Jude interchange format](docs/JUDE_FORMAT.md) for case archives and hearing templates.
+
+Without OpenRouter, testimony remains saved with analysis unavailable. Embedding failure falls back to labeled keyword search. Without Speechmatics or Pasal, their controls show the missing connection. “Configured” only means configuration is present, not that an external request succeeded.
+
+The browser streams PCM through the backend; Jude does not retain raw audio. Configured providers receive the corresponding audio, extracted evidence, or testimony. Review their own retention settings and terms before processing authorized material.
+
+## Supabase setup
+
+On a new Supabase project, run `be/migrations/001_schema.sql` followed by `002_vectors_and_storage.sql` then `003_hearings_and_evidence.sql`, `004_case_dialogues.sql`, and `005_vercel_runtime.sql` as the backend table owner. The first creates application tables, enables RLS, and revokes browser-role access. The second installs pgvector in `extensions`, synchronizes the 1536-dimensional vector column with embedding JSON, adds an HNSW index, and creates a private `jude-documents` bucket. If pgvector already exists in another schema, reconcile its schema before applying the second migration. The third adds hearings, evidence links, and embedding-model provenance; startup groups legacy testimony into an Earlier hearing. The fourth adds private assistant/practice conversations and messages. The fifth adds shared runtime coordination and transfer metadata, and permits private temporary case exports up to 64 MB in the bucket. Change the bucket identifier in both SQL and configuration if needed.
+
+Jude uses application-owned sessions, **not Supabase Auth**. There are no browser table policies; `auth.uid()` is not used for case isolation. FastAPI checks ownership using its server-side database credential. Keep that credential and the Storage service key private. For an existing Supabase project, inspect pre-existing Storage policies: a private bucket alone does not revoke unrelated permissive policies. Use a dedicated project/bucket without browser object policies.
+
+Migrations have been tested twice for idempotency against disposable PostgreSQL 16 + pgvector, including vector sync, retrieval, and denial for the `anon` and `authenticated` roles. Hosted Supabase Storage has not been verified with a real account.
+
+## Checks and evaluation
 
 ```bash
-cd be && uv run pytest && uv run ruff check .
-cd fe && pnpm lint && pnpm typecheck && pnpm build
+cd be
+uv run pytest
+uv run ruff check .
+uv run python -m app.evaluate --predictions evaluation/predictions.fixture.json --fixture --output /tmp/jude-evaluation.json
 ```
 
-## Product and design
+```bash
+cd fe
+pnpm lint
+pnpm typecheck
+node --test tests/audio-worklet.test.mjs
+pnpm build
+```
 
-1. `PRODUCT.md` records the supplied product truth; `docs/PRODUCT_SPEC.md` tracks website scope.
-2. `docs/artifacts/phases/2026-10-30-jude-website.md` records the approved direction and validation.
-3. `fe/src/components/jude-site.tsx` owns the website; `fe/src/lib/jude-demo.ts` owns its synthetic examples.
-4. Fonts are served locally from `fe/public/fonts/`, with their licenses. Generated image assets carry prompt provenance.
-5. Future backend routes belong under `/api/v1`; never put credentials in browser code.
+The evaluation fixture deliberately contains false positives, a missed inconsistency, and an invalid citation so the metrics exercise failure paths. Its scores are **not AI performance**. See `be/evaluation/README.md` for live evaluation and annotation requirements.
 
-This starter does not assume a database, auth provider, or AI service. Add those when the project requires them.
+Browser acceptance requires both apps running with no provider keys, development mode, and Python Playwright:
 
-## Impeccable design skill
+```bash
+cd fe
+uv run --no-project --with playwright python -m playwright install chromium
+uv run --no-project --with playwright python tests/acceptance.py
+uv run --no-project --with playwright python tests/dialogue_acceptance.py
+# For an existing system Chromium: CHROMIUM_EXECUTABLE=/usr/bin/chromium ...
+```
 
-[Impeccable](https://impeccable.style/) 4.8.0 is installed for this repository in `.agents/skills/impeccable/`. In Codex chat, use `$impeccable init` to establish product context, `$impeccable audit` to review the UI, or `$impeccable polish` for a finishing pass. If the skill does not appear, start a new chat or reload Codex.
+The script creates a new synthetic test account and case data. It verifies registration/sign-in, simulation, notes/review/filter persistence, document upload/search/download, `.jude` round-trips, hearing upload/preview, evidence discovery, isolation, unavailable-analysis behavior, keyboard navigation, clipboard errors, and responsive layouts. Screenshots go to ignored `.impeccable/review/`.
 
-The vendored Codex skill comes from `pbakaus/impeccable` at commit `02523aec3e4c4580102d996d1b6a71fbe062e03f`. Its launcher downloads the matching engine on first use. Automatic design hooks are optional and are not enabled by this installation; use `$impeccable hooks on` to configure them separately.
+The dialogue script checks evidence handoff, quotation inspection, saved history/export, failed-message retry, manual trial conditions, role switching, guided turns, saved debriefs, and desktop/mobile layouts. Backend tests mock structured AI responses to verify proposal overrides, role boundaries, citation rejection, case isolation, and atomic retries; live model quality remains unverified.
+
+The landing-page check needs only the frontend. It covers the original landing composition, finite animation, offscreen pausing, reduced motion, keyboard navigation, source links, synthetic review states, responsive layouts, and content without JavaScript:
+
+```bash
+cd fe
+JUDE_TEST_URL=http://localhost:3000 uv run --no-project --with playwright python tests/landing_acceptance.py
+```
+
+Use `localhost` with the development server so Next.js permits its HMR connection. For a production preview, build and run `pnpm exec next start --port 3010`, then set `JUDE_TEST_URL=http://127.0.0.1:3010`.
+
+For the opt-in PostgreSQL test, create a disposable database named `jude_test*`, install pgvector on its server, and set `JUDE_TEST_DATABASE_URL` before running `uv run pytest tests/test_postgres.py`. It emulates Supabase roles and bucket metadata only; it does not test hosted Storage.
+
+## Deployment boundary
+
+This is an MVP with locally verified deployment adapters, not a verified operational courtroom deployment. In local mode, run **one FastAPI worker**; process-local jobs/events remain available for development. In Vercel mode, shared PostgreSQL state and signed QStash delivery coordinate concurrent functions, and cold starts never reset another instance's work. See [DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md) for required services, recovery scheduling, connection rotation, and deployment checks.
+
+For a controlled hosted trial, set `JUDE_ENV=production` (Secure cookies; demo sign-in and synthetic seeding disabled), exact HTTPS `ALLOWED_ORIGINS`, and the hosted configuration in `docs/DEPLOY_VERCEL.md`. Provider setup and an authorized live-audio test are still required. Configure backups, retention, account recovery, and operational monitoring before handling real proceedings. This branch does not merge or deploy the product.

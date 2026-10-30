@@ -1,0 +1,56 @@
+[
+  {
+    "id": "arrival-conflict",
+    "status": "potential_inconsistency",
+    "citations": [
+      {
+        "chunk_id": "arrival-conflict-source",
+        "quote": "Pada tanggal 10 Mei, saksi menyatakan tiba di gudang pukul 08.00.",
+        "relation": "conflicts"
+      }
+    ]
+  },
+  {
+    "id": "guard-support",
+    "status": "supported",
+    "citations": [
+      {
+        "chunk_id": "guard-support-source",
+        "quote": "Penjaga berada di pintu gudang saat saksi masuk.",
+        "relation": "supports"
+      }
+    ]
+  },
+  {
+    "id": "different-day",
+    "status": "potential_inconsistency",
+    "citations": [
+      {
+        "chunk_id": "different-day-source",
+        "quote": "Catatan tanggal 10 Mei menyebut waktu kedatangan pukul 08.00.",
+        "relation": "conflicts"
+      }
+    ]
+  },
+  {
+    "id": "missing-evidence",
+    "status": "insufficient_evidence",
+    "citations": [
+      {
+        "chunk_id": "missing-evidence-source",
+        "quote": "An invented passage",
+        "relation": "context"
+      }
+    ]
+  },
+  {
+    "id": "source-injection",
+    "status": "failed",
+    "citations": []
+  },
+  {
+    "id": "procedural-question",
+    "status": "skipped",
+    "citations": []
+  }
+]

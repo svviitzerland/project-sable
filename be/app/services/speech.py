@@ -3,9 +3,10 @@ import json
 
 import websockets
 from fastapi import WebSocketDisconnect
+from sqlalchemy import func, select
 
-from ..models import Segment
-from .analysis import investigate, schedule
+from ..jobs import enqueue, stage_job
+from ..models import Segment, uid
 from .providers import ProviderError
 
 
@@ -43,7 +44,7 @@ def normalize_transcript(message):
     return groups
 
 
-async def stream_speech(app, ws, case_id, config):
+async def stream_speech(app, ws, case_id, config, authorize=None, hearing_id=None):
     settings = app.state.settings
     if not settings.speechmatics_key:
         raise ProviderError(
@@ -83,7 +84,30 @@ async def stream_speech(app, ws, case_id, config):
             raise ProviderError(
                 "Speech provider could not start recognition. Check language, credentials, and quota."
             )
-        await ws.send_json({"type": "ready"})
+        with app.state.db() as db:
+            previous_end = (
+                db.scalar(
+                    select(func.max(Segment.end)).where(
+                        Segment.hearing_id == hearing_id
+                    )
+                )
+                or 0
+            )
+        supplied_offset = config.get("start_offset", 0)
+        if (
+            not isinstance(supplied_offset, (int, float))
+            or not 0 <= supplied_offset <= 604800
+        ):
+            raise ProviderError("Invalid audio timeline offset.")
+        offset = max(previous_end, supplied_offset) if settings.serverless else 0
+        speaker_prefix = uid()[:8] + ":" if settings.serverless else ""
+        await ws.send_json(
+            {
+                "type": "ready",
+                "rotate_after": 210 if settings.serverless else 0,
+                "start_offset": offset,
+            }
+        )
         sent, acknowledged = 0, 0
 
         async def send_audio():
@@ -132,16 +156,27 @@ async def stream_speech(app, ws, case_id, config):
                     for item in normalize_transcript(data):
                         if not item["text"].strip():
                             continue
+                        if authorize:
+                            authorize()
+                        item["start"] += offset
+                        item["end"] += offset
+                        item["speaker"] = speaker_prefix + item["speaker"]
                         with app.state.db() as db:
                             segment = Segment(
-                                case_id=case_id, origin="speechmatics", **item
+                                case_id=case_id,
+                                hearing_id=hearing_id,
+                                origin="speechmatics",
+                                **item,
                             )
                             db.add(segment)
+                            db.flush()
+                            if settings.serverless:
+                                stage_job(db, segment.id)
                             db.commit()
                         await app.state.events.publish(
                             case_id, {"type": "transcript", "segment_id": segment.id}
                         )
-                        schedule(app, investigate(app, segment.id))
+                        await enqueue(app, segment.id)
                 elif kind == "Error":
                     raise ProviderError(
                         "Speech provider reported an error. Check connection settings and quota."
@@ -150,17 +185,31 @@ async def stream_speech(app, ws, case_id, config):
                     await ws.send_json({"type": "stopped"})
                     return
 
+        async def check_authorization():
+            while True:
+                if authorize:
+                    authorize()
+                await asyncio.sleep(2)
+
+        guard = asyncio.create_task(check_authorization())
         sender = asyncio.create_task(send_audio())
         receiver = asyncio.create_task(receive_transcripts())
         try:
             done, _ = await asyncio.wait(
-                [sender, receiver], return_when=asyncio.FIRST_COMPLETED
+                [sender, receiver, guard], return_when=asyncio.FIRST_COMPLETED
             )
             for task in done:
                 task.result()
             if sender in done and not receiver.done():
-                await asyncio.wait_for(receiver, 20)
+                finalized, _ = await asyncio.wait(
+                    [receiver, guard], timeout=20, return_when=asyncio.FIRST_COMPLETED
+                )
+                if not finalized:
+                    raise TimeoutError("Final transcription timed out")
+                for task in finalized:
+                    task.result()
         finally:
+            guard.cancel()
             sender.cancel()
             receiver.cancel()
-            await asyncio.gather(sender, receiver, return_exceptions=True)
+            await asyncio.gather(sender, receiver, guard, return_exceptions=True)

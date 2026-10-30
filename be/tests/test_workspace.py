@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from app.config import Settings
-from app.main import create_app
+from app.factory import create_app
 from app.models import Conclusion, SourceOut
 from app.services.analysis import validate_citations
 from app.services.providers import ProviderError, safe_pasal_url

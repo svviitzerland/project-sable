@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy import select
 
 from app.config import Settings
-from app.main import create_app
+from app.factory import create_app
 from app.models import Case, Chunk, Conclusion, Finding, Segment, User
 from app.services.analysis import Assessment, Claim, investigate
 from app.services.documents import ingest
@@ -55,7 +55,7 @@ def test_pipeline_independent_review_and_fail_closed(tmp_path, invented):
         )
 
     async def embed(_):
-        return None
+        raise ProviderError("Embedding service unavailable")
 
     app.state.llm = SimpleNamespace(structured=structured, embed=embed)
 
@@ -134,7 +134,8 @@ def test_openrouter_http_contract_and_safe_failure(monkeypatch, tmp_path):
     assert "secret" not in str(error.value)
 
 
-def test_speech_stream_protocol_finalizes_on_stop(monkeypatch, tmp_path):
+@pytest.mark.parametrize("revoked", [False, True])
+def test_speech_stream_protocol_finalizes_on_stop(monkeypatch, tmp_path, revoked):
     app = create_app(Settings(data_dir=tmp_path, speechmatics_key="test"))
     with app.state.db() as db:
         user = User(
@@ -214,8 +215,29 @@ def test_speech_stream_protocol_finalizes_on_stop(monkeypatch, tmp_path):
             "app.services.speech.websockets.connect", lambda *args, **kwargs: Upstream()
         )
         browser = Browser()
+
+        def authorize():
+            if revoked and ended.is_set():
+                raise ProviderError("Session revoked")
+
+        if revoked:
+            with pytest.raises(ProviderError, match="Session revoked"):
+                await stream_speech(
+                    app,
+                    browser,
+                    case.id,
+                    {"sample_rate": 48000, "language": "id"},
+                    authorize=authorize,
+                )
+            with app.state.db() as db:
+                assert db.scalar(select(Segment)) is None
+            return
         await stream_speech(
-            app, browser, case.id, {"sample_rate": 48000, "language": "id"}
+            app,
+            browser,
+            case.id,
+            {"sample_rate": 48000, "language": "id"},
+            authorize=authorize,
         )
         await asyncio.gather(*app.state.tasks)
         assert [m["type"] for m in browser.output] == ["ready", "stopped"]

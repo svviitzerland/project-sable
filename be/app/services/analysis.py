@@ -4,7 +4,7 @@ import time
 from pydantic import Field
 from sqlalchemy import select
 
-from ..models import Chunk, Conclusion, Contract, Finding, Segment
+from ..models import Chunk, Conclusion, Contract, Finding, Hearing, Segment
 from .providers import ProviderError
 from .retrieval import retrieve
 from .simulation import EXPECTED
@@ -28,7 +28,11 @@ def validate_citations(conclusion, sources):
     known = {source.id: source for source in sources}
     for citation in conclusion.citations:
         source = known.get(citation.chunk_id)
-        if not source or citation.quote not in source.text:
+        if (
+            not source
+            or not citation.quote.strip()
+            or citation.quote not in source.text
+        ):
             raise ProviderError(
                 "Citation verification failed. The finding was withheld because a quoted passage did not match the retrieved evidence."
             )
@@ -78,10 +82,15 @@ async def investigate(app, segment_id, fixture=None):
                 select(Finding).where(Finding.segment_id == segment_id)
             ):
                 return
+            hearing = (
+                db.get(Hearing, segment.hearing_id) if segment.hearing_id else None
+            )
+            excluded_document = hearing.source_document_id if hearing else None
             previous = db.scalars(
                 select(Segment)
                 .where(
                     Segment.case_id == segment.case_id,
+                    Segment.hearing_id == segment.hearing_id,
                     Segment.created_at < segment.created_at,
                 )
                 .order_by(Segment.created_at.desc())
@@ -139,7 +148,10 @@ async def investigate(app, segment_id, fixture=None):
                     return
                 await state(app, segment_id, "retrieving")
                 sources, method = await retrieve(
-                    app, segment.case_id, claim.search_query
+                    app,
+                    segment.case_id,
+                    claim.search_query,
+                    exclude_document_id=excluded_document,
                 )
                 legal = []
                 legal_note = ""
