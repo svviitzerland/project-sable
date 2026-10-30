@@ -1,3 +1,4 @@
+import * as env from "$app/env/public";
 export type User = { id: string; name: string; email: string; demo: boolean };
 export type Case = {
   id: string;
@@ -129,7 +130,7 @@ const stagedFiles = new WeakMap<File, { id: string; expires: number }>();
 async function stageFiles(form: FormData): Promise<FormData> {
   const file = form.get("file");
   if (
-    process.env.NEXT_PUBLIC_HOSTED_UPLOADS !== "1" ||
+    env.PUBLIC_HOSTED_UPLOADS !== "1" ||
     !(file instanceof File) ||
     file.size <= 3 * 1024 * 1024
   )
@@ -201,7 +202,7 @@ export async function api<T>(
   return data as T;
 }
 export async function wsUrl(path: string) {
-  const origin = process.env.NEXT_PUBLIC_API_WS_URL;
+  const origin = env.PUBLIC_API_WS_URL;
   if (!origin)
     return `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/api/v1${path}`;
   const match = path.match(/^\/cases\/([^/]+)\/(events|audio)$/);

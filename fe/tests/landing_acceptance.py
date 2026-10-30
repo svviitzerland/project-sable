@@ -89,11 +89,15 @@ with sync_playwright() as p:
         static.get_by_text("I arrived at 9:30 PM.", exact=False).first
     ).to_be_visible()
     assert (
-        static.get_by_role("link", name="Open workspace", exact=True).get_attribute(
-            "href"
+        static.get_by_role("link", name="Open workspace", exact=True).evaluate(
+            "link => new URL(link.href).pathname"
         )
         == "/workspace"
     )
+    # SvelteKit can render a relative href during SSR; it must still navigate
+    # to the actual workspace without requiring client-side routing.
+    static.get_by_role("link", name="Open workspace", exact=True).click()
+    expect(static).to_have_url(BASE + "/workspace")
     assert not errors, errors
     browser.close()
     print(

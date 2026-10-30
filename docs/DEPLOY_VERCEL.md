@@ -1,6 +1,6 @@
 # Deploy both Jude applications on Vercel
 
-Both application servers run on Vercel: a Next.js project rooted at `fe` and a FastAPI project rooted at `be`. Supabase holds PostgreSQL/pgvector, private documents, upload parts, and temporary downloads. QStash delivers signed analysis requests to the backend function; no continuously running worker or separate API host is required.
+Both application servers run on Vercel: a SvelteKit project rooted at `fe` and a FastAPI project rooted at `be`. Supabase holds PostgreSQL/pgvector, private documents, upload parts, and temporary downloads. QStash delivers signed analysis requests to the backend function; no continuously running worker or separate API host is required.
 
 This is deployment preparation, not a record of a live deployment. Local tests cover shared PostgreSQL coordination and mocked queue/storage/speech contracts. Actual Vercel, QStash, Supabase Storage, and provider traffic still require a configured deployment check.
 
@@ -49,17 +49,17 @@ The backend domain must be reachable by the frontend proxy, browser WebSocket ha
 
 ## 3. Frontend Vercel project
 
-Import the same repository/branch with Root Directory `fe`, Framework Next.js, Node.js 22.x. The repository pins pnpm; `fe/vercel.json` uses `pnpm install --frozen-lockfile` and `pnpm build`. Keep the default output directory.
+Import the same repository/branch with Root Directory `fe`, Framework SvelteKit, Node.js 22.x. The repository pins pnpm; `fe/vercel.json` uses `pnpm install --frozen-lockfile` and `pnpm build`. Keep the default output directory. `fe/vite.config.ts` configures SvelteKit 3 and `@sveltejs/adapter-vercel`; no Next.js start command or output override is needed.
 
 ```dotenv
 API_INTERNAL_URL=https://jude-api.example.com
-NEXT_PUBLIC_API_WS_URL=wss://jude-api.example.com
-NEXT_PUBLIC_HOSTED_UPLOADS=1
+PUBLIC_API_WS_URL=wss://jude-api.example.com
+PUBLIC_HOSTED_UPLOADS=1
 ```
 
-These are the only frontend settings. `API_INTERNAL_URL` has no `/api` suffix. Browser HTTP requests retain the frontend origin and its HttpOnly session cookie through the existing `/api/*` rewrite. Direct WebSockets obtain a fresh ticket from that authenticated HTTP route; cookies are never copied into a URL. Tickets expire after 60 seconds, are single-use and bound to one case/purpose, and remain tied to the original revocable account session. The backend checks the frontend Origin as well.
+These are the only frontend settings. `API_INTERNAL_URL` has no `/api` suffix. Browser HTTP requests retain the frontend origin and its HttpOnly session cookie through the SvelteKit `/api/*` server proxy. Direct WebSockets obtain a fresh ticket from that authenticated HTTP route; cookies are never copied into a URL. Tickets expire after 60 seconds, are single-use and bound to one case/purpose, and remain tied to the original revocable account session. The backend checks the frontend Origin as well.
 
-`NEXT_PUBLIC_*` values are baked into the browser bundle, and rewrites are built from `API_INTERNAL_URL`; redeploy after changing any of these values. Never put provider, database, storage, queue, or signing secrets in frontend variables.
+`fe/src/env.ts` explicitly exposes only `PUBLIC_API_WS_URL` and `PUBLIC_HOSTED_UPLOADS` to the browser; `API_INTERNAL_URL` stays private. These values load from the deployment environment. Redeploy after changing Vercel environment settings. If upgrading an existing Next.js deployment, change the project Framework Preset to **SvelteKit**, remove old `NEXT_PUBLIC_*` variables, and add the `PUBLIC_*` names above. Never put provider, database, storage, queue, or signing secrets in frontend variables.
 
 ## Runtime behavior and limits
 
@@ -76,7 +76,7 @@ These are the only frontend settings. `API_INTERNAL_URL` has no `/api` suffix. B
 
 After setting configuration and deploying both projects:
 
-1. Verify backend `/api/v1/health`, then frontend `/api/v1/health` through the rewrite.
+1. Verify backend `/api/v1/health`, then frontend `/api/v1/health` through the proxy.
 2. Register/sign in through the frontend and reload; verify another account cannot access the case.
 3. Create a hearing and submit a statement. Confirm the signed job completes, duplicate delivery is harmless, and recovery can redeliver an intentionally delayed job.
 4. Verify direct event sockets, ticket replay rejection, and sign-out revocation.
@@ -86,6 +86,6 @@ After setting configuration and deploying both projects:
 
 Local checks: backend `uv run pytest` and `uv run ruff check .`; frontend lint/typecheck/build and the existing acceptance suites. `fe/tests/vercel_acceptance.py` additionally exercises staged uploads and ticketed sockets with a mocked audio provider. PostgreSQL checks opt in through `JUDE_TEST_DATABASE_URL` and require a disposable database named `jude_test*`.
 
-To reproduce the hosted browser check without service credentials, start `uv run uvicorn tests.hosted_preview:app --port 8010` from `be`. This test-only entrypoint creates disposable SQLite data and in-memory storage; never deploy it. From `fe`, build with `API_INTERNAL_URL=http://127.0.0.1:8010 NEXT_PUBLIC_API_WS_URL=ws://127.0.0.1:8010 NEXT_PUBLIC_HOSTED_UPLOADS=1 pnpm build` (with `VERCEL` unset), then run `pnpm start --port 3012`. In another terminal run `JUDE_TEST_URL=http://127.0.0.1:3012 uv run --no-project --with playwright python tests/vercel_acceptance.py`, setting `CHROMIUM_EXECUTABLE` if using system Chromium. Audio rotation is accelerated and mocked; the PostgreSQL suite separately verifies shared coordination.
+To reproduce the hosted browser check without service credentials, start `uv run uvicorn tests.hosted_preview:app --port 8010` from `be`. This test-only entrypoint creates disposable SQLite data and in-memory storage; never deploy it. From `fe`, build with `API_INTERNAL_URL=http://127.0.0.1:8010 PUBLIC_API_WS_URL=ws://127.0.0.1:8010 PUBLIC_HOSTED_UPLOADS=1 pnpm build` (with `VERCEL` unset), then run `API_INTERNAL_URL=http://127.0.0.1:8010 PUBLIC_API_WS_URL=ws://127.0.0.1:8010 PUBLIC_HOSTED_UPLOADS=1 pnpm start --port 3012`. In another terminal run `JUDE_TEST_URL=http://127.0.0.1:3012 uv run --no-project --with playwright python tests/vercel_acceptance.py`, setting `CHROMIUM_EXECUTABLE` if using system Chromium. Audio rotation is accelerated and mocked; the PostgreSQL suite separately verifies shared coordination.
 
-References: [FastAPI on Vercel](https://vercel.com/docs/frameworks/backend/fastapi), [WebSocket lifecycle](https://vercel.com/docs/functions/websockets), [function limits](https://vercel.com/docs/functions/limitations), [QStash signature verification](https://upstash.com/docs/qstash/sdks/py/examples/receiver).
+References: [SvelteKit on Vercel](https://svelte.dev/docs/kit/adapter-vercel), [FastAPI on Vercel](https://vercel.com/docs/frameworks/backend/fastapi), [WebSocket lifecycle](https://vercel.com/docs/functions/websockets), [function limits](https://vercel.com/docs/functions/limitations), [QStash signature verification](https://upstash.com/docs/qstash/sdks/py/examples/receiver).

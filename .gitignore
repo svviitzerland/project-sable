@@ -26,3 +26,7 @@ __pycache__/
 
 # Jude application data (documents, sessions, database)
 .data/
+
+# SvelteKit and Vercel build artifacts
+.svelte-kit/
+.vercel/

@@ -1,6 +1,6 @@
 """Hosted transport checks against the documented local acceptance fixture.
 
-Build with NEXT_PUBLIC_API_WS_URL and NEXT_PUBLIC_HOSTED_UPLOADS=1. Audio
+Build with PUBLIC_API_WS_URL and PUBLIC_HOSTED_UPLOADS=1. Audio
 uses a mocked Speechmatics-facing socket; it does not validate a live provider.
 """
 

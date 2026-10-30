@@ -54,7 +54,7 @@ Original brief: “Jude - Evidence-Grounded AI for Courtroom Intelligence.” Th
 
 ## Vercel deployment behavior
 
-Both frontend and backend deploy as Vercel projects; no persistent FastAPI server is required. Supabase PostgreSQL and private Storage remain external durable services. See [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md) for the exact environment contract and migration order.
+The native Svelte 5 frontend uses SvelteKit 3 with server-rendered landing content, reactive case components, and a same-origin authenticated HTTP proxy. Both frontend and backend deploy as Vercel projects; no persistent FastAPI server is required. Supabase PostgreSQL and private Storage remain external durable services. See [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md) for the exact environment contract and migration order.
 
 Saved testimony and its analysis job commit together. Signed callbacks validate the request body and destination, enforce a shared lease, and retry transient analysis failures within a bounded attempt count. The recovery sweep redelivers stale/unsent work. WebSocket tickets are single-use, short-lived, case/purpose-bound, and tied to a revocable session. Live notifications coalesce through PostgreSQL while the UI refreshes authoritative records.
 

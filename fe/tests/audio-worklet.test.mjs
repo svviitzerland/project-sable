@@ -9,7 +9,7 @@ test('PCM worklet flushes the final partial block before acknowledgement', () =>
   class AudioWorkletProcessor {
     port = { postMessage: value => messages.push(value) };
   }
-  vm.runInNewContext(readFileSync(new URL('../public/audio/pcm-worklet.js', import.meta.url), 'utf8'), {
+  vm.runInNewContext(readFileSync(new URL('../static/audio/pcm-worklet.js', import.meta.url), 'utf8'), {
     AudioWorkletProcessor,
     Int16Array,
     registerProcessor: (_name, implementation) => { Processor = implementation; },
@@ -34,7 +34,7 @@ test('a rotation flush preserves subsequent PCM until an explicit final stop', (
   class AudioWorkletProcessor {
     port = { postMessage: value => messages.push(value) };
   }
-  vm.runInNewContext(readFileSync(new URL('../public/audio/pcm-worklet.js', import.meta.url), 'utf8'), {
+  vm.runInNewContext(readFileSync(new URL('../static/audio/pcm-worklet.js', import.meta.url), 'utf8'), {
     AudioWorkletProcessor, Int16Array,
     registerProcessor: (_name, implementation) => { Processor = implementation; },
   });

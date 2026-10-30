@@ -30,7 +30,7 @@ The current deliverable is the working lawyer workspace at `/workspace`, alongsi
 
 Case assistant conversations retrieve across the current case's documents, hearings, findings, and confirmed evidence connections. Users can reference material, inspect quotations, ask follow-up questions, and optionally request legal discovery. Courtroom practice supports AI-suggested, manually editable trial conditions, three user roles, saved dialogue, and a debrief. Hypothetical practice stays outside the evidence record. Without configured providers, the assistant exposes sources and practice offers clearly labeled scripted drills.
 
-The hosted target is Vercel for both Next.js and FastAPI. Supabase supplies durable data, shared coordination, and private file transfers; QStash delivers bounded analysis jobs. Deployment configuration and local cross-instance tests are supplied. Live hosted validation is still required.
+The hosted target is Vercel for both SvelteKit and FastAPI. Supabase supplies durable data, shared coordination, and private file transfers; QStash delivers bounded analysis jobs. Deployment configuration and local cross-instance tests are supplied. Live hosted validation is still required.
 
 ## Brand Commitments
 

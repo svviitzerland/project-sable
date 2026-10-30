@@ -1,5 +1,4 @@
-"use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { untrack } from "svelte";
 import { wsUrl } from "./workspace-api";
 
 type AudioSession = {
@@ -20,16 +19,17 @@ type AudioSession = {
   finish?: () => void;
 };
 
-export function useHearingAudio(
-  caseId: string | null,
+export function createHearingAudio(
+  caseId: () => string | null,
   onError: (message: string) => void,
-  hearingId?: string | null,
+  hearingId: () => string | null,
 ) {
-  const [status, setStatus] = useState<
-    "idle" | "connecting" | "recording" | "stopping"
-  >("idle");
-  const session = useRef<AudioSession | null>(null);
-  const cleanup = useCallback((target = session.current) => {
+  let status = $state<"idle" | "connecting" | "recording" | "stopping">("idle");
+  const setStatus = (value: typeof status) => {
+    status = value;
+  };
+  const session = { current: null as AudioSession | null };
+  const cleanup = (target = session.current) => {
     if (!target) return;
     if (session.current === target) {
       session.current = null;
@@ -45,8 +45,8 @@ export function useHearingAudio(
     void target.context?.close().catch(() => undefined);
     if (target.ws && target.ws.readyState < WebSocket.CLOSING)
       target.ws.close();
-  }, []);
-  const stop = useCallback(() => {
+  };
+  const stop = () => {
     const s = session.current;
     if (!s || s.stopping) return;
     s.stopping = true;
@@ -76,10 +76,14 @@ export function useHearingAudio(
         cleanup(s);
       }, 25000);
     } else cleanup(s);
-  }, [cleanup, onError]);
-  useEffect(() => () => cleanup(), [caseId, hearingId, cleanup]);
+  };
+  $effect(() => {
+    caseId();
+    hearingId();
+    return () => untrack(() => cleanup());
+  });
   async function start(language: string, file?: File) {
-    if (!caseId || session.current) return;
+    if (!caseId() || session.current) return;
     const s: AudioSession = {
       pending: [],
       pendingBytes: 0,
@@ -149,7 +153,7 @@ export function useHearingAudio(
       };
       async function connect() {
         if (!active()) return;
-        const url = await wsUrl(`/cases/${caseId}/audio`);
+        const url = await wsUrl(`/cases/${caseId()}/audio`);
         if (!active()) return;
         const ws = new WebSocket(url);
         s.ws = ws;
@@ -168,7 +172,7 @@ export function useHearingAudio(
                 sample_rate: context.sampleRate,
                 language,
                 authorized: true,
-                hearing_id: hearingId,
+                hearing_id: hearingId(),
                 start_offset:
                   s.baseOffset + s.sentBytes / (2 * context.sampleRate),
               }),
@@ -236,7 +240,10 @@ export function useHearingAudio(
                         25000,
                       );
                     };
-                    s.node?.port.postMessage({ type: "flush", continueCapture: true });
+                    s.node?.port.postMessage({
+                      type: "flush",
+                      continueCapture: true,
+                    });
                   }, message.rotate_after * 1000);
               }
             } else if (message.type === "error") fail(message.message);
@@ -278,5 +285,11 @@ export function useHearingAudio(
       );
     }
   }
-  return { status, start, stop };
+  return {
+    get status() {
+      return status;
+    },
+    start,
+    stop,
+  };
 }

@@ -4,13 +4,15 @@ Jude helps lawyers inspect relationships between testimony and case evidence in 
 
 Create an account and case, upload authorized documents, upload a hearing transcript or stream audio, inspect source-linked findings, save review notes, and export the record. A synthetic hearing demonstrates all four finding states without provider credentials. It uses authored findings, not AI output.
 
+The frontend uses native Svelte 5 components and SvelteKit 3; the API remains FastAPI. Routes live in `fe/src/routes`, static assets in `fe/static`, and framework/Vercel configuration in `fe/vite.config.ts`.
+
 ## Deploy on Vercel
 
-Both applications have Vercel configurations: frontend root `fe`, backend root `be`. Hosted mode uses Supabase PostgreSQL/private Storage, signed QStash analysis deliveries, database leases/events, ticketed direct WebSockets, and chunked large-file transfers. See [the complete deployment and environment guide](docs/DEPLOY_VERCEL.md). Migration 005 must be applied before deployment. The supplied per-minute recovery cron requires a suitable Vercel plan.
+Both applications have Vercel configurations: SvelteKit frontend root `fe` (SvelteKit preset), FastAPI backend root `be`. Hosted mode uses Supabase PostgreSQL/private Storage, signed QStash analysis deliveries, database leases/events, ticketed direct WebSockets, and chunked large-file transfers. See [the complete deployment and environment guide](docs/DEPLOY_VERCEL.md). Migration 005 must be applied before deployment. The supplied per-minute recovery cron requires a suitable Vercel plan.
 
 ## Run locally
 
-Requirements: Node.js 22+, pnpm 11.25, Python 3.11+, and uv. Two processes are required:
+Requirements: Node.js 22.12+, pnpm 11.25, Python 3.11+, and uv. Two processes are required:
 
 ```bash
 cd be
@@ -26,7 +28,7 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Open http://localhost:3000/workspace. Choose **Open a synthetic case** for a temporary demo account, or register to sign back in later. Demo accounts cannot be recovered after sign-out. SQLite and original documents persist under `be/.data/`; do not commit that directory. `API_INTERNAL_URL` in `fe/.env.local` controls the backend proxy and must be set before building the frontend.
+Open http://localhost:3000/workspace. Choose **Open a synthetic case** for a temporary demo account, or register to sign back in later. Demo accounts cannot be recovered after sign-out. SQLite and original documents persist under `be/.data/`; do not commit that directory. `API_INTERNAL_URL` in `fe/.env.local` controls the backend proxy. `PUBLIC_API_WS_URL` selects the direct WebSocket origin. Restart the local server after changing `.env.local`.
 
 ## What works
 
@@ -46,7 +48,7 @@ Open http://localhost:3000/workspace. Choose **Open a synthetic case** for a tem
 
 ## Connect providers
 
-All credentials belong in the backend environment. Never prefix them with `NEXT_PUBLIC_`.
+All credentials belong in the backend environment. Never prefix them with `PUBLIC_`.
 
 | Capability | Backend configuration |
 | --- | --- |
@@ -111,7 +113,7 @@ cd fe
 JUDE_TEST_URL=http://localhost:3000 uv run --no-project --with playwright python tests/landing_acceptance.py
 ```
 
-Use `localhost` with the development server so Next.js permits its HMR connection. For a production preview, build and run `pnpm exec next start --port 3010`, then set `JUDE_TEST_URL=http://127.0.0.1:3010`.
+For a production preview, build and run `pnpm start --port 3010`, then set `JUDE_TEST_URL=http://127.0.0.1:3010`. Keep the same frontend environment variables available when running the preview. Hosted uploads and mocked audio rotation are covered by `tests/vercel_acceptance.py`; its disposable fixture recipe is in the deployment guide.
 
 For the opt-in PostgreSQL test, create a disposable database named `jude_test*`, install pgvector on its server, and set `JUDE_TEST_DATABASE_URL` before running `uv run pytest tests/test_postgres.py`. It emulates Supabase roles and bucket metadata only; it does not test hosted Storage.
 

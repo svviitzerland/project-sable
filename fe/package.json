@@ -1,32 +1,40 @@
 {
-  "name": "project-frontend",
+  "name": "jude-frontend",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@11.25.0",
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0",
-    "build": "next build",
-    "start": "next start --hostname 0.0.0.0",
+    "dev": "vite dev --host 0.0.0.0 --port 3000",
+    "build": "vite build",
+    "start": "vite preview --host 0.0.0.0",
+    "prepare": "svelte-kit sync",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "next": "^16.0.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "tailwindcss": "^4.1.0",
-    "@tailwindcss/postcss": "^4.1.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.468.0",
-    "tailwind-merge": "^3.0.0",
+    "@lucide/svelte": "^1.64.0",
     "tw-animate-css": "^1.3.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@eslint/js": "^9.0.0",
+    "@sveltejs/adapter-vercel": "^7.0.1",
+    "@sveltejs/kit": "^3.1.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/node": "^22.0.0",
     "eslint": "^9.0.0",
-    "eslint-config-next": "^16.0.0",
-    "typescript": "^5.9.0"
+    "eslint-plugin-svelte": "^3.23.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "prettier-plugin-svelte": "^4.1.1",
+    "svelte": "^5.0.0",
+    "svelte-check": "^4.7.7",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.5"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }
