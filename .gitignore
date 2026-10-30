@@ -1,0 +1,25 @@
+# Local credentials
+.env
+.env.*
+!.env.example
+
+# Frontend dependencies and build artifacts
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Backend dependencies and generated files
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Machine-local files
+.DS_Store
+*.log
+.impeccable/config.local.json
+.impeccable/questions/
+.impeccable/review/
+.impeccable/build/
