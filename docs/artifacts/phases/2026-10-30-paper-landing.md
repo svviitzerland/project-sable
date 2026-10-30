@@ -4,7 +4,7 @@ The user clarified that the first landing design should remain, with animation a
 
 Restored the original dark case-file hero, left-aligned heading, cream actions, single paper comparison, workflow rows, interactive evidence demo, and lower-page layout. Removed the replacement paper-stage components and chapter previews. Original assets and global styles are unchanged.
 
-The existing paper comparison settles through a slight stepped movement, its connector appears smoothly, and the qualified finding receives subtle emphasis. The sequence finishes in 1.3 seconds, runs once, pauses offscreen/when hidden, and respects reduced motion. Source excerpts transition in place over 180ms. Default HTML remains readable without JavaScript.
+Following user feedback that stepped movement reads as low frame rate, the evidence comparison now uses a smooth 8px ease-out entrance with no rotation. Its connector and qualified finding resolve smoothly. The sequence finishes in 750ms, runs once, pauses offscreen/when hidden, and respects reduced motion. Source excerpts transition in place over 180ms. Default HTML remains readable without JavaScript.
 
 Verification covers original composition, four widths (1440/1280/768/390), source links, synthetic review, FAQ, keyboard menu, finite/offscreen motion, reduced motion, no-JavaScript content, lint, TypeScript, and production build. Screenshots use `.impeccable/review/original-*`.
 

@@ -23,11 +23,10 @@ export function useLandingMotion(root: RefObject<HTMLDivElement | null>) {
         animations.push(
           paper.animate(
             [
-              { transform: "translateY(12px) rotate(-0.6deg)" },
-              { transform: "translateY(4px) rotate(0.2deg)", offset: 0.55 },
+              { transform: "translateY(8px)" },
               { transform: "none" },
             ],
-            { duration: 1100, easing: "steps(4, end)" },
+            { duration: 600, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
           ),
         );
         const thread = paper.querySelector<HTMLElement>(".evidence-thread");
@@ -42,8 +41,8 @@ export function useLandingMotion(root: RefObject<HTMLDivElement | null>) {
                 { transform: "scaleX(1)", opacity: 1 },
               ],
               {
-                duration: 900,
-                delay: 350,
+                duration: 600,
+                delay: 150,
                 fill: "backwards",
                 easing: "cubic-bezier(0.16, 1, 0.3, 1)",
               },
@@ -52,8 +51,8 @@ export function useLandingMotion(root: RefObject<HTMLDivElement | null>) {
         if (status)
           animations.push(
             status.animate([{ opacity: 0.65 }, { opacity: 1 }], {
-              duration: 550,
-              delay: 750,
+              duration: 300,
+              delay: 400,
               fill: "backwards",
               easing: "ease-out",
             }),
