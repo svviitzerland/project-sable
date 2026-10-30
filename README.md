@@ -94,6 +94,15 @@ uv run --no-project --with playwright python tests/acceptance.py
 
 The script creates a new synthetic test account and case data. It verifies registration/sign-in, simulation, notes/review/filter persistence, document upload/search/download, `.jude` round-trips, hearing upload/preview, evidence discovery, isolation, unavailable-analysis behavior, keyboard navigation, clipboard errors, and responsive layouts. Screenshots go to ignored `.impeccable/review/`.
 
+The landing-page check needs only the frontend. It covers animation controls, offscreen pausing, reduced motion, keyboard navigation, source links, synthetic review states, responsive layouts, and content without JavaScript:
+
+```bash
+cd fe
+JUDE_TEST_URL=http://localhost:3000 uv run --no-project --with playwright python tests/landing_acceptance.py
+```
+
+Use `localhost` with the development server so Next.js permits its HMR connection. For a production preview, build and run `pnpm exec next start --port 3010`, then set `JUDE_TEST_URL=http://127.0.0.1:3010`.
+
 For the opt-in PostgreSQL test, create a disposable database named `jude_test*`, install pgvector on its server, and set `JUDE_TEST_DATABASE_URL` before running `uv run pytest tests/test_postgres.py`. It emulates Supabase roles and bucket metadata only; it does not test hosted Storage.
 
 ## Deployment boundary

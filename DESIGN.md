@@ -37,10 +37,10 @@ colors:
 typography:
   display:
     fontFamily: "Rufina, Georgia, serif"
-    fontSize: "clamp(58px, 5.85vw, 90px)"
+    fontSize: "clamp(48px, 5.2vw, 76px)"
     fontWeight: 400
-    lineHeight: 0.98
-    letterSpacing: "-0.025em"
+    lineHeight: 1.07
+    letterSpacing: "-0.035em"
   headline:
     fontFamily: "Caslon Display, Georgia, serif"
     fontSize: "clamp(42px, 4.2vw, 64px)"
@@ -132,7 +132,7 @@ components:
 
 Jude uses the user-approved warm-paper and forest-green editorial direction. Expansive serif headings establish a composed voice; plain sans-serif explanations and precise source annotations support close reading. The visual rhythm moves between spacious framing and denser evidence, retaining a clear hierarchy in both.
 
-Material is purposeful: a dark photographic case-file backdrop frames the hero, while a separate ivory paper texture carries the evidence comparison. The source sheet remains visually distinct from the surrounding workspace. This record describes the built direction A, “Stay with the testimony,” selected by the user after correcting the earlier C choice.
+Material is purposeful: a paper header and centered headline lead to a forest work surface, where two ivory source sheets and a pale verification note make the evidence relationship tangible. A subdued case-file photograph grounds that surface; a separate ivory texture keeps each source readable. The landing refinement extends the approved “Stay with the testimony” direction with finite paper motion and crisp controls, without replacing the established visual world.
 
 The working application extends that identity with flat ivory reading surfaces, a forest case rail, and compact Manrope controls. Its case and finding titles retain the serif hierarchy, while testimony, citations, and review actions remain practical and closely grouped. Marketing imagery and textures stay on the introduction; the operating workspace uses tonal separation and fine rules.
 
@@ -140,6 +140,7 @@ The working application extends that identity with flat ivory reading surfaces, 
 - Deep forest framing and warm ivory reading surfaces.
 - Rufina hero, wordmark, and source-introduction heading; Caslon Display supporting serif; Manrope body text.
 - Source-linked quotations, quiet dividers, and qualified status labels.
+- Finite paper gestures and smooth annotations on the introduction; quiet, flat reading surfaces in the working application.
 - Stacked mobile evidence with visible keyboard and selected states.
 
 ## Colors
@@ -172,11 +173,11 @@ Evidence relationships use separate stroke and text tokens for support, conflict
 
 ## Typography
 
-All three families load from local font files. On the marketing introduction, Rufina supplies the hero headline, wordmark, and source-introduction heading; Caslon Display supplies the remaining headings, quotations, and prominent buttons. Manrope supplies navigation, explanations, controls, and annotations, with regular, medium, and semibold files.
+All three families load from local font files. On the marketing introduction, Rufina supplies the hero headline, wordmark, and source-introduction heading; Caslon Display supplies the remaining headings and quotations. The refined header and hero use Manrope actions; the retained lower-page cream and outline actions keep their Caslon Display treatment. Manrope supplies navigation, explanations, controls, and annotations, with regular, medium, and semibold files.
 
 The frontmatter display and headline roles describe the desktop hero and recurring section headings. Workflow titles use the title role. The body role is the page default; individual explanatory blocks range from compact supporting copy to a larger introductory lead. Labels use sentence case except for document metadata. Preserve the contrast between expressive serif reading and practical sans-serif control text.
 
-The hero display becomes `7vw` at widths up to (1100px), then `clamp(44px, 8.4vw, 63px)` with line-height (1.03) at widths up to (760px). Section headings generally become (43px) on mobile. Hero quotations use `clamp(27px, 2.65vw, 42px)` on desktop and (33px) on mobile. The source-introduction heading uses Rufina at `clamp(40px, 4vw, 64px)` and (42px) on mobile. The wordmark is (53px) on desktop, (47px) on mobile, and (43px) in the footer. Buttons use Caslon Display at (23px), reducing to (21px) on mobile.
+The centered hero uses the display role on wide screens and reduces to `clamp(40px, 7vw, 55px)` with line-height (1.08) at widths up to (760px). Its second line uses muted forest ink. Source-sheet quotations use Caslon Display, scaling up to (43px) on desktop and settling at (34px) on mobile. The source-introduction heading remains Rufina at `clamp(40px, 4vw, 64px)` and (42px) on mobile. The refined header wordmark is (49px) on desktop and (43px) on mobile. Header and hero actions use Manrope at (14px), reducing to (12px) on mobile. Small specimen metadata stays local to illustrations and never defines the body-text scale.
 
 **The Two Serif Roles Rule.** Use Rufina for the hero headline, wordmark, and source-introduction heading, and Caslon Display for the remaining serif hierarchy; keep controls and explanatory prose in Manrope except for the established prominent button treatment.
 
@@ -184,9 +185,9 @@ In the operating workspace, Rufina supplies case titles and Caslon Display suppl
 
 ## Layout
 
-The main container is (90%) wide with a maximum of (1440px). Desktop evidence uses an inset (85%) surface capped at (1340px), with a three-column comparison in a `1.1fr 1fr 1.1fr` ratio. The synthetic demo is a `1.14fr 1fr` finding-and-source workspace. Workflow steps form ruled rows rather than a repeated card grid. Other explanatory sections pair a large heading with narrower supporting content.
+The landing page uses an ivory header and a centered two-line headline above an inset forest work surface. Its broad content wrapper is capped at (1320px), and the source-comparison stage at (1280px). Two slightly rotated source sheets flank a smaller verification note; spacing leaves every source action exposed. The retained synthetic demo is a `1.14fr 1fr` finding-and-source workspace. Workflow chapters form a ruled vertical tab list beside a single in-place preview, rather than a repeated card grid. Other explanatory sections pair a large heading with narrower supporting content.
 
-At widths up to (1100px), the evidence panel expands to (90%), internal spacing tightens, and the main comparison remains side by side. At widths up to (760px), the container has (20px) side gutters, navigation switches to a menu, and evidence, demo quotes, demo panes, and editorial sections stack. The hero comparison reads testimony, earlier statement, then qualified finding; the connecting line disappears, while source buttons remain. Source controls and menu toggle use a (44px) minimum target at this breakpoint. Regular section spacing reduces from the desktop section token to the mobile section token. At widths from (1600px), hero top and bottom spacing increases.
+At widths up to (900px), the paper scene becomes a naturally sized grid: testimony, earlier statement, then verification note. The connector disappears and each sheet retains a small rotation without covering its source action. At widths up to (760px), navigation switches to a paper-colored menu, workflow chapters stack above their preview, the preview loses its rotation, and the remaining evidence/editorial sections stack. Source actions and motion controls use minimum hit heights (44px) on mobile. Responsive paper motion uses short local movements suited to the stacked scene rather than the wide-screen sheet separation.
 
 The working application uses a full-height case rail beside the main record. The wide hearing view keeps transcript, finding list, and inspector adjacent, with independently scrollable reading areas. At widths up to (1320px), the inspector spans below the other panes; at widths up to (900px), all three panes stack. At widths up to (640px), the case rail becomes a drawer, and the closed drawer is hidden from keyboard traversal. Selecting a finding in stacked layouts moves focus and scroll to the inspector; a return action leads back to the initiating control. The workspace's density and breakpoints are separate from the marketing section rhythm.
 
@@ -194,13 +195,13 @@ The evidence view pairs a map or connection list with an inspector, stacking the
 
 ## Elevation & Depth
 
-Depth comes primarily from material contrast, thin borders, and nested light surfaces. Shadows are soft and limited to the inset hero paper, source excerpt, and floating mobile navigation. They separate reading layers without competing with typography. The case-file backdrop uses `/images/jude-case-files.webp`; the paper overlay uses `/images/ivory-paper.webp` at a (600px) repeating scale. Exact shadow values are recorded in the sidecar.
+Depth comes primarily from material contrast, thin borders, and soft offset shadows. The landing source sheets and verification note float above the forest stage; the workflow preview has a quieter diffuse shadow. They separate reading layers without competing with typography. The retained case-file image (`/images/jude-case-files.webp`) appears as a subdued stage/closing background, while `/images/ivory-paper.webp` supplies the source-sheet texture at a (600px) scale. The operating application does not inherit this illustrative elevation.
 
 The operating workspace stays flat: border rules separate panes, pale tonal surfaces identify source passages and verification steps, and selection changes the row fill. Do not carry the marketing hero's photographic depth into evidence reading.
 
 ## Shapes
 
-Buttons have gently rounded corners; selectors are slightly tighter, the demo workspace slightly softer, and status badges fully pill-like. The hero paper has rounded top corners with square bottom corners. Document excerpts remain rectangular. Fine rules structure workflow rows, sources, and disclosures. Circular status dots and line endpoints support the evidence relationship; inline SVG icons retain a fine stroke.
+Buttons have gently rounded corners; selectors are slightly tighter, the demo workspace slightly softer, and status badges fully pill-like. The landing stage has softly rounded corners (14px on desktop, 10px on mobile); its paper sheets and verification note keep near-square corners (3px). Document excerpts retain a paper-like rectangular form. Fine rules structure workflow rows, sources, and disclosures. Circular status dots and line endpoints support the evidence relationship; inline SVG icons retain a fine stroke.
 
 Workspace controls and source surfaces use restrained corners (5px), the enclosing hearing surface slightly softer corners (7px), and status labels compact corners (4px). These status labels are deliberately less rounded than the marketing pills. Findings form ruled rows rather than individually elevated cards.
 
@@ -208,11 +209,13 @@ Workspace controls and source surfaces use restrained corners (5px), the enclosi
 
 ### Buttons
 
-Filled cream actions and outlined light actions share Caslon Display, centered content, and a small directional SVG. Filled actions have a desktop minimum height of (56px), outlined navigation actions (48px); mobile filled actions reduce to (50px). Hover warms the fill or inverts the outline onto paper, while arrows shift (4px). Background, color, and arrow transitions last (0.2s). Disabled buttons lower opacity and show a not-allowed cursor.
+The retained lower-page filled cream and outlined light actions share Caslon Display, centered content, and a small directional SVG. Filled actions have a desktop minimum height of (56px), outlined navigation actions (48px); mobile filled actions reduce to (50px). Hover warms the fill or inverts the outline onto paper, while arrows shift (4px). Background, color, and arrow transitions last (0.2s). Disabled buttons lower opacity and show a not-allowed cursor.
+
+The refined header and hero instead use compact Manrope actions: forest fill for the primary workspace action, a quiet outline for the example action, and minimum height (48px). Small arrow motion supports hover feedback without moving the label.
 
 ### Navigation
 
-The desktop navigation is a simple horizontal Manrope row with underline on link hover. On mobile a bordered green menu toggle reveals a floating green list, with expanded state exposed to assistive technology. Escape closes the menu and returns focus to its toggle. The wordmark remains a Rufina text link.
+The desktop navigation is a simple horizontal Manrope row on paper, with underline on link hover and a forest workspace action. On mobile a bordered menu toggle reveals a floating paper-colored list, with expanded state exposed to assistive technology. Escape closes the menu and returns focus to its toggle. The wordmark remains a Rufina text link.
 
 ### Status labels and example selectors
 
@@ -220,7 +223,7 @@ Finding labels pair readable text with amber, sage, or lavender surfaces. They a
 
 ### Evidence comparison and source workspace
 
-The hero comparison places source-linked quotations on ivory paper. The desktop center column uses fine vertical rules and a connecting line; mobile moves its finding below both quotations. In the demo, finding copy and source excerpts remain distinct panes. Selected source controls use weight and an underline; source buttons remain underlined and switch the corresponding excerpt. The excerpt uses line numbers, a pale amber passage highlight, and document metadata. Changed findings and excerpts use polite live regions.
+The hero comparison places source-linked quotations on separate ivory sheets. Dashed amber connectors and ink-like highlights relate the two accounts to a verification note; mobile places that note below both sheets. In the retained interactive demo, finding copy and source excerpts remain distinct panes. Selected source controls use weight and an underline; source buttons remain underlined and switch the corresponding excerpt. The excerpt uses line numbers, a pale amber passage highlight, and document metadata. Changed findings and excerpts use polite live regions.
 
 ### Review, copy, and disclosure controls
 
@@ -229,6 +232,12 @@ The review control exposes its toggle state through `aria-pressed`, icon, wordin
 ### Keyboard and motion states
 
 Interactive controls and programmatically focused headings receive a (2px) amber outline with (6px) offset. A skip link becomes visible on focus. Reduced-motion preference disables CSS transitions and animations, changes page scrolling to automatic, and is also respected by demo navigation. Hover, selection, expanded state, and keyboard focus remain separate signals. The sidecar snippets demonstrate CSS states; application behavior is owned by the React components.
+
+### Paper motion and workflow preview
+
+The landing comparison has one finite focal sequence (4.4s): source sheets separate through three stepped poses, their highlights and connectors appear smoothly, and the verification note settles into place. Smooth portions use an ease-out curve rather than continuous decorative movement. Pause/resume and replay remain explicit controls; animation pauses when the stage is offscreen or the document hidden. The complete readable arrangement is the static default without JavaScript and under reduced-motion preference. Source actions remain available in the composition.
+
+Workflow chapters replace one preview in place, retaining its header, tabs, and footer. The active chapter changes text emphasis and arrow direction; its preview has a brief opacity transition (0.25s). The chapter list supports Arrow Up/Down, Home, and End with a single active tab stop. The preview remains visibly synthetic and leads to the real workspace; it does not imply a live AI operation. Reduced motion removes the transition while preserving selection and navigation.
 
 ### Workspace controls and inspection
 
