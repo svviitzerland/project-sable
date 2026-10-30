@@ -1,0 +1,413 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-30T09:47:25.859568+00:00",
+  "title": "Design System: Jude",
+  "extensions": {
+    "colorMeta": {
+      "background": {
+        "role": "neutral",
+        "displayName": "Background",
+        "tonalRamp": [
+          "oklch(15% 0.0024 87.47)",
+          "oklch(26% 0.0054 87.47)",
+          "oklch(38% 0.0078 87.47)",
+          "oklch(49% 0.0098 87.47)",
+          "oklch(61% 0.0098 87.47)",
+          "oklch(72% 0.0083 87.47)",
+          "oklch(84% 0.0054 87.47)",
+          "oklch(95% 0.0020 87.47)"
+        ]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Foreground",
+        "tonalRamp": [
+          "oklch(15% 0.0078 163.76)",
+          "oklch(26% 0.0173 163.76)",
+          "oklch(38% 0.0251 163.76)",
+          "oklch(49% 0.0314 163.76)",
+          "oklch(61% 0.0314 163.76)",
+          "oklch(72% 0.0267 163.76)",
+          "oklch(84% 0.0173 163.76)",
+          "oklch(95% 0.0063 163.76)"
+        ]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Primary",
+        "tonalRamp": [
+          "oklch(15% 0.0116 165.96)",
+          "oklch(26% 0.0256 165.96)",
+          "oklch(38% 0.0373 165.96)",
+          "oklch(49% 0.0466 165.96)",
+          "oklch(61% 0.0466 165.96)",
+          "oklch(72% 0.0396 165.96)",
+          "oklch(84% 0.0256 165.96)",
+          "oklch(95% 0.0093 165.96)"
+        ]
+      },
+      "primary-foreground": {
+        "role": "primary",
+        "displayName": "Primary Foreground",
+        "tonalRamp": [
+          "oklch(15% 0.0043 84.59)",
+          "oklch(26% 0.0094 84.59)",
+          "oklch(38% 0.0137 84.59)",
+          "oklch(49% 0.0172 84.59)",
+          "oklch(61% 0.0172 84.59)",
+          "oklch(72% 0.0146 84.59)",
+          "oklch(84% 0.0094 84.59)",
+          "oklch(95% 0.0034 84.59)"
+        ]
+      },
+      "accent": {
+        "role": "secondary",
+        "displayName": "Accent",
+        "tonalRamp": [
+          "oklch(15% 0.0089 81.27)",
+          "oklch(26% 0.0195 81.27)",
+          "oklch(38% 0.0284 81.27)",
+          "oklch(49% 0.0355 81.27)",
+          "oklch(61% 0.0355 81.27)",
+          "oklch(72% 0.0302 81.27)",
+          "oklch(84% 0.0195 81.27)",
+          "oklch(95% 0.0071 81.27)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "tonalRamp": [
+          "oklch(15% 0.0044 81.33)",
+          "oklch(26% 0.0097 81.33)",
+          "oklch(38% 0.0141 81.33)",
+          "oklch(49% 0.0176 81.33)",
+          "oklch(61% 0.0176 81.33)",
+          "oklch(72% 0.0150 81.33)",
+          "oklch(84% 0.0097 81.33)",
+          "oklch(95% 0.0035 81.33)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(15% 0.0036 121.95)",
+          "oklch(26% 0.0079 121.95)",
+          "oklch(38% 0.0115 121.95)",
+          "oklch(49% 0.0144 121.95)",
+          "oklch(61% 0.0144 121.95)",
+          "oklch(72% 0.0122 121.95)",
+          "oklch(84% 0.0079 121.95)",
+          "oklch(95% 0.0029 121.95)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "tonalRamp": [
+          "oklch(15% 0.0041 95.25)",
+          "oklch(26% 0.0091 95.25)",
+          "oklch(38% 0.0132 95.25)",
+          "oklch(49% 0.0166 95.25)",
+          "oklch(61% 0.0166 95.25)",
+          "oklch(72% 0.0141 95.25)",
+          "oklch(84% 0.0091 95.25)",
+          "oklch(95% 0.0033 95.25)"
+        ]
+      },
+      "button-cream": {
+        "role": "neutral",
+        "displayName": "Button Cream",
+        "tonalRamp": [
+          "oklch(15% 0.0061 83.42)",
+          "oklch(26% 0.0135 83.42)",
+          "oklch(38% 0.0196 83.42)",
+          "oklch(49% 0.0246 83.42)",
+          "oklch(61% 0.0246 83.42)",
+          "oklch(72% 0.0209 83.42)",
+          "oklch(84% 0.0135 83.42)",
+          "oklch(95% 0.0049 83.42)"
+        ]
+      },
+      "button-ink": {
+        "role": "neutral",
+        "displayName": "Button Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0077 158.89)",
+          "oklch(26% 0.0169 158.89)",
+          "oklch(38% 0.0245 158.89)",
+          "oklch(49% 0.0307 158.89)",
+          "oklch(61% 0.0307 158.89)",
+          "oklch(72% 0.0261 158.89)",
+          "oklch(84% 0.0169 158.89)",
+          "oklch(95% 0.0061 158.89)"
+        ]
+      },
+      "button-hover": {
+        "role": "neutral",
+        "displayName": "Button Hover",
+        "tonalRamp": [
+          "oklch(15% 0.0120 82.69)",
+          "oklch(26% 0.0264 82.69)",
+          "oklch(38% 0.0385 82.69)",
+          "oklch(49% 0.0481 82.69)",
+          "oklch(61% 0.0481 82.69)",
+          "oklch(72% 0.0409 82.69)",
+          "oklch(84% 0.0264 82.69)",
+          "oklch(95% 0.0096 82.69)"
+        ]
+      },
+      "inconsistency": {
+        "role": "secondary",
+        "displayName": "Inconsistency",
+        "tonalRamp": [
+          "oklch(15% 0.0244 78.47)",
+          "oklch(26% 0.0536 78.47)",
+          "oklch(38% 0.0780 78.47)",
+          "oklch(49% 0.0975 78.47)",
+          "oklch(61% 0.0975 78.47)",
+          "oklch(72% 0.0829 78.47)",
+          "oklch(84% 0.0536 78.47)",
+          "oklch(95% 0.0195 78.47)"
+        ]
+      },
+      "inconsistency-ink": {
+        "role": "secondary",
+        "displayName": "Inconsistency Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0132 72.47)",
+          "oklch(26% 0.0290 72.47)",
+          "oklch(38% 0.0422 72.47)",
+          "oklch(49% 0.0527 72.47)",
+          "oklch(61% 0.0527 72.47)",
+          "oklch(72% 0.0448 72.47)",
+          "oklch(84% 0.0290 72.47)",
+          "oklch(95% 0.0105 72.47)"
+        ]
+      },
+      "supported": {
+        "role": "secondary",
+        "displayName": "Supported",
+        "tonalRamp": [
+          "oklch(15% 0.0057 141.23)",
+          "oklch(26% 0.0125 141.23)",
+          "oklch(38% 0.0181 141.23)",
+          "oklch(49% 0.0226 141.23)",
+          "oklch(61% 0.0226 141.23)",
+          "oklch(72% 0.0192 141.23)",
+          "oklch(84% 0.0125 141.23)",
+          "oklch(95% 0.0045 141.23)"
+        ]
+      },
+      "supported-ink": {
+        "role": "secondary",
+        "displayName": "Supported Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0163 156.65)",
+          "oklch(26% 0.0359 156.65)",
+          "oklch(38% 0.0523 156.65)",
+          "oklch(49% 0.0653 156.65)",
+          "oklch(61% 0.0653 156.65)",
+          "oklch(72% 0.0555 156.65)",
+          "oklch(84% 0.0359 156.65)",
+          "oklch(95% 0.0131 156.65)"
+        ]
+      },
+      "context": {
+        "role": "secondary",
+        "displayName": "Context",
+        "tonalRamp": [
+          "oklch(15% 0.0027 280.47)",
+          "oklch(26% 0.0060 280.47)",
+          "oklch(38% 0.0087 280.47)",
+          "oklch(49% 0.0108 280.47)",
+          "oklch(61% 0.0108 280.47)",
+          "oklch(72% 0.0092 280.47)",
+          "oklch(84% 0.0060 280.47)",
+          "oklch(95% 0.0022 280.47)"
+        ]
+      },
+      "context-ink": {
+        "role": "secondary",
+        "displayName": "Context Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0116 285.79)",
+          "oklch(26% 0.0256 285.79)",
+          "oklch(38% 0.0372 285.79)",
+          "oklch(49% 0.0465 285.79)",
+          "oklch(61% 0.0465 285.79)",
+          "oklch(72% 0.0396 285.79)",
+          "oklch(84% 0.0256 285.79)",
+          "oklch(95% 0.0093 285.79)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Hero display",
+        "purpose": "Rufina hero headline only."
+      },
+      "headline": {
+        "displayName": "Editorial heading",
+        "purpose": "Caslon Display section headings."
+      },
+      "title": {
+        "displayName": "Workflow title",
+        "purpose": "Caslon Display workflow row titles."
+      },
+      "body": {
+        "displayName": "Reading copy",
+        "purpose": "Manrope explanatory text."
+      },
+      "label": {
+        "displayName": "Finding label",
+        "purpose": "Manrope status labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "hero-paper",
+        "value": "0 9px 28px #071b2420",
+        "purpose": "Separate the inset ivory paper from forest framing."
+      },
+      {
+        "name": "source-sheet",
+        "value": "0 5px 18px #28352009",
+        "purpose": "Subtle source excerpt lift."
+      },
+      {
+        "name": "mobile-menu",
+        "value": "0 10px 20px #0d251c33",
+        "purpose": "Separate floating navigation."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-transition",
+        "value": "0.2s",
+        "purpose": "Background, text, arrow, and disclosure state changes."
+      },
+      {
+        "name": "arrow-shift",
+        "value": "translateX(4px)",
+        "purpose": "Directional action hover."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Disable transitions and animation; use automatic scrolling."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-desktop-max",
+        "value": "1100px"
+      },
+      {
+        "name": "mobile-max",
+        "value": "760px"
+      },
+      {
+        "name": "wide-min",
+        "value": "1600px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Cream action",
+      "kind": "button",
+      "refersTo": "button-cream",
+      "description": "Prominent action on forest framing.",
+      "html": "<button class=\"ds-button ds-cream\">Explore the demo<svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><path d=\"M5 12h14m-7-7 7 7-7 7\"/></svg></button>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:20px;min-height:56px;padding:10px 30px;border:1px solid transparent;border-radius:7px;font-family:var(--serif, \"Caslon Display\", Georgia, serif);font-size:23px;line-height:1.3;cursor:pointer;transition:background-color .2s,color .2s}.ds-button svg{transition:transform .2s}.ds-button:hover svg{transform:translateX(4px)}.ds-button:disabled{opacity:.55;cursor:not-allowed}.ds-button:focus-visible{outline:2px solid #b17831;outline-offset:6px}.ds-cream{background:#f4ebda;color:#15271d}.ds-cream:hover{background:#e8d6b5}@media(prefers-reduced-motion:reduce){.ds-button,.ds-button svg,.ds-selector,.ds-faq svg{transition:none}}"
+    },
+    {
+      "name": "Outlined action",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Quiet navigation action on a dark surface.",
+      "html": "<div class=\"ds-dark\"><button class=\"ds-button ds-outline\">Explore the demo</button></div>",
+      "css": ".ds-button{display:inline-flex;align-items:center;justify-content:center;gap:20px;min-height:56px;padding:10px 30px;border:1px solid transparent;border-radius:7px;font-family:var(--serif, \"Caslon Display\", Georgia, serif);font-size:23px;line-height:1.3;cursor:pointer;transition:background-color .2s,color .2s}.ds-button svg{transition:transform .2s}.ds-button:hover svg{transform:translateX(4px)}.ds-button:disabled{opacity:.55;cursor:not-allowed}.ds-button:focus-visible{outline:2px solid #b17831;outline-offset:6px}.ds-dark{background:var(--primary,#16382b);padding:20px}.ds-outline{background:transparent;color:var(--primary-foreground,#f6f0e4);border-color:#e8e7da;min-height:48px;font-size:19px;padding-inline:29px}.ds-outline:hover{background:var(--paper,#f5eee2);color:var(--primary,#16382b)}@media(prefers-reduced-motion:reduce){.ds-button,.ds-button svg,.ds-selector,.ds-faq svg{transition:none}}"
+    },
+    {
+      "name": "Finding statuses",
+      "kind": "chip",
+      "refersTo": "status-inconsistency",
+      "description": "Qualified text labels with amber, sage, and lavender surfaces.",
+      "html": "<div class=\"ds-statuses\"><span class=\"ds-status ds-inconsistency\">Potential inconsistency</span><span class=\"ds-status ds-supported\">Supported</span><span class=\"ds-status ds-context\">Context needed</span></div>",
+      "css": ".ds-statuses{display:flex;flex-wrap:wrap;gap:8px}.ds-status{display:inline-flex;border-radius:30px;padding:7px 18px;font:500 13px/1.35 var(--sans,Manrope,sans-serif)}.ds-inconsistency{background:#e9bf7c;color:#422d10}.ds-supported{background:#deeadc;color:#245037}.ds-context{background:#e4e5ed;color:#484763}"
+    },
+    {
+      "name": "Example selector",
+      "kind": "button",
+      "description": "Pressed state and status dot identify the active evidence example.",
+      "html": "<div class=\"ds-options\"><button class=\"ds-selector\" aria-pressed=\"true\"><span class=\"ds-dot\"></span>Potential inconsistency</button><button class=\"ds-selector\" aria-pressed=\"false\">Context needed</button></div>",
+      "css": ".ds-options{display:flex;flex-wrap:wrap;gap:8px}.ds-selector{display:inline-flex;align-items:center;gap:12px;padding:10px 16px;border:1px solid #ced2c5;border-radius:5px;background:transparent;color:var(--foreground,#14281f);font:13px/1.65 var(--sans,Manrope,sans-serif);cursor:pointer;transition:background-color .2s}.ds-selector[aria-pressed=\"true\"]{background:#203d2e;color:#f6f4e8;border-color:#203d2e}.ds-selector:hover:not([aria-pressed=\"true\"]){background:#e0e4d6}.ds-dot{width:6px;height:6px;border-radius:50%;background:#ba8137}.ds-selector:focus-visible{outline:2px solid #b17831;outline-offset:6px}@media(prefers-reduced-motion:reduce){.ds-button,.ds-button svg,.ds-selector,.ds-faq svg{transition:none}}"
+    },
+    {
+      "name": "Source document controls",
+      "kind": "button",
+      "description": "Pressed source uses a dark underline and stronger text.",
+      "html": "<div class=\"ds-tabs\" role=\"group\" aria-label=\"Source document\"><button aria-pressed=\"true\">Hearing transcript</button><button aria-pressed=\"false\">Witness statement</button></div>",
+      "css": ".ds-tabs{display:flex;border-bottom:1px solid #cfd3c5}.ds-tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:12px 12px 10px;color:#666e60;font:12px/1.65 var(--sans,Manrope,sans-serif);cursor:pointer}.ds-tabs button[aria-pressed=\"true\"]{color:#234631;border-bottom-color:#365c40;font-weight:600}.ds-tabs button:hover{background:#e6e8dc}.ds-tabs button:focus-visible{outline:2px solid #b17831;outline-offset:6px}"
+    },
+    {
+      "name": "Source excerpt",
+      "kind": "card",
+      "description": "A rectangular source sheet with a highlighted passage inside a pale workspace.",
+      "html": "<article class=\"ds-sheet\"><h4>Earlier account of events</h4><p><span class=\"ds-number\">02</span><span><mark>I arrived shortly after 8:00 PM.</mark></span></p><p class=\"ds-footnote\">Prepared example for demonstration.</p></article>",
+      "css": ".ds-sheet{padding:25px 23px 20px;background:#fffcf3;color:var(--foreground,#14281f);box-shadow:0 5px 18px #28352009}.ds-sheet h4{margin:22px 0 20px;font:400 25px/1.2 var(--serif,\"Caslon Display\",Georgia,serif)}.ds-sheet p{display:flex;gap:12px;font:12px/1.85 var(--sans,Manrope,sans-serif)}.ds-number{color:#7a7e6f;font-size:9px;font-variant-numeric:tabular-nums;padding-top:3px}.ds-sheet mark{background:#f0deb4;color:#34402a;padding-block:3px;box-decoration-break:clone}.ds-sheet .ds-footnote{border-top:1px solid #e2dfd3;padding-top:12px;margin-top:23px;color:#737667;font-size:10px}"
+    },
+    {
+      "name": "Editorial navigation",
+      "kind": "nav",
+      "description": "Plain links paired with the Rufina wordmark.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Example navigation\"><a class=\"ds-wordmark\" href=\"#top\">jude.</a><a href=\"#how-it-works\">How it works</a><a href=\"#approach\">Our approach</a></nav>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:32px;padding:24px;background:var(--primary,#16382b);color:var(--primary-foreground,#f6f0e4);font:14px/1.65 var(--sans,Manrope,sans-serif)}.ds-nav a{color:inherit;text-decoration:none;text-underline-offset:5px;padding-block:12px}.ds-nav a:hover{text-decoration:underline}.ds-nav .ds-wordmark{font:400 53px/1 Rufina,Georgia,serif;letter-spacing:-.04em;margin-right:auto}.ds-nav a:focus-visible{outline:2px solid #b17831;outline-offset:6px}"
+    },
+    {
+      "name": "Question disclosure",
+      "kind": "custom",
+      "description": "Native expandable disclosure with quiet rules and rotating chevron.",
+      "html": "<details class=\"ds-faq\"><summary>How should I read a finding?<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></summary><p>Inspect the source and preserve the surrounding context.</p></details>",
+      "css": ".ds-faq{border-block:1px solid var(--line,#d9d6ca);color:var(--foreground,#14281f);font-family:var(--sans,Manrope,sans-serif)}.ds-faq summary{display:flex;align-items:center;justify-content:space-between;gap:20px;list-style:none;cursor:pointer;padding-block:21px;font-size:15px}.ds-faq summary::-webkit-details-marker{display:none}.ds-faq summary:hover{color:#7a653a}.ds-faq summary:focus-visible{outline:2px solid #b17831;outline-offset:6px}.ds-faq svg{color:#697763;transition:transform .2s}.ds-faq[open] svg{transform:rotate(180deg)}.ds-faq p{font-size:14px;line-height:1.85;color:var(--muted,#64675e);padding:0 25px 24px 0}@media(prefers-reduced-motion:reduce){.ds-button,.ds-button svg,.ds-selector,.ds-faq svg{transition:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Editorial Case File",
+    "overview": "Jude uses the user-approved warm-paper and forest-green editorial direction. Expansive serif headings establish a composed voice; plain sans-serif explanations and precise source annotations support close reading. The visual rhythm moves between spacious framing and denser evidence, retaining a clear hierarchy in both.\n\nMaterial is purposeful: a dark photographic case-file backdrop frames the hero, while a separate ivory paper texture carries the evidence comparison. The source sheet remains visually distinct from the surrounding workspace. This record describes the built direction A, \u201cStay with the testimony,\u201d selected by the user after correcting the earlier C choice.",
+    "keyCharacteristics": [
+      "Deep forest framing and warm ivory reading surfaces.",
+      "Rufina hero, wordmark, and source-introduction heading; Caslon Display supporting serif; Manrope body text.",
+      "Source-linked quotations, quiet dividers, and qualified status labels.",
+      "Stacked mobile evidence with visible keyboard and selected states."
+    ],
+    "rules": [
+      {
+        "name": "Material Separation",
+        "body": "Keep the ivory evidence texture separate from the green case-file backdrop so source text always sits on a light reading surface.",
+        "section": "colors"
+      },
+      {
+        "name": "Two Serif Roles",
+        "body": "Use Rufina for the hero headline, wordmark, and source-introduction heading, and Caslon Display for the remaining serif hierarchy; keep controls and explanatory prose in Manrope except for the established prominent button treatment.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do retain separate dark case-file framing and light paper reading surfaces.",
+      "Do preserve the Rufina, Caslon Display, and Manrope role separation.",
+      "Do keep source links available when evidence stacks on mobile.",
+      "Do communicate status and selection with text or shape as well as color.",
+      "Do preserve keyboard focus visibility and reduced-motion behavior."
+    ],
+    "donts": [
+      "Don't merge the paper texture into the dark hero image.",
+      "Don't turn every editorial section into an elevated card.",
+      "Don't replace source annotations or qualification text with decorative badges.",
+      "Don't treat the smallest document metadata as a default body or control text size."
+    ]
+  }
+}
