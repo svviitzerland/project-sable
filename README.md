@@ -1,59 +1,65 @@
-# Jude — courtroom intelligence
+# Jude
 
-A marketing website for Jude, an evidence-grounded AI courtroom copilot concept for Indonesian legal professionals. The site includes a responsive editorial landing page and an interactive, explicitly synthetic evidence demonstration. Live transcription, AI analysis, document uploads, and legal retrieval are not connected in this prototype.
+An evidence-grounded workspace for hearing preparation, testimony review, and courtroom practice. The existing landing page is at `/`; the authenticated product is at `/workspace`.
 
-The project retains its Next.js + FastAPI foundation. The marketing page runs independently of the backend; Next.js forwards browser requests under `/api/*` to FastAPI when backend features are added.
+Jude now uses **Svelte 5, SvelteKit 3, and TypeScript for both frontend and backend**. One Vercel project serves the UI and `/api/v1` API. There is no Python server or proxy to deploy. The complete application lives in `app/`. Set the Vercel project's Root Directory to `app`.
 
-## Stack
+## Run locally
 
-- `fe/`: Next.js App Router, React, TypeScript, Tailwind CSS, shadcn/ui
-- `be/`: FastAPI, Uvicorn, Pydantic
-- `.agents/skills/`: reusable agent skills 
-- `docs/`: project decisions and artifacts
-
-## Get started
-
-Requirements: Node.js 20.9+, pnpm 9+, Python 3.11+, and [uv](https://docs.astral.sh/uv/).
-
-In separate terminals:
+Use Node **24.x** and pnpm 11.25.0:
 
 ```bash
-cd be
-uv sync
-cp .env.example .env
-uv run uvicorn app.main:app --reload --port 8000
-```
-
-```bash
-cd fe
-pnpm install
+cd app
+pnpm install --frozen-lockfile
 cp .env.example .env.local
 pnpm dev
 ```
 
-Open http://localhost:3000 to explore Jude. The demo supports three example findings, original-source excerpt selection, per-example review state for the current visit, and copying suggested questions. All material is synthetic and no data is submitted. FastAPI's interactive docs remain at http://127.0.0.1:8000/docs. Set `API_INTERNAL_URL` in `fe/.env.local` if the backend runs elsewhere. Restart Next.js after changing it.
+Open http://localhost:3000/workspace. Register an account or open a clearly labeled synthetic case. Local SQLite and private original files persist in `app/.data/`. Run one local process; hosted operation uses shared PostgreSQL coordination instead. To continue using an existing local database and originals, set `JUDE_DATA_DIR` to the absolute path of the previous `be/.data` directory. Account hashes, sessions, case tables, and `.jude` version 1 remain compatible.
 
-If port 3000 is occupied, run `cd fe && pnpm dev --port 3001` and use `http://localhost:3001`. Use the printed localhost URL for development.
+## Deploy
+
+Import the repository in Vercel, select **SvelteKit**, Root Directory **`app`**, and Node **24.x**. Apply the Supabase migrations and add the private environment variables described in [DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md). Existing databases need the new `006_typescript_audio.sql` migration after 001–005.
+
+Supabase PostgreSQL/private Storage and QStash remain required hosted services. OpenRouter, Speechmatics, and Pasal.id enable their respective features. Recovery can run from QStash's scheduler, so this repository does not impose a per-minute Vercel Cron requirement on Hobby projects. Configure the schedule after deployment using the documented script. No deployment or live-provider verification has been performed without credentials.
+
+## Product
+
+- Authenticated, owner-isolated cases; PDF, DOCX, TXT and Markdown ingestion with original downloads and page provenance.
+- Dedicated hearings; reviewed transcript upload, native CSV/TXT/SRT/VTT/JSON/`.jude` parsing, and optional verbatim-checked AI formatting.
+- Live microphone/prepared-audio transcription; finalized testimony persists independently of analysis.
+- Four-step analysis with an independent reviewer and exact-quotation verification; review notes, speaker labels, search, and review queues.
+- Evidence graph, confirmed connections, natural-language search, and optional OpenRouter embeddings.
+- Case-wide assistant and separate courtroom practice with editable conditions, role selection, saved exchanges and debriefs.
+- Portable `.jude` case/hearing archives and separate conversation JSON exports.
+
+Without provider keys, keyword search, manual testimony, source inspection, archive workflows, the authored synthetic hearing, sources-only assistant replies, and guided practice work locally. Scanned PDFs still require OCR before upload. Provider configuration is not proof of service availability or model quality.
 
 ## Checks
 
 ```bash
-cd be && uv run pytest && uv run ruff check .
-cd fe && pnpm lint && pnpm typecheck && pnpm build
+cd app
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm check:bundle
+pnpm evaluate --predictions evaluation/predictions.fixture.json --fixture --output /tmp/jude-evaluation.json
 ```
 
-## Product and design
+With the app running in another terminal:
 
-1. `PRODUCT.md` records the supplied product truth; `docs/PRODUCT_SPEC.md` tracks website scope.
-2. `docs/artifacts/phases/2026-10-30-jude-website.md` records the approved direction and validation.
-3. `fe/src/components/jude-site.tsx` owns the website; `fe/src/lib/jude-demo.ts` owns its synthetic examples.
-4. Fonts are served locally from `fe/public/fonts/`, with their licenses. Generated image assets carry prompt provenance.
-5. Future backend routes belong under `/api/v1`; never put credentials in browser code.
+```bash
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
 
-This starter does not assume a database, auth provider, or AI service. Add those when the project requires them.
+Set `CHROMIUM_EXECUTABLE` to an installed Chromium path if needed; `JUDE_TEST_URL` selects another app URL. The TypeScript browser suites cover workspace, landing, conversations/practice, chunked uploads and mocked direct speech rotation. Provider mocks are explicitly test-only.
 
-## Impeccable design skill
+For PostgreSQL, provision a disposable database named `jude_test*` on a server with pgvector and run `JUDE_TEST_DATABASE_URL=... pnpm test`. This verifies migrations, RLS denial, vectors, shared locks/rates, jobs and cross-connection persistence; it does not emulate hosted Supabase Storage. See [evaluation guidance](app/evaluation/README.md) before interpreting metrics.
 
-[Impeccable](https://impeccable.style/) 4.8.0 is installed for this repository in `.agents/skills/impeccable/`. In Codex chat, use `$impeccable init` to establish product context, `$impeccable audit` to review the UI, or `$impeccable polish` for a finishing pass. If the skill does not appear, start a new chat or reload Codex.
+## Architecture and boundaries
 
-The vendored Codex skill comes from `pbakaus/impeccable` at commit `02523aec3e4c4580102d996d1b6a71fbe062e03f`. Its launcher downloads the matching engine on first use. Automatic design hooks are optional and are not enabled by this installation; use `$impeccable hooks on` to configure them separately.
+Server-only modules live in `app/src/lib/server`; Zod validates request and model-output contracts. SvelteKit's `/api/v1/[...path]` endpoint enforces account ownership and delegates to those modules. PostgreSQL migrations run separately, never on hosted cold starts. Private keys are declared in `app/src/env.ts` and never exported to browser environment variables.
+
+The app supports human verification, not determinations of guilt, honesty, credibility, or legal outcomes. Legal search returns discovery metadata and links, not verified statute text. Practice output is hypothetical and never enters the evidence record. See [the product spec](docs/PRODUCT_SPEC.md), [architecture](docs/ARCHITECTURE.md), and [portable format](docs/JUDE_FORMAT.md).

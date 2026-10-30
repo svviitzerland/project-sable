@@ -23,3 +23,14 @@ __pycache__/
 .impeccable/questions/
 .impeccable/review/
 .impeccable/build/
+
+# Jude application data (documents, sessions, database)
+.data/
+
+# SvelteKit and Vercel build artifacts
+.svelte-kit/
+.vercel/
+
+# Browser test artifacts
+test-results/
+playwright-report/
