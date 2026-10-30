@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import { BookOpen, Search } from "@lucide/svelte";
   import { api, type LegalReference } from "../lib/workspace-api";
   import styles from "./workspace.module.css";
@@ -73,7 +74,10 @@
   {#if error}<p class={styles.error} role="alert">
       {error}
     </p>{/if}
-  {#if !configured}<Empty
+  {#if busy}<Skeleton
+      variant="reader"
+      label="Searching legal references…"
+    />{:else if !configured}<Empty
       title="Connect legal discovery."
       text="Add PASAL_API_KEY to the backend environment to enable authenticated searches. No legal references are fabricated in the offline demonstration."
       >{#snippet icon()}<BookOpen size={32}></BookOpen>{/snippet}</Empty

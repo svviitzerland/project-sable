@@ -45,6 +45,10 @@ Case quotations are checked against the supplied text before an exchange is save
 
 Without AI, an explicitly selected guided drill provides scripted reflection prompts and a self-review checklist; it does not assess performance or impersonate responsive counsel. Practice never creates testimony, findings, or evidence links. Conversations are owner-checked and persisted separately, with up to 60 sessions per case and a bounded exchange history (roughly 80 messages). One exchange may run per conversation at a time. Separate JSON exports preserve assistant/practice history; `.jude` version 1 archives continue to carry the evidentiary case record and exclude dialogue.
 
+## Loading behavior
+
+Layout-matched skeletons cover workspace startup, case lists/records, evidence maps/search, document uploads/readers/search, hearing import previews/conversion, original finding passages, conversation history/opening/replies, practice suggestions/startup, legal search and save/import/audio preparation feedback. Initial data loads no longer show premature empty states. Existing records remain visible during background refreshes; explicit request failures end loading and preserve errors and retry controls. Skeletons expose named status regions, honor reduced motion, and pause animation when hidden or offscreen. The marketing page stays immediately readable without artificial loading delays.
+
 ## Constraints and decisions
 
 Local mode uses one backend worker and recoverable in-process tasks. Hosted Vercel mode uses a transactional analysis outbox, signed QStash callbacks, PostgreSQL leases/rate limits/coalesced events, and scheduled recovery. Cold starts perform no migrations or global status resets. Sessions are application-owned, not Supabase Auth. Backend ownership checks protect every case route. No OCR, native courtroom recording, account recovery, multi-user case sharing, speaker identity inference, or operational prosecutor/judge workflow (practice roles are supported). Configured providers receive relevant material; no unverified privacy, accuracy, latency, customer, or commercial claims.

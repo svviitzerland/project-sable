@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import { Upload } from "@lucide/svelte";
   import { api, type Case } from "../lib/workspace-api";
   import styles from "./casebook.module.css";
@@ -46,5 +47,6 @@
       }}
     />
   </label>
+  {#if busy}<Skeleton variant="compact" label="Importing case…" inverse />{/if}
   {#if error}<p role="alert">{error}</p>{/if}
 </div>

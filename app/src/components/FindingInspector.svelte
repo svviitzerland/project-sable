@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import { Check, Download, ShieldCheck } from "@lucide/svelte";
   import {
     api,
@@ -47,6 +48,8 @@
     void [caseId, citation?.chunk_id];
     return untrack(() => {
       let alive = true;
+      source = null;
+      sourceError = "";
       if (citation?.chunk_id)
         api<Source>(`/cases/${caseId}/sources/${citation.chunk_id}`)
           .then((s) => {
@@ -94,10 +97,11 @@
           {source}
           {caseId}
           quote={citation?.quote}
-        ></SourceCard>{:else}<p class={styles.muted}>
-          {citation
-            ? "Loading original passage…"
-            : "No source citation supports this finding."}
+        ></SourceCard>{:else if citation}<Skeleton
+          variant="reader"
+          label="Loading original passage…"
+        />{:else}<p class={styles.muted}>
+          No source citation supports this finding.
         </p>{/if}{/if}
     <div class={styles.verify}>
       <h4>What to verify</h4>

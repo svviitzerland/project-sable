@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import { FolderOpen } from "@lucide/svelte";
   import {
     api,
@@ -96,3 +97,5 @@
     </div>
   </section>
 </div>
+
+{#if busy}<Skeleton variant="compact" label="Saving speaker labels…" />{/if}

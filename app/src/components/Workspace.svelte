@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import { resolve } from "$app/paths";
   import {
     ArrowLeft,
@@ -85,6 +86,7 @@
   let user = $state<User | null>(null);
 
   function setUser(value: typeof user) {
+    if (value) casesLoading = true;
     user = value;
   }
 
@@ -119,6 +121,8 @@
   }
 
   let busy = $state(false);
+  let casesLoading = $state(true);
+  let detailLoading = $state(false);
 
   let creating = $state(false);
 
@@ -151,6 +155,7 @@
     const id = activeCase.current;
     if (!id) return;
     const version = ++refreshVersion.current;
+    if (!detail) detailLoading = true;
     try {
       const result = await api<CaseDetail>(`/cases/${id}`);
       if (activeCase.current === id && version === refreshVersion.current) {
@@ -170,6 +175,9 @@
         user = null;
       } else
         error = e instanceof Error ? e.message : "Could not load this case.";
+    } finally {
+      if (activeCase.current === id && version === refreshVersion.current)
+        detailLoading = false;
     }
   };
 
@@ -178,6 +186,7 @@
     refreshVersion.current++;
     activeCase.current = id;
     caseId = id;
+    detailLoading = !!id;
     assistantReference = null;
     hearingId = null;
     tab = "evidence";
@@ -221,6 +230,7 @@
     void [user, chooseCase];
     return untrack(() => {
       if (!user) return;
+      casesLoading = true;
       let active = true;
       api<Case[]>("/cases")
         .then((list) => {
@@ -231,6 +241,9 @@
         })
         .catch((e) => {
           if (active) error = e.message;
+        })
+        .finally(() => {
+          if (active) casesLoading = false;
         });
       return () => {
         active = false;
@@ -384,10 +397,7 @@
 </script>
 
 {#if booting}<div class={styles.app}>
-    <div class={styles.loading}>
-      <span class={styles.brand}>jude.</span>
-      <p>Opening your workspace…</p>
-    </div>
+    <Skeleton variant="workspace" label="Opening your workspace…" />
   </div>{:else}{#if !user}<div class={styles.app}>
       <Auth {caps} {error} {setError} onUser={setUser}></Auth>
     </div>{:else}<div class={styles.app}>
@@ -449,6 +459,11 @@
           }}
         ></ArchiveImport>
         <nav aria-label="Your cases" class={styles.caseList}>
+          {#if casesLoading}<Skeleton
+              variant="rows"
+              label="Loading your cases…"
+              inverse
+            />{/if}
           {#each cases as c (c.id)}<button
               class={c.id === caseId ? styles.caseActive : ""}
               aria-current={c.id === caseId ? "page" : undefined}
@@ -530,7 +545,10 @@
                 creating = false;
               })}
           ></NewCase>{/if}
-        {#if !caseId}<div class={styles.welcome}>
+        {#if casesLoading}<Skeleton
+            variant="case"
+            label="Loading your cases…"
+          />{:else if !caseId}<div class={styles.welcome}>
             <FolderOpen size={38}></FolderOpen>
             <h1>A place for the whole case.</h1>
             <p>
@@ -554,12 +572,15 @@
               >
                 Try a synthetic hearing <ArrowRight size={16}></ArrowRight>
               </button>{/if}
-          </div>{:else}{#if !detail}<div class={styles.loading}>
-              <p>Loading case record…</p>
-              <button class={styles.secondary} onclick={refresh}>
-                Retry connection
-              </button>
-            </div>{:else}
+          </div>{:else}{#if !detail}{#if detailLoading}<Skeleton
+                variant="case"
+                label="Loading case record…"
+              />{:else}<div class={styles.loading}>
+                <p>The case record could not be loaded.</p>
+                <button class={styles.secondary} onclick={refresh}>
+                  Retry connection
+                </button>
+              </div>{/if}{:else}
             <header class={styles.caseHeader}>
               <div>
                 <h1>{session?.title}</h1>
@@ -843,6 +864,11 @@
                           </option>{/each}
                       </select>
                     </label>
+                    {#if pending > 0}<Skeleton
+                        variant="rows"
+                        count={1}
+                        label="Examining testimony for findings…"
+                      />{/if}
                     <div class={styles.findingList}>
                       {#if visibleFindings.length}{#each visibleFindings as f (f.id)}<button
                             class={`${styles.findingRow} ${finding?.id === f.id ? styles.findingSelected : ""}`}
@@ -868,7 +894,7 @@
                               {f.citations.length !== 1 ? "s" : ""}
                               <ChevronRight size={14}></ChevronRight>
                             </small>
-                          </button>{/each}{:else}<Empty
+                          </button>{/each}{:else if pending === 0}<Empty
                           title={filter === "all"
                             ? "Follow the evidence."
                             : "No findings in this view."}

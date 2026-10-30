@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import {
     BookOpen,
     ChevronRight,
@@ -32,6 +33,19 @@
   let selectedDoc = $state<string | null>(null);
 
   let chunks = $state<Source[]>([]);
+  let pending = $state<"" | "upload" | "search" | "read">("");
+  async function withLoading(
+    kind: typeof pending,
+    operation: () => Promise<unknown>,
+  ) {
+    if (pending) return;
+    pending = kind;
+    try {
+      await run(operation);
+    } finally {
+      pending = "";
+    }
+  }
 </script>
 
 <div class={styles.documents}>
@@ -54,7 +68,7 @@
       </small>
     </div>
     <label class={styles.secondary}>
-      {busy ? "Processing…" : "Choose a file"}
+      {pending === "upload" ? "Processing…" : "Choose a file"}
       <input
         class={styles.srOnly}
         type="file"
@@ -63,7 +77,7 @@
         onchange={(e) => {
           const file = e.currentTarget.files?.[0];
           if (file)
-            void run(async () => {
+            void withLoading("upload", async () => {
               const body = new FormData();
               body.append("file", file);
               await api(`/cases/${caseId}/documents`, {
@@ -80,7 +94,7 @@
     class={styles.searchForm}
     onsubmit={(e) => {
       e.preventDefault();
-      void run(async () => {
+      void withLoading("search", async () => {
         const data = await api<{ results: Source[]; method: string }>(
           `/cases/${caseId}/search?q=${encodeURIComponent(query)}`,
         );
@@ -110,10 +124,16 @@
       <h3>
         {documents.length} document{documents.length !== 1 ? "s" : ""}
       </h3>
-      {#if documents.length}{#each documents as doc (doc.id)}<button
+      {#if pending === "upload"}<Skeleton
+          variant="rows"
+          count={1}
+          label="Processing document…"
+        />{/if}
+      {#if documents.length || pending === "upload"}{#each documents as doc (doc.id)}<button
             class={`${styles.docRow} ${selectedDoc === doc.id ? styles.docSelected : ""}`}
+            disabled={busy}
             onclick={() =>
-              run(async () => {
+              withLoading("read", async () => {
                 chunks = await api<Source[]>(
                   `/cases/${caseId}/documents/${doc.id}/chunks`,
                 );
@@ -139,7 +159,12 @@
         >{/if}
     </div>
     <div class={styles.documentReader}>
-      {#if results !== null}
+      {#if pending === "search" || pending === "read"}<Skeleton
+          variant="reader"
+          label={pending === "search"
+            ? "Searching case documents…"
+            : "Loading document passages…"}
+        />{:else if results !== null}
         <h3>
           Search results&#32;
           <small>

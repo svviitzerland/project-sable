@@ -49,3 +49,7 @@ Replaced shared opaque provider request failures with fixed service labels, HTTP
 ## Citation formatting and bounded correction
 
 Assistant citation validation now tolerates only whitespace differences and persists the exact matched source substring. Source IDs, spelling, numbers, negation and punctuation remain strict. Prompts distinguish passage IDs from document/exhibit identifiers. Assistant replies and practice debriefs receive one automatic citation correction attempt inside the existing lock; both attempts are validated before any exchange is committed. Missing or invented citations still fail closed, and a retry cannot avoid citations by changing uses_case_facts. Tests cover PDF line breaks, fabricated/foreign quotes, successful correction, bounded failed correction, provider errors and idempotent saves. Actual provider-model output remains unverified without credentials.
+
+## Workspace skeleton loading
+
+Added a shared responsive skeleton with layout variants, status semantics, inverse navigation tones and motion/visibility handling. Integrated real request state across workspace startup, case selection, evidence, sources, documents, hearing previews, dialogue, practice, legal search and processing feedback. Loaded data remains visible during polling; failed graph loads offer retry, and finding-source changes reset their prior state. Delayed-network browser checks exercise startup, case lists, document readers/search, hearing previews and conversation replies, with error recovery, mobile overflow and reduced-motion assertions.

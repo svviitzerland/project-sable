@@ -431,3 +431,6 @@
     transition: none;
   }
 }
+
+.replyLoading { padding: 20px 4px; max-width: 640px; }
+.replyLoading > p { color: #53634f; font-size: 13px; }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import { onMount } from "svelte";
   import { X } from "@lucide/svelte";
   import styles from "./workspace.module.css";
@@ -67,3 +68,5 @@
     </div>
   </form>
 </section>
+
+{#if busy}<Skeleton variant="compact" label="Creating case…" />{/if}

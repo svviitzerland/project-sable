@@ -1,11 +1,11 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import {
     ArrowRight,
     AudioLines,
     Check,
     Download,
     FileText,
-    LoaderCircle,
     Plus,
     Search,
     ShieldCheck,
@@ -204,10 +204,11 @@
   {#if error}<p role="alert" class={ui.error}>
       {error}
     </p>{/if}
-  {#if busy}<p role="status" class={styles.progress}>
-      <LoaderCircle size={16}></LoaderCircle>
-      {busy}
-    </p>{/if}
+  {#if busy && busy !== "Reading transcript…" && busy !== "Converting transcript…"}<Skeleton
+      variant="rows"
+      count={1}
+      label={busy}
+    />{/if}
   {#if creating}<form
       class={styles.newHearing}
       onsubmit={async (e) => {
@@ -248,7 +249,7 @@
       </label>
       <button class={ui.primary} disabled={!!busy}> Create hearing </button>
     </form>{/if}
-  {#if file && (preview || error)}<section
+  {#if file && (preview || error || busy === "Reading transcript…" || busy === "Converting transcript…")}<section
       class={styles.preview}
       aria-label="Transcript import preview"
     >
@@ -278,7 +279,10 @@
         {preview?.notice ||
           "Choose a supported text file or use the hearing template."}
       </p>
-      {#if preview?.hearing}
+      {#if busy === "Reading transcript…" || busy === "Converting transcript…"}<Skeleton
+          variant="reader"
+          label={busy}
+        />{:else if preview?.hearing}
         <div class={styles.previewFields}>
           <label>
             Imported hearing title

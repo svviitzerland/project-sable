@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import { Plus } from "@lucide/svelte";
   import styles from "./workspace.module.css";
 
@@ -62,3 +63,5 @@
       </button>
     </form>{/if}
 </div>
+
+{#if busy}<Skeleton variant="compact" label="Saving testimony…" />{/if}

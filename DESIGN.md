@@ -258,6 +258,12 @@ The map uses numbered passage nodes and separately filled hearing-statement node
 
 Case questions use a full-width search field with a direct action. Results pair the response with individually inspectable source excerpts and provenance; the result surface does not replace the evidence map's source trail. Similarity and relationship labels remain qualified explanatory information rather than confidence decoration.
 
+### Loading placeholders
+
+Use the shared `Skeleton.svelte` component for asynchronous workspace, case, graph, conversation, reader, list, form and compact processing states. Shapes follow the expected content geometry; muted sage bars sit on the existing flat ivory surfaces, with an inverse variant for the forest case rail. Controls, drafts and loaded content remain available during background refreshes. Explicit navigation or searches show placeholders in the destination region, while a pending assistant reply appears beneath existing messages.
+
+Placeholder groups use a smooth 1.8-second opacity pulse, paused offscreen or while the document is hidden. Reduced-motion preference uses static shapes. Every group has a named status region with `aria-busy`, and decorative shapes are hidden from assistive technology. Initial loading is distinct from an empty record or a failed request; failures remove placeholders and retain error/retry controls. The static landing page does not add artificial loading delays.
+
 ### Case assistant and courtroom practice
 
 Dialogue extends the flat workspace treatment with ruled response rows, pale filled user turns, and explicit speaker or role labels. Saved-history selection combines a pale green fill with a pressed state. Source disclosures identify the document and page or hearing, then reveal the quotation, surrounding source text, and an original-document or hearing action. Material references and optional legal lookup use disclosures above the labeled composer; evidence handed into the assistant appears as a selected reference. Sources-only mode, source-selection limits, and hypothetical practice remain visible in explanatory text. New messages use a polite live log, and busy feedback includes a text status with reduced-motion-aware animation.

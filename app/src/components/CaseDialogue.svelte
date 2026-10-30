@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import {
     ArrowRight,
     BookOpen,
@@ -7,7 +8,6 @@
     ExternalLink,
     FileText,
     Gavel,
-    LoaderCircle,
     MessageSquare,
     Plus,
     Send,
@@ -133,6 +133,13 @@
   let rationale = $state("");
 
   let busy = $state("");
+  let responding = $derived(
+    [
+      "Reading the case…",
+      "The courtroom is responding…",
+      "Preparing your debrief…",
+    ].includes(busy),
+  );
 
   let loading = $state(true);
 
@@ -177,7 +184,7 @@
   });
 
   $effect(() => {
-    void [active?.id, active?.messages?.length];
+    void [active?.id, active?.messages?.length, responding];
     return untrack(() => {
       if (log.current) log.current.scrollTop = log.current.scrollHeight;
     });
@@ -311,7 +318,10 @@
           Export {practice ? "rehearsal" : "conversation"}&#32;
           <ExternalLink size={13}></ExternalLink>
         </a>{/if}
-      {#if sessions.length}{#each sessions as session (session.id)}<button
+      {#if loading}<Skeleton
+          variant="rows"
+          label="Loading saved conversations…"
+        />{:else if sessions.length}{#each sessions as session (session.id)}<button
             disabled={!!busy}
             aria-pressed={active?.id === session.id}
             onclick={() =>
@@ -337,11 +347,9 @@
                     : "Case conversation"}
             </small>
           </button>{/each}{:else}<p>
-          {loading
-            ? "Loading…"
-            : practice
-              ? "Your practice sessions will appear here."
-              : "Your conversations stay with this case."}
+          {practice
+            ? "Your practice sessions will appear here."
+            : "Your conversations stay with this case."}
         </p>{/if}
       <p class={styles.boundary}>
         {practice
@@ -355,9 +363,10 @@
         ? "Courtroom practice"
         : "Case assistant conversation"}
     >
-      {#if loading}<p class={styles.loading}>
-          Opening this case’s conversations…
-        </p>{:else}{#if practice && !active}<form
+      {#if loading || busy === "Opening conversation…" || busy === "Starting rehearsal…"}<Skeleton
+          variant={practice && !active ? "form" : "conversation"}
+          label={loading ? "Opening this case’s conversations…" : busy}
+        />{:else}{#if practice && !active}<form
             class={styles.setup}
             onsubmit={(e) => {
               e.preventDefault();
@@ -396,7 +405,10 @@
                 Suggest from case
               </button>
             </div>
-            {#if rationale}<div class={styles.proposal} role="status">
+            {#if busy === "Suggesting trial conditions…"}<Skeleton
+                variant="reader"
+                label={busy}
+              />{:else if rationale}<div class={styles.proposal} role="status">
                 <strong>Suggested setup · review and edit below</strong>
                 <p>{rationale}</p>
               </div>{/if}
@@ -587,7 +599,7 @@
             aria-live="polite"
             aria-relevant="additions"
           >
-            {#if !messages.length}<div class={styles.welcome}>
+            {#if !messages.length && !responding}<div class={styles.welcome}>
                 <MessageSquare size={32}></MessageSquare>
                 <h3>Start with what you need to understand.</h3>
                 <p>
@@ -672,6 +684,10 @@
                     {message.notice}
                   </p>{/if}
               </article>{/each}
+            {#if responding}<div class={styles.replyLoading}>
+                <p>{busy}</p>
+                <Skeleton variant="compact" label={busy} />
+              </div>{/if}
           </div>
           {#if active?.status === "complete"}<div class={styles.complete}>
               <Check size={18}></Check>
@@ -799,10 +815,6 @@
                 </div>
               </form>{/if}{/if}
         {/if}{/if}
-      {#if busy}<p class={styles.busy} role="status">
-          <LoaderCircle size={16}></LoaderCircle>
-          {busy}
-        </p>{/if}
     </section>
   </div>
 </div>

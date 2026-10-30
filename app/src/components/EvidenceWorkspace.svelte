@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import {
     ArrowRight,
     Check,
@@ -6,7 +7,6 @@
     FileText,
     GitBranch,
     Link2,
-    LoaderCircle,
     Plus,
     Search,
     X,
@@ -86,6 +86,7 @@
   } = $props();
 
   let graph = $state<Graph | null>(null);
+  let graphLoading = $state(true);
 
   let query = $state("");
 
@@ -114,7 +115,12 @@
   let explanation = $state("");
 
   async function load() {
-    graph = await api<Graph>(`/cases/${caseId}/graph`);
+    graphLoading = !graph;
+    try {
+      graph = await api<Graph>(`/cases/${caseId}/graph`);
+    } finally {
+      graphLoading = false;
+    }
   }
 
   $effect(() => {
@@ -127,6 +133,9 @@
         })
         .catch((e) => {
           if (alive) error = e.message;
+        })
+        .finally(() => {
+          if (alive) graphLoading = false;
         });
       return () => {
         alive = false;
@@ -276,14 +285,17 @@
   {#if error}<p class={ui.error} role="alert">
       {error}
     </p>{/if}
-  {#if busy}<p role="status" class={styles.progress}>
-      <LoaderCircle size={16}></LoaderCircle>
-      {busy}
-    </p>{/if}
+  {#if busy && busy !== "Searching the case…"}<Skeleton
+      variant="compact"
+      label={busy}
+    />{/if}
   {#if notice}<p class={styles.graphNotice} role="status">
       {notice}
     </p>{/if}
-  {#if answer}<section class={styles.answer}>
+  {#if busy === "Searching the case…"}<Skeleton
+      variant="reader"
+      label="Searching the case…"
+    />{:else if answer}<section class={styles.answer}>
       <header>
         <h3>
           {answer.answer ? "A source-grounded answer" : "Relevant passages"}
@@ -323,7 +335,14 @@
           </button>{/each}
       </div>
     </section>{/if}
-  {#if !graph}<p class={styles.empty}>Loading evidence…</p>{:else}
+  {#if !graph}{#if graphLoading}<Skeleton
+        variant="graph"
+        label="Loading evidence map…"
+      />{:else}<button
+        class={ui.secondary}
+        onclick={() => run("Loading evidence…", load)}
+        >Retry loading evidence</button
+      >{/if}{:else}
     <div class={styles.graphToolbar}>
       <div class={styles.viewSwitch}>
         <button

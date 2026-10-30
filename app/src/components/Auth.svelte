@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import { resolve } from "$app/paths";
   import { ArrowLeft, ArrowRight, Play, ShieldCheck } from "@lucide/svelte";
   import { api, type Capabilities, type User } from "../lib/workspace-api";
@@ -107,6 +108,10 @@
         <ArrowRight size={17}></ArrowRight>
       </button>
     </form>
+    {#if busy}<Skeleton
+        variant="compact"
+        label="Opening your workspace…"
+      />{/if}
     <button class={styles.textButton} onclick={() => (register = !register)}>
       {register
         ? "Already have an account? Sign in"

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Skeleton from "./Skeleton.svelte";
   import { AudioLines } from "@lucide/svelte";
   import ui from "./workspace.module.css";
   import styles from "./casebook.module.css";
@@ -77,6 +78,12 @@
             : "Stop recording"}
       </button>{/if}
   </div>
+  {#if audio.status === "connecting" || audio.status === "stopping"}<Skeleton
+      variant="compact"
+      label={audio.status === "connecting"
+        ? "Connecting audio…"
+        : "Saving final transcript…"}
+    />{/if}
   <p role="status">
     {!configured
       ? "Speechmatics is not connected. You can upload a transcript above."
