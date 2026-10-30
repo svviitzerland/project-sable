@@ -45,3 +45,7 @@ Unexpected API errors previously returned a generic response without logging the
 ## Provider request diagnostics
 
 Replaced shared opaque provider request failures with fixed service labels, HTTP status, actionable setup hints and correlated safe logs. Chat, embeddings, legal discovery, speech credentials, and Storage uploads/delete/sign requests are labeled separately. Network and malformed-JSON failures remain distinct; raw provider responses and case content are never included in diagnostics. Mocked rejection and redaction checks cover the failure paths alongside the existing successful provider contracts. Live account credentials and provider routing still require operator verification.
+
+## Citation formatting and bounded correction
+
+Assistant citation validation now tolerates only whitespace differences and persists the exact matched source substring. Source IDs, spelling, numbers, negation and punctuation remain strict. Prompts distinguish passage IDs from document/exhibit identifiers. Assistant replies and practice debriefs receive one automatic citation correction attempt inside the existing lock; both attempts are validated before any exchange is committed. Missing or invented citations still fail closed, and a retry cannot avoid citations by changing uses_case_facts. Tests cover PDF line breaks, fabricated/foreign quotes, successful correction, bounded failed correction, provider errors and idempotent saves. Actual provider-model output remains unverified without credentials.

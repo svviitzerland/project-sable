@@ -27,6 +27,8 @@ import {
 } from "../src/lib/server/providers";
 import { z } from "zod";
 import { ProviderError } from "../src/lib/server/errors";
+import { verifyReply } from "../src/lib/server/dialogues";
+import type { ContextSource } from "../src/lib/server/contracts";
 import { stageJob, runJob } from "../src/lib/server/jobs";
 import { normalizeTranscript } from "../src/lib/server/audio";
 import { createHmac } from "node:crypto";
@@ -590,6 +592,180 @@ test("assistant selected sources, persistence, idempotence and practice stay out
   );
   const exported = await a.call(`${base}/dialogues/${dialogue.id}/export`);
   assert.equal((await exported.json()).format, "jude-conversation");
+});
+
+test("reply quotes canonicalize whitespace only and preserve exact source text", () => {
+  const text = "The witness did\nnot remove tablets.\u00a0Count: 12 (T-3).";
+  const source: ContextSource = {
+    chunk_id: "source-1",
+    kind: "document",
+    title: "Source",
+    text,
+    document_id: "doc-1",
+    page: 1,
+    hearing_id: null,
+  };
+  const quote = "The witness did not remove tablets. Count: 12 (T-3).";
+  const verified = verifyReply(
+    [{ chunk_id: "source-1", quote, relation: "supports" }],
+    [source],
+    true,
+  );
+  assert.equal(verified[0].quote, text);
+  assert.ok(source.text.includes(verified[0].quote));
+  for (const invalid of [
+    "The witness did remove tablets.",
+    "Count: 21 (T-3).",
+    "Count: 12 (T.3).",
+    "count: 12 (T-3).",
+    "The witness ... tablets.",
+    " ",
+  ])
+    assert.throws(
+      () =>
+        verifyReply(
+          [{ chunk_id: "source-1", quote: invalid, relation: "supports" }],
+          [source],
+          true,
+        ),
+      /did not match/,
+    );
+  assert.throws(
+    () =>
+      verifyReply(
+        [{ chunk_id: "foreign", quote, relation: "supports" }],
+        [source],
+        true,
+      ),
+    /did not match/,
+  );
+});
+
+test("assistant repairs citations once before atomic save and preserves idempotence", async (t) => {
+  const { a, record, rt } = await fixture(t),
+    base = `/cases/${record.id}`;
+  await a.json(
+    base + "/documents",
+    "POST",
+    upload("source.txt", "The witness arrived\nat eight."),
+  );
+  rt.config.openrouterKey = "fake";
+  rt.config.model = "fake";
+  let calls = 0;
+  rt.fetch = async (url, init) => {
+    if (String(url).includes("/embeddings"))
+      return Response.json({
+        data: [{ index: 0, embedding: Array(1536).fill(0) }],
+      });
+    calls++;
+    const packet = JSON.parse(
+      JSON.parse(String(init?.body)).messages[1].content,
+    );
+    if (calls === 1)
+      return structuredResponse({
+        answer: "Unsupported draft.",
+        uses_case_facts: true,
+        citations: [
+          {
+            chunk_id: "wrong-document-id",
+            quote: "Invented quotation.",
+            relation: "supports",
+          },
+        ],
+      });
+    assert.equal(calls, 2);
+    assert.equal(packet.citation_repair.reason, "unknown_source");
+    assert.equal(packet.citation_repair.must_cite, true);
+    return structuredResponse({
+      answer: "The witness reports arriving at eight.",
+      uses_case_facts: true,
+      citations: [
+        {
+          chunk_id: packet.case_context.sources[0].chunk_id,
+          quote: "The witness arrived at eight.",
+          relation: "supports",
+        },
+      ],
+    });
+  };
+  const dialogue = await a.json(base + "/dialogues", "POST", {
+    kind: "assistant",
+  });
+  const path = `${base}/dialogues/${dialogue.id}/messages`;
+  const input = {
+    text: "When did the witness arrive?",
+    request_id: randomUUID(),
+  };
+  const result = await a.json(path, "POST", input);
+  assert.equal(calls, 2);
+  assert.equal(result.messages.length, 2);
+  assert.equal(
+    result.messages[1].text,
+    "The witness reports arriving at eight.",
+  );
+  assert.equal(
+    result.messages[1].citations[0].quote,
+    "The witness arrived\nat eight.",
+  );
+  assert.ok(!JSON.stringify(result).includes("Unsupported draft"));
+  assert.equal((await a.json(path, "POST", input)).messages.length, 2);
+  assert.equal(calls, 2);
+});
+
+test("failed citation repair stays bounded, cannot drop required citations, and saves nothing", async (t) => {
+  const { a, record, rt } = await fixture(t),
+    base = `/cases/${record.id}`;
+  await a.json(
+    base + "/documents",
+    "POST",
+    upload("source.txt", "The witness did not remove tablets."),
+  );
+  rt.config.openrouterKey = "fake";
+  rt.config.model = "fake";
+  let calls = 0;
+  rt.fetch = async (url) => {
+    if (String(url).includes("/embeddings"))
+      return Response.json({
+        data: [{ index: 0, embedding: Array(1536).fill(0) }],
+      });
+    calls++;
+    return structuredResponse({
+      answer: "Unverified claim.",
+      uses_case_facts: calls === 1,
+      citations: [],
+    });
+  };
+  const dialogue = await a.json(base + "/dialogues", "POST", {
+    kind: "assistant",
+  });
+  const path = `${base}/dialogues/${dialogue.id}/messages`;
+  await a.json(
+    path,
+    "POST",
+    { text: "What happened?", request_id: randomUUID() },
+    503,
+  );
+  assert.equal(calls, 2);
+  assert.equal(
+    (await a.json(`${base}/dialogues/${dialogue.id}`)).messages.length,
+    0,
+  );
+  calls = 0;
+  rt.fetch = async (url) => {
+    if (String(url).includes("/embeddings"))
+      return Response.json({
+        data: [{ index: 0, embedding: Array(1536).fill(0) }],
+      });
+    calls++;
+    return new Response("", { status: 402 });
+  };
+  await a.json(
+    path,
+    "POST",
+    { text: "What happened?", request_id: randomUUID() },
+    503,
+  );
+  assert.equal(calls, 1);
 });
 
 test("AI conversations reject forged citations and speaking for the user, atomically", async (t) => {
