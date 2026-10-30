@@ -23,6 +23,8 @@ import {
   GitBranch,
   LogOut,
   Menu,
+  MessageSquare,
+  Gavel,
   Pause,
   Play,
   Plus,
@@ -60,8 +62,19 @@ import {
   HearingLibrary,
 } from "./casebook";
 
-type Tab = "evidence" | "hearing" | "documents" | "references" | "settings";
+import { CaseDialogue } from "./case-dialogue";
+
+type Tab =
+  | "assistant"
+  | "practice"
+  | "evidence"
+  | "hearing"
+  | "documents"
+  | "references"
+  | "settings";
 const icons = {
+  assistant: MessageSquare,
+  practice: Gavel,
   evidence: GitBranch,
   hearing: AudioLines,
   documents: FileText,
@@ -72,6 +85,8 @@ const titles: Record<Tab, string> = {
   evidence: "Evidence",
   hearing: "Hearings",
   documents: "Case documents",
+  assistant: "Case assistant",
+  practice: "Courtroom practice",
   references: "Legal references",
   settings: "Session & connections",
 };
@@ -84,6 +99,9 @@ export function Workspace() {
   const [caseId, setCaseId] = useState<string | null>(null);
   const [detail, setDetail] = useState<CaseDetail | null>(null);
   const [tab, setTab] = useState<Tab>("evidence");
+  const [assistantReference, setAssistantReference] = useState<string | null>(
+    null,
+  );
   const [hearingId, setHearingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState("all");
@@ -130,6 +148,7 @@ export function Workspace() {
     refreshVersion.current++;
     activeCase.current = id;
     setCaseId(id);
+    setAssistantReference(null);
     setHearingId(null);
     setTab("evidence");
     setDetail(null);
@@ -597,10 +616,29 @@ export function Workspace() {
               className={styles.panel}
               tabIndex={0}
             >
+              {(tab === "assistant" || tab === "practice") && (
+                <CaseDialogue
+                  key={`${caseId}-${tab}`}
+                  caseId={caseId}
+                  kind={tab === "practice" ? "practice" : "assistant"}
+                  initialReference={
+                    tab === "assistant" ? assistantReference : null
+                  }
+                  caps={caps}
+                  openHearing={openHearing}
+                />
+              )}
               {tab === "evidence" && (
                 <EvidenceWorkspace
                   key={caseId}
                   caseId={caseId}
+                  askAssistant={(reference) => {
+                    setAssistantReference(reference);
+                    setTab("assistant");
+                    requestAnimationFrame(() =>
+                      document.getElementById("tab-assistant")?.focus(),
+                    );
+                  }}
                   openHearing={openHearing}
                 />
               )}

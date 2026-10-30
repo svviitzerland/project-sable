@@ -1,0 +1,433 @@
+.screen {
+  padding: 28px 0;
+}
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+.heading h2 {
+  font:
+    400 34px/1.2 Rufina,
+    Georgia,
+    serif;
+}
+.heading p {
+  color: #5c6d5e;
+  max-width: 720px;
+  line-height: 1.7;
+  margin-top: 12px;
+}
+.heading > button {
+  flex-shrink: 0;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 225px minmax(0, 1fr);
+  border-top: 1px solid #cfd6c6;
+}
+.history {
+  padding: 22px 18px 20px 0;
+  border-right: 1px solid #d9dfd0;
+}
+.history h3 {
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.history > button {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 7px;
+  padding: 14px 12px;
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  overflow-wrap: anywhere;
+}
+.history > button[aria-pressed="true"] {
+  background: #e3eadc;
+  color: #173a2c;
+}
+.history > button:hover {
+  background: #ebefe5;
+}
+.history small,
+.history > p {
+  color: #5c6d5e;
+  font-size: 12px;
+}
+.history .boundary {
+  margin-top: 24px;
+  border-top: 1px solid #d9dfd0;
+  padding-top: 18px;
+  line-height: 1.7;
+}
+.main {
+  min-width: 0;
+  background: #fcfbf7;
+  position: relative;
+}
+.setup {
+  display: grid;
+  gap: 22px;
+  padding: 28px;
+}
+.setupHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+.setupHeading h3 {
+  font:
+    400 30px/1.2 "Caslon Display",
+    Georgia,
+    serif;
+  margin: 10px 0;
+}
+.setupHeading p,
+.hint {
+  color: #5c6d5e;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.setupHeading > button {
+  flex-shrink: 0;
+}
+.fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.setupFooter {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.proposal {
+  padding: 18px;
+  background: #edf1e7;
+  font-size: 13px;
+}
+.proposal p {
+  margin-top: 8px;
+}
+.sessionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 23px 28px;
+  border-bottom: 1px solid #d9dfd0;
+}
+.sessionHeader h3 {
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.sessionHeader p {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #5c6d5e;
+}
+.sessionHeader button {
+  flex-shrink: 0;
+}
+.conditions {
+  padding: 15px 28px;
+  border-bottom: 1px solid #d9dfd0;
+}
+.conditions summary,
+.referencePicker summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  min-height: 36px;
+  font-size: 13px;
+}
+.conditions summary::-webkit-details-marker,
+.referencePicker summary::-webkit-details-marker {
+  display: none;
+}
+.conditions summary svg:last-child,
+.referencePicker summary svg:last-child {
+  margin-left: auto;
+  transition: transform 160ms ease-out;
+}
+.conditions[open] summary svg:last-child,
+.referencePicker[open] summary svg:last-child {
+  transform: rotate(180deg);
+}
+.conditions dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+  margin: 14px 0 18px;
+}
+.conditions dt {
+  text-transform: capitalize;
+  font-size: 12px;
+  color: #5c6d5e;
+}
+.conditions dd {
+  margin: 4px 0 0;
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.messages {
+  padding: 24px 28px;
+  min-height: 230px;
+  max-height: 65vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #9bab95 transparent;
+}
+.welcome {
+  padding: 30px 0;
+  max-width: 650px;
+}
+.welcome h3 {
+  font:
+    400 32px/1.2 "Caslon Display",
+    Georgia,
+    serif;
+  margin: 16px 0 12px;
+}
+.welcome > p {
+  color: #5c6d5e;
+  line-height: 1.8;
+}
+.welcome > div {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+}
+.welcome button {
+  text-align: left;
+  justify-content: space-between;
+  white-space: normal;
+}
+.message {
+  padding: 20px 0;
+  border-bottom: 1px solid #e0e4d9;
+}
+.message:first-child {
+  padding-top: 0;
+}
+.message h4 {
+  font:
+    600 13px/1.5 Manrope,
+    sans-serif;
+  color: #214c35;
+  margin-bottom: 12px;
+}
+.message > p {
+  white-space: pre-wrap;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+.userMessage {
+  margin: 0 0 20px;
+  padding: 16px 18px !important;
+  background: #eef1e8;
+  border-bottom: 0;
+}
+.citations {
+  margin-top: 18px;
+}
+.citations details {
+  border-top: 1px solid #d9dfd0;
+  padding: 10px 0;
+  font-size: 12px;
+}
+.citations summary {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+  min-height: 32px;
+}
+.citations summary span {
+  flex: 1;
+}
+.citations blockquote {
+  margin: 14px 0;
+  color: #3b553d;
+  font:
+    400 21px/1.4 "Caslon Display",
+    Georgia,
+    serif;
+  white-space: pre-wrap;
+}
+.citations .sourceText {
+  white-space: pre-wrap;
+  line-height: 1.8;
+  color: #5c6d5e;
+  margin-bottom: 14px;
+}
+.citations a,
+.legal a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: underline;
+  min-height: 36px;
+}
+.legal {
+  margin-top: 18px;
+  font-size: 12px;
+}
+.legal strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.notice {
+  font-size: 11px;
+  color: #5c6d5e;
+  margin-top: 16px !important;
+}
+.composer {
+  padding: 20px 28px 24px;
+  border-top: 1px solid #cfd6c6;
+}
+.referencePicker {
+  margin-bottom: 12px;
+}
+.referencePicker p {
+  font-size: 12px;
+  color: #5c6d5e;
+  line-height: 1.7;
+  margin: 8px 0 12px;
+}
+.referencePicker > label {
+  margin: 10px 0;
+}
+.referencePicker label:has(input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 9px;
+}
+.referencePicker input[type="checkbox"] {
+  margin-top: 4px;
+}
+.referencePicker small {
+  display: block;
+  color: #5c6d5e;
+  font-size: 11px;
+}
+.composer > textarea {
+  margin-top: 8px;
+  resize: vertical;
+}
+.composerFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-top: 12px;
+}
+.composerFooter > span {
+  font-size: 11px;
+  color: #5c6d5e;
+}
+.busy,
+.loading,
+.complete {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 18px 28px;
+  font-size: 13px;
+  color: #31583e;
+}
+.busy svg {
+  animation: waiting 1s linear infinite;
+}
+@keyframes waiting {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.complete {
+  flex-wrap: wrap;
+  background: #eaf0e2;
+}
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+  .setupHeading,
+  .sessionHeader {
+    flex-direction: column;
+  }
+}
+@media (max-width: 760px) {
+  .heading {
+    flex-direction: column;
+    gap: 18px;
+  }
+  .heading h2 {
+    font-size: 29px;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .history {
+    padding: 18px 0;
+    border-right: 0;
+    border-bottom: 1px solid #d9dfd0;
+    max-height: 210px;
+    overflow-y: auto;
+  }
+  .history .boundary {
+    display: none;
+  }
+  .fields,
+  .conditions dl {
+    grid-template-columns: 1fr;
+  }
+  .setup,
+  .sessionHeader,
+  .messages,
+  .composer {
+    padding: 20px 16px;
+  }
+  .setupFooter,
+  .composerFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .conditions {
+    padding-inline: 16px;
+  }
+  .conditions summary,
+  .referencePicker summary,
+  .citations summary,
+  .citations a {
+    min-height: 44px;
+  }
+  .messages {
+    max-height: 65vh;
+  }
+  .referencePicker label:has(input[type="checkbox"]) {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .busy svg {
+    animation: none;
+  }
+  .conditions summary svg,
+  .referencePicker summary svg {
+    transition: none;
+  }
+}

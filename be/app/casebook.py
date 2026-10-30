@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .auth import current_user
 from .database import case_hearing, owned_case
+from .dialogues import register_dialogues
 from .models import (
     CaseOut,
     Contract,
@@ -52,6 +53,7 @@ async def read_file(file, limit=MAX_BYTES):
 
 
 def register_casebook(app):
+    register_dialogues(app)
     user_dep = Depends(current_user)
     app.state.graph_locks = WeakValueDictionary()
 

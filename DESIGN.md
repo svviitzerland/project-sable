@@ -192,6 +192,8 @@ The working application uses a full-height case rail beside the main record. The
 
 The evidence view pairs a map or connection list with an inspector, stacking them at widths up to (900px). On these smaller layouts, the map retains a readable internal canvas (720px wide) inside horizontal scrolling rather than shrinking its labels to fit the screen. The connection-list alternative remains available beside the map control. Hearing libraries use full-width ruled rows; transcript previews place speaker labels beside statements on wider screens and stack those fields on mobile.
 
+Assistant and practice views place a narrow saved-history rail beside an ivory dialogue or setup surface. At widths up to (760px), history becomes a bounded scrolling section above the main surface, paired setup fields and condition summaries stack, and composer actions span the reading column. Dialogue history scrolls within its own reading area while the composer remains a separate ruled section below it.
+
 ## Elevation & Depth
 
 Depth comes primarily from material contrast, thin borders, and nested light surfaces. Shadows are soft and limited to the inset hero paper, source excerpt, and floating mobile navigation. They separate reading layers without competing with typography. The case-file backdrop uses `/images/jude-case-files.webp`; the paper overlay uses `/images/ivory-paper.webp` at a (600px) repeating scale. Exact shadow values are recorded in the sidecar.
@@ -255,6 +257,12 @@ Library discovery pairs a search field covering hearing title, date, and transcr
 The map uses numbered passage nodes and separately filled hearing-statement nodes, with labeled relationships and visible selection/focus strokes. A segmented control exposes map and connection-list views; the active view uses forest fill. Selecting a node, connection, or search source opens exact text in the inspector. On narrow layouts, selection moves focus and scroll to that inspector, with an explicit return to the originating evidence control. Connection review is a separate action from selection, and suggested/reviewed state remains visible in both text and line treatment.
 
 Case questions use a full-width search field with a direct action. Results pair the response with individually inspectable source excerpts and provenance; the result surface does not replace the evidence map's source trail. Similarity and relationship labels remain qualified explanatory information rather than confidence decoration.
+
+### Case assistant and courtroom practice
+
+Dialogue extends the flat workspace treatment with ruled response rows, pale filled user turns, and explicit speaker or role labels. Saved-history selection combines a pale green fill with a pressed state. Source disclosures identify the document and page or hearing, then reveal the quotation, surrounding source text, and an original-document or hearing action. Material references and optional legal lookup use disclosures above the labeled composer; evidence handed into the assistant appears as a selected reference. Sources-only mode, source-selection limits, and hypothetical practice remain visible in explanatory text. New messages use a polite live log, and busy feedback includes a text status with reduced-motion-aware animation.
+
+Practice setup uses ordinary labeled fields with editable conditions and an explicit AI or guided-drill choice. Suggested conditions receive a pale inline review surface. During practice, the header names the user's role and mode, saved conditions stay available in a disclosure, and changing setup is explicitly an action for a new rehearsal. Finish and debrief remains a separate control; a completed session shows a pale completion strip and a new-rehearsal action. Citation disclosures, source links, and reference checkboxes retain generous mobile hit areas within the existing control system.
 
 ## Do's and Don'ts
 

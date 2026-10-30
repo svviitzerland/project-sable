@@ -45,10 +45,16 @@ def test_postgres_bootstrap_vector_sync_and_browser_denial(tmp_path):
         assert connection.execute(
             "SELECT public FROM storage.buckets WHERE id='jude-documents'"
         ).fetchone() == (False,)
-        connection.execute("SET ROLE anon")
-        with pytest.raises(psycopg.errors.InsufficientPrivilege):
-            connection.execute("SELECT * FROM jude_chunks")
-        connection.execute("RESET ROLE")
+        for table in ("jude_dialogues", "jude_dialogue_messages"):
+            assert connection.execute(
+                "SELECT relrowsecurity FROM pg_class WHERE relname = %s", (table,)
+            ).fetchone() == (True,)
+        for role in ("anon", "authenticated"):
+            connection.execute(f"SET ROLE {role}")
+            for table in ("jude_chunks", "jude_dialogues", "jude_dialogue_messages"):
+                with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                    connection.execute(f"SELECT * FROM {table}")
+            connection.execute("RESET ROLE")
 
     app = create_app(
         Settings(data_dir=tmp_path, database_url=url, openrouter_key="test")

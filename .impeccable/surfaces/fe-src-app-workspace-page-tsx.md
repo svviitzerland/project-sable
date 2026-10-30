@@ -26,3 +26,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 ## Hearing discovery and review refinement
 
 Continue the existing Operate surface: compact hearing search and a review-state toggle above the library; text/speaker filters above the transcript; textual review progress and next-unreviewed navigation in the finding pane. Matching words use the existing amber passage emphasis. Filtered views announce result counts and give a clear reset. Source inspection overrides filters that would hide the requested finding. Preserve the original landing page and smooth restrained control feedback; no new visual world, raster assets, or motion choreography.
+
+
+## Case assistant and courtroom practice extension — 2026-10-30
+
+Mode remains Operate. Extend the incumbent forest/ivory workspace with task tabs, a quiet saved-history rail, flat dialogue rows, expandable source quotations, and a readable composer. Trial setup uses ordinary labeled fields and explicit AI/guided modes; saved conditions stay inspectable during practice. Preserve the first landing page and use smooth, reduced-motion-aware feedback. No replacement visual world, new comp, or raster assets.
+
+Verify evidence-to-assistant handoff, sources-only honesty, quotation inspection, draft recovery, saved history/export, condition overrides, all practice roles, finish/debrief, and separation from evidence. Required review captures: assistant-desktop/mobile, practice-setup-desktop/mobile, and practice-dialogue-desktop/mobile under `.impeccable/review/`.

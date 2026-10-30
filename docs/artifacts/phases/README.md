@@ -7,3 +7,5 @@ Keep plans and results for each project phase here. Suggested file format name: 
 - [Original landing page with motion](2026-10-30-paper-landing.md): preserved composition, finite animation, and responsive verification.
 
 - [Hearing discovery and review](2026-10-30-hearing-review.md): search, speaker filters, and review queue navigation.
+
+- [Case assistant and courtroom practice](2026-10-30-assistant-practice.md): case-scoped dialogue, editable rehearsal conditions, roles, and debriefs.

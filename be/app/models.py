@@ -349,3 +349,38 @@ class Capabilities(Contract):
 
 class Message(Contract):
     message: str
+
+
+class Dialogue(Base):
+    __tablename__ = "jude_dialogues"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    case_id: Mapped[str] = mapped_column(
+        ForeignKey("jude_cases.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(20))
+    title: Mapped[str] = mapped_column(String(160))
+    mode: Mapped[str] = mapped_column(String(20), default="ai")
+    conditions: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="active")
+    created_at: Mapped[str] = mapped_column(String(40), default=now)
+
+
+class DialogueMessage(Base):
+    __tablename__ = "jude_dialogue_messages"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    dialogue_id: Mapped[str] = mapped_column(
+        ForeignKey("jude_dialogues.id", ondelete="CASCADE"), index=True
+    )
+    sequence: Mapped[int]
+    role: Mapped[str] = mapped_column(String(20))
+    speaker: Mapped[str] = mapped_column(String(80))
+    text: Mapped[str] = mapped_column(Text)
+    citations: Mapped[list] = mapped_column(JSON, default=list)
+    legal: Mapped[list] = mapped_column(JSON, default=list)
+    notice: Mapped[str] = mapped_column(Text, default="")
+    request_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[str] = mapped_column(String(40), default=now)
+    __table_args__ = (
+        UniqueConstraint("dialogue_id", "sequence"),
+        UniqueConstraint("dialogue_id", "request_id"),
+    )

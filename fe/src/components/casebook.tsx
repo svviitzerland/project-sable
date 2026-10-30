@@ -583,9 +583,11 @@ const relationTextColors: Record<string, string> = {
 export function EvidenceWorkspace({
   caseId,
   openHearing,
+  askAssistant,
 }: {
   caseId: string;
   openHearing: (id: string) => void;
+  askAssistant: (reference: string) => void;
 }) {
   const [graph, setGraph] = useState<Graph | null>(null);
   const [query, setQuery] = useState("");
@@ -1147,6 +1149,18 @@ export function EvidenceWorkspace({
                       <ArrowRight size={14} />
                     </button>
                   )}
+                  <button
+                    className={ui.secondary}
+                    onClick={() =>
+                      askAssistant(
+                        node.kind === "statement"
+                          ? node.id
+                          : `passage:${node.id}`,
+                      )
+                    }
+                  >
+                    Discuss with assistant <ArrowRight size={14} />
+                  </button>
                   <h4>Connected evidence</h4>
                   {graph.edges
                     .filter(

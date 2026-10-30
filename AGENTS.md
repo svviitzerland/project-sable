@@ -31,4 +31,4 @@ This is Jude's courtroom workspace and marketing introduction on Next.js and Fas
 
 - Run only one backend worker until jobs/events/locks are distributed.
 - Database bootstrap lives in `be/migrations/`; evaluation in `be/app/evaluate.py` and `be/evaluation/`.
-- Browser acceptance: with both apps running and no provider keys, `cd fe && uv run --no-project --with playwright python tests/acceptance.py`. Set `CHROMIUM_EXECUTABLE` for system Chromium.
+- Browser acceptance: with both apps running and no provider keys, `cd fe && uv run --no-project --with playwright python tests/acceptance.py`. Set `CHROMIUM_EXECUTABLE` for system Chromium. Assistant/practice acceptance: `python tests/dialogue_acceptance.py` in the same Playwright environment.

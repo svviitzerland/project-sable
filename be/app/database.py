@@ -45,7 +45,12 @@ def database(settings):
             )
     if engine.dialect.name == "postgresql":
         with engine.begin() as connection:
-            for table in ("jude_hearings", "jude_evidence_links"):
+            for table in (
+                "jude_hearings",
+                "jude_evidence_links",
+                "jude_dialogues",
+                "jude_dialogue_messages",
+            ):
                 connection.execute(
                     text(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
                 )
