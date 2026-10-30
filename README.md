@@ -30,6 +30,7 @@ Open http://localhost:3000/workspace. Choose **Open a synthetic case** for a tem
 - PDF, DOCX, TXT, and Markdown ingestion; original downloads; exact source passages; keyword search and optional hybrid retrieval. Limits: 6 MB, 200 PDF pages, 400,000 extracted characters, 40 documents per case. Text-based PDFs only; DOCX uses sections rather than invented page numbers.
 - Dedicated hearing library with file previews, native `.jude`/JSON/CSV/TXT/SRT/VTT parsing, and optional OpenRouter conversion of unfamiliar readable layouts. Converted testimony must match source wording; review speaker turns before import. Originals are retained.
 - Evidence map with inspectable passages, cited hearing statements, suggested/confirmed connections, manual linking, and natural-language retrieval with cited answers. Only confirmed evidence links expand retrieval.
+- Hearing search across titles/dates/transcript text, review-state filtering, highlighted transcript search with speaker filters, review progress, and next-unreviewed navigation. Search pauses auto-follow without stopping transcript capture.
 - Eight-turn synthetic hearing with supported, potential inconsistency, context needed, and insufficient evidence examples.
 - Manual transcript capture, progressive analysis states, retry after provider failure, case-specific speaker labels, review notes, filters, and portable `.jude` export/import.
 - Speechmatics microphone/prepared-audio integration with diarization, timestamps, confidence, and final-buffer flushing. Voice IDs are not courtroom identities.

@@ -1,7 +1,7 @@
 """Run against a local Jude preview; creates synthetic data in a new test account."""
 
-import os
 import json
+import os
 import zipfile
 from pathlib import Path
 from uuid import uuid4
@@ -51,11 +51,51 @@ with sync_playwright() as p:
         expect(
             page.get_by_label("Filter findings").locator("option", has_text=label)
         ).to_have_count(1)
+    # Search is literal, composes with speaker filtering, and suspends auto-follow.
+    transcript = page.get_by_role("region", name="Transcript", exact=True)
+    page.get_by_label("Search this transcript").fill("9:30")
+    expect(transcript.locator("article")).to_have_count(1)
+    expect(transcript.locator("mark")).to_have_text("9:30")
+    expect(page.get_by_label("Following paused while filtering")).to_be_disabled()
+    page.get_by_label("Filter transcript by speaker").select_option("Counsel")
+    expect(page.get_by_text("No matching statements.", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Clear transcript filters").click()
+    expect(transcript.locator("article")).to_have_count(8)
+    expect(page.get_by_label("Follow new testimony")).to_be_checked()
+    page.get_by_label("Search this transcript").fill("[no match]")
+    expect(page.get_by_text("No matching statements.", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Clear transcript filters").click()
+    # Opening a transcript result must override a finding filter that hides it.
+    page.get_by_label("Filter findings").select_option("context_needed")
+    page.get_by_label("Search this transcript").fill("9:30")
+    transcript.get_by_role("button", name="View finding").click()
+    expect(page.get_by_label("Filter findings")).to_have_value("all")
+    expect(
+        page.get_by_role("region", name="Finding and source inspector").get_by_text(
+            "The accounts describe different arrival times.", exact=True
+        )
+    ).to_be_visible()
+    page.evaluate("document.activeElement?.blur(); window.scrollTo(0,0)")
+    page.screenshot(path=str(ARTIFACTS / "review-search-desktop.png"), full_page=True)
+    page.get_by_role("button", name="Clear transcript filters").click()
+    expect(page.get_by_text("0 of 4 reviewed", exact=True)).to_be_visible()
+    # Next unreviewed cycles through the whole queue rather than toggling two items.
+    visited = set()
+    for _ in range(4):
+        page.get_by_role("button", name="Next unreviewed").click()
+        visited.add(
+            page.get_by_role("region", name="Finding and source inspector")
+            .locator("h3")
+            .first.inner_text()
+        )
+    assert len(visited) == 4, visited
+    page.get_by_label("Filter findings").select_option("all")
     # Draft survives selecting another finding; saved review survives a reload.
     page.get_by_role("button", name="The accounts").click()
     page.get_by_label("Your review note").fill(
         "Verify the date against the original log."
     )
+    expect(page.get_by_text("Unsaved note", exact=False)).to_be_visible()
     page.get_by_role("button", name="Supported Both accounts").click()
     page.get_by_role("button", name="The accounts").click()
     expect(page.get_by_label("Your review note")).to_have_value(
@@ -63,6 +103,8 @@ with sync_playwright() as p:
     )
     page.get_by_role("button", name="Mark reviewed", exact=True).click()
     expect(page.get_by_text("Reviewed by you · saved to the case")).to_be_visible()
+    expect(page.get_by_text("Unsaved note", exact=False)).to_have_count(0)
+    expect(page.get_by_text("1 of 4 reviewed", exact=True)).to_be_visible()
     page.reload()
     page.get_by_role("tab", name="Hearings", exact=True).click()
     page.get_by_role("button", name="The warehouse examination", exact=False).click()
@@ -240,6 +282,43 @@ with sync_playwright() as p:
         page.get_by_role("button", name="Analyze hearing", exact=True)
     ).to_be_disabled()
     page.get_by_role("button", name="All hearings", exact=True).click()
+    # Hearing search also searches transcript content, and combines with review state.
+    page.get_by_label("Search hearings").fill("eight in the morning")
+    expect(
+        page.get_by_role("button", name="Uploaded witness examination", exact=False)
+    ).to_be_visible()
+    expect(
+        page.get_by_role("button", name="The warehouse examination", exact=False)
+    ).to_have_count(0)
+    page.get_by_role("button", name="Needs review", exact=True).click()
+    expect(page.get_by_text("No hearings match this view.")).to_be_visible()
+    page.get_by_role("button", name="Clear hearing filters").click()
+    page.get_by_role("button", name="Needs review", exact=True).click()
+    expect(
+        page.get_by_role("button", name="The warehouse examination", exact=False)
+    ).to_be_visible()
+    expect(
+        page.get_by_role("button", name="Uploaded witness examination", exact=False)
+    ).to_have_count(0)
+    page.get_by_role("button", name="Needs review", exact=True).click()
+    page.evaluate("document.activeElement?.blur();window.scrollTo(0,0)")
+    page.screenshot(path=str(ARTIFACTS / "hearing-filters-desktop.png"), full_page=True)
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    page.screenshot(path=str(ARTIFACTS / "hearing-filters-mobile.png"), full_page=True)
+    page.get_by_role("button", name="The warehouse examination", exact=False).click()
+    page.get_by_label("Search this transcript").fill("9:30")
+    expect(
+        page.get_by_role("region", name="Transcript", exact=True).locator("mark")
+    ).to_have_text("9:30")
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    page.evaluate("document.activeElement?.blur();window.scrollTo(0,0)")
+    page.screenshot(path=str(ARTIFACTS / "review-search-mobile.png"), full_page=True)
+    page.get_by_role("region", name="Transcript", exact=True).screenshot(
+        path=str(ARTIFACTS / "review-transcript-mobile.png")
+    )
+    page.get_by_role("button", name="All hearings", exact=True).click()
+    page.set_viewport_size({"width": 1440, "height": 1000})
     page.get_by_label("Upload hearing transcript").set_input_files(
         {
             "name": "notes.txt",
@@ -262,8 +341,19 @@ with sync_playwright() as p:
     expect(
         page.get_by_text("Imported finding · verify sources", exact=False).first
     ).to_be_visible()
+    # Finishing the queue produces an explicit completed state and empty review filter.
+    page.get_by_label("Filter findings").select_option("unreviewed")
+    for _ in range(4):
+        page.get_by_role("button", name="Mark reviewed", exact=True).click()
+        if _ < 3:
+            expect(page.get_by_role("button", name="Next unreviewed")).to_be_enabled()
+    expect(page.get_by_text("4 of 4 reviewed", exact=True)).to_be_visible()
+    expect(page.get_by_role("button", name="Next unreviewed")).to_be_disabled()
+    page.get_by_role("button", name="All hearings", exact=True).click()
+    page.get_by_role("button", name="Needs review", exact=True).click()
+    expect(page.get_by_text("No hearings match this view.")).to_be_visible()
     assert not errors, errors
     print(
-        "PASS: hearing import/preview, unavailable conversion, archive round-trip, graph connection review, evidence search, registration, simulation, four statuses, notes, review, filter, clipboard failure, upload, search, original download, export, isolation, offline analysis, login, tabs, mobile navigation, inspector focus, responsive layouts; no page errors."
+        "PASS: transcript search/speaker filters, hearing search/review filters, review queue, draft feedback, hearing import/preview, unavailable conversion, archive round-trip, graph connection review, evidence search, registration, simulation, four statuses, notes, review, filter, clipboard failure, upload, search, original download, export, isolation, offline analysis, login, tabs, mobile navigation, inspector focus, responsive layouts; no page errors."
     )
     browser.close()

@@ -12,6 +12,7 @@ import {
   LoaderCircle,
   Plus,
   Search,
+  ShieldCheck,
   Sparkles,
   Upload,
   X,
@@ -104,6 +105,30 @@ export function HearingLibrary({
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const input = useRef<HTMLInputElement>(null);
+  const [hearingQuery, setHearingQuery] = useState("");
+  const [reviewOnly, setReviewOnly] = useState(false);
+  const hearingRows = detail.hearings.map((hearing) => {
+    const segments = detail.segments.filter((s) => s.hearing_id === hearing.id);
+    const segmentIds = new Set(segments.map((s) => s.id));
+    const findings = detail.findings.filter((f) =>
+      segmentIds.has(f.segment_id),
+    );
+    return {
+      hearing,
+      segments,
+      findings,
+      remaining: findings.filter((f) => !f.reviewed).length,
+    };
+  });
+  const hearingTerm = hearingQuery.trim().toLocaleLowerCase();
+  const matchingHearings = hearingRows.filter(
+    ({ hearing, segments, remaining }) =>
+      (!reviewOnly || remaining > 0) &&
+      (!hearingTerm ||
+        [hearing.title, hearing.date, ...segments.map((s) => s.text)].some(
+          (text) => text.toLocaleLowerCase().includes(hearingTerm),
+        )),
+  );
   async function prepare(selected: File, convert = false) {
     setBusy(convert ? "Converting transcript…" : "Reading transcript…");
     setError("");
@@ -415,16 +440,32 @@ export function HearingLibrary({
       <div className={styles.hearingList}>
         <div className={styles.listHeading}>
           <h3>Case hearings</h3>
-          <span>{detail.hearings.length} saved</span>
+          <span role="status">
+            {matchingHearings.length} of {detail.hearings.length} hearings
+          </span>
         </div>
-        {detail.hearings.length ? (
-          detail.hearings.map((hearing) => {
-            const segments = detail.segments.filter(
-              (s) => s.hearing_id === hearing.id,
-            );
-            const findings = detail.findings.filter((f) =>
-              segments.some((s) => s.id === f.segment_id),
-            );
+        {detail.hearings.length > 0 && (
+          <div className={styles.libraryFilters}>
+            <label>
+              <span className={ui.srOnly}>Search hearings</span>
+              <input
+                type="search"
+                value={hearingQuery}
+                onChange={(e) => setHearingQuery(e.target.value)}
+                placeholder="Find a hearing or transcript phrase…"
+              />
+            </label>
+            <button
+              className={ui.secondary}
+              aria-pressed={reviewOnly}
+              onClick={() => setReviewOnly(!reviewOnly)}
+            >
+              <ShieldCheck size={16} /> Needs review
+            </button>
+          </div>
+        )}
+        {matchingHearings.length ? (
+          matchingHearings.map(({ hearing, segments, findings, remaining }) => {
             return (
               <button
                 key={hearing.id}
@@ -445,13 +486,32 @@ export function HearingLibrary({
                 </div>
                 <div className={styles.hearingCounts}>
                   <strong>{segments.length} statements</strong>
-                  <span>{findings.length} findings</span>
+                  <span>
+                    {findings.length} findings
+                    {findings.length > 0 &&
+                      ` · ${remaining ? `${remaining} to review` : "All reviewed"}`}
+                  </span>
                 </div>
                 <span className={styles.hearingStatus}>{hearing.status}</span>
                 <ArrowRight size={17} />
               </button>
             );
           })
+        ) : detail.hearings.length ? (
+          <div className={styles.empty}>
+            <Search size={28} />
+            <h3>No hearings match this view.</h3>
+            <p>Try another phrase or show all hearings.</p>
+            <button
+              className={ui.secondary}
+              onClick={() => {
+                setHearingQuery("");
+                setReviewOnly(false);
+              }}
+            >
+              Clear hearing filters
+            </button>
+          </div>
         ) : (
           <div className={styles.empty}>
             <AudioLines size={32} />

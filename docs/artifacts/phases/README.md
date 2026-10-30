@@ -5,3 +5,5 @@ Keep plans and results for each project phase here. Suggested file format name: 
 - [Product completion](2026-10-30-product-completion.md): implemented local MVP, verification, and external integration limits.
 
 - [Original landing page with motion](2026-10-30-paper-landing.md): preserved composition, finite animation, and responsive verification.
+
+- [Hearing discovery and review](2026-10-30-hearing-review.md): search, speaker filters, and review queue navigation.

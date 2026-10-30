@@ -22,3 +22,7 @@ STORY: Upload a transcript, review proposed turns, open its hearing, then trace 
 FIRST VIEWPORT: Case rail and header frame explicit Evidence, Hearings, and Case documents tabs. Evidence opens with a question field and map beside a source inspector. Hearings opens with a full-width upload action and a dated hearing list. Mobile stacks the inspector below the map and keeps a connection-list alternative.
 FORM: Code-led Operate extension of the established workspace; no new concept roll. The inherited seed cannot be corroborated locally and is not claimed as verified. Signature interaction: selecting a passage or connection reveals exact text and a human review action; hearing files preview before import.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+
+## Hearing discovery and review refinement
+
+Continue the existing Operate surface: compact hearing search and a review-state toggle above the library; text/speaker filters above the transcript; textual review progress and next-unreviewed navigation in the finding pane. Matching words use the existing amber passage emphasis. Filtered views announce result counts and give a clear reset. Source inspection overrides filters that would hide the requested finding. Preserve the original landing page and smooth restrained control feedback; no new visual world, raster assets, or motion choreography.

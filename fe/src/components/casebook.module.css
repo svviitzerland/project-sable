@@ -90,6 +90,25 @@
 .hearingList {
   border-top: 1px solid #cfd6c6;
 }
+.libraryFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+}
+.libraryFilters label {
+  flex: 1 1 240px;
+}
+.libraryFilters input,
+.libraryFilters button {
+  min-height: 44px;
+}
+.libraryFilters button[aria-pressed="true"] {
+  background: #173a2c;
+  border-color: #173a2c;
+  color: #fcfbf7;
+}
 .listHeading {
   display: flex;
   align-items: center;
@@ -801,18 +820,29 @@
     gap: 10px;
   }
   .hearingRow {
+    display: grid;
+    grid-template-columns: 23px minmax(0, 1fr) auto;
     gap: 12px;
-    flex-wrap: wrap;
+    align-items: start;
   }
   .hearingCounts {
-    margin-left: 35px;
-    flex-direction: row;
+    grid-column: 2;
+    margin-left: 0;
+    min-width: 0;
+    flex-direction: column;
   }
   .hearingStatus {
-    margin-left: auto;
+    grid-column: 3;
+    grid-row: 2;
+    margin-left: 0;
   }
   .hearingRow > div:nth-child(2) {
-    flex-basis: 70%;
+    grid-column: 2;
+  }
+  .hearingRow > svg:last-child {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
   }
   .previewFields {
     grid-template-columns: 1fr;

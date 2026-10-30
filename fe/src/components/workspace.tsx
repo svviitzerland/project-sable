@@ -287,6 +287,13 @@ export function Workspace() {
     visibleFindings.find((f) => f.id === selected) ??
     visibleFindings[0] ??
     null;
+  const unreviewedFindings = hearingFindings.filter((f) => !f.reviewed);
+  const nextUnreviewed = unreviewedFindings.length
+    ? unreviewedFindings[
+        (unreviewedFindings.findIndex((f) => f.id === finding?.id) + 1) %
+          unreviewedFindings.length
+      ]
+    : undefined;
   const pending = hearingSegments.filter((s) =>
     [
       "queued",
@@ -734,6 +741,7 @@ export function Workspace() {
                         <span>{hearingSegments.length} segments</span>
                       </div>
                       <Transcript
+                        key={hearing.id}
                         segments={hearingSegments}
                         speakers={session?.speakers ?? {}}
                         partial={partial}
@@ -749,7 +757,10 @@ export function Workspace() {
                           const f = hearingFindings.find(
                             (f) => f.segment_id === id,
                           );
-                          if (f) inspectFinding(f.id);
+                          if (f) {
+                            setFilter("all");
+                            inspectFinding(f.id);
+                          }
                         }}
                         findings={hearingFindings}
                       />
@@ -782,6 +793,26 @@ export function Workspace() {
                           review
                         </span>
                       </div>
+                      {hearingFindings.length > 0 && (
+                        <div className={styles.reviewSummary}>
+                          <span role="status">
+                            {hearingFindings.length - unreviewedFindings.length}{" "}
+                            of {hearingFindings.length} reviewed
+                          </span>
+                          <button
+                            className={styles.textButton}
+                            disabled={!nextUnreviewed || busy}
+                            onClick={() => {
+                              if (nextUnreviewed) {
+                                setFilter("unreviewed");
+                                inspectFinding(nextUnreviewed.id);
+                              }
+                            }}
+                          >
+                            Next unreviewed <ArrowRight size={14} />
+                          </button>
+                        </div>
+                      )}
                       <label className={styles.filterLabel}>
                         <span className={styles.srOnly}>Filter findings</span>
                         <select
@@ -1207,24 +1238,81 @@ function Transcript({
   findings: Finding[];
 }) {
   const [follow, setFollow] = useState(true);
+  const [query, setQuery] = useState("");
+  const [speaker, setSpeaker] = useState("");
+  const term = query.trim().toLocaleLowerCase();
+  const filtering = !!term || !!speaker;
+  const visibleSegments = segments.filter(
+    (s) =>
+      (!speaker || s.speaker === speaker) &&
+      (!term || s.text.toLocaleLowerCase().includes(term)),
+  );
+  const speakerIds = Array.from(new Set(segments.map((s) => s.speaker)));
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (follow && scroller.current)
+    if (follow && !filtering && scroller.current)
       scroller.current.scrollTop = scroller.current.scrollHeight;
-  }, [segments.length, partial, follow]);
+  }, [segments.length, partial, follow, filtering]);
+  useEffect(() => {
+    if (scroller.current && filtering) scroller.current.scrollTop = 0;
+  }, [query, speaker, filtering]);
   return (
     <>
+      <div className={styles.transcriptFilters}>
+        <label>
+          <span className={styles.srOnly}>Search this transcript</span>
+          <input
+            type="search"
+            placeholder="Find words in this hearing…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <label>
+          <span className={styles.srOnly}>Filter transcript by speaker</span>
+          <select value={speaker} onChange={(e) => setSpeaker(e.target.value)}>
+            <option value="">All speakers</option>
+            {speakerIds.map((id) => (
+              <option key={id} value={id}>
+                {speakers[id] ?? id}
+              </option>
+            ))}
+          </select>
+        </label>
+        {filtering && (
+          <div className={styles.transcriptResults}>
+            <span role="status">
+              {visibleSegments.length} of {segments.length} statements
+            </span>
+            <button
+              className={styles.textButton}
+              onClick={() => {
+                setQuery("");
+                setSpeaker("");
+              }}
+            >
+              Clear transcript filters
+            </button>
+          </div>
+        )}
+      </div>
       <label className={styles.follow}>
         <input
           type="checkbox"
-          checked={follow}
+          checked={follow && !filtering}
+          disabled={filtering}
           onChange={(e) => setFollow(e.target.checked)}
         />
-        Follow new testimony
+        {filtering
+          ? "Following paused while filtering"
+          : "Follow new testimony"}
       </label>
-      <div ref={scroller} className={styles.transcriptScroll}>
-        {segments.length ? (
-          segments.map((s) => {
+      <div
+        ref={scroller}
+        className={`${styles.transcriptScroll} ${filtering ? styles.transcriptFiltered : ""}`}
+      >
+        {visibleSegments.length ? (
+          visibleSegments.map((s) => {
             const finding = findings.find((f) => f.segment_id === s.id);
             return (
               <article className={styles.segment} key={s.id}>
@@ -1236,7 +1324,9 @@ function Transcript({
                       : timestamp(s.start)}
                   </time>
                 </div>
-                <p>{s.text}</p>
+                <p>
+                  <TranscriptText text={s.text} term={term} />
+                </p>
                 <div className={styles.segmentMeta}>
                   <span>
                     {s.origin === "simulation"
@@ -1282,11 +1372,17 @@ function Transcript({
         ) : (
           <Empty
             icon={<AudioLines size={28} />}
-            title="Ready when you are."
-            text="Start a simulated hearing, connect live audio in Session & connections, or add a statement below."
+            title={
+              filtering ? "No matching statements." : "Ready when you are."
+            }
+            text={
+              filtering
+                ? "Try another phrase or clear the speaker filter. Filters do not change the hearing record."
+                : "Start a simulated hearing, connect live audio in Session & connections, or add a statement below."
+            }
           />
         )}
-        {partial && (
+        {partial && !filtering && (
           <div className={styles.partial}>
             <span>Listening · provisional</span>
             <p>{partial}</p>
@@ -1295,6 +1391,23 @@ function Transcript({
       </div>
     </>
   );
+}
+function TranscriptText({ text, term }: { text: string; term: string }) {
+  if (!term) return text;
+  const pieces: React.ReactNode[] = [];
+  const lower = text.toLocaleLowerCase();
+  let start = 0;
+  let match = lower.indexOf(term);
+  while (match !== -1) {
+    pieces.push(
+      text.slice(start, match),
+      <mark key={match}>{text.slice(match, match + term.length)}</mark>,
+    );
+    start = match + term.length;
+    match = lower.indexOf(term, start);
+  }
+  pieces.push(text.slice(start));
+  return <>{pieces}</>;
 }
 function ManualTranscript({
   busy,
@@ -1514,6 +1627,11 @@ function FindingInspector({
             placeholder="What needs follow-up?"
           />
         </label>
+        {note !== finding.note && (
+          <p className={styles.draftNotice} role="status">
+            Unsaved note · Save your changes before leaving.
+          </p>
+        )}
         <div className={styles.reviewActions}>
           <button
             className={styles.primary}

@@ -240,9 +240,15 @@ Case-section tabs expose selected state and support Arrow Left/Right, Home, and 
 
 The inspector separates testimony, the exact source quotation, verification, uncertainty, and a suggested question through type hierarchy and pale surfaces. Quote highlighting stays within the source passage. Review notes remain editable across finding changes, with explicit save/review actions; clipboard feedback appears beside the question and never replaces source evidence. Reduced-motion preference removes transitions; focus movement remains immediate.
 
+Transcript search and speaker selection sit above the reading pane in the existing field treatment. Search matches literal text without case sensitivity; matching words use pale amber passage emphasis. An active filter exposes the matching/total statement count through a status region and a clear-reset action. Following new testimony pauses visibly while filtering, and the filtered pane contracts to its content within the existing scroll limit. Empty results explain that filtering leaves the hearing record intact.
+
+Review progress uses a textual reviewed/total count beside a direct Next unreviewed action, which becomes unavailable when no findings remain to review. These controls wrap within narrow panes. A changed review note shows an inline unsaved notice beside its explicit save actions; saved review state and unsaved edits remain distinct signals.
+
 ### Hearing library and import preview
 
 Hearing upload uses a pale, dashed-border well with a direct upload action. The preview is an inline review surface, not a modal: its header identifies the source file, editable fields show the hearing title, date, speakers, and statements, and a distinct footer action confirms import. Ruled hearing rows combine a serif title with date, origin, statement/finding counts, and a text status. Case-level `.jude` import remains in the case rail, while export is an explicit case-header action; file-transfer actions share the workspace's existing control treatment.
+
+Library discovery pairs a search field covering hearing title, date, and transcript text with a Needs review toggle. The toggle exposes its pressed state and uses the existing forest selected treatment; controls wrap on mobile. A status region reports matching/total hearings, while each row with findings states the remaining review count or All reviewed. An empty filtered view offers a clear-filters action rather than obscuring the underlying library.
 
 ### Evidence map, connections, and source inspection
 
