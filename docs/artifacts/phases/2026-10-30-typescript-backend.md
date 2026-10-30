@@ -33,3 +33,7 @@ Renamed the unified application directory from `fe/` to `app/`, including local 
 ## Recovery schedule allowance
 
 Changed the recovery setup script's default to every 15 minutes and documented the override in the environment template. This uses 96 scheduled deliveries per day before analysis jobs/retries, while ordinary analysis dispatch remains immediate. Existing hosted schedules require rerunning the setup script with the same app URL. No QStash token, HTTPS application URL or recovery secret was configured in this workspace, so the live schedule could not be updated here.
+
+## Landing workspace access
+
+Added a primary Open workspace link beside the landing demo action, with explicit account-entry guidance. Desktop and mobile navigation now say Sign in. All entry links use the existing `/workspace` authentication flow and native anchors; the sample demo remains available separately.

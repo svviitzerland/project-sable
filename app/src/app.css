@@ -42,6 +42,9 @@ svg { flex-shrink: 0; }
 .hero h1 { font-family: "Rufina", Georgia, serif; font-size: clamp(58px, 5.85vw, 90px); line-height: .98; letter-spacing: -.025em; }
 .hero-copy > p { font-size: clamp(19px, 1.8vw, 28px); line-height: 1.35; margin-top: 22px; max-width: 760px; }
 .hero-cta { margin-top: 24px; }
+.hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.hero-actions .button { min-height: 56px; }
+.hero-entry-note { margin-top: 12px; font-size: 13px; color: #e8e7da; }
 .paper { color: #111c16; background-color: var(--paper); background-image: url("/images/ivory-paper.webp"); background-size: 600px 600px; }
 .hero-evidence { width: 85%; max-width: 1340px; margin: 27px auto 0; padding: 18px 3.2% 43px; border-radius: 7px 7px 0 0; box-shadow: 0 9px 28px #071b2420; }
 .sample-label { font-size: 13px; color: #706d60; margin-bottom: 26px; }

@@ -101,7 +101,7 @@
         {#each nav as [label, href] (label)}<a href={`#${href.slice(1)}`}>
             {label}
           </a>{/each}
-        <a href={resolve("/workspace")}>Open workspace</a>
+        <a href={resolve("/workspace")}>Sign in</a>
         <button class="button button-outline" onclick={() => openDemo()}>
           Explore the demo
         </button>
@@ -138,7 +138,7 @@
               <ArrowUpRight size={17}></ArrowUpRight>
             </a>{/each}
           <a href={resolve("/workspace")}>
-            Open workspace
+            Sign in
             <ArrowUpRight size={17}></ArrowUpRight>
           </a>
           <button onclick={() => openDemo()}>
@@ -157,9 +157,15 @@
           An AI courtroom copilot that connects what is said
           <br class="desktop-break" /> to what the evidence shows.
         </p>
-        <button class="button button-cream hero-cta" onclick={() => openDemo()}>
-          Explore the demo <ArrowRight size={22} strokeWidth={1.5}></ArrowRight>
-        </button>
+        <div class="hero-actions hero-cta">
+          <a class="button button-cream" href={resolve("/workspace")}>
+            Open workspace <ArrowRight size={22} strokeWidth={1.5}></ArrowRight>
+          </a>
+          <button class="button button-outline" onclick={() => openDemo()}>
+            Explore the demo
+          </button>
+        </div>
+        <div class="hero-entry-note">Sign in or create an account to start your first case.</div>
       </div>
       <div class="hero-evidence paper">
         <p class="sample-label">Synthetic example</p>
