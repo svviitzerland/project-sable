@@ -18,7 +18,15 @@ import { pack, unpack, validateArchive } from "../src/lib/server/archive";
 import { extractPages } from "../src/lib/server/documents";
 import { previewHearing } from "../src/lib/server/hearings";
 import { investigate } from "../src/lib/server/analysis";
-import { embed, safePasalUrl } from "../src/lib/server/providers";
+import {
+  embed,
+  safePasalUrl,
+  structured,
+  requestJson,
+  saveFile,
+} from "../src/lib/server/providers";
+import { z } from "zod";
+import { ProviderError } from "../src/lib/server/errors";
 import { stageJob, runJob } from "../src/lib/server/jobs";
 import { normalizeTranscript } from "../src/lib/server/audio";
 import { createHmac } from "node:crypto";
@@ -141,6 +149,75 @@ test("sign-in database failures log safe diagnostics with a matching reference",
   });
   assert.equal(response.status, 401);
   assert.equal(logs.length, 4);
+});
+
+test("provider failures identify service/status without disclosing upstream secrets", async (t) => {
+  const { rt } = await fixture(t);
+  rt.config.openrouterKey = "private-provider-key";
+  rt.config.model = "fixture/model";
+  const logs: string[] = [];
+  t.mock.method(console, "error", (entry: string) => logs.push(entry));
+  const upstreamSecret = "private-provider-key private-document-content";
+  for (const status of [400, 401, 402, 403, 404, 422, 429, 503]) {
+    rt.fetch = async () => new Response(upstreamSecret, { status });
+    await assert.rejects(
+      structured(
+        rt,
+        "test",
+        { text: "private-document-content" },
+        z.object({ answer: z.string() }),
+      ),
+      (error: unknown) => {
+        assert(error instanceof ProviderError);
+        assert.equal(error.status, 503);
+        assert.ok(
+          error.message.includes(
+            `OpenRouter chat request failed (HTTP ${status})`,
+          ),
+        );
+        const log = JSON.parse(logs.at(-1)!);
+        assert.equal(log.event, "jude_provider_failed");
+        assert.equal(log.status, status);
+        assert.equal(log.provider, "OpenRouter chat");
+        assert.ok(error.message.includes(log.reference));
+        assert.ok(!error.message.includes("private-"));
+        return true;
+      },
+    );
+  }
+  rt.fetch = async () => new Response(upstreamSecret, { status: 200 });
+  await assert.rejects(
+    requestJson(rt, "https://private-host", {}, "Speechmatics"),
+    /Speechmatics.*unreadable response/,
+  );
+  assert.equal(JSON.parse(logs.at(-1)!).kind, "invalid_json");
+  rt.fetch = async () => {
+    throw new Error(upstreamSecret);
+  };
+  await assert.rejects(
+    requestJson(rt, "https://private-host", {}, "Pasal.id"),
+    /Pasal.id.*could not be reached/,
+  );
+  assert.equal(JSON.parse(logs.at(-1)!).status, null);
+  rt.config.supabaseUrl = "https://private-host";
+  rt.config.storageKey = "private-storage-key";
+  rt.fetch = async () => new Response(upstreamSecret, { status: 403 });
+  await assert.rejects(
+    saveFile(rt, "owner/case/file.txt", new Uint8Array([65]), "text/plain"),
+    /Supabase Storage.*HTTP 403/,
+  );
+  rt.fetch = async () => new Response(upstreamSecret, { status: 400 });
+  await assert.rejects(
+    embed(rt, ["private-document-content"]),
+    /OpenRouter embeddings.*1536/,
+  );
+  for (const log of logs) assert.ok(!log.includes("private-"));
+  rt.fetch = async () =>
+    Response.json({ choices: [{ message: { content: '{"answer":"ok"}' } }] });
+  assert.deepEqual(
+    await structured(rt, "test", {}, z.object({ answer: z.string() })),
+    { answer: "ok" },
+  );
 });
 
 function upload(

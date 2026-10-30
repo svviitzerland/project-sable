@@ -95,6 +95,12 @@ A missing-setting error in Vercel logs means startup configuration is incomplete
 
 The structured log contains only an allowlisted error code and setup hint, not passwords, connection strings, SQL parameters or case contents. `28P01` indicates database password authentication failure; `42P01` indicates a missing table (confirm migrations 001–006 ran in the same Supabase project that `DATABASE_URL` uses). Network codes point to hostname/connectivity issues; TLS codes point to certificate trust. Use the Supabase transaction-pooler URL and keep TLS verification enabled. `UNKNOWN` requires further investigation; it does not establish a database diagnosis. Normal wrong-password responses remain separate.
 
+## Troubleshoot provider requests
+
+Provider HTTP failures identify the service, upstream HTTP status and a reference ID. Search Vercel runtime logs for that reference or `jude_provider_failed`. Only fixed service labels, status, failure category and setup hints are logged; raw upstream messages, URLs, credentials and case text are excluded.
+
+For the case assistant, check `OpenRouter chat` failures: 401 points to the API key; 402 to provider balance/billing limits; 429 to rate/quota limits; 400/404/422 require checking the exact `OPENROUTER_MODEL` identifier, strict JSON-schema support and available provider routing. These are troubleshooting directions, not a definitive diagnosis from status alone. A legal lookup may instead fail at Pasal.id. An embedding failure logs separately while retrieval can fall back to keywords. Successful HTTP responses with unreadable JSON and network/timeouts are distinguished from HTTP rejection. Redeploy after changing Vercel environment variables.
+
 ## Cutover from the former two-project setup
 
 Update the existing frontend project's preset/root/environment as above, apply migration 006, then deploy and configure recovery on its URL. Saved PostgreSQL cases/accounts, private originals, password hashes, and `.jude` files continue to work. Allow existing queue deliveries to drain, verify the unified deployment, then retire the former FastAPI project and its recovery schedule. No database export/re-import is required. Old socket-ticket rows can expire naturally; the new app uses cookie-authenticated SSE and authenticated HTTP audio saves.

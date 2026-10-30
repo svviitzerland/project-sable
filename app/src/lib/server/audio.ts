@@ -176,6 +176,7 @@ export async function beginAudio(
         },
         body: JSON.stringify({ ttl: 300, region: "eu" }),
       },
+      "Speechmatics",
     );
     if (typeof credentials.key_value !== "string" || !credentials.key_value)
       throw new ProviderError(

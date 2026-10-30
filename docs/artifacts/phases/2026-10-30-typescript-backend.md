@@ -41,3 +41,7 @@ Added a primary Open workspace link beside the landing demo action, with explici
 ## Hosted sign-in diagnostics
 
 Unexpected API errors previously returned a generic response without logging the failure. Added a matching client reference and server log containing allowlisted database/network/TLS error codes and setup hints. Raw errors, request bodies and connection strings are excluded. Injected sign-in failures verify correlation and credential redaction; ordinary wrong-password responses stay unchanged. The actual production sign-in failure still needs a runtime log from the deployed app.
+
+## Provider request diagnostics
+
+Replaced shared opaque provider request failures with fixed service labels, HTTP status, actionable setup hints and correlated safe logs. Chat, embeddings, legal discovery, speech credentials, and Storage uploads/delete/sign requests are labeled separately. Network and malformed-JSON failures remain distinct; raw provider responses and case content are never included in diagnostics. Mocked rejection and redaction checks cover the failure paths alongside the existing successful provider contracts. Live account credentials and provider routing still require operator verification.

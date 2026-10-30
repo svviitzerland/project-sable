@@ -4,23 +4,101 @@ import { dirname, join } from "node:path";
 import type { Runtime } from "./runtime";
 import type { Document, Legal } from "./contracts";
 import { ProviderError } from "./errors";
+import { randomUUID } from "node:crypto";
+
+type ProviderName =
+  | "OpenRouter chat"
+  | "OpenRouter embeddings"
+  | "Pasal.id"
+  | "Speechmatics"
+  | "Supabase Storage"
+  | "External service";
+
+function providerFailure(
+  provider: ProviderName,
+  status: number | null,
+  kind: "http" | "network" | "invalid_json",
+) {
+  const reference = randomUUID();
+  const hint =
+    kind === "network"
+      ? "The service could not be reached or timed out. Check connectivity and retry."
+      : kind === "invalid_json"
+        ? "The service returned an unreadable response. Retry or check its service status."
+        : status === 401
+          ? "Check the server API key for this service."
+          : status === 402
+            ? "Check the provider balance and billing limits."
+            : status === 403
+              ? "Check the key permissions and provider access restrictions."
+              : status === 429
+                ? "The provider rate or quota limit was reached. Check limits and retry later."
+                : (status === 400 || status === 404 || status === 422) &&
+                    provider === "OpenRouter chat"
+                  ? "Check OPENROUTER_MODEL: use an exact model ID with strict JSON-schema support and an available provider route."
+                  : (status === 400 || status === 404 || status === 422) &&
+                      provider === "OpenRouter embeddings"
+                    ? "Check OPENROUTER_EMBEDDING_MODEL and support for 1536-dimensional output."
+                    : (status === 400 || status === 404) &&
+                        provider === "Supabase Storage"
+                      ? "Check the Supabase project URL, private bucket name and upload restrictions."
+                      : status !== null && status >= 500
+                        ? "The provider returned a server error. Check its service status and retry."
+                        : "Check the provider configuration and request compatibility.";
+  // Never log provider bodies, URLs, headers, prompts, or raw errors: these can contain secrets/case data.
+  console.error(
+    JSON.stringify({
+      event: "jude_provider_failed",
+      reference,
+      provider,
+      status,
+      kind,
+      hint,
+    }),
+  );
+  return new ProviderError(
+    `${provider} request failed${status === null ? "" : ` (HTTP ${status})`}. ${hint} Reference: ${reference}`,
+  );
+}
+
+async function requestResponse(
+  rt: Runtime,
+  url: string,
+  init: RequestInit,
+  provider: ProviderName,
+) {
+  let response: Response;
+  try {
+    response = await rt.fetch(url, {
+      ...init,
+      signal: AbortSignal.timeout(45_000),
+    });
+  } catch {
+    throw providerFailure(provider, null, "network");
+  }
+  if (!response.ok) {
+    // Release the unused body without reading upstream error text into logs or responses.
+    try {
+      await response.body?.cancel();
+    } catch {
+      /* Preserve the original HTTP failure. */
+    }
+    throw providerFailure(provider, response.status, "http");
+  }
+  return response;
+}
 
 export async function requestJson(
   rt: Runtime,
   url: string,
   init: RequestInit = {},
+  provider: ProviderName = "External service",
 ) {
+  const response = await requestResponse(rt, url, init, provider);
   try {
-    const response = await rt.fetch(url, {
-      ...init,
-      signal: AbortSignal.timeout(45_000),
-    });
-    if (!response.ok) throw new Error();
     return await response.json();
   } catch {
-    throw new ProviderError(
-      "Provider request failed. Check credentials, quota, and connectivity.",
-    );
+    throw providerFailure(provider, response.status, "invalid_json");
   }
 }
 export async function structured<T extends z.ZodType>(
@@ -67,6 +145,7 @@ export async function structured<T extends z.ZodType>(
         },
       }),
     },
+    "OpenRouter chat",
   );
   try {
     return schema.parse(JSON.parse(data.choices[0].message.content));
@@ -96,6 +175,7 @@ export async function embed(
         dimensions: 1536,
       }),
     },
+    "OpenRouter embeddings",
   );
   const parsed = z
     .object({
@@ -142,6 +222,7 @@ export async function legalSearch(
     rt,
     `https://pasal.id/api/v1/search?${new URLSearchParams({ q: query, limit: "6" })}`,
     { headers: { Authorization: `Bearer ${rt.config.pasalKey}` } },
+    "Pasal.id",
   );
   const results: Legal[] = [];
   for (const item of (Array.isArray(data.results) ? data.results : []).slice(
@@ -195,7 +276,8 @@ export async function saveFile(
   safeKey(key);
   if (rt.config.supabaseUrl && rt.config.storageKey) {
     try {
-      const response = await rt.fetch(
+      await requestResponse(
+        rt,
         `${rt.config.supabaseUrl}/storage/v1/object/${rt.config.bucket}/${key}`,
         {
           method: "POST",
@@ -207,10 +289,11 @@ export async function saveFile(
           body: Buffer.from(data),
           signal: AbortSignal.timeout(45_000),
         },
+        "Supabase Storage",
       );
-      if (!response.ok) throw new Error();
       return "supabase";
-    } catch {
+    } catch (error) {
+      if (error instanceof ProviderError) throw error;
       throw new ProviderError(
         "Document storage failed. Check the private Supabase bucket and credentials.",
       );
@@ -254,6 +337,7 @@ export async function deleteFile(rt: Runtime, key: string, storage: string) {
         headers: { ...storageHeaders(rt), "Content-Type": "application/json" },
         body: JSON.stringify({ prefixes: [key] }),
       },
+      "Supabase Storage",
     );
   else await rm(join(rt.config.dataDir, "documents", key), { force: true });
 }
@@ -267,6 +351,7 @@ export async function signedFile(rt: Runtime, key: string) {
       headers: { ...storageHeaders(rt), "Content-Type": "application/json" },
       body: JSON.stringify({ expiresIn: 300 }),
     },
+    "Supabase Storage",
   );
   if (
     typeof data.signedURL !== "string" ||
