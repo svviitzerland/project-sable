@@ -1,6 +1,6 @@
 # Architecture
 
-Svelte 5 and SvelteKit 3 serve the landing page, workspace, and TypeScript `/api/v1` API in one Node 24 Vercel project. Server modules are under `fe/src/lib/server`; the catch-all endpoint delegates to `api.ts`. Zod validates requests, portable records and model output. Private environment variables are declared explicitly in `fe/src/env.ts`. No frontend proxy, Python service, or app-hosted WebSocket is required.
+Svelte 5 and SvelteKit 3 serve the landing page, workspace, and TypeScript `/api/v1` API in one Node 24 Vercel project. Server modules are under `app/src/lib/server`; the catch-all endpoint delegates to `api.ts`. Zod validates requests, portable records and model output. Private environment variables are declared explicitly in `app/src/env.ts`. No frontend proxy, Python service, or app-hosted WebSocket is required.
 
 Opaque account cookies are HttpOnly and SameSite Strict, with Secure in production. Scrypt hashes and hashed 12-hour session tokens retain compatibility with the previous implementation. Every case route, notification stream, file transfer and conversation verifies ownership. API mutations reject foreign origins. Browser database roles have no table access.
 

@@ -1,10 +1,10 @@
 # Deploy Jude as one SvelteKit project
 
-The frontend and TypeScript API now share **one Vercel deployment**, rooted at **`fe`**. Supabase stores durable data/files; QStash delivers analysis jobs. Python and a second API project are no longer required.
+The frontend and TypeScript API now share **one Vercel deployment**, rooted at **`app`**. Supabase stores durable data/files; QStash delivers analysis jobs. Python and a second API project are no longer required.
 
 ## 1. Prepare Supabase
 
-Use a dedicated Supabase project for each environment. Run `fe/migrations/001_schema.sql` through `006_typescript_audio.sql`, in numeric order, as the database owner. On an existing database already using 001–005, apply only 006. Back up existing data before applying schema changes.
+Use a dedicated Supabase project for each environment. Run `app/migrations/001_schema.sql` through `006_typescript_audio.sql`, in numeric order, as the database owner. On an existing database already using 001–005, apply only 006. Back up existing data before applying schema changes.
 
 Migrations preserve existing tables and scrypt account hashes. They enable RLS and deny direct browser-role access. Migration 002 installs pgvector in `extensions`, maintains 1536-dimensional vectors, and creates the private `jude-documents` bucket; 005 permits private temporary transfers up to 64 MB. Migration 006 adds authenticated browser audio sessions. If pgvector already lives in another schema, reconcile that before applying 002.
 
@@ -19,13 +19,15 @@ Choose the branch containing the TypeScript migration:
 | Setting | Value |
 | --- | --- |
 | Framework Preset | **SvelteKit** |
-| Root Directory | **`fe`** |
+| Root Directory | **`app`** |
 | Node.js Version | **24.x** |
 | Install Command | `pnpm install --frozen-lockfile` |
 | Build Command | `pnpm build` |
 | Output Directory | Leave the preset default |
 
-`fe/vite.config.ts` configures the Vercel adapter, Node 24 and a 300-second maximum function duration. The app uses streaming HTTP for notifications; it does not host WebSockets. Ensure your Vercel function settings and plan permit the configured duration. No Uvicorn start command or separate frontend/backend URL is needed.
+`app/vite.config.ts` configures the Vercel adapter, Node 24 and a 300-second maximum function duration. The app uses streaming HTTP for notifications; it does not host WebSockets. Ensure your Vercel function settings and plan permit the configured duration. No Uvicorn start command or separate frontend/backend URL is needed.
+
+If this project was previously configured with Root Directory `fe`, change it to `app` in Vercel project settings before the next deployment. The repository rename does not change that dashboard setting automatically.
 
 ## 3. Add private environment variables
 
@@ -65,7 +67,7 @@ Remove obsolete `API_INTERNAL_URL`, `PUBLIC_API_WS_URL`, `PUBLIC_HOSTED_UPLOADS`
 
 Normal testimony saves and its analysis outbox entry commit atomically. QStash dispatches analysis immediately. Recovery finds jobs that were never dispatched or became stale, retries a bounded batch, expires abandoned audio state, and removes expired temporary files. **Do not omit this schedule.**
 
-The repository no longer commits a per-minute Vercel Cron. Use QStash's scheduler to avoid coupling deployment to Vercel's cron-plan restrictions. From `fe`, with the production `JUDE_APP_URL`, `QSTASH_TOKEN`, and `CRON_SECRET` in a local, uncommitted env file, run once after deploying:
+The repository no longer commits a per-minute Vercel Cron. Use QStash's scheduler to avoid coupling deployment to Vercel's cron-plan restrictions. From `app`, with the production `JUDE_APP_URL`, `QSTASH_TOKEN`, and `CRON_SECRET` in a local, uncommitted env file, run once after deploying:
 
 ```bash
 node --env-file=.env.local --import tsx scripts/configure-recovery.ts
@@ -73,7 +75,7 @@ node --env-file=.env.local --import tsx scripts/configure-recovery.ts
 
 This creates or updates a stable schedule for that app URL: `GET /api/v1/internal/recover` every minute with `Authorization: Bearer <CRON_SECRET>`. The script prints only the schedule ID. It uses the official QStash TypeScript SDK. Schedule delivery counts against QStash quotas; `JUDE_RECOVERY_CRON` can override the expression if you accept a longer recovery delay. Re-run after changing the origin or recovery secret. Remove the old origin's schedule after a domain migration.
 
-If your Vercel plan supports your desired cron frequency, you may instead add a `crons` entry to `fe/vercel.json` for `/api/v1/internal/recover`; Vercel supplies `CRON_SECRET` as its Bearer token. Configure one scheduler, not duplicate sweeps.
+If your Vercel plan supports your desired cron frequency, you may instead add a `crons` entry to `app/vercel.json` for `/api/v1/internal/recover`; Vercel supplies `CRON_SECRET` as its Bearer token. Configure one scheduler, not duplicate sweeps.
 
 ## 5. Verify the deployed app
 

@@ -2,7 +2,7 @@
 
 ## Delivered
 
-The backend is now TypeScript inside the existing SvelteKit application. One Vercel project, rooted at `fe`, serves the landing page, workspace and API. The Python production runtime, dependencies and Python acceptance/evaluation harness are retired. Existing visual design and workflows are preserved.
+The backend is now TypeScript inside the existing SvelteKit application. One Vercel project, rooted at `app`, serves the landing page, workspace and API. The Python production runtime, dependencies and Python acceptance/evaluation harness are retired. Existing visual design and workflows are preserved.
 
 The port covers accounts and sessions, PostgreSQL/SQLite persistence, document ingestion/originals, hearings and imports, `.jude` archives, retrieval and evidence links, four-step analysis, case assistant/practice, simulation fixtures, durable jobs/recovery, private file transfers and live audio. Zod validates requests and model output. Existing SQL table names, password hashes, private file paths and `.jude` version 1 remain compatible. Migration 006 adds audio session state.
 
@@ -22,6 +22,10 @@ Supabase and QStash remain external services. Recovery setup uses an idempotent 
 
 ## Deployment work remaining
 
-Apply migration 006 to an existing database (001–006 for a new project), configure the private variables, deploy with root `fe` and the SvelteKit preset, then configure recovery. Verify real Speechmatics/OpenRouter/Pasal/Supabase/QStash operation and a full audio rotation in the deployed environment. No live service credentials were available for that verification.
+Apply migration 006 to an existing database (001–006 for a new project), configure the private variables, deploy with root `app` and the SvelteKit preset, then configure recovery. Verify real Speechmatics/OpenRouter/Pasal/Supabase/QStash operation and a full audio rotation in the deployed environment. No live service credentials were available for that verification.
 
 The native-library trace lists optional packages for other operating systems plus optional PostgreSQL native/Cloudflare drivers as unavailable. The Linux x64 canvas binary and PDF worker are included; the isolated deployed-function check passes with the ordinary Node `pg` driver. Scanned PDFs still require prior OCR. Browser-relayed transcription is not a cryptographic provider attestation.
+
+## Application directory follow-up — 2026-10-31
+
+Renamed the unified application directory from `fe/` to `app/`, including local data and development files. Updated current documentation, commands and design surface targets. Existing Vercel projects must change Root Directory to `app` in their project settings.

@@ -54,7 +54,7 @@ Original brief: “Jude - Evidence-Grounded AI for Courtroom Intelligence.” Th
 
 ## Vercel deployment behavior
 
-The native Svelte 5 frontend and TypeScript backend run in one SvelteKit 3 Vercel project rooted at `fe`. Supabase PostgreSQL and private Storage remain external durable services. See [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md) for the environment contract, migration order and recovery scheduler setup.
+The native Svelte 5 frontend and TypeScript backend run in one SvelteKit 3 Vercel project rooted at `app`. Supabase PostgreSQL and private Storage remain external durable services. See [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md) for the environment contract, migration order and recovery scheduler setup.
 
 Saved testimony and its analysis job commit together. Signed QStash callbacks validate the request body and destination, enforce a shared lease, and retry transient analysis failures within a bounded attempt count. Authenticated scheduled recovery redelivers stale/unsent work. Cookie-authenticated SSE supplies database-backed update notifications while the UI polls authoritative records.
 
