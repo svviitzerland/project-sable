@@ -94,7 +94,7 @@ uv run --no-project --with playwright python tests/acceptance.py
 
 The script creates a new synthetic test account and case data. It verifies registration/sign-in, simulation, notes/review/filter persistence, document upload/search/download, `.jude` round-trips, hearing upload/preview, evidence discovery, isolation, unavailable-analysis behavior, keyboard navigation, clipboard errors, and responsive layouts. Screenshots go to ignored `.impeccable/review/`.
 
-The landing-page check needs only the frontend. It covers animation controls, offscreen pausing, reduced motion, keyboard navigation, source links, synthetic review states, responsive layouts, and content without JavaScript:
+The landing-page check needs only the frontend. It covers the original landing composition, finite animation, offscreen pausing, reduced motion, keyboard navigation, source links, synthetic review states, responsive layouts, and content without JavaScript:
 
 ```bash
 cd fe

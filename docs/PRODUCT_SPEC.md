@@ -6,7 +6,7 @@ Lawyers in Indonesian criminal proceedings must follow testimony while comparing
 
 ## Delivered MVP
 
-The marketing introduction at `/` uses a finite animated paper comparison, source-linked synthetic examples, and keyboard-accessible previews of case files, hearings, and evidence discovery. Pause/replay, offscreen pausing, reduced motion, and visible content without JavaScript preserve access. `/workspace` provides account registration/sign-in, isolated cases, document ingestion/search/original download, transcript capture, progressive source-linked findings, independent-review details, review notes, speaker labels, legal discovery, provider status, portable `.jude` export/import, a separate hearing library, and an evidence graph with natural-language search.
+The marketing introduction remains at `/`. `/workspace` provides account registration/sign-in, isolated cases, document ingestion/search/original download, transcript capture, progressive source-linked findings, independent-review details, review notes, speaker labels, legal discovery, provider status, portable `.jude` export/import, a separate hearing library, and an evidence graph with natural-language search.
 
 Local SQLite and private files work without external accounts. Optional PostgreSQL/pgvector and private Supabase Storage paths are supplied. Speechmatics and OpenRouter integrations are implemented with protocol/contract tests; no live provider credentials were available for verification. Pasal.id responses remain discovery metadata, separate from case evidence.
 

@@ -2,29 +2,20 @@
 version: 1
 slug: "fe-src-app-page-tsx"
 primary_target: "fe/src/app/page.tsx"
-related_targets: ["fe/src/components/jude-site.tsx", "fe/src/components/landing-paper.tsx", "fe/src/components/landing-paper.module.css"]
+related_targets: ["fe/src/components/jude-site.tsx", "fe/src/components/landing-motion.ts"]
 ---
 
-# Jude landing-page motion refinement
+# Original Jude landing page with motion
 
-Mode: Persuade. Extend the established paper/forest identity and existing interactive evidence demonstration. User explicitly requested continuous iteration, paper-like stop-motion/smooth animation, a modern touch, and OpenNotes inspiration; decisions are delegated. Direct OpenNote reference inspection is unavailable because the environment blocks its domains. No reference-specific visual claims are made.
+The user's correction is binding: preserve the first landing design and apply animation only. Restore the original dark case-file hero, left-aligned headline, cream action, single paper comparison, static workflow rows, existing demo, and lower sections. The replaced centered-paper redesign and chapter previews are removed.
 
-## Direction contract
+THESIS: The existing evidence sheet settles onto the case file; its connecting thread resolves into a qualified finding.
+OWN-WORLD: The original forest photograph, ivory source paper, Rufina/Caslon and Manrope, colors, spacing, copy, and sections.
+STORY: The original testimony-to-source story, without new navigation or section structure.
+FIRST VIEWPORT: Match the original landing composition from commit 91e03ad after animation settles.
+FORM: Narrow animation enhancement; no new world, seed, comp, or assets.
+FINISH: Browser verification, independent review, and narrow design documentation.
 
-THESIS: Let the visitor see two accounts become an inspectable question, using moving source sheets as the demonstration itself.
-OWN-WORLD: Existing Rufina/Caslon and Manrope, ivory fiber texture, deep forest case-file ground, restrained amber annotations. Crisp modern navigation and controls frame the tactile records.
-STORY: Understand the courtroom use case, follow a clearly synthetic paper comparison, try the real case workspace, then inspect the existing source-linked demo.
-FIRST VIEWPORT: A clean paper header and centered two-line statement lead to a broad forest work surface. Two readable source sheets separate from a stack; a small verification note joins them. Both source links and the workspace action remain usable throughout.
-FORM: Motion/layout refinement of the established surface, implemented in code. No new visual-world selection or seed roll; existing original assets retained. The user's motion/material direction is the brief.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+Motion is one finite 1.3-second sequence: a slight stepped paper settlement, smooth connection reveal, and subtle status emphasis. No loops or added controls. Source excerpt switching uses a 180ms opacity transition. Motion pauses offscreen or when the document is hidden. Reduced motion and no JavaScript retain the full static design; links remain usable throughout.
 
-## Motion thesis
-
-Focal moment: testimony and an earlier statement separate in three deliberately stepped paper poses; a smooth connector and ink highlight reveal their relationship; a verification note settles beside them. This is one finite sequence, with replay and pause controls.
-Continuity: workflow tabs replace the preview in place; demo source changes retain their existing context.
-Feedback: source links, controls, copied questions, review state, and menu transitions respond immediately.
-Budget: CSS/WAAPI only, no new animation library. Finite transform/opacity/stroke/highlight animation, no continuous scroll handlers. Pause while hidden/offscreen. Reduced motion presents the complete static relationship and preserves controls. Content is visible without JavaScript.
-
-## Finish evidence
-
-Independent finish review: `ship`, no material fixes. Production browser acceptance passed at 1440, 1280, 768, and 390 pixels, including pause/resume/replay, offscreen pausing, reduced motion, keyboard interaction, and content without JavaScript. The targeted design detector reported no findings; both retained rasters carry provenance.
+Finish: production checks and responsive browser acceptance passed. Independent review returned `ship`, no material fixes. DESIGN.md records the motion without changing original layout or tokens.

@@ -14,12 +14,12 @@ import {
   X,
 } from "lucide-react";
 import { examples, type SourceKind } from "@/lib/jude-demo";
-import { PaperHero, PaperWorkflow } from "./landing-paper";
-import styles from "./landing-paper.module.css";
+
+import { useLandingMotion } from "./landing-motion";
 
 const nav = [
-  ["The workspace", "#how-it-works"],
-  ["See the evidence", "#demo"],
+  ["How it works", "#how-it-works"],
+  ["Built on evidence", "#evidence"],
   ["Our approach", "#approach"],
 ] as const;
 
@@ -31,13 +31,23 @@ export function JudeSite() {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   const demoHeading = useRef<HTMLHeadingElement>(null);
-  const menuButton = useRef<HTMLButtonElement>(null);
+  const hero = useRef<HTMLDivElement>(null);
+  const excerpt = useRef<HTMLDivElement>(null);
+  useLandingMotion(hero);
   useEffect(() => {
     if (menuOpen)
       document
         .querySelector<HTMLAnchorElement>("#mobile-navigation a")
         ?.focus();
   }, [menuOpen]);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const animation = excerpt.current?.animate(
+      [{ opacity: 0.7 }, { opacity: 1 }],
+      { duration: 180, easing: "ease-out" },
+    );
+    return () => animation?.cancel();
+  }, [source, exampleIndex]);
   const example = examples[exampleIndex];
   const isReviewed = reviewed.includes(example.id);
 
@@ -66,65 +76,139 @@ export function JudeSite() {
   }
 
   return (
-    <div className={styles.page}>
+    <>
       <a className="skip-link" href="#main">
         Skip to content
       </a>
-      <header className={styles.header} id="top">
-        <a className={styles.brand} href="#top" aria-label="Jude home">
-          jude.
-        </a>
-        <nav className={styles.navigation} aria-label="Main navigation">
-          {nav.map(([label, href]) => (
-            <a key={href} href={href}>
-              {label}
-            </a>
-          ))}
-          <a className={styles.headerAction} href="/workspace">
-            Open workspace <ArrowUpRight size={16} />
-          </a>
-        </nav>
-        <button
-          ref={menuButton}
-          className={styles.menuButton}
-          aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-          aria-expanded={menuOpen}
-          aria-controls="mobile-navigation"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          {menuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
-        {menuOpen && (
-          <nav
-            id="mobile-navigation"
-            className={styles.mobileNavigation}
-            aria-label="Mobile navigation"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                setMenuOpen(false);
-                menuButton.current?.focus();
-              }
-            }}
-          >
-            {nav.map(([label, href]) => (
-              <a key={href} href={href} onClick={() => setMenuOpen(false)}>
-                {label}
-                <ArrowUpRight size={17} />
-              </a>
-            ))}
-            <a href="/workspace">
-              Open workspace
-              <ArrowUpRight size={17} />
-            </a>
-            <button onClick={() => openDemo()}>
-              Explore the demo
-              <ArrowRight size={17} />
-            </button>
-          </nav>
-        )}
-      </header>
       <main id="main">
-        <PaperHero openDemo={openDemo} />
+        <div className="hero" id="top" ref={hero}>
+          <header className="site-header wrap">
+            <a className="wordmark" href="#top" aria-label="Jude home">
+              jude.
+            </a>
+            <nav className="desktop-nav" aria-label="Main navigation">
+              {nav.map(([label, href]) => (
+                <a key={href} href={href}>
+                  {label}
+                </a>
+              ))}
+              <a href="/workspace">Open workspace</a>
+              <button
+                className="button button-outline"
+                onClick={() => openDemo()}
+              >
+                Explore the demo
+              </button>
+            </nav>
+            <button
+              className="menu-toggle"
+              aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-navigation"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              {menuOpen ? <X /> : <Menu />}
+            </button>
+            {menuOpen && (
+              <nav
+                id="mobile-navigation"
+                className="mobile-nav"
+                aria-label="Mobile navigation"
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    setMenuOpen(false);
+                    document
+                      .querySelector<HTMLButtonElement>(".menu-toggle")
+                      ?.focus();
+                  }
+                }}
+              >
+                {nav.map(([label, href]) => (
+                  <a key={href} href={href} onClick={() => setMenuOpen(false)}>
+                    {label}
+                    <ArrowUpRight size={17} />
+                  </a>
+                ))}
+                <a href="/workspace">
+                  Open workspace
+                  <ArrowUpRight size={17} />
+                </a>
+                <button onClick={() => openDemo()}>
+                  Explore the demo
+                  <ArrowRight size={17} />
+                </button>
+              </nav>
+            )}
+          </header>
+          <div className="hero-content">
+            <div className="hero-copy wrap">
+              <h1>
+                Stay with the testimony.
+                <br /> See the whole story.
+              </h1>
+              <p>
+                An AI courtroom copilot that connects what is said
+                <br className="desktop-break" /> to what the evidence shows.
+              </p>
+              <button
+                className="button button-cream hero-cta"
+                onClick={() => openDemo()}
+              >
+                Explore the demo <ArrowRight size={22} strokeWidth={1.5} />
+              </button>
+            </div>
+            <div className="hero-evidence paper">
+              <p className="sample-label">Synthetic example</p>
+              <div className="comparison">
+                <div className="comparison-statement">
+                  <h2>Testimony</h2>
+                  <blockquote>“I arrived at 9:30 PM.”</blockquote>
+                  <button
+                    className="source-link"
+                    onClick={() => openDemo("transcript", true)}
+                  >
+                    <FileText aria-hidden="true" />
+                    <span>
+                      Hearing transcript{" "}
+                      <span className="source-separator">·</span>{" "}
+                      <span>00:14:32</span>
+                    </span>
+                  </button>
+                </div>
+                <div className="comparison-finding">
+                  <span className="status status-inconsistency">
+                    Potential inconsistency
+                  </span>
+                  <div className="evidence-thread" aria-hidden="true">
+                    <span />
+                    <span />
+                  </div>
+                  <p>
+                    Check whether both statements
+                    <br className="desktop-break" /> refer to the same event.
+                  </p>
+                </div>
+                <div className="comparison-statement earlier">
+                  <h2>Earlier statement</h2>
+                  <blockquote>
+                    “I arrived shortly
+                    <br className="desktop-break" /> after 8:00 PM.”
+                  </blockquote>
+                  <button
+                    className="source-link"
+                    onClick={() => openDemo("statement", true)}
+                  >
+                    <FileText aria-hidden="true" />
+                    <span>
+                      Witness statement{" "}
+                      <span className="source-separator">·</span> Page 4
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <section
           className="source-intro wrap"
           id="evidence"
@@ -143,7 +227,67 @@ export function JudeSite() {
             and build stronger arguments.
           </p>
         </section>
-        <PaperWorkflow />
+        <section
+          className="workflow wrap section-space"
+          id="how-it-works"
+          aria-labelledby="workflow-title"
+        >
+          <div className="section-heading">
+            <h2 id="workflow-title">
+              Keep your attention
+              <br />
+              where it matters.
+            </h2>
+            <p>
+              Hear the testimony. Follow the argument. Jude is being built to
+              connect the relevant details while you stay with the proceedings.
+            </p>
+          </div>
+          <ol className="workflow-list">
+            <li>
+              <span className="step-number">01</span>
+              <div>
+                <h3>Listen in context.</h3>
+                <p>
+                  A searchable transcript brings together what was said, when it
+                  was said, and who said it. Uncertain speaker identities stay
+                  uncertain.
+                </p>
+              </div>
+              <span className="workflow-detail">
+                Testimony <ArrowRight size={15} /> Meaningful statements
+              </span>
+            </li>
+            <li>
+              <span className="step-number">02</span>
+              <div>
+                <h3>Connect the evidence.</h3>
+                <p>
+                  Relevant statements are compared with the case materials.
+                  Supporting passages and potential differences retain their
+                  document and page references.
+                </p>
+              </div>
+              <span className="workflow-detail">
+                Statement <ArrowRight size={15} /> Source passage
+              </span>
+            </li>
+            <li>
+              <span className="step-number">03</span>
+              <div>
+                <h3>Examine both sides.</h3>
+                <p>
+                  Alternative explanations and missing context are considered
+                  before a finding is presented. You inspect the sources and
+                  decide what deserves a closer look.
+                </p>
+              </div>
+              <span className="workflow-detail">
+                Finding <ArrowRight size={15} /> Your judgment
+              </span>
+            </li>
+          </ol>
+        </section>
         <section
           className="demo-section"
           id="demo"
@@ -277,7 +421,7 @@ export function JudeSite() {
                 </div>
                 <div
                   className="document-excerpt"
-                  key={`${example.id}-${source}`}
+                  ref={excerpt}
                   aria-live="polite"
                 >
                   <div className="document-meta">
@@ -453,11 +597,11 @@ export function JudeSite() {
                 <ChevronDown size={20} />
               </summary>
               <p>
-                The workspace supports legal-reference discovery through
-                Pasal.id when configured. Discovery metadata is kept separate
-                from case evidence; read and verify the original legislation
-                before relying on it. This illustration does not retrieve legal
-                references or provide legal advice.
+                The proposed product will retrieve relevant Indonesian
+                legislation through Pasal.id, subject to available permissions.
+                Verified legal text must be distinguished from metadata and
+                unverified references. This demo does not retrieve or present
+                legal advice.
               </p>
             </details>
             <details>
@@ -466,12 +610,10 @@ export function JudeSite() {
                 <ChevronDown size={20} />
               </summary>
               <p>
-                Yes. The workspace accepts text-based PDF, DOCX, TXT, and
-                Markdown evidence and complete hearing transcripts. Readable
-                unfamiliar transcript layouts can be converted with a configured
-                AI model, then reviewed before import. Export and import
-                complete cases with .jude. Use synthetic or authorized material;
-                scanned PDFs need OCR first.
+                The authenticated workspace accepts text-based PDF, DOCX, TXT,
+                and Markdown documents, with original downloads and inspectable
+                passages. Use synthetic or appropriately authorized material.
+                Scanned PDFs require OCR before upload.
               </p>
             </details>
           </div>
@@ -489,9 +631,12 @@ export function JudeSite() {
                 <br />
                 with a better question.
               </p>
-              <a className="button button-cream" href="/workspace">
-                Open your workspace <ArrowUpRight size={21} />
-              </a>
+              <button
+                className="button button-cream"
+                onClick={() => openDemo()}
+              >
+                Explore the demo <ArrowRight size={21} />
+              </button>
               <span className="closing-note">
                 Designed for Indonesian legal professionals.
               </span>
@@ -504,11 +649,11 @@ export function JudeSite() {
           jude.
         </a>
         <p>Evidence-grounded courtroom intelligence.</p>
-        <span>MVP · For evaluation</span>
+        <span>Product concept · 2026</span>
         <a href="#top">
           Back to top <ArrowUpRight size={14} />
         </a>
       </footer>
-    </div>
+    </>
   );
 }
