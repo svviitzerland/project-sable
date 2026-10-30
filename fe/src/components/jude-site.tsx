@@ -40,11 +40,13 @@ export function JudeSite() {
         <a className="wordmark" href="#top" aria-label="Jude home">jude.</a>
         <nav className="desktop-nav" aria-label="Main navigation">
           {nav.map(([label, href]) => <a key={href} href={href}>{label}</a>)}
+          <a href="/workspace">Open workspace</a>
           <button className="button button-outline" onClick={() => openDemo()}>Explore the demo</button>
         </nav>
         <button className="menu-toggle" aria-label={menuOpen ? "Close navigation" : "Open navigation"} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
         {menuOpen && <nav id="mobile-navigation" className="mobile-nav" aria-label="Mobile navigation" onKeyDown={(event) => { if (event.key === "Escape") { setMenuOpen(false); document.querySelector<HTMLButtonElement>(".menu-toggle")?.focus(); } }}>
           {nav.map(([label, href]) => <a key={href} href={href} onClick={() => setMenuOpen(false)}>{label}<ArrowUpRight size={17} /></a>)}
+          <a href="/workspace">Open workspace<ArrowUpRight size={17} /></a>
           <button onClick={() => openDemo()}>Explore the demo<ArrowRight size={17} /></button>
         </nav>}
       </header>
@@ -107,11 +109,11 @@ export function JudeSite() {
       <div className="principles"><article><span className="principle-icon"><FileText size={22} strokeWidth={1.3} /></span><div><h3>Traceable by design.</h3><p>A substantive finding should retain its source, passage, and context. An answer without something to inspect is not enough.</p></div></article><article><span className="principle-icon"><Minus size={22} strokeWidth={1.3} /></span><div><h3>Uncertainty stays visible.</h3><p>Missing context and insufficient evidence are meaningful results. Jude should surface those limits, rather than force a conclusion.</p></div></article><article><span className="principle-icon"><Check size={22} strokeWidth={1.3} /></span><div><h3>People make the decisions.</h3><p>Jude supports examination and preparation. Professional legal judgment and judicial independence remain with people.</p></div></article></div>
     </section>
     <section className="questions wrap section-space" id="questions" aria-labelledby="questions-title"><h2 id="questions-title">Before we enter<br />the courtroom.</h2><div className="faq-list">
-      <details><summary>Who is Jude being built for?<ChevronDown size={20} /></summary><p>The first use case is lawyers in Indonesian criminal proceedings. The planned hackathon MVP focuses on a simulated hearing. Prosecutor and judge workflows would require separate role-specific capabilities and safeguards.</p></details>
-      <details><summary>Is this a live courtroom product?<ChevronDown size={20} /></summary><p>Not yet. This website introduces the product concept and a synthetic, interactive example. Live transcription, case-document retrieval, and the AI review pipeline described here are planned capabilities, not connected services in this demo.</p></details>
+      <details><summary>Who is Jude being built for?<ChevronDown size={20} /></summary><p>The first use case is lawyers in Indonesian criminal proceedings. The current MVP includes a synthetic hearing and a case workspace. Prosecutor and judge workflows would require separate role-specific capabilities and safeguards.</p></details>
+      <details><summary>Is this a live courtroom product?<ChevronDown size={20} /></summary><p>Jude is an MVP for evaluation using synthetic or authorized material. The workspace supports case documents, transcripts, source-linked findings, and review notes. Live speech and AI analysis require configured providers; the synthetic hearing runs without them. External integrations still require live validation before operational use.</p></details>
       <details><summary>Does an inconsistency mean a witness is wrong?<ChevronDown size={20} /></summary><p>No. Different accounts can reflect different events, ambiguous questions, incomplete context, or other explanations. Jude is intended to identify what may warrant examination—not decide whether a witness is lying or a defendant is guilty.</p></details>
       <details><summary>How will Indonesian legal references be used?<ChevronDown size={20} /></summary><p>The proposed product will retrieve relevant Indonesian legislation through Pasal.id, subject to available permissions. Verified legal text must be distinguished from metadata and unverified references. This demo does not retrieve or present legal advice.</p></details>
-      <details><summary>Can I upload case documents here?<ChevronDown size={20} /></summary><p>This marketing prototype does not accept documents or recordings. Production use will require authenticated access, case-level authorization, secure storage, and appropriately authorized material.</p></details>
+      <details><summary>Can I upload case documents here?<ChevronDown size={20} /></summary><p>The authenticated workspace accepts text-based PDF, DOCX, TXT, and Markdown documents, with original downloads and inspectable passages. Use synthetic or appropriately authorized material. Scanned PDFs require OCR before upload.</p></details>
     </div></section>
     <section className="closing"><div className="wrap"><h2>Stay present.<br />See what connects.</h2><div><p>A closer look at the evidence starts<br />with a better question.</p><button className="button button-cream" onClick={() => openDemo()}>Explore the demo <ArrowRight size={21} /></button><span className="closing-note">Designed for Indonesian legal professionals.</span></div></div></section>
     </main>

@@ -28,7 +28,7 @@ def validate_citations(conclusion, sources):
     known = {source.id: source for source in sources}
     for citation in conclusion.citations:
         source = known.get(citation.chunk_id)
-        if not source or citation.quote not in source.text:
+        if not source or not citation.quote.strip() or citation.quote not in source.text:
             raise ProviderError(
                 "Citation verification failed. The finding was withheld because a quoted passage did not match the retrieved evidence."
             )

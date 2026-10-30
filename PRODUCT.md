@@ -24,9 +24,9 @@ Lawyers listen to testimony while consulting investigation reports, witness stat
 
 ## Capabilities and Constraints
 
-The supplied brief proposes live transcription and speaker attribution, contextual claim extraction, case-filtered retrieval, legal-reference lookup, bounded adversarial review, and progressive findings. These are intended MVP capabilities, not verified production integrations. Findings use Supported, Potential Inconsistency, Context Needed, and Insufficient Evidence statuses. Never equate an inconsistency with dishonesty or a finding with guilt.
+The supplied brief proposes live transcription and speaker attribution, contextual claim extraction, case-filtered retrieval, legal-reference lookup, bounded adversarial review, and progressive findings. The local workspace implements these MVP paths; external provider integrations still require validation with real accounts. Findings use Supported, Potential Inconsistency, Context Needed, and Insufficient Evidence statuses. Never equate an inconsistency with dishonesty or a finding with guilt.
 
-The current deliverable is a marketing website introducing Jude, confirmed by the user. Build in the existing Next.js repository. Use a clearly labeled synthetic example; do not imply working courtroom audio, legal retrieval, authentication, or evidence storage on the marketing site.
+The current deliverable is the working lawyer workspace at `/workspace`, alongside the preserved marketing introduction at `/`. It includes authenticated cases, document ingestion and originals, saved transcripts, qualified source-linked findings, review notes, speaker labels, and export. A clearly labeled synthetic hearing runs without providers. Speechmatics, OpenRouter, Pasal.id, and Supabase integration paths are implemented; live service verification remains outstanding. Local SQLite/private files and PostgreSQL/pgvector migrations are verified.
 
 ## Brand Commitments
 

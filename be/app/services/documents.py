@@ -80,6 +80,13 @@ def chunk_pages(pages):
 
 
 async def ingest(app, case, name, data):
+    # Single-worker app: serialize duplicate and quota checks through commit.
+    lock = app.state.document_locks.setdefault(case.id, asyncio.Lock())
+    async with lock:
+        return await _ingest(app, case, name, data)
+
+
+async def _ingest(app, case, name, data):
     if not data or len(data) > MAX_BYTES:
         raise HTTPException(413, "Upload a non-empty file up to 6 MB.")
     name = (
@@ -117,31 +124,35 @@ async def ingest(app, case, name, data):
     doc_id = uid()
     key = f"{case.owner_id}/{case.id}/{doc_id}{Path(name).suffix.lower()}"
     storage = await app.state.storage.save(key, data, mime)
-    with app.state.db() as db:
-        document = Document(
-            id=doc_id,
-            case_id=case.id,
-            name=name,
-            mime=mime,
-            storage_key=key,
-            storage=storage,
-            digest=digest,
-            pages=len(pages),
-        )
-        db.add(document)
-        db.flush()
-        for index, (page, text) in enumerate(slices):
-            db.add(
-                Chunk(
-                    case_id=case.id,
-                    document_id=doc_id,
-                    page=page,
-                    section="Text section"
-                    if Path(name).suffix.lower() == ".docx"
-                    else "",
-                    text=text,
-                    embedding=vectors[index] if vectors else None,
-                )
+    try:
+        with app.state.db() as db:
+            document = Document(
+                id=doc_id,
+                case_id=case.id,
+                name=name,
+                mime=mime,
+                storage_key=key,
+                storage=storage,
+                digest=digest,
+                pages=len(pages),
             )
-        db.commit()
-        return document
+            db.add(document)
+            db.flush()
+            for index, (page, text) in enumerate(slices):
+                db.add(
+                    Chunk(
+                        case_id=case.id,
+                        document_id=doc_id,
+                        page=page,
+                        section="Text section"
+                        if Path(name).suffix.lower() == ".docx"
+                        else "",
+                        text=text,
+                        embedding=vectors[index] if vectors else None,
+                    )
+                )
+            db.commit()
+            return document
+    except BaseException:
+        await app.state.storage.delete(key, storage)
+        raise

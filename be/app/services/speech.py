@@ -43,7 +43,7 @@ def normalize_transcript(message):
     return groups
 
 
-async def stream_speech(app, ws, case_id, config):
+async def stream_speech(app, ws, case_id, config, authorize=None):
     settings = app.state.settings
     if not settings.speechmatics_key:
         raise ProviderError(
@@ -132,6 +132,8 @@ async def stream_speech(app, ws, case_id, config):
                     for item in normalize_transcript(data):
                         if not item["text"].strip():
                             continue
+                        if authorize:
+                            authorize()
                         with app.state.db() as db:
                             segment = Segment(
                                 case_id=case_id, origin="speechmatics", **item
@@ -150,17 +152,31 @@ async def stream_speech(app, ws, case_id, config):
                     await ws.send_json({"type": "stopped"})
                     return
 
+        async def check_authorization():
+            while True:
+                if authorize:
+                    authorize()
+                await asyncio.sleep(2)
+
+        guard = asyncio.create_task(check_authorization())
         sender = asyncio.create_task(send_audio())
         receiver = asyncio.create_task(receive_transcripts())
         try:
             done, _ = await asyncio.wait(
-                [sender, receiver], return_when=asyncio.FIRST_COMPLETED
+                [sender, receiver, guard], return_when=asyncio.FIRST_COMPLETED
             )
             for task in done:
                 task.result()
             if sender in done and not receiver.done():
-                await asyncio.wait_for(receiver, 20)
+                finalized, _ = await asyncio.wait(
+                    [receiver, guard], timeout=20, return_when=asyncio.FIRST_COMPLETED
+                )
+                if not finalized:
+                    raise TimeoutError("Final transcription timed out")
+                for task in finalized:
+                    task.result()
         finally:
+            guard.cancel()
             sender.cancel()
             receiver.cancel()
-            await asyncio.gather(sender, receiver, return_exceptions=True)
+            await asyncio.gather(sender, receiver, guard, return_exceptions=True)

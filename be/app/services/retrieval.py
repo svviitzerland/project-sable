@@ -62,7 +62,7 @@ async def retrieve(app, case_id, query, limit=8):
                 pg_scores = dict(
                     db.execute(
                         sql_text(
-                            "SELECT id, 1 - (embedding_vector <=> CAST(:v AS vector)) FROM jude_chunks WHERE case_id=:c AND embedding_vector IS NOT NULL ORDER BY embedding_vector <=> CAST(:v AS vector) LIMIT 50"
+                            "SELECT id, 1 - (embedding_vector OPERATOR(extensions.<=>) CAST(:v AS extensions.vector)) FROM jude_chunks WHERE case_id=:c AND embedding_vector IS NOT NULL ORDER BY embedding_vector OPERATOR(extensions.<=>) CAST(:v AS extensions.vector) LIMIT 50"
                         ),
                         {"v": str(vector), "c": case_id},
                     ).all()
