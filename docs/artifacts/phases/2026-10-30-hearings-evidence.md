@@ -15,7 +15,7 @@ Delivered on `codex/jude-product-completion` as a continuation of the courtroom 
 - 39 backend tests passed, including a disposable PostgreSQL 16/pgvector integration run. All three migrations applied twice; retrieval and browser-role denial passed. Legacy SQLite upgrade preserves testimony and is repeatable.
 - Ruff, frontend ESLint, TypeScript, production build, and audio-worklet test passed.
 - Chromium browser acceptance passed: registration, simulation, notes/review persistence, document upload/search/original download, case export/import, hearing file review/import, missing-provider conversion/analysis states, graph connection confirmation, natural-language evidence retrieval, isolation, keyboard tabs, mobile navigation and inspector focus, and viewport overflow checks at 1440/1024/390 pixels. No page errors.
-- Impeccable detector reported no findings on changed UI targets. Rendered evidence retained under ignored `.impeccable/review/`; independent finish review recorded in the task.
+- Impeccable detector reported no findings on changed UI targets. Rendered evidence retained under ignored `.impeccable/review/`; independent finish review scored the relationship-text contrast and mobile inspector hierarchy fixes resolved (ship at the scored-fix scope). DESIGN.md records the new operational patterns. The historical concept-seed roll is unavailable and explicitly documented as inherited metadata debt, not a new direction claim.
 
 ## Practical limits
 

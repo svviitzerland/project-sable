@@ -964,7 +964,8 @@
 }
 @media (max-width: 999px) {
   .inspectorBack {
-    display: inline-flex;
+    display: flex;
+    width: fit-content;
     align-items: center;
     min-height: 44px;
     margin-bottom: 16px;

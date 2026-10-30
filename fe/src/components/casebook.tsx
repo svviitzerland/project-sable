@@ -513,6 +513,13 @@ const relationColors: Record<string, string> = {
   related: "#8e9e91",
 };
 
+const relationTextColors: Record<string, string> = {
+  supports: "#315841",
+  conflicts: "#835025",
+  context: "#67547e",
+  related: "#546758",
+};
+
 export function EvidenceWorkspace({
   caseId,
   openHearing,
@@ -930,7 +937,7 @@ export function EvidenceWorkspace({
                       >
                         <span
                           className={styles.relation}
-                          style={{ color: relationColors[e.relation] }}
+                          style={{ color: relationTextColors[e.relation] }}
                         >
                           {e.relation}
                         </span>
@@ -994,14 +1001,14 @@ export function EvidenceWorkspace({
               )}
               {edge ? (
                 <>
+                  <h3>Examine the connection</h3>
                   <span
                     className={styles.relation}
-                    style={{ color: relationColors[edge.relation] }}
+                    style={{ color: relationTextColors[edge.relation] }}
                   >
                     {edge.relation} ·{" "}
                     {edge.confirmed ? "reviewed" : "suggested"}
                   </span>
-                  <h3>Examine the connection</h3>
                   <p>{edge.explanation}</p>
                   <div className={styles.edgeSource}>
                     <button onClick={() => inspect(edge.source_id)}>
@@ -1059,8 +1066,8 @@ export function EvidenceWorkspace({
                 </>
               ) : node ? (
                 <>
-                  <span className={styles.muted}>{node.detail}</span>
                   <h3>{node.label}</h3>
+                  <span className={styles.muted}>{node.detail}</span>
                   <p className={styles.passage}>{node.text}</p>
                   {node.document_id && (
                     <a

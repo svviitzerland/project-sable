@@ -26,6 +26,14 @@ colors:
   workspace-muted: "#657164"
   workspace-line: "#dedfd6"
   workspace-navigation: "#183b2d"
+  relation-supports-stroke: "#4b7958"
+  relation-supports-text: "#315841"
+  relation-conflicts-stroke: "#b57539"
+  relation-conflicts-text: "#835025"
+  relation-context-stroke: "#83709b"
+  relation-context-text: "#67547e"
+  relation-related-stroke: "#8e9e91"
+  relation-related-text: "#546758"
 typography:
   display:
     fontFamily: "Rufina, Georgia, serif"
@@ -160,6 +168,8 @@ The palette combines forest-green framing with warm, low-chroma paper; amber, sa
 
 The `workspace-*` tokens describe the operating application independently of the marketing canvas. Forest navigation frames the case list; pale paper surrounds the near-white reading surface. Muted ink and thin lines organize metadata without adding elevation. Finding labels retain the amber/supporting-sage/context-lavender meanings; insufficient evidence uses a quiet neutral treatment. Every status also names its meaning in text.
 
+Evidence relationships use separate stroke and text tokens for support, conflict, context, and related material. Graph lines and legend swatches use the stroke family; connection labels use the darker text family on pale surfaces. Preserve the distinction rather than reusing a low-contrast line color for small text. Relationship meaning always appears in words as well as color; dashed connections indicate unreviewed suggestions, while solid connections indicate reviewed links.
+
 ## Typography
 
 All three families load from local font files. On the marketing introduction, Rufina supplies the hero headline, wordmark, and source-introduction heading; Caslon Display supplies the remaining headings, quotations, and prominent buttons. Manrope supplies navigation, explanations, controls, and annotations, with regular, medium, and semibold files.
@@ -179,6 +189,8 @@ The main container is (90%) wide with a maximum of (1440px). Desktop evidence us
 At widths up to (1100px), the evidence panel expands to (90%), internal spacing tightens, and the main comparison remains side by side. At widths up to (760px), the container has (20px) side gutters, navigation switches to a menu, and evidence, demo quotes, demo panes, and editorial sections stack. The hero comparison reads testimony, earlier statement, then qualified finding; the connecting line disappears, while source buttons remain. Source controls and menu toggle use a (44px) minimum target at this breakpoint. Regular section spacing reduces from the desktop section token to the mobile section token. At widths from (1600px), hero top and bottom spacing increases.
 
 The working application uses a full-height case rail beside the main record. The wide hearing view keeps transcript, finding list, and inspector adjacent, with independently scrollable reading areas. At widths up to (1320px), the inspector spans below the other panes; at widths up to (900px), all three panes stack. At widths up to (640px), the case rail becomes a drawer, and the closed drawer is hidden from keyboard traversal. Selecting a finding in stacked layouts moves focus and scroll to the inspector; a return action leads back to the initiating control. The workspace's density and breakpoints are separate from the marketing section rhythm.
+
+The evidence view pairs a map or connection list with an inspector, stacking them at widths up to (900px). On these smaller layouts, the map retains a readable internal canvas (720px wide) inside horizontal scrolling rather than shrinking its labels to fit the screen. The connection-list alternative remains available beside the map control. Hearing libraries use full-width ruled rows; transcript previews place speaker labels beside statements on wider screens and stack those fields on mobile.
 
 ## Elevation & Depth
 
@@ -225,6 +237,16 @@ Workspace actions use Manrope, compact corners, and forest fill for primary acti
 Case-section tabs expose selected state and support Arrow Left/Right, Home, and End. The mobile case drawer moves focus inside when opened, keeps keyboard traversal within it, and restores focus on Escape or close. Mobile finding links, source downloads, copy controls, and drawer controls have a minimum hit height (44px).
 
 The inspector separates testimony, the exact source quotation, verification, uncertainty, and a suggested question through type hierarchy and pale surfaces. Quote highlighting stays within the source passage. Review notes remain editable across finding changes, with explicit save/review actions; clipboard feedback appears beside the question and never replaces source evidence. Reduced-motion preference removes transitions; focus movement remains immediate.
+
+### Hearing library and import preview
+
+Hearing upload uses a pale, dashed-border well with a direct upload action. The preview is an inline review surface, not a modal: its header identifies the source file, editable fields show the hearing title, date, speakers, and statements, and a distinct footer action confirms import. Ruled hearing rows combine a serif title with date, origin, statement/finding counts, and a text status. Case-level `.jude` import remains in the case rail, while export is an explicit case-header action; file-transfer actions share the workspace's existing control treatment.
+
+### Evidence map, connections, and source inspection
+
+The map uses numbered passage nodes and separately filled hearing-statement nodes, with labeled relationships and visible selection/focus strokes. A segmented control exposes map and connection-list views; the active view uses forest fill. Selecting a node, connection, or search source opens exact text in the inspector. On narrow layouts, selection moves focus and scroll to that inspector, with an explicit return to the originating evidence control. Connection review is a separate action from selection, and suggested/reviewed state remains visible in both text and line treatment.
+
+Case questions use a full-width search field with a direct action. Results pair the response with individually inspectable source excerpts and provenance; the result surface does not replace the evidence map's source trail. Similarity and relationship labels remain qualified explanatory information rather than confidence decoration.
 
 ## Do's and Don'ts
 
