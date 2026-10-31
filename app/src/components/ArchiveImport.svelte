@@ -21,7 +21,7 @@
     {busy ? "Importing case…" : "Import .jude"}
     <input
       type="file"
-      accept=".jude"
+      accept=".jude,.zip,application/zip,application/vnd.jude+zip"
       disabled={busy}
       onchange={async (event) => {
         const file = event.currentTarget.files?.[0];

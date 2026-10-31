@@ -371,10 +371,15 @@ test("hearing parsers, reviewed words and original document exclusion", async (t
   const detail = await a.json(base);
   assert.equal(detail.segments[0].analysis_state, "pending");
   const exported = await a.call(`${base}/hearings/${hearing.id}/export.jude`);
-  assert.equal(
-    unpack(new Uint8Array(await exported.arrayBuffer())).manifest.kind,
-    "hearing",
+  const hearingBytes = new Uint8Array(await exported.arrayBuffer());
+  assert.equal(unpack(hearingBytes).manifest.kind, "hearing");
+  // WhatsApp and similar apps rename .jude archives to .jude.zip.
+  const renamed = await a.json(
+    base + "/hearings/preview",
+    "POST",
+    upload("shared.jude.zip", hearingBytes),
   );
+  assert.equal(renamed.hearing.segments.length, preview.hearing.segments.length);
   const unstructured = await a.json(
     base + "/hearings/preview",
     "POST",
@@ -476,6 +481,12 @@ test("synthetic full pipeline, review notes, portable archive remapping and chec
     ),
     copy = await a.json(`/cases/${imported.id}`);
   assert.notEqual(imported.id, record.id);
+  const renamedCase = await a.json(
+    "/cases/import",
+    "POST",
+    upload("case.jude.zip", bytes),
+  );
+  assert.notEqual(renamedCase.id, imported.id);
   assert.equal(copy.findings[0].reviewed, false);
   assert.equal(copy.findings[0].note, "Verify the original.");
   assert.equal(copy.findings[0].mode, "imported");

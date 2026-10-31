@@ -15,8 +15,11 @@ const timestamp = (value: string) =>
     .split(":")
     .reverse()
     .reduce((sum, part, i) => sum + Number(part) * 60 ** i, 0);
+// Messaging apps (e.g. WhatsApp) append ".zip" to .jude archives because they are ZIP containers.
+export const fileSuffix = (name: string) =>
+  /\.jude\.zip$/i.test(name) ? ".jude" : extname(name).toLowerCase();
 export async function originalText(name: string, data: Uint8Array) {
-  const suffix = extname(name).toLowerCase();
+  const suffix = fileSuffix(name);
   if ([".pdf", ".docx"].includes(suffix)) {
     const result = await extractPages(name, data);
     return {
@@ -49,9 +52,9 @@ export async function parseTranscript(
   name: string,
   data: Uint8Array,
 ): Promise<HearingFile> {
-  const suffix = extname(name).toLowerCase(),
+  const suffix = fileSuffix(name),
     { raw } = await originalText(name, data),
-    title = basename(name, extname(name)).slice(0, 160) || "Imported hearing";
+    title = basename(name.replace(/\.zip$/i, ""), suffix).slice(0, 160) || "Imported hearing";
   try {
     if (suffix === ".jude")
       return hearingFileSchema.parse(unpack(data).manifest);
@@ -175,7 +178,7 @@ export async function previewHearing(
   });
   return {
     hearing: hearingFileSchema.parse({
-      title: basename(name, extname(name)).slice(0, 160),
+      title: basename(name.replace(/\.zip$/i, ""), fileSuffix(name)).slice(0, 160),
       segments,
     }),
     method: "ai_converted",

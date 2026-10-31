@@ -180,7 +180,7 @@
       aria-label="Upload hearing transcript"
       class={ui.srOnly}
       type="file"
-      accept=".jude,.json,.csv,.txt,.md,.srt,.vtt,.pdf,.docx"
+      accept=".jude,.zip,.json,.csv,.txt,.md,.srt,.vtt,.pdf,.docx"
       onchange={(event) => {
         const selected = event.currentTarget.files?.[0];
         event.currentTarget.value = "";
