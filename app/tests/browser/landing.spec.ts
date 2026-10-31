@@ -14,6 +14,13 @@ test("original landing, smooth finite motion, keyboard access and no-JavaScript 
       ?.getAnimations({ subtree: true })
       .some((a) => a.playState === "running"),
   );
+  await page.getByRole("button", { name: "Replay comparison" }).click();
+  await page.waitForFunction(() =>
+    document
+      .querySelector(".quote-highlight")
+      ?.getAnimations()
+      .some((a) => a.playState === "running"),
+  );
   await page.locator("#questions").scrollIntoViewIfNeeded();
   await page.waitForFunction(() =>
     document
@@ -88,6 +95,9 @@ test("original landing, smooth finite motion, keyboard access and no-JavaScript 
   expect(
     await paper.evaluate((el) => el.getAnimations({ subtree: true }).length),
   ).toBe(0);
+  await expect(
+    page.getByRole("button", { name: "Replay comparison" }),
+  ).toBeHidden();
   const staticPage = await browser.newPage({ javaScriptEnabled: false });
   await staticPage.goto(baseURL!);
   await expect(staticPage.getByRole("heading", { level: 1 })).toBeVisible();

@@ -173,7 +173,7 @@ test("hosted chunked uploads and direct speech rotation save finalized testimony
       .getByRole("button", { name: "Create hearing", exact: true })
       .click();
     await page
-      .getByLabel("I am authorized to process this audio", { exact: false })
+      .getByLabel("I have permission to send this audio", { exact: false })
       .check();
     await page
       .getByRole("button", { name: "Start microphone", exact: true })

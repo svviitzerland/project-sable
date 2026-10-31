@@ -157,7 +157,7 @@ export async function caseContext(
       })),
       sources,
     },
-    notice: `Using ${sources.length} excerpts from ${chunks.length} document passages and ${segments.length} hearing statements. Context is selected, not an exhaustive reading; excerpts are capped at 2,400 characters.`,
+    notice: `Based on ${sources.length} source excerpt${sources.length === 1 ? "" : "s"}. Check the original context; this is not a review of the entire case.`,
     mode,
   };
 }

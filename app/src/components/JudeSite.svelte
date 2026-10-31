@@ -10,6 +10,7 @@
     Menu,
     Minus,
     Plus,
+    RotateCcw,
     X,
   } from "@lucide/svelte";
   import { examples, type SourceKind } from "../lib/jude-demo";
@@ -40,7 +41,12 @@
 
   const excerpt = { current: null as HTMLDivElement | null };
 
-  onMount(() => landingMotion(hero.current));
+  let replayComparison = $state<(() => void) | null>(null);
+  onMount(() => {
+    const motion = landingMotion(hero.current);
+    replayComparison = motion?.replay ?? null;
+    return () => motion?.destroy();
+  });
 
   $effect(() => {
     void [menuOpen];
@@ -165,14 +171,27 @@
             Explore the demo
           </button>
         </div>
-        <div class="hero-entry-note">Sign in or create an account to start your first case.</div>
+        <div class="hero-entry-note">
+          Sign in or create an account to start your first case.
+        </div>
       </div>
       <div class="hero-evidence paper">
-        <p class="sample-label">Synthetic example</p>
+        <div class="comparison-toolbar">
+          <p class="sample-label">Synthetic example</p>
+          {#if replayComparison}<button
+              class="replay-comparison"
+              onclick={replayComparison}
+              ><RotateCcw size={14} /> Replay comparison</button
+            >{/if}
+        </div>
         <div class="comparison">
           <div class="comparison-statement">
             <h2>Testimony</h2>
-            <blockquote>“I arrived at 9:30 PM.”</blockquote>
+            <blockquote>
+              “I arrived at <span class="quote-detail"
+                ><i class="quote-highlight" aria-hidden="true"></i>9:30 PM.</span
+              >”
+            </blockquote>
             <button
               class="source-link"
               onclick={() => openDemo("transcript", true)}
@@ -202,7 +221,10 @@
             <h2>Earlier statement</h2>
             <blockquote>
               “I arrived shortly
-              <br class="desktop-break" /> after 8:00 PM.”
+              <br class="desktop-break" /> after
+              <span class="quote-detail"
+                ><i class="quote-highlight" aria-hidden="true"></i>8:00 PM.</span
+              >”
             </blockquote>
             <button
               class="source-link"
@@ -216,6 +238,7 @@
             </button>
           </div>
         </div>
+        <span class="comparison-progress" aria-hidden="true"></span>
       </div>
     </div>
   </div>
@@ -563,12 +586,11 @@
           <ChevronDown size={20}></ChevronDown>
         </summary>
         <p>
-          Jude is an MVP for evaluation using synthetic or authorized material.
-          The workspace supports case documents, transcripts, source-linked
-          findings, and review notes. Live speech and AI analysis require
-          configured providers; the synthetic hearing runs without them.
-          External integrations still require live validation before operational
-          use.
+          Jude is intended for evaluation using fictional or authorized material.
+          Use it to organize documents, review transcripts and findings, and
+          prepare questions. The example hearing lets you explore with fictional
+          material. Verify sources and review the results before relying on them
+          in a real proceeding.
         </p>
       </details>
       <details>

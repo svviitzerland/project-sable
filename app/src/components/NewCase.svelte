@@ -43,7 +43,7 @@
       />
     </label>
     <label>
-      Reference
+      Reference (optional)
       <input
         name="reference"
         maxlength={100}
@@ -51,7 +51,7 @@
       />
     </label>
     <label class={styles.fullWidth}>
-      Description
+      Description (optional)
       <textarea
         name="description"
         maxlength={2000}

@@ -153,7 +153,7 @@ test("sign-in database failures log safe diagnostics with a matching reference",
   assert.equal(logs.length, 4);
 });
 
-test("provider failures identify service/status without disclosing upstream secrets", async (t) => {
+test("provider failures keep operator diagnostics in logs and show actionable user errors", async (t) => {
   const { rt } = await fixture(t);
   rt.config.openrouterKey = "private-provider-key";
   rt.config.model = "fixture/model";
@@ -172,11 +172,9 @@ test("provider failures identify service/status without disclosing upstream secr
       (error: unknown) => {
         assert(error instanceof ProviderError);
         assert.equal(error.status, 503);
-        assert.ok(
-          error.message.includes(
-            `OpenRouter chat request failed (HTTP ${status})`,
-          ),
-        );
+        assert.match(error.message, /This AI request could not be completed/);
+        assert.doesNotMatch(error.message, /OpenRouter|HTTP|API.key|quota|billing|model ID/i);
+        if (status === 429) assert.match(error.message, /wait a moment/);
         const log = JSON.parse(logs.at(-1)!);
         assert.equal(log.event, "jude_provider_failed");
         assert.equal(log.status, status);
@@ -190,7 +188,7 @@ test("provider failures identify service/status without disclosing upstream secr
   rt.fetch = async () => new Response(upstreamSecret, { status: 200 });
   await assert.rejects(
     requestJson(rt, "https://private-host", {}, "Speechmatics"),
-    /Speechmatics.*unreadable response/,
+    /Audio transcription could not start/,
   );
   assert.equal(JSON.parse(logs.at(-1)!).kind, "invalid_json");
   rt.fetch = async () => {
@@ -198,7 +196,7 @@ test("provider failures identify service/status without disclosing upstream secr
   };
   await assert.rejects(
     requestJson(rt, "https://private-host", {}, "Pasal.id"),
-    /Pasal.id.*could not be reached/,
+    /Legal search could not be completed/,
   );
   assert.equal(JSON.parse(logs.at(-1)!).status, null);
   rt.config.supabaseUrl = "https://private-host";
@@ -206,13 +204,14 @@ test("provider failures identify service/status without disclosing upstream secr
   rt.fetch = async () => new Response(upstreamSecret, { status: 403 });
   await assert.rejects(
     saveFile(rt, "owner/case/file.txt", new Uint8Array([65]), "text/plain"),
-    /Supabase Storage.*HTTP 403/,
+    /The file could not be saved or opened/,
   );
   rt.fetch = async () => new Response(upstreamSecret, { status: 400 });
   await assert.rejects(
     embed(rt, ["private-document-content"]),
-    /OpenRouter embeddings.*1536/,
+    /This AI request could not be completed/,
   );
+  assert.match(JSON.parse(logs.at(-1)!).hint, /1536/);
   for (const log of logs) assert.ok(!log.includes("private-"));
   rt.fetch = async () =>
     Response.json({ choices: [{ message: { content: '{"answer":"ok"}' } }] });
@@ -897,7 +896,7 @@ test("embedding contract validates complete finite vectors; legal URLs stay on P
   assert.equal((await embed(rt, ["test"]))?.[0].length, 1536);
   rt.fetch = async () =>
     Response.json({ data: [{ index: 1, embedding: Array(1536).fill(0) }] });
-  await assert.rejects(embed(rt, ["test"]), /invalid vectors/);
+  await assert.rejects(embed(rt, ["test"]), /Related evidence could not be processed/);
   assert.equal(safePasalUrl("https://evil.test/law"), null);
   assert.equal(safePasalUrl("javascript:alert(1)"), null);
   assert.equal(safePasalUrl("https://pasal.id/uu/1"), "https://pasal.id/uu/1");

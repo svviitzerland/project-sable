@@ -18,7 +18,7 @@ test("complete case workflow, imports, evidence, reviews and responsive navigati
     .getByRole("button", { name: "Simulation complete" })
     .waitFor({ timeout: 40000 });
   await expect(
-    page.getByText("Updates connected", { exact: true }),
+    page.getByText("Changes appear automatically", { exact: true }),
   ).toBeVisible();
   for (const label of [
     "Supported",
@@ -154,7 +154,7 @@ test("complete case workflow, imports, evidence, reviews and responsive navigati
   ).toBe(true);
   await page.getByRole("tab", { name: "Legal references" }).click();
   await expect(
-    page.getByRole("button", { name: "Search Pasal.id" }),
+    page.getByRole("button", { name: "Search legislation" }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "New case", exact: true }).click();
   await page.getByLabel("Case title").fill("Acceptance isolated case");
@@ -173,7 +173,7 @@ test("complete case workflow, imports, evidence, reviews and responsive navigati
     .fill("The witness arrived at ten in the morning.");
   await page.getByRole("button", { name: "Save & examine" }).click();
   await expect(
-    page.getByText("AI analysis is not connected.", { exact: false }),
+    page.getByText("Automatic analysis is unavailable.", { exact: false }),
   ).toBeVisible();
   await page.getByRole("tab", { name: "Case documents" }).click();
   await expect(page.getByText("0 documents", { exact: true })).toBeVisible();

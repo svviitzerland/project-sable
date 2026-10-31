@@ -116,6 +116,16 @@ export const labels: Record<Status, string> = {
   context_needed: "Context needed",
   insufficient_evidence: "Insufficient evidence",
 };
+export function userFacingError(message: string) {
+  if (
+    !/OPENROUTER_|PASAL_API_KEY|SPEECHMATICS_API_KEY|Supabase|Configure OpenRouter|configured providers|deployment|backend|HTTP \d{3}/i.test(
+      message,
+    )
+  )
+    return message;
+  const reference = message.match(/Reference: [a-zA-Z0-9-]+/)?.[0];
+  return `This request could not be completed. Please try again later.${reference ? ` ${reference}` : ""}`;
+}
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -190,7 +200,7 @@ export async function api<T>(
     throw new ApiError(
       response.status,
       typeof data?.detail === "string"
-        ? data.detail
+        ? userFacingError(data.detail)
         : response.status === 422
           ? "Check the form fields and try again."
           : "The server could not complete this request. Please try again.",

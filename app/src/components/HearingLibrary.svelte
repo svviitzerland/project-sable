@@ -380,8 +380,8 @@
               Convert with AI
             </button>
             {#if !configured}<small>
-                Connect an OpenRouter analysis model in the backend to enable
-                conversion. The template works without AI.
+                AI conversion is unavailable. Download the hearing template, add
+                your transcript, and upload it again.
               </small>{/if}
           </div>{/if}{/if}
     </section>{/if}
@@ -430,8 +430,9 @@
             <strong>{segments.length} statements</strong>
             <span>
               {findings.length} findings
-              {findings.length > 0 &&
-                ` · ${remaining ? `${remaining} to review` : "All reviewed"}`}
+              {findings.length > 0
+                ? ` · ${remaining ? `${remaining} to review` : "All reviewed"}`
+                : ""}
             </span>
           </div>
           <span class={styles.hearingStatus}>{hearing.status}</span>

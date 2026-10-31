@@ -213,7 +213,7 @@ export async function createDialogue(
             "Hypothetical rehearsal, separate from testimony and findings. " +
             (mode === "guided"
               ? "Guided drill: scripted prompts, no AI assessment."
-              : "Other roles respond through the configured AI model."),
+              : "AI participants play the other courtroom roles."),
         });
       return dialogue;
     });
@@ -320,7 +320,7 @@ export async function sendDialogue(
           " Legal results are discovery metadata; verify the original legal text.";
       } else
         notice +=
-          " Legal lookup unavailable: configure Pasal.id. No legal text was retrieved.";
+          " Legal search is unavailable. No legal text was retrieved.";
     }
     const payload = {
         case_context: packet.context,
@@ -355,7 +355,7 @@ export async function sendDialogue(
     ) {
       responses.push({
         speaker: "Case assistant",
-        text: "AI replies are unavailable until an OpenRouter model is connected. Here are selected case excerpts you can inspect; no AI answer or legal interpretation was generated.",
+        text: "AI replies are unavailable. Here are relevant case excerpts to inspect; this is a source search, not an answer or legal interpretation.",
         citations: packet.context.sources.slice(0, 8).map((source) => ({
           chunk_id: source.chunk_id,
           quote: source.text.slice(0, 500),

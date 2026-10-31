@@ -33,8 +33,7 @@
   </div>
   <p class={styles.notice}>
     <BookOpen size={17}></BookOpen>
-    The REST API returns metadata and article links, not verified legal text. Results
-    are not legal advice or a finding of applicability.
+    Open the original source to verify the wording and whether it applies to your case.
   </p>
   <form
     class={styles.searchForm}
@@ -68,7 +67,7 @@
       required
     />
     <button class={styles.primary} disabled={!configured || busy}>
-      {busy ? "Searching…" : "Search Pasal.id"}
+      {busy ? "Searching…" : "Search legislation"}
     </button>
   </form>
   {#if error}<p class={styles.error} role="alert">
@@ -78,8 +77,8 @@
       variant="reader"
       label="Searching legal references…"
     />{:else if !configured}<Empty
-      title="Connect legal discovery."
-      text="Add PASAL_API_KEY to the backend environment to enable authenticated searches. No legal references are fabricated in the offline demonstration."
+      title="Legal search is unavailable."
+      text="You can still upload legislation under Case documents and reference it in the case assistant."
       >{#snippet icon()}<BookOpen size={32}></BookOpen>{/snippet}</Empty
     >{:else}{#if results === null}<Empty
         title="Begin with a legal issue."

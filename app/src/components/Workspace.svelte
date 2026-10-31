@@ -80,7 +80,7 @@
     assistant: "Case assistant",
     practice: "Courtroom practice",
     references: "Legal references",
-    settings: "Session & connections",
+    settings: "Speaker labels",
   };
 
   let user = $state<User | null>(null);
@@ -99,6 +99,14 @@
   let booting = $state(true);
 
   let cases = $state<Case[]>([]);
+  let caseSearch = $state("");
+  let visibleCases = $derived(
+    cases.filter((record) =>
+      `${record.title} ${record.reference}`
+        .toLowerCase()
+        .includes(caseSearch.trim().toLowerCase()),
+    ),
+  );
 
   let caseId = $state<string | null>(null);
 
@@ -199,6 +207,7 @@
   };
 
   const loadCases = async (preferred?: string) => {
+    if (preferred) caseSearch = "";
     const list = await api<Case[]>("/cases");
     cases = list;
     const id =
@@ -458,13 +467,21 @@
             tab = "evidence";
           }}
         ></ArchiveImport>
+        {#if cases.length > 0}<label class={styles.caseSearch}>
+            <span class={styles.srOnly}>Find a case</span>
+            <input
+              type="search"
+              placeholder="Find a case…"
+              bind:value={caseSearch}
+            />
+          </label>{/if}
         <nav aria-label="Your cases" class={styles.caseList}>
           {#if casesLoading}<Skeleton
               variant="rows"
               label="Loading your cases…"
               inverse
             />{/if}
-          {#each cases as c (c.id)}<button
+          {#each visibleCases as c (c.id)}<button
               class={c.id === caseId ? styles.caseActive : ""}
               aria-current={c.id === caseId ? "page" : undefined}
               onclick={() => {
@@ -482,6 +499,12 @@
                 </small>
               </span>
             </button>{/each}
+          {#if caseSearch && !visibleCases.length}<p
+              class={styles.caseSearchEmpty}
+            >
+              No matching cases.
+              <button onclick={() => (caseSearch = "")}>Clear search</button>
+            </p>{/if}
         </nav>
         <div class={styles.sidebarBottom}>
           <span class={styles.accountAvatar}>{user.name.slice(0, 1)}</span>
@@ -578,7 +601,7 @@
               />{:else}<div class={styles.loading}>
                 <p>The case record could not be loaded.</p>
                 <button class={styles.secondary} onclick={refresh}>
-                  Retry connection
+                  Try again
                 </button>
               </div>{/if}{:else}
             <header class={styles.caseHeader}>
@@ -657,7 +680,40 @@
                     {caps}
                     {openHearing}
                   ></CaseDialogue>{/key}{/if}
-              {#if tab === "evidence"}{#key caseId}<EvidenceWorkspace
+              {#if tab === "evidence" && !detail.documents.length && !detail.segments.length}<section
+                  class={styles.gettingStarted}
+                >
+                  <h2>Start with your case material.</h2>
+                  <p>
+                    Documents are your source files. Hearings hold testimony.
+                    Evidence connects the passages between them.
+                  </p>
+                  <div>
+                    <button onclick={() => (tab = "documents")}>
+                      <FileText size={24} />
+                      <span
+                        ><strong>Add case documents</strong><small
+                          >Upload reports, statements, contracts, or
+                          legislation.</small
+                        ></span
+                      >
+                      <ArrowRight size={18} />
+                    </button>
+                    <button onclick={() => (tab = "hearing")}>
+                      <AudioLines size={24} />
+                      <span
+                        ><strong>Bring in a hearing</strong><small
+                          >Upload a transcript or start a new hearing record.</small
+                        ></span
+                      >
+                      <ArrowRight size={18} />
+                    </button>
+                  </div>
+                  <p>
+                    Then use the evidence map to compare sources, or ask the
+                    case assistant a question.
+                  </p>
+                </section>{:else if tab === "evidence"}{#key caseId}<EvidenceWorkspace
                     {caseId}
                     askAssistant={(reference) => {
                       assistantReference = reference;
@@ -748,8 +804,8 @@
                           : "Ready for testimony"}
                     <small>
                       {connected
-                        ? "Updates connected"
-                        : "Reconnecting · polling active"}
+                        ? "Changes appear automatically"
+                        : "Checking for new testimony…"}
                     </small>
                   </span>
                   <span>
@@ -765,14 +821,25 @@
                 {#if hearing.kind !== "simulation" && !caps?.analysis.configured}<p
                     class={styles.notice}
                   >
-                    Transcript saved. Connect an OpenRouter analysis model to
-                    examine this hearing.
+                    Automatic analysis is unavailable. You can still read the
+                    transcript and compare it with your documents.
                   </p>{/if}
                 {#if hearing.kind === "simulation"}<p class={styles.notice}>
                     <CircleHelp size={15}></CircleHelp>
-                    Simulation uses prepared testimony and authored findings. It does
-                    not run speech recognition or AI analysis.
+                    This example uses fictional testimony and prepared findings. Start
+                    the hearing to explore the review process.
                   </p>{/if}
+                {#if hearing.kind !== "simulation"}<details
+                    class={styles.audioTools}
+                    open={hearingSegments.length === 0 ||
+                      audio.status !== "idle"}
+                  >
+                    <summary>Record or upload audio</summary>
+                    {#key hearing.id}<HearingAudio
+                        {audio}
+                        configured={!!caps?.speech.configured}
+                      />{/key}
+                  </details>{/if}
                 <div class={styles.hearingGrid}>
                   <section
                     class={styles.transcriptPane}
@@ -780,7 +847,7 @@
                   >
                     <div class={styles.paneHeading}>
                       <h2 id="transcript-heading">Transcript</h2>
-                      <span>{hearingSegments.length} segments</span>
+                      <span>{hearingSegments.length} statements</span>
                     </div>
                     {#key hearing.id}<Transcript
                         segments={hearingSegments}
@@ -967,10 +1034,6 @@
                       >{/if}
                   </section>
                 </div>
-                {#if hearing.kind !== "simulation"}{#key hearing.id}<HearingAudio
-                      {audio}
-                      configured={!!caps?.speech.configured}
-                    ></HearingAudio>{/key}{/if}
                 <p class={styles.bottomNote}>
                   Findings describe evidence relationships. They do not
                   determine credibility, guilt, or legal outcomes.
@@ -987,7 +1050,6 @@
                     configured={!!caps?.legal.configured}
                   ></References>{/key}{/if}
               {#if tab === "settings"}{#key caseId}<SessionSettings
-                    {caps}
                     {detail}
                     {busy}
                     run={action}

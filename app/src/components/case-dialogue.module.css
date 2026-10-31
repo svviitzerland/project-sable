@@ -434,3 +434,11 @@
 
 .replyLoading { padding: 20px 4px; max-width: 640px; }
 .replyLoading > p { color: #53634f; font-size: 13px; }
+
+.historyToggle { display: none; }
+@media (max-width: 760px) {
+  .historyToggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 16px 4px; background: transparent; border: 0; border-bottom: 1px solid #cfd6c6; text-align: left; }
+  .history:not(.historyOpen) { display: none; }
+  .history.historyOpen { display: block; max-height: 300px; overflow: auto; }
+  .historyToggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+}

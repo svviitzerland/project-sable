@@ -66,7 +66,7 @@ export async function enqueue(
       rt,
       id,
       "unavailable",
-      "AI analysis is not connected. Configure OpenRouter, then retry this statement. Your transcript is saved.",
+      "Automatic analysis is unavailable. Your transcript is saved; you can still review it alongside your documents.",
     );
     await rt.db.update("analysis_jobs", { status: "done" }, "segment_id=?", [
       id,

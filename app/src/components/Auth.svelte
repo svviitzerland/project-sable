@@ -20,6 +20,7 @@
   let register = $state(false);
 
   let busy = $state(false);
+  let passwordVisible = $state(false);
 
   async function submit(
     event: SubmitEvent & { currentTarget: HTMLFormElement },
@@ -95,14 +96,21 @@
         Password
         <input
           name="password"
-          type="password"
+          type={passwordVisible ? "text" : "password"}
           minLength={10}
           maxlength={128}
           autocomplete={register ? "new-password" : "current-password"}
           required
         />
-        <small>At least 10 characters.</small>
+        {#if register}<small>At least 10 characters.</small>{/if}
       </label>
+      <button
+        type="button"
+        class={styles.textButton}
+        aria-pressed={passwordVisible}
+        onclick={() => (passwordVisible = !passwordVisible)}
+        >{passwordVisible ? "Hide password" : "Show password"}</button
+      >
       <button class={styles.primary} disabled={busy}>
         {busy ? "Opening workspace…" : register ? "Create account" : "Sign in"}
         <ArrowRight size={17}></ArrowRight>
@@ -112,7 +120,14 @@
         variant="compact"
         label="Opening your workspace…"
       />{/if}
-    <button class={styles.textButton} onclick={() => (register = !register)}>
+    <button
+      class={styles.textButton}
+      disabled={busy}
+      onclick={() => {
+        register = !register;
+        setError("");
+      }}
+    >
       {register
         ? "Already have an account? Sign in"
         : "New to Jude? Create an account"}
@@ -138,13 +153,11 @@
           Open a synthetic case
         </button>
         <p>
-          A private demo session with prepared evidence. No microphone or
-          provider account needed.
+          Explore a fictional case with prepared evidence. No microphone needed.
         </p>
       </div>{/if}
     <small class={styles.authFootnote}>
-      Prototype for authorized material. Provider connections are configured by
-      the operator.
+      Use only case material you are authorized to share and process.
     </small>
   </div>
 </div>

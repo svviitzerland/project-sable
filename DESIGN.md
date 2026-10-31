@@ -232,7 +232,7 @@ The review control exposes its toggle state through `aria-pressed`, icon, wordin
 
 Interactive controls and programmatically focused headings receive a (2px) amber outline with (6px) offset. A skip link becomes visible on focus. Reduced-motion preference disables CSS transitions and animations, changes page scrolling to automatic, and is also respected by demo navigation. Hover, selection, expanded state, and keyboard focus remain separate signals. The sidecar snippets demonstrate CSS states; application behavior is owned by the Svelte components.
 
-The original landing composition gains one finite, smooth settlement sequence (750ms overall): the existing evidence sheet translates 8px into place over 600ms with cubic-bezier(0.16, 1, 0.3, 1) easing, its connector resolves over 600ms after a 150ms delay, and its qualified status fades in over 300ms after a 400ms delay. Paper texture does not require stop-motion; reading surfaces and controls use smooth motion. The sequence runs once when the sheet enters view, pauses offscreen or while the document is hidden, and settles back to the unchanged static layout. Source-excerpt changes use a brief opacity transition (180ms). Reduced motion and no JavaScript retain the complete readable presentation; source links remain usable. This enhancement adds no controls, loops, new layout, or new visual assets.
+The original landing composition uses a finite 3.2-second source-comparison sequence: the sheet settles smoothly, each quoted time highlights, the connector draws, and the qualified finding receives emphasis. A replay control repeats the comparison. The headline reveal and workflow arrows provide bounded supporting motion. Each sequence pauses offscreen or while the document is hidden. Source-excerpt changes use a brief opacity transition (180ms). Reduced motion and no JavaScript retain the complete readable presentation and working source links. No perpetual loops or new visual assets are introduced.
 
 ### Workspace controls and inspection
 
@@ -284,3 +284,9 @@ Practice setup uses ordinary labeled fields with editable conditions and an expl
 - **Don't** turn every editorial section into an elevated card.
 - **Don't** replace source annotations or qualification text with decorative badges.
 - **Don't** treat the smallest document metadata as a default body or control text size.
+
+### Task-focused interface and source comparison motion
+
+Use task language in the workspace: unavailable features explain what users can do next; configuration, provider credentials and retrieval mechanics belong in operator documentation and logs. Keep source provenance, practice boundaries and consequential limitations visible. Empty cases use two ruled action rows for documents and hearings, not an empty evidence canvas. The forest case rail includes a title/reference search. Small screens collapse conversation history behind a count-bearing disclosure. Speaker labels remain a case task rather than a connection-status dashboard.
+
+The landing retains its original forest-and-ivory composition. A finite comparison sequence highlights each quoted time, draws the source connection, then emphasizes the finding over roughly three seconds. A replay control lets visitors revisit it. Heading and workflow transitions provide bounded supporting motion. Visibility and reduced-motion behavior apply to every sequence; default markup stays readable without scripts. Working screens retain restrained feedback rather than marketing motion.

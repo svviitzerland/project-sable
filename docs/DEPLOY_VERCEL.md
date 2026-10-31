@@ -97,7 +97,7 @@ The structured log contains only an allowlisted error code and setup hint, not p
 
 ## Troubleshoot provider requests
 
-Provider HTTP failures identify the service, upstream HTTP status and a reference ID. Search Vercel runtime logs for that reference or `jude_provider_failed`. Only fixed service labels, status, failure category and setup hints are logged; raw upstream messages, URLs, credentials and case text are excluded.
+The interface shows an actionable failure message and a reference ID, without service configuration details. Search Vercel runtime logs for that reference or `jude_provider_failed` to find the service and upstream HTTP status. Only fixed service labels, status, failure category and setup hints are logged; raw upstream messages, URLs, credentials and case text are excluded.
 
 For the case assistant, check `OpenRouter chat` failures: 401 points to the API key; 402 to provider balance/billing limits; 429 to rate/quota limits; 400/404/422 require checking the exact `OPENROUTER_MODEL` identifier, strict JSON-schema support and available provider routing. These are troubleshooting directions, not a definitive diagnosis from status alone. A legal lookup may instead fail at Pasal.id. An embedding failure logs separately while retrieval can fall back to keywords. Successful HTTP responses with unreadable JSON and network/timeouts are distinguished from HTTP rejection. Redeploy after changing Vercel environment variables.
 

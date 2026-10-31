@@ -18,7 +18,7 @@
           <ExternalLink size={14}></ExternalLink>
         </a>
       </h3>
-      <p>Discovery metadata · legal text not retrieved</p>
+      <p>Open the original source to read the full legislation.</p>
       {#each r.articles as a (a.url)}<a
           href={a.url}
           target="_blank"

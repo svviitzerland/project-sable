@@ -22,8 +22,7 @@
 <section class={styles.hearingAudio}>
   <h3>Capture this hearing</h3>
   <p>
-    Stream authorized microphone or prepared audio through Speechmatics. The
-    transcript stays with this hearing.
+    Transcribe your microphone or an audio file. The transcript stays with this hearing.
   </p>
   <div>
     <select
@@ -42,7 +41,7 @@
         oninput={(e) => (authorized = e.currentTarget.checked)}
         disabled={audio.status !== "idle"}
       />
-      I am authorized to process this audio with the configured providers.
+      I have permission to send this audio for transcription.
     </label>
     {#if audio.status === "idle"}
       <button
@@ -86,7 +85,7 @@
     />{/if}
   <p role="status">
     {!configured
-      ? "Speechmatics is not connected. You can upload a transcript above."
+      ? "Audio transcription is unavailable. Return to All hearings to upload a transcript instead."
       : audio.status === "idle"
         ? "Microphone off. Raw audio is streamed, not saved by Jude."
         : audio.status === "recording"

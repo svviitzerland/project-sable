@@ -57,7 +57,7 @@ function providerFailure(
     }),
   );
   return new ProviderError(
-    `${provider} request failed${status === null ? "" : ` (HTTP ${status})`}. ${hint} Reference: ${reference}`,
+    `${provider === "Supabase Storage" ? "The file could not be saved or opened." : provider === "Speechmatics" ? "Audio transcription could not start." : provider === "Pasal.id" ? "Legal search could not be completed." : "This AI request could not be completed."} ${status === 429 ? "Please wait a moment and try again." : "Please try again later."} Reference: ${reference}`,
   );
 }
 
@@ -109,7 +109,7 @@ export async function structured<T extends z.ZodType>(
 ): Promise<z.output<T>> {
   if (!rt.config.openrouterKey || !rt.config.model)
     throw new ProviderError(
-      "Configure OPENROUTER_API_KEY and OPENROUTER_MODEL to analyze statements.",
+      "AI analysis is unavailable. Please try again later.",
     );
   const data = await requestJson(
     rt,
@@ -151,7 +151,7 @@ export async function structured<T extends z.ZodType>(
     return schema.parse(JSON.parse(data.choices[0].message.content));
   } catch {
     throw new ProviderError(
-      "The model returned an invalid structured response. No unvalidated finding was published.",
+      "The AI response could not be verified. Please try again; nothing was added to the case.",
     );
   }
 }
@@ -190,10 +190,14 @@ export async function embed(
     })
     .safeParse(data);
   if (!parsed.success)
-    throw new ProviderError("Embedding provider returned invalid vectors.");
+    throw new ProviderError(
+      "Related evidence could not be processed. Please try again.",
+    );
   const sorted = parsed.data.data.sort((a, b) => a.index - b.index);
   if (sorted.some((row, i) => row.index !== i))
-    throw new ProviderError("Embedding provider returned invalid vectors.");
+    throw new ProviderError(
+      "Related evidence could not be processed. Please try again.",
+    );
   return sorted.map((row) => row.embedding);
 }
 export function safePasalUrl(value: unknown): string | null {
@@ -216,7 +220,7 @@ export async function legalSearch(
 ): Promise<Legal[]> {
   if (!rt.config.pasalKey)
     throw new ProviderError(
-      "Configure PASAL_API_KEY to search Indonesian legal references.",
+      "Legal search is unavailable. You can still reference uploaded legislation.",
     );
   const data = await requestJson(
     rt,
@@ -295,7 +299,7 @@ export async function saveFile(
     } catch (error) {
       if (error instanceof ProviderError) throw error;
       throw new ProviderError(
-        "Document storage failed. Check the private Supabase bucket and credentials.",
+        "The document could not be saved. Please retry the upload.",
       );
     }
   }

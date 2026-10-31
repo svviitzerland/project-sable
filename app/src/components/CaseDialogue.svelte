@@ -142,6 +142,7 @@
   );
 
   let loading = $state(true);
+  let historyOpen = $state(false);
 
   let error = $state("");
 
@@ -304,8 +305,18 @@
       {error}
     </p>{/if}
   <div class={styles.layout}>
+    <button
+      class={styles.historyToggle}
+      aria-expanded={historyOpen}
+      aria-controls="dialogue-history"
+      onclick={() => (historyOpen = !historyOpen)}
+    >
+      {practice ? "Saved rehearsals" : "Saved conversations"} ({sessions.length})
+      <ChevronDown size={16} />
+    </button>
     <aside
-      class={styles.history}
+      id="dialogue-history"
+      class={`${styles.history} ${historyOpen ? styles.historyOpen : ""}`}
       aria-label={practice ? "Saved rehearsals" : "Saved conversations"}
     >
       <h3>{practice ? "Your rehearsals" : "Conversations"}</h3>
@@ -330,6 +341,7 @@
                   `/cases/${caseId}/dialogues/${session.id}`,
                 );
                 active = result;
+                historyOpen = false;
                 text = "";
                 error = "";
                 request.current = null;
@@ -354,7 +366,7 @@
       <p class={styles.boundary}>
         {practice
           ? "Practice dialogue stays separate from evidence and hearing records."
-          : "Case-scoped context. Other cases and practice conversations are excluded."}
+          : "Only material from this case is used. Practice conversations stay separate."}
       </p>
     </aside>
     <section
@@ -544,8 +556,7 @@
               </button>
             </div>
             {#if !caps?.analysis.configured}<p class={styles.hint}>
-                Connect an OpenRouter model for suggested conditions and
-                responsive AI participants. The guided drill provides scripted
+                AI roleplay is unavailable. You can still rehearse with guided
                 prompts and a self-review checklist.
               </p>{/if}
           </form>{:else}
@@ -557,7 +568,7 @@
               <p>
                 {practice
                   ? `You: ${roles[active!.conditions.user_role]} · ${active!.conditions.stage} · ${active!.mode === "guided" ? "Scripted drill" : "AI roleplay"}`
-                  : "Relevant excerpts are retrieved for each message; the model does not receive every page at once."}
+                  : "Answers use relevant case excerpts. Open each citation to check the original context."}
               </p>
             </div>
             {#if practice && active?.status !== "complete"}<button
@@ -773,8 +784,8 @@
                     </label>
                     <p>
                       {caps?.legal.configured
-                        ? "Search generic legal terms. Pasal.id returns discovery metadata, not verified article text."
-                        : "Connect Pasal.id in the backend to include legal discovery. Uploaded law documents can still be referenced as case material."}
+                        ? "Use legal terms rather than personal details. Check the original legislation before relying on it."
+                        : "Legal search is unavailable. You can reference uploaded legislation from Case documents."}
                     </p>
                   </details>{/if}
                 <label for="case-message">
@@ -806,7 +817,7 @@
                       ? "Hypothetical practice · never added to evidence"
                       : caps?.analysis.configured
                         ? "Citations verify quoted text, not legal correctness."
-                        : "Sources-only mode · connect OpenRouter for AI replies"}
+                        : "Source search only · AI replies are unavailable"}
                   </span>
                   <button class={ui.primary} disabled={!!busy || !text.trim()}>
                     <Send size={15}></Send>

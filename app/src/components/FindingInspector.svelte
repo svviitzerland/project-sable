@@ -130,10 +130,10 @@
       {#if finding.review.legal_note}<p>{finding.review.legal_note}</p>{/if}
       <small>
         {finding.mode === "simulation"
-          ? "Authored fixture · not an AI evaluation"
+          ? "Prepared example · not an AI evaluation"
           : finding.mode === "imported"
             ? "Imported finding · verify against the original sources"
-            : `Source verification passed · ${finding.review.retrieval} retrieval · ${(finding.elapsed_ms / 1000).toFixed(1)}s`}
+            : "Quoted text matches the source. Review the interpretation yourself."}
       </small>
     </details>
     {#if finding.legal.length > 0}

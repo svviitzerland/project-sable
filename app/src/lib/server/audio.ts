@@ -149,7 +149,7 @@ export async function beginAudio(
   assert(
     rt.config.speechKey,
     503,
-    "Speechmatics is not configured. Use a simulated hearing or add transcript text.",
+    "Audio transcription is unavailable. Upload a transcript or add text instead.",
   );
   await rate(rt, `audio:${record.owner_id}`, 30, 3600);
   return locked(rt, `audio:start:${record.id}`, async () => {

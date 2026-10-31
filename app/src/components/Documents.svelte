@@ -6,6 +6,7 @@
     FileText,
     Search,
     Upload,
+    X,
   } from "@lucide/svelte";
   import { api, type Document, type Source } from "../lib/workspace-api";
   import styles from "./workspace.module.css";
@@ -25,10 +26,9 @@
   } = $props();
 
   let query = $state("");
+  let uploadNotice = $state("");
 
   let results = $state<Source[] | null>(null);
-
-  let method = $state("");
 
   let selectedDoc = $state<string | null>(null);
 
@@ -40,8 +40,12 @@
   ) {
     if (pending) return;
     pending = kind;
+    uploadNotice = "";
     try {
-      await run(operation);
+      const saved = await run(operation);
+      if (saved && kind === "upload")
+        uploadNotice =
+          "Document added. Select it below to read its passages, or ask the case assistant about it.";
     } finally {
       pending = "";
     }
@@ -63,8 +67,8 @@
       <h3>Add authorized case documents</h3>
       <p>PDF, DOCX, TXT, or Markdown · up to 6 MB · text-based PDFs only</p>
       <small>
-        DOCX uses text sections; PDF page numbers are preserved. Configured
-        embedding providers receive extracted text.
+        Keep the original files and search their text. AI features may process
+        excerpts to help find related material.
       </small>
     </div>
     <label class={styles.secondary}>
@@ -90,6 +94,9 @@
       />
     </label>
   </div>
+  {#if uploadNotice}<p class={styles.notice} role="status">
+      {uploadNotice}
+    </p>{/if}
   <form
     class={styles.searchForm}
     onsubmit={(e) => {
@@ -99,7 +106,6 @@
           `/cases/${caseId}/search?q=${encodeURIComponent(query)}`,
         );
         results = data.results;
-        method = data.method;
         selectedDoc = null;
       });
     }}
@@ -119,6 +125,14 @@
     />
     <button class={styles.primary} disabled={busy}> Search </button>
   </form>
+  {#if results !== null}<button
+      class={styles.textButton}
+      disabled={busy}
+      onclick={() => {
+        results = null;
+        query = "";
+      }}><X size={14} /> Clear search results</button
+    >{/if}
   <div class={styles.documentGrid}>
     <div>
       <h3>
@@ -154,7 +168,7 @@
             <ChevronRight size={16}></ChevronRight>
           </button>{/each}{:else}<Empty
           title="Start with a source."
-          text="Upload your first case document to make its passages available for evidence retrieval."
+          text="Upload your first case document to make its passages available for search and comparison."
           >{#snippet icon()}<FileText size={26}></FileText>{/snippet}</Empty
         >{/if}
     </div>
@@ -168,7 +182,7 @@
         <h3>
           Search results&#32;
           <small>
-            {method === "hybrid" ? "Semantic + keyword" : "Keyword retrieval"}
+            {results.length} matching passage{results.length === 1 ? "" : "s"}
           </small>
         </h3>
         {#if results.length}{#each results as s (s.id)}{#key s.id}<SourceCard

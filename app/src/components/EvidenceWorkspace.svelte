@@ -246,7 +246,7 @@
             `/cases/${caseId}/graph/build`,
             { method: "POST" },
           );
-          notice = result.notice + " " + result.scope;
+          notice = result.notice;
           await load();
         })}
     >
@@ -301,9 +301,7 @@
           {answer.answer ? "A source-grounded answer" : "Relevant passages"}
         </h3>
         <span>
-          {answer.method === "hybrid"
-            ? "Semantic + keyword retrieval"
-            : "Keyword retrieval"}
+          {answer.sources.length} source{answer.sources.length === 1 ? "" : "s"}
         </span>
         <button
           aria-label="Close search results"
@@ -358,8 +356,7 @@
         </button>
       </div>
       <span>
-        {graph.total_passages} passages · {graph.indexed_passages}&#32; embedded
-        · {graph.edges.length} links
+        {graph.total_passages} passages · {graph.edges.length} connections
       </span>
     </div>
     <div class={styles.graphLayout}>
@@ -498,7 +495,7 @@
                     {nodeMap.get(e.target_id)?.label}
                   </strong>
                   <small>
-                    {e.confirmed ? "Reviewed" : "Suggested"} · {e.basis}
+                    {e.confirmed ? "Reviewed" : "Suggested"}
                   </small>
                 </button>{/each}{:else}<div class={styles.empty}>
                 <Link2 size={30}></Link2>
@@ -569,7 +566,7 @@
             {edge.basis === "ai"
               ? "AI-proposed relationship"
               : edge.basis === "semantic"
-                ? "Embedding similarity"
+                ? "Similar meaning"
                 : edge.basis === "keywords"
                   ? "Shared terms"
                   : edge.basis === "simulation"

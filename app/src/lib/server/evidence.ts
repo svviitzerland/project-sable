@@ -159,7 +159,7 @@ export async function buildLinks(rt: Runtime, caseId: string) {
       }
     } catch {
       notice =
-        "Embedding service unavailable; available vectors and shared terms were used.";
+        "Some related passages may be missing. Review these suggestions or try again later.";
     }
   }
   for (const c of chunks)
@@ -300,7 +300,7 @@ export async function askEvidence(rt: Runtime, caseId: string, query: string) {
       "No relevant passages found. Try different wording or add evidence.";
   else if (!rt.config.openrouterKey || !rt.config.model)
     result.notice =
-      "Relevant evidence is shown below. Connect an OpenRouter analysis model for a cited answer.";
+      "AI answers are unavailable. You can inspect the relevant passages below.";
   else {
     const answer = await structured(
       rt,

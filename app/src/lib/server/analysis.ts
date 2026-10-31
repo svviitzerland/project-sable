@@ -122,7 +122,7 @@ async function runInvestigation(
           rt,
           id,
           "unavailable",
-          "AI analysis is not connected. Configure OpenRouter, then retry this statement. Your transcript is saved.",
+          "Automatic analysis is unavailable. Your transcript is saved; you can still review it alongside your documents.",
         );
         return;
       }

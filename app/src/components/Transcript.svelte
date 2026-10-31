@@ -1,6 +1,11 @@
 <script lang="ts">
   import { AudioLines, ChevronRight, RefreshCw } from "@lucide/svelte";
-  import { timestamp, type Finding, type Segment } from "../lib/workspace-api";
+  import {
+    userFacingError,
+    timestamp,
+    type Finding,
+    type Segment,
+  } from "../lib/workspace-api";
   import styles from "./workspace.module.css";
   import { untrack } from "svelte";
   import Empty from "./Empty.svelte";
@@ -24,6 +29,16 @@
   } = $props();
 
   let follow = $state(true);
+  const phases: Record<string, string> = {
+    pending: "Ready to examine",
+    queued: "Waiting to examine",
+    extracting: "Reading statement…",
+    retrieving: "Finding sources…",
+    analyzing: "Examining…",
+    reviewing: "Checking findings…",
+    synthesizing: "Preparing findings…",
+    complete: "Examined",
+  };
 
   let query = $state("");
 
@@ -142,11 +157,11 @@
           {#if finding}<button onclick={() => select(s.id)}>
               View finding <ChevronRight size={12}></ChevronRight>
             </button>{:else}{#if !["skipped", "unavailable", "failed", "interrupted"].includes(s.analysis_state)}<span
-                class={styles.phase}>{s.analysis_state}</span
+                class={styles.phase}>{phases[s.analysis_state] ?? "Saved"}</span
               >{/if}{/if}
         </div>
         {#if s.analysis_error}<div class={styles.segmentError}>
-            <p>{s.analysis_error}</p>
+            <p>{userFacingError(s.analysis_error)}</p>
             <button onclick={() => onRetry(s.id)}>
               <RefreshCw size={12}></RefreshCw>
               Retry analysis
@@ -156,7 +171,7 @@
       title={filtering ? "No matching statements." : "Ready when you are."}
       text={filtering
         ? "Try another phrase or clear the speaker filter. Filters do not change the hearing record."
-        : "Start a simulated hearing, connect live audio in Session & connections, or add a statement below."}
+        : "Start a simulated hearing, capture audio below, or add a statement below."}
       >{#snippet icon()}<AudioLines size={28}></AudioLines>{/snippet}</Empty
     >{/if}
   {#if partial && !filtering}<div class={styles.partial}>

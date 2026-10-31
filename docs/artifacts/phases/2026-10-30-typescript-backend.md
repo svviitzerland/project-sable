@@ -53,3 +53,9 @@ Assistant citation validation now tolerates only whitespace differences and pers
 ## Workspace skeleton loading
 
 Added a shared responsive skeleton with layout variants, status semantics, inverse navigation tones and motion/visibility handling. Integrated real request state across workspace startup, case selection, evidence, sources, documents, hearing previews, dialogue, practice, legal search and processing feedback. Loaded data remains visible during polling; failed graph loads offer retry, and finding-source changes reset their prior state. Delayed-network browser checks exercise startup, case lists, document readers/search, hearing previews and conversation replies, with error recovery, mobile overflow and reduced-motion assertions.
+
+## Usability and landing motion refinement
+
+Simplified user copy across auth, documents, hearings, evidence, assistant/practice, legal references and speaker labels. Removed the deployment connections panel and operational retrieval/storage details. Kept provider troubleshooting in structured server logs, returning task-focused failures with support references; legacy setup errors are also normalized for display. Added case search, empty-case starting actions, document upload confirmation/search reset, mobile conversation-history disclosure and password visibility. Moved audio capture above the transcript. Fixed the hearing list rendering a literal false for an empty finding count.
+
+Preserved the landing composition and added a finite source-comparison animation with highlighted times, a drawn connection, finding emphasis and a replay control, plus bounded heading/workflow motion. Browser coverage includes onboarding/navigation, mobile conversation history, error recovery without lost drafts, reduced motion and no-JavaScript content. Real external-service validation remains outside these local checks.

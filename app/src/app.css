@@ -198,3 +198,14 @@ mark { background: #f0deb4; color: #34402a; padding-block: 3px; box-decoration-b
   .site-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding-block: 28px; } .site-footer p { grid-column: 1 / -1; grid-row: 2; } .site-footer > span { margin: 0; } .site-footer > a:last-child { justify-self: end; }
 }
 @media(prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* The two quoted times are the focus of a finite comparison sequence. */
+.hero-evidence { position: relative; }
+.comparison-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 32px; margin-bottom: 16px; }
+.comparison-toolbar .sample-label { margin: 0; }
+.replay-comparison { display: inline-flex; align-items: center; gap: 7px; padding: 8px 0 8px 10px; background: transparent; border: 0; font-size: 12px; color: #4f5e4d; }
+.replay-comparison:hover { color: #14281f; text-decoration: underline; text-underline-offset: 4px; }
+.quote-detail { position: relative; display: inline-block; isolation: isolate; }
+.quote-highlight { position: absolute; inset: 55% -3px 3% -3px; background: #e9bf7c80; z-index: -1; transform-origin: left; }
+.comparison-progress { display: block; height: 2px; background: #a8793b; position: absolute; bottom: 0; left: 0; right: 0; transform-origin: left; }
+@media (prefers-reduced-motion: reduce) { .replay-comparison { display: none; } }
