@@ -8,6 +8,8 @@ export default defineConfig({
   use: {
     baseURL: process.env.JUDE_TEST_URL || "http://127.0.0.1:3000",
     viewport: { width: 1440, height: 1000 },
+    // The suite asserts English copy; tests/browser/i18n.spec.ts covers Indonesian.
+    locale: "en-US",
     launchOptions: {
       executablePath: process.env.CHROMIUM_EXECUTABLE,
       args: [

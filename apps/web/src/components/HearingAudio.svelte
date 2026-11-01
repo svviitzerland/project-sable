@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import { AudioLines } from "@lucide/svelte";
   import ui from "./workspace.module.css";
@@ -20,13 +21,11 @@
 </script>
 
 <section class={styles.hearingAudio}>
-  <h3>Capture this hearing</h3>
-  <p>
-    Transcribe your microphone or an audio file. The transcript stays with this hearing.
-  </p>
+  <h3>{t("audio.title")}</h3>
+  <p>{t("audio.text")}</p>
   <div>
     <select
-      aria-label="Recognition language"
+      aria-label={t("audio.recognitionLanguage")}
       value={language}
       onchange={(e) => (language = e.currentTarget.value)}
       disabled={audio.status !== "idle"}
@@ -41,7 +40,7 @@
         oninput={(e) => (authorized = e.currentTarget.checked)}
         disabled={audio.status !== "idle"}
       />
-      I have permission to send this audio for transcription.
+      {t("audio.permission")}
     </label>
     {#if audio.status === "idle"}
       <button
@@ -50,10 +49,10 @@
         onclick={() => audio.start(language)}
       >
         <AudioLines size={16}></AudioLines>
-        Start microphone
+        {t("audio.start")}
       </button>
       <label class={ui.secondary}>
-        Prepared audio
+        {t("audio.prepared")}
         <input
           type="file"
           accept="audio/*"
@@ -71,27 +70,27 @@
         disabled={audio.status === "stopping"}
       >
         {audio.status === "connecting"
-          ? "Cancel connection"
+          ? t("audio.cancel")
           : audio.status === "stopping"
-            ? "Finishing transcript…"
-            : "Stop recording"}
+            ? t("audio.finishing")
+            : t("audio.stop")}
       </button>{/if}
   </div>
   {#if audio.status === "connecting" || audio.status === "stopping"}<Skeleton
       variant="compact"
       label={audio.status === "connecting"
-        ? "Connecting audio…"
-        : "Saving final transcript…"}
+        ? t("audio.connectingAudio")
+        : t("audio.savingFinal")}
     />{/if}
   <p role="status">
     {!configured
-      ? "Audio transcription is unavailable. Return to All hearings to upload a transcript instead."
+      ? t("audio.unavailable")
       : audio.status === "idle"
-        ? "Microphone off. Raw audio is streamed, not saved by Jude."
+        ? t("audio.idle")
         : audio.status === "recording"
-          ? "Recording and streaming · keep this tab open"
+          ? t("audio.recording")
           : audio.status === "stopping"
-            ? "Waiting for final transcript…"
-            : "Connecting…"}
+            ? t("audio.waiting")
+            : t("audio.connecting")}
   </p>
 </section>

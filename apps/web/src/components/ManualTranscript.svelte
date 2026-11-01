@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import { Plus } from "@lucide/svelte";
   import styles from "./workspace.module.css";
@@ -20,7 +21,7 @@
 
   let text = $state("");
 
-  let speaker = $state("Unknown");
+  let speaker = $state(t("manual.defaultSpeaker"));
 </script>
 
 <div class={styles.manual}>
@@ -30,7 +31,7 @@
     onclick={() => (open = !open)}
   >
     <Plus size={15}></Plus>
-    Add transcript text
+    {t("manual.add")}
   </button>
   {#if open}<form
       onsubmit={async (e) => {
@@ -39,7 +40,7 @@
       }}
     >
       <label>
-        Speaker label
+        {t("manual.speaker")}
         <input
           value={speaker}
           oninput={(e) => (speaker = e.currentTarget.value)}
@@ -48,7 +49,7 @@
         />
       </label>
       <label>
-        Finalized statement
+        {t("manual.statement")}
         <textarea
           value={text}
           oninput={(e) => (text = e.currentTarget.value)}
@@ -56,12 +57,12 @@
           minLength={3}
           maxlength={6000}
           rows={3}
-          placeholder="Enter the exact words spoken…"></textarea>
+          placeholder={t("manual.placeholder")}></textarea>
       </label>
       <button class={styles.primary} disabled={busy}>
-        {busy ? "Saving…" : "Save & examine"}
+        {busy ? t("common.saving") : t("manual.save")}
       </button>
     </form>{/if}
 </div>
 
-{#if busy}<Skeleton variant="compact" label="Saving testimony…" />{/if}
+{#if busy}<Skeleton variant="compact" label={t("manual.skeleton")} />{/if}

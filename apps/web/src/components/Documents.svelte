@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, tp } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import {
     BookOpen,
@@ -44,8 +45,7 @@
     try {
       const saved = await run(operation);
       if (saved && kind === "upload")
-        uploadNotice =
-          "Document added. Select it below to read its passages, or ask the case assistant about it.";
+        uploadNotice = t("docs.added");
     } finally {
       pending = "";
     }
@@ -55,24 +55,19 @@
 <div class={styles.documents}>
   <div class={styles.sectionTitle}>
     <div>
-      <h2>The case file.</h2>
-      <p>
-        Original documents, preserved passages, and a trail back to the source.
-      </p>
+      <h2>{t("docs.title")}</h2>
+      <p>{t("docs.lead")}</p>
     </div>
   </div>
   <div class={styles.uploadBox}>
     <Upload size={25}></Upload>
     <div>
-      <h3>Add authorized case documents</h3>
-      <p>PDF, DOCX, TXT, or Markdown · up to 6 MB · text-based PDFs only</p>
-      <small>
-        Keep the original files and search their text. AI features may process
-        excerpts to help find related material.
-      </small>
+      <h3>{t("docs.addTitle")}</h3>
+      <p>{t("docs.formats")}</p>
+      <small>{t("docs.note")}</small>
     </div>
     <label class={styles.secondary}>
-      {pending === "upload" ? "Processing…" : "Choose a file"}
+      {pending === "upload" ? t("docs.processing") : t("docs.choose")}
       <input
         class={styles.srOnly}
         type="file"
@@ -112,7 +107,7 @@
   >
     <Search size={18}></Search>
     <label class={styles.srOnly} for="document-search">
-      Search case evidence
+      {t("docs.searchLabel")}
     </label>
     <input
       id="document-search"
@@ -120,10 +115,12 @@
       oninput={(e) => (query = e.currentTarget.value)}
       minLength={2}
       maxlength={600}
-      placeholder="Search only this case’s evidence…"
+      placeholder={t("docs.searchPlaceholder")}
       required
     />
-    <button class={styles.primary} disabled={busy}> Search </button>
+    <button class={styles.primary} disabled={busy}>
+      {t("docs.search")}
+    </button>
   </form>
   {#if results !== null}<button
       class={styles.textButton}
@@ -131,17 +128,17 @@
       onclick={() => {
         results = null;
         query = "";
-      }}><X size={14} /> Clear search results</button
+      }}><X size={14} /> {t("docs.clear")}</button
     >{/if}
   <div class={styles.documentGrid}>
     <div>
       <h3>
-        {documents.length} document{documents.length !== 1 ? "s" : ""}
+        {tp("count.documents", documents.length)}
       </h3>
       {#if pending === "upload"}<Skeleton
           variant="rows"
           count={1}
-          label="Processing document…"
+          label={t("docs.processingDoc")}
         />{/if}
       {#if documents.length || pending === "upload"}{#each documents as doc (doc.id)}<button
             class={`${styles.docRow} ${selectedDoc === doc.id ? styles.docSelected : ""}`}
@@ -160,15 +157,15 @@
               <strong>{doc.name}</strong>
               <small>
                 {doc.mime.includes("wordprocessing")
-                  ? "Text section"
-                  : `${doc.pages} page${doc.pages !== 1 ? "s" : ""}`}&#32; ·
-                Ready to search
+                  ? t("docs.textSection")
+                  : tp("count.pages", doc.pages)}&#32; ·
+                {t("docs.ready")}
               </small>
             </span>
             <ChevronRight size={16}></ChevronRight>
           </button>{/each}{:else}<Empty
-          title="Start with a source."
-          text="Upload your first case document to make its passages available for search and comparison."
+          title={t("docs.emptyTitle")}
+          text={t("docs.emptyText")}
           >{#snippet icon()}<FileText size={26}></FileText>{/snippet}</Empty
         >{/if}
     </div>
@@ -176,30 +173,30 @@
       {#if pending === "search" || pending === "read"}<Skeleton
           variant="reader"
           label={pending === "search"
-            ? "Searching case documents…"
-            : "Loading document passages…"}
+            ? t("docs.searchingDocs")
+            : t("docs.loadingPassages")}
         />{:else if results !== null}
         <h3>
-          Search results&#32;
+          {t("docs.results")}&#32;
           <small>
-            {results.length} matching passage{results.length === 1 ? "" : "s"}
+            {tp("count.passages", results.length)}
           </small>
         </h3>
         {#if results.length}{#each results as s (s.id)}{#key s.id}<SourceCard
                 source={s}
                 {caseId}
               ></SourceCard>{/key}{/each}{:else}<Empty
-            title="No matching passages."
-            text="Try different words or add the document containing this detail."
+            title={t("docs.noMatchTitle")}
+            text={t("docs.noMatchText")}
             >{#snippet icon()}<Search size={26}></Search>{/snippet}</Empty
           >{/if}
       {:else}{#if selectedDoc}
-          <h3>Extracted passages</h3>
+          <h3>{t("docs.extracted")}</h3>
           {#each chunks as s (s.id)}{#key s.id}<SourceCard source={s} {caseId}
               ></SourceCard>{/key}{/each}
         {:else}<Empty
-            title="Open the record."
-            text="Choose a document to read its extracted passages, or search for a detail across this case."
+            title={t("docs.openTitle")}
+            text={t("docs.openText")}
             >{#snippet icon()}<BookOpen size={30}></BookOpen>{/snippet}</Empty
           >{/if}{/if}
     </div>

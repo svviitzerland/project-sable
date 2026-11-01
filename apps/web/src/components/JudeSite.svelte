@@ -14,13 +14,15 @@
     X,
   } from "@lucide/svelte";
   import { examples, type SourceKind } from "../lib/jude-demo";
+  import { i18n, t } from "../lib/i18n/index.svelte";
+  import LanguageToggle from "./LanguageToggle.svelte";
   import { landingMotion } from "./landing-motion.svelte";
   import { onMount, untrack } from "svelte";
 
   const nav = [
-    ["How it works", "#how-it-works"],
-    ["Built on evidence", "#evidence"],
-    ["Our approach", "#approach"],
+    ["landing.nav.howItWorks", "#how-it-works"],
+    ["landing.nav.evidence", "#evidence"],
+    ["landing.nav.approach", "#approach"],
   ] as const;
 
   let menuOpen = $state(false);
@@ -70,7 +72,7 @@
     });
   });
 
-  let example = $derived(examples[exampleIndex]);
+  let example = $derived(examples[i18n.lang][exampleIndex]);
 
   let isReviewed = $derived(reviewed.includes(example.id));
 
@@ -98,35 +100,38 @@
   }
 </script>
 
-<a class="skip-link" href="#main"> Skip to content </a>
+<a class="skip-link" href="#main">{t("landing.skip")}</a>
 <main id="main">
   <div class="hero" id="top" bind:this={hero.current}>
     <header class="site-header wrap">
-      <a class="wordmark" href="#top" aria-label="Jude home"> jude. </a>
-      <nav class="desktop-nav" aria-label="Main navigation">
+      <a class="wordmark" href="#top" aria-label={t("landing.home")}> jude. </a>
+      <div class="header-end">
+      <nav class="desktop-nav" aria-label={t("landing.mainNav")}>
         {#each nav as [label, href] (label)}<a href={`#${href.slice(1)}`}>
-            {label}
+            {t(label)}
           </a>{/each}
-        <a href={resolve("/workspace")}>Sign in</a>
+        <a href={resolve("/workspace")}>{t("common.signIn")}</a>
         <button class="button button-outline" onclick={() => openDemo()}>
-          Explore the demo
+          {t("landing.exploreDemo")}
         </button>
       </nav>
+      <LanguageToggle />
       <button
         class="menu-toggle"
-        aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+        aria-label={menuOpen ? t("landing.closeNav") : t("landing.openNav")}
         aria-expanded={menuOpen}
         aria-controls="mobile-navigation"
         onclick={() => (menuOpen = !menuOpen)}
       >
         {#if menuOpen}<X></X>{:else}<Menu></Menu>{/if}
       </button>
+      </div>
       {#if menuOpen}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions (Escape bubbles from the navigation links and restores the menu trigger.) -->
         <nav
           id="mobile-navigation"
           class="mobile-nav"
-          aria-label="Mobile navigation"
+          aria-label={t("landing.mobileNav")}
           onkeydown={(event) => {
             if (event.key === "Escape") {
               menuOpen = false;
@@ -140,15 +145,15 @@
               href={`#${href.slice(1)}`}
               onclick={() => (menuOpen = false)}
             >
-              {label}
+              {t(label)}
               <ArrowUpRight size={17}></ArrowUpRight>
             </a>{/each}
           <a href={resolve("/workspace")}>
-            Sign in
+            {t("common.signIn")}
             <ArrowUpRight size={17}></ArrowUpRight>
           </a>
           <button onclick={() => openDemo()}>
-            Explore the demo
+            {t("landing.exploreDemo")}
             <ArrowRight size={17}></ArrowRight>
           </button>
         </nav>{/if}
@@ -156,40 +161,46 @@
     <div class="hero-content">
       <div class="hero-copy wrap">
         <h1>
-          Stay with the testimony.
-          <br /> See the whole story.
+          {t("landing.hero.title1")}
+          <br />
+          {t("landing.hero.title2")}
         </h1>
         <p>
-          An AI courtroom copilot that connects what is said
-          <br class="desktop-break" /> to what the evidence shows.
+          {t("landing.hero.lead1")}
+          <br class="desktop-break" />
+          {t("landing.hero.lead2")}
         </p>
         <div class="hero-actions hero-cta">
           <a class="button button-cream" href={resolve("/workspace")}>
-            Open workspace <ArrowRight size={22} strokeWidth={1.5}></ArrowRight>
+            {t("landing.openWorkspace")}
+            <ArrowRight size={22} strokeWidth={1.5}></ArrowRight>
           </a>
           <button class="button button-outline" onclick={() => openDemo()}>
-            Explore the demo
+            {t("landing.exploreDemo")}
           </button>
         </div>
         <div class="hero-entry-note">
-          Sign in or create an account to start your first case.
+          {t("landing.hero.entry")}
         </div>
       </div>
       <div class="hero-evidence paper">
         <div class="comparison-toolbar">
-          <p class="sample-label">Synthetic example</p>
+          <p class="sample-label">{t("landing.hero.sample")}</p>
           {#if replayComparison}<button
               class="replay-comparison"
               onclick={replayComparison}
-              ><RotateCcw size={14} /> Replay comparison</button
+              ><RotateCcw size={14} /> {t("landing.hero.replay")}</button
             >{/if}
         </div>
         <div class="comparison">
           <div class="comparison-statement">
-            <h2>Testimony</h2>
+            <h2>{t("landing.hero.testimony")}</h2>
             <blockquote>
-              “I arrived at <span class="quote-detail"
-                ><i class="quote-highlight" aria-hidden="true"></i>9:30 PM.</span
+              “{t("landing.hero.quote1")}
+              <span class="quote-detail"
+                ><i class="quote-highlight" aria-hidden="true"></i>{t(
+                  "landing.hero.time1",
+                )}</span
               >”
             </blockquote>
             <button
@@ -198,7 +209,7 @@
             >
               <FileText aria-hidden="true"></FileText>
               <span>
-                Hearing transcript&#32;
+                {t("common.hearingTranscript")}&#32;
                 <span class="source-separator">·</span>&#32;
                 <span>00:14:32</span>
               </span>
@@ -206,24 +217,28 @@
           </div>
           <div class="comparison-finding">
             <span class="status status-inconsistency">
-              Potential inconsistency
+              {t("status.potential_inconsistency")}
             </span>
             <div class="evidence-thread" aria-hidden="true">
               <span></span>
               <span></span>
             </div>
             <p>
-              Check whether both statements
-              <br class="desktop-break" /> refer to the same event.
+              {t("landing.hero.check1")}
+              <br class="desktop-break" />
+              {t("landing.hero.check2")}
             </p>
           </div>
           <div class="comparison-statement earlier">
-            <h2>Earlier statement</h2>
+            <h2>{t("landing.hero.earlier")}</h2>
             <blockquote>
-              “I arrived shortly
-              <br class="desktop-break" /> after
+              “{t("landing.hero.quote2a")}
+              <br class="desktop-break" />
+              {t("landing.hero.quote2b")}
               <span class="quote-detail"
-                ><i class="quote-highlight" aria-hidden="true"></i>8:00 PM.</span
+                ><i class="quote-highlight" aria-hidden="true"></i>{t(
+                  "landing.hero.time2",
+                )}</span
               >”
             </blockquote>
             <button
@@ -232,8 +247,9 @@
             >
               <FileText aria-hidden="true"></FileText>
               <span>
-                Witness statement&#32;
-                <span class="source-separator">·</span> Page 4
+                {t("landing.hero.witnessStatement")}&#32;
+                <span class="source-separator">·</span>
+                {t("common.page", { page: 4 })}
               </span>
             </button>
           </div>
@@ -248,17 +264,10 @@
     aria-labelledby="source-title"
   >
     <div>
-      <h2 id="source-title">Every finding has a source.</h2>
-      <p>
-        Jude links testimony to case documents, surfaces possible
-        inconsistencies, and keeps legal judgment with people.
-      </p>
+      <h2 id="source-title">{t("landing.source.title")}</h2>
+      <p>{t("landing.source.lead")}</p>
     </div>
-    <p class="intro-aside">
-      See the exact passages, compare them side by side, and follow the trail
-      back to the original documents—so you can ask better questions and build
-      stronger arguments.
-    </p>
+    <p class="intro-aside">{t("landing.source.aside")}</p>
   </section>
   <section
     class="workflow wrap section-space"
@@ -267,55 +276,47 @@
   >
     <div class="section-heading">
       <h2 id="workflow-title">
-        Keep your attention
+        {t("landing.workflow.title1")}
         <br />
-        where it matters.
+        {t("landing.workflow.title2")}
       </h2>
-      <p>
-        Hear the testimony. Follow the argument. Jude is being built to connect
-        the relevant details while you stay with the proceedings.
-      </p>
+      <p>{t("landing.workflow.lead")}</p>
     </div>
     <ol class="workflow-list">
       <li>
         <span class="step-number">01</span>
         <div>
-          <h3>Listen in context.</h3>
-          <p>
-            A searchable transcript brings together what was said, when it was
-            said, and who said it. Uncertain speaker identities stay uncertain.
-          </p>
+          <h3>{t("landing.step1.title")}</h3>
+          <p>{t("landing.step1.text")}</p>
         </div>
         <span class="workflow-detail">
-          Testimony <ArrowRight size={15}></ArrowRight> Meaningful statements
+          {t("landing.step1.from")}
+          <ArrowRight size={15}></ArrowRight>
+          {t("landing.step1.to")}
         </span>
       </li>
       <li>
         <span class="step-number">02</span>
         <div>
-          <h3>Connect the evidence.</h3>
-          <p>
-            Relevant statements are compared with the case materials. Supporting
-            passages and potential differences retain their document and page
-            references.
-          </p>
+          <h3>{t("landing.step2.title")}</h3>
+          <p>{t("landing.step2.text")}</p>
         </div>
         <span class="workflow-detail">
-          Statement <ArrowRight size={15}></ArrowRight> Source passage
+          {t("landing.step2.from")}
+          <ArrowRight size={15}></ArrowRight>
+          {t("landing.step2.to")}
         </span>
       </li>
       <li>
         <span class="step-number">03</span>
         <div>
-          <h3>Examine both sides.</h3>
-          <p>
-            Alternative explanations and missing context are considered before a
-            finding is presented. You inspect the sources and decide what
-            deserves a closer look.
-          </p>
+          <h3>{t("landing.step3.title")}</h3>
+          <p>{t("landing.step3.text")}</p>
         </div>
         <span class="workflow-detail">
-          Finding <ArrowRight size={15}></ArrowRight> Your judgment
+          {t("landing.step3.from")}
+          <ArrowRight size={15}></ArrowRight>
+          {t("landing.step3.to")}
         </span>
       </li>
     </ol>
@@ -325,27 +326,24 @@
       <div class="section-heading">
         <div>
           <h2 id="demo-title" bind:this={demoHeading.current} tabindex="-1">
-            Look closer.
+            {t("landing.demo.title1")}
             <br />
-            Follow the source.
+            {t("landing.demo.title2")}
           </h2>
           <p class="demo-disclosure">
-            An interactive illustration using synthetic case material.
+            {t("landing.demo.disclosure1")}
             <br />
-            No audio is recorded and no AI analysis runs in this demo.
+            {t("landing.demo.disclosure2")}
           </p>
         </div>
-        <p>
-          A difference is a starting point for a question. Explore how the
-          available evidence changes the finding.
-        </p>
+        <p>{t("landing.demo.lead")}</p>
       </div>
       <div
         class="demo-options"
         role="group"
-        aria-label="Choose an evidence example"
+        aria-label={t("landing.demo.choose")}
       >
-        {#each examples as item, index (index)}<button
+        {#each examples[i18n.lang] as item, index (index)}<button
             aria-pressed={index === exampleIndex}
             onclick={() => {
               exampleIndex = index;
@@ -365,12 +363,12 @@
             <span class={`status status-${example.id}`}>
               {example.label}
             </span>
-            <span class="small-note">Synthetic case / 001</span>
+            <span class="small-note">{t("landing.demo.caseLabel")}</span>
           </div>
           <h3>{example.finding}</h3>
           <div class="demo-quotes">
             <div>
-              <span class="detail-label">In the hearing</span>
+              <span class="detail-label">{t("landing.demo.inHearing")}</span>
               <blockquote>“{example.quote}”</blockquote>
               <button
                 class="text-source"
@@ -378,12 +376,12 @@
                 onclick={() => (source = "transcript")}
               >
                 <FileText size={16}></FileText>
-                Transcript · {example.time}
+                {t("landing.demo.transcriptAt", { time: example.time })}
                 <ArrowUpRight size={14}></ArrowUpRight>
               </button>
             </div>
             <div>
-              <span class="detail-label">In the case file</span>
+              <span class="detail-label">{t("landing.demo.inCaseFile")}</span>
               <blockquote>“{example.earlier}”</blockquote>
               <button
                 class="text-source"
@@ -391,14 +389,14 @@
                 onclick={() => (source = "statement")}
               >
                 <FileText size={16}></FileText>
-                Witness statement · Page {example.page}
+                {t("landing.demo.statementPage", { page: example.page })}
                 <ArrowUpRight size={14}></ArrowUpRight>
               </button>
             </div>
           </div>
           <p class="finding-explanation">{example.explanation}</p>
           <div class="verification">
-            <span class="detail-label">What to verify</span>
+            <span class="detail-label">{t("common.whatToVerify")}</span>
             <p>{example.verify}</p>
           </div>
           <button
@@ -411,28 +409,28 @@
           >
             {#if isReviewed}<Check size={16}></Check>{:else}<Plus size={16}
               ></Plus>{/if}
-            {isReviewed ? "Marked as reviewed" : "Mark as reviewed"}
-            <span>For this visit only</span>
+            {isReviewed ? t("landing.demo.marked") : t("landing.demo.mark")}
+            <span>{t("landing.demo.visitOnly")}</span>
           </button>
         </div>
-        <aside class="source-pane" aria-label="Original source excerpts">
+        <aside class="source-pane" aria-label={t("landing.demo.excerpts")}>
           <div class="source-pane-title">
             <FileText size={18}></FileText>
-            <h3>At the source</h3>
-            <span>Synthetic</span>
+            <h3>{t("common.atSource")}</h3>
+            <span>{t("landing.demo.synthetic")}</span>
           </div>
-          <div class="source-tabs" role="group" aria-label="Source document">
+          <div class="source-tabs" role="group" aria-label={t("landing.demo.sourceDocument")}>
             <button
               aria-pressed={source === "transcript"}
               onclick={() => (source = "transcript")}
             >
-              Hearing transcript
+              {t("common.hearingTranscript")}
             </button>
             <button
               aria-pressed={source === "statement"}
               onclick={() => (source = "statement")}
             >
-              Witness statement
+              {t("landing.demo.witnessStatement")}
             </button>
           </div>
           <div
@@ -443,19 +441,19 @@
             <div class="document-meta">
               <span>
                 {source === "transcript"
-                  ? "HEARING RECORD"
-                  : "WITNESS STATEMENT"}
+                  ? t("landing.demo.recordCaps")
+                  : t("landing.demo.statementCaps")}
               </span>
               <span>
                 {source === "transcript"
                   ? example.time
-                  : `PAGE ${example.page}`}
+                  : t("landing.demo.pageCaps", { page: example.page })}
               </span>
             </div>
             <h4>
               {source === "transcript"
-                ? "Examination of the witness"
-                : "Earlier account of events"}
+                ? t("landing.demo.examination")
+                : t("landing.demo.earlierAccount")}
             </h4>
             <div class="excerpt-lines">
               {#each source === "transcript" ? example.transcript : example.statement as line, i (i)}<p
@@ -468,35 +466,28 @@
                   >
                 </p>{/each}
             </div>
-            <p class="excerpt-footnote">
-              Prepared example for demonstration. Not a real case record or
-              legal reference.
-            </p>
+            <p class="excerpt-footnote">{t("landing.demo.footnote")}</p>
           </div>
           <div class="suggested-question">
-            <span class="detail-label">A question to consider</span>
+            <span class="detail-label">{t("common.questionToConsider")}</span>
             <p>{example.question}</p>
             <button class="text-action" onclick={copyQuestion}>
-              {copied ? "Copied" : "Copy question"}
+              {copied ? t("common.copied") : t("common.copyQuestion")}
               {#if copied}<Check size={15}></Check>{:else}<ArrowUpRight
                   size={15}
                 ></ArrowUpRight>{/if}
             </button>
             <span class="copy-feedback" role="status">
               {copyError
-                ? "Copy unavailable. Select the question above to copy it manually."
+                ? t("landing.demo.copyUnavailable")
                 : copied
-                  ? "Question copied to clipboard."
+                  ? t("landing.demo.copiedStatus")
                   : ""}
             </span>
           </div>
         </aside>
       </div>
-      <p class="demo-footer-note">
-        These labels describe the relationship between a statement and the
-        available evidence. They do not establish credibility, guilt, or a legal
-        conclusion.
-      </p>
+      <p class="demo-footer-note">{t("landing.demo.footer")}</p>
     </div>
   </section>
   <section
@@ -506,16 +497,14 @@
   >
     <div class="approach-lead">
       <h2 id="approach-title">
-        Your judgment.
+        {t("landing.approach.title1")}
         <br />
-        Better informed.
+        {t("landing.approach.title2")}
       </h2>
-      <p>
-        Built around a simple principle: the person examining the evidence
-        should always be able to question the finding.
-      </p>
+      <p>{t("landing.approach.lead")}</p>
       <a href="#questions" class="text-action">
-        A few important questions <ArrowDown size={17}></ArrowDown>
+        {t("landing.approach.faqLink")}
+        <ArrowDown size={17}></ArrowDown>
       </a>
     </div>
     <div class="principles">
@@ -524,11 +513,8 @@
           <FileText size={22} strokeWidth={1.3}></FileText>
         </span>
         <div>
-          <h3>Traceable by design.</h3>
-          <p>
-            A substantive finding should retain its source, passage, and
-            context. An answer without something to inspect is not enough.
-          </p>
+          <h3>{t("landing.principle1.title")}</h3>
+          <p>{t("landing.principle1.text")}</p>
         </div>
       </article>
       <article>
@@ -536,11 +522,8 @@
           <Minus size={22} strokeWidth={1.3}></Minus>
         </span>
         <div>
-          <h3>Uncertainty stays visible.</h3>
-          <p>
-            Missing context and insufficient evidence are meaningful results.
-            Jude should surface those limits, rather than force a conclusion.
-          </p>
+          <h3>{t("landing.principle2.title")}</h3>
+          <p>{t("landing.principle2.text")}</p>
         </div>
       </article>
       <article>
@@ -548,11 +531,8 @@
           <Check size={22} strokeWidth={1.3}></Check>
         </span>
         <div>
-          <h3>People make the decisions.</h3>
-          <p>
-            Jude supports examination and preparation. Professional legal
-            judgment and judicial independence remain with people.
-          </p>
+          <h3>{t("landing.principle3.title")}</h3>
+          <p>{t("landing.principle3.text")}</p>
         </div>
       </article>
     </div>
@@ -563,102 +543,50 @@
     aria-labelledby="questions-title"
   >
     <h2 id="questions-title">
-      Before we enter
+      {t("landing.faq.title1")}
       <br />
-      the courtroom.
+      {t("landing.faq.title2")}
     </h2>
     <div class="faq-list">
-      <details>
-        <summary>
-          Who is Jude being built for?
-          <ChevronDown size={20}></ChevronDown>
-        </summary>
-        <p>
-          The first use case is lawyers in Indonesian criminal proceedings. The
-          current MVP includes a synthetic hearing and a case workspace.
-          Prosecutor and judge workflows would require separate role-specific
-          capabilities and safeguards.
-        </p>
-      </details>
-      <details>
-        <summary>
-          Is this a live courtroom product?
-          <ChevronDown size={20}></ChevronDown>
-        </summary>
-        <p>
-          Jude is intended for evaluation using fictional or authorized material.
-          Use it to organize documents, review transcripts and findings, and
-          prepare questions. The example hearing lets you explore with fictional
-          material. Verify sources and review the results before relying on them
-          in a real proceeding.
-        </p>
-      </details>
-      <details>
-        <summary>
-          Does an inconsistency mean a witness is wrong?
-          <ChevronDown size={20}></ChevronDown>
-        </summary>
-        <p>
-          No. Different accounts can reflect different events, ambiguous
-          questions, incomplete context, or other explanations. Jude is intended
-          to identify what may warrant examination—not decide whether a witness
-          is lying or a defendant is guilty.
-        </p>
-      </details>
-      <details>
-        <summary>
-          How will Indonesian legal references be used?
-          <ChevronDown size={20}></ChevronDown>
-        </summary>
-        <p>
-          The proposed product will retrieve relevant Indonesian legislation
-          through Pasal.id, subject to available permissions. Verified legal
-          text must be distinguished from metadata and unverified references.
-          This demo does not retrieve or present legal advice.
-        </p>
-      </details>
-      <details>
-        <summary>
-          Can I upload case documents here?
-          <ChevronDown size={20}></ChevronDown>
-        </summary>
-        <p>
-          The authenticated workspace accepts text-based PDF, DOCX, TXT, and
-          Markdown documents, with original downloads and inspectable passages.
-          Use synthetic or appropriately authorized material. Scanned PDFs
-          require OCR before upload.
-        </p>
-      </details>
+      {#each [1, 2, 3, 4, 5] as const as n (n)}
+        <details>
+          <summary>
+            {t(`landing.faq.q${n}`)}
+            <ChevronDown size={20}></ChevronDown>
+          </summary>
+          <p>{t(`landing.faq.a${n}`)}</p>
+        </details>
+      {/each}
     </div>
   </section>
   <section class="closing">
     <div class="wrap">
       <h2>
-        Stay present.
+        {t("landing.closing.title1")}
         <br />
-        See what connects.
+        {t("landing.closing.title2")}
       </h2>
       <div>
         <p>
-          A closer look at the evidence starts
+          {t("landing.closing.lead1")}
           <br />
-          with a better question.
+          {t("landing.closing.lead2")}
         </p>
         <button class="button button-cream" onclick={() => openDemo()}>
-          Explore the demo <ArrowRight size={21}></ArrowRight>
+          {t("landing.exploreDemo")}
+          <ArrowRight size={21}></ArrowRight>
         </button>
-        <span class="closing-note">
-          Designed for Indonesian legal professionals.
-        </span>
+        <span class="closing-note">{t("landing.closing.note")}</span>
       </div>
     </div>
   </section>
 </main>
 <footer class="site-footer wrap">
-  <a class="wordmark" href="#top" aria-label="Jude home"> jude. </a>
-  <p>Evidence-grounded courtroom intelligence.</p>
-  <span>Product concept · 2026</span>
+  <a class="wordmark" href="#top" aria-label={t("landing.home")}> jude. </a>
+  <p>{t("landing.footer.tagline")}</p>
+  <span>{t("landing.footer.concept")}</span>
   <a href="#top">
-    Back to top <ArrowUpRight size={14}></ArrowUpRight>
+    {t("landing.footer.top")}
+    <ArrowUpRight size={14}></ArrowUpRight>
   </a>
 </footer>

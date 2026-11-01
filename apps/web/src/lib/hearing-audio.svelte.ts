@@ -1,3 +1,4 @@
+import { t } from "./i18n/index.svelte";
 import { untrack } from "svelte";
 import { api } from "./workspace-api";
 import { SpeechConnection, type SpeechCredentials } from "./speech-connection";
@@ -74,7 +75,7 @@ export function createHearingAudio(
       clearTimeout(s.timeout);
       s.timeout = window.setTimeout(() => {
         onError(
-          "Final transcription timed out. Check the saved transcript for missing final words.",
+          t("audio.error.finalTimeout"),
         );
         cleanup(s);
       }, 25000);
@@ -102,7 +103,7 @@ export function createHearingAudio(
     };
     try {
       if (file && file.size > 30 * 1024 * 1024)
-        throw new Error("Use a prepared audio file smaller than 30 MB.");
+        throw new Error(t("audio.error.fileSize"));
       const context = new AudioContext();
       s.context = context;
       await context.audioWorklet.addModule("/audio/pcm-worklet.js");
@@ -112,7 +113,7 @@ export function createHearingAudio(
         const buffer = await context.decodeAudioData(await file.arrayBuffer());
         if (!active()) return;
         if (buffer.duration > 1800)
-          throw new Error("Prepared audio must be shorter than 30 minutes.");
+          throw new Error(t("audio.error.duration"));
         const player = context.createBufferSource();
         player.buffer = buffer;
         player.onended = stop;
@@ -142,12 +143,12 @@ export function createHearingAudio(
           s.pendingBytes += data.byteLength;
           if (s.pendingBytes > 1024 * 1024)
             fail(
-              "Audio reconnection took too long. Recording stopped; check the final saved words before restarting.",
+              t("audio.error.reconnectSlow"),
             );
         } else if (s.ws?.readyState === WebSocket.OPEN) {
           if (s.ws.bufferedAmount > 1000000) {
             onError(
-              "Audio upload cannot keep up. Recording stopped to avoid losing testimony.",
+              t("audio.error.backpressure"),
             );
             stop();
           } else {
@@ -196,7 +197,7 @@ export function createHearingAudio(
         s.timeout = window.setTimeout(
           () =>
             fail(
-              "Audio connection timed out. Check the saved transcript before reconnecting.",
+              t("audio.error.connectTimeout"),
             ),
           30000,
         );
@@ -257,7 +258,7 @@ export function createHearingAudio(
                 s.timeout = window.setTimeout(
                   () =>
                     fail(
-                      "Final transcription timed out. Check the saved transcript for missing words.",
+                      t("audio.error.finalTimeout"),
                     ),
                   25000,
                 );
@@ -274,7 +275,7 @@ export function createHearingAudio(
                       s.timeout = window.setTimeout(
                         () =>
                           fail(
-                            "Audio rotation timed out. Check the saved transcript before restarting.",
+                            t("audio.error.rotation"),
                           ),
                         25000,
                       );
@@ -294,24 +295,24 @@ export function createHearingAudio(
                   if (active())
                     void connect().catch(() =>
                       fail(
-                        "Could not reconnect audio. Check the saved transcript before restarting.",
+                        t("audio.error.reconnect"),
                       ),
                     );
                 };
               } else cleanup(s);
             }
           } catch {
-            fail("Could not process the audio connection. Please reconnect.");
+            fail(t("audio.error.process"));
           }
         };
         ws.onerror = () =>
           fail(
-            "Audio connection failed. Saved testimony remains available; check the final words before restarting.",
+            t("audio.error.failed"),
           );
         ws.onclose = () => {
           if (active() && s.ws === ws)
             fail(
-              "Audio connection ended unexpectedly. Check the saved transcript before restarting.",
+              t("audio.error.ended"),
             );
         };
       }
@@ -320,7 +321,7 @@ export function createHearingAudio(
       fail(
         error instanceof Error
           ? error.message
-          : "Audio permission was denied. Allow microphone access and try again.",
+          : t("audio.error.permission"),
       );
     }
   }

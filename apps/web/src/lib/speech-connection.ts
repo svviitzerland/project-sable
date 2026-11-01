@@ -1,3 +1,4 @@
+import { t } from "./i18n/index.svelte";
 import { api } from "./workspace-api";
 export type SpeechCredentials = {
   id: string;
@@ -76,7 +77,7 @@ export class SpeechConnection {
             this.emit({
               type: "error",
               message:
-                "Could not save the final transcript. Recording stopped; check the last saved words before restarting.",
+                t("audio.error.saveFinal"),
             }),
           );
         } else if (message.message === "EndOfTranscript") {
@@ -98,19 +99,19 @@ export class SpeechConnection {
               this.emit({
                 type: "error",
                 message:
-                  "Could not finish saving this audio session. Check the last saved words before restarting.",
+                  t("audio.error.finishSave"),
               }),
             );
         } else if (message.message === "Error")
           this.emit({
             type: "error",
             message:
-              "Speech provider reported an error. Check connection settings and quota.",
+              t("audio.error.provider"),
           });
       } catch {
         this.emit({
           type: "error",
-          message: "Could not process the speech provider response.",
+          message: t("audio.error.providerResponse"),
         });
       }
     };
@@ -130,7 +131,7 @@ export class SpeechConnection {
         this.emit({
           type: "error",
           message:
-            "Audio upload cannot keep up. Recording stopped to avoid losing testimony.",
+            t("audio.error.backpressure"),
         });
         return;
       }

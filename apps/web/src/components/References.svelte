@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import { BookOpen, Search } from "@lucide/svelte";
   import { api, type LegalReference } from "../lib/workspace-api";
@@ -25,15 +26,12 @@
 
 <div class={styles.referencePage}>
   <div class={styles.sectionTitle}>
-    <h2>Find the relevant legal source.</h2>
-    <p>
-      Discover Indonesian legislation through Pasal.id, then inspect its text at
-      the original link.
-    </p>
+    <h2>{t("references.title")}</h2>
+    <p>{t("references.lead")}</p>
   </div>
   <p class={styles.notice}>
     <BookOpen size={17}></BookOpen>
-    Open the original source to verify the wording and whether it applies to your case.
+    {t("references.notice")}
   </p>
   <form
     class={styles.searchForm}
@@ -55,11 +53,11 @@
   >
     <Search size={18}></Search>
     <label class={styles.srOnly} for="legal-search">
-      Search Indonesian regulations
+      {t("references.searchLabel")}
     </label>
     <input
       id="legal-search"
-      placeholder="Use legal keywords, e.g. keterangan saksi"
+      placeholder={t("references.placeholder")}
       value={query}
       oninput={(e) => (query = e.currentTarget.value)}
       minLength={2}
@@ -67,7 +65,7 @@
       required
     />
     <button class={styles.primary} disabled={!configured || busy}>
-      {busy ? "Searching…" : "Search legislation"}
+      {busy ? t("common.searching") : t("references.search")}
     </button>
   </form>
   {#if error}<p class={styles.error} role="alert">
@@ -75,19 +73,19 @@
     </p>{/if}
   {#if busy}<Skeleton
       variant="reader"
-      label="Searching legal references…"
+      label={t("references.skeleton")}
     />{:else if !configured}<Empty
-      title="Legal search is unavailable."
-      text="You can still upload legislation under Case documents and reference it in the case assistant."
+      title={t("references.unavailableTitle")}
+      text={t("references.unavailableText")}
       >{#snippet icon()}<BookOpen size={32}></BookOpen>{/snippet}</Empty
     >{:else}{#if results === null}<Empty
-        title="Begin with a legal issue."
-        text="Search generic legal terms rather than names or personal case details. Every result opens its source for your review."
+        title={t("references.beginTitle")}
+        text={t("references.beginText")}
         >{#snippet icon()}<Search size={30}></Search>{/snippet}</Empty
       >{:else}{#if results.length}<LegalResults {results}
         ></LegalResults>{:else}<Empty
-          title="No references found."
-          text="Try a different regulation title or legal keyword."
+          title={t("references.noneTitle")}
+          text={t("references.noneText")}
           >{#snippet icon()}<Search size={30}></Search>{/snippet}</Empty
         >{/if}{/if}{/if}
 </div>

@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    formatDate,
+    t,
+    type MessageKey,
+  } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import {
     ArrowRight,
@@ -67,24 +72,26 @@
 
   type Reference = { id: string; label: string; kind: string };
 
-  const defaults: Conditions = {
-    trial_type: "Criminal trial",
-    jurisdiction: "Indonesia — confirm applicable procedure",
-    stage: "Witness examination",
-    user_role: "defense",
-    difficulty: "Standard",
-    language: "English",
-    goals: "Practice precise questions and source-based arguments.",
-    assumptions:
-      "Procedure and scenario details are practice assumptions, not established case facts.",
-  };
+  /**
+   * Free-text defaults follow the UI language, including `language`, so AI
+   * practice replies in the lawyer's language unless they change it.
+   * `stage`, `difficulty` and `user_role` are API enum values; only their
+   * labels are translated.
+   */
+  function defaultConditions(): Conditions {
+    return {
+      trial_type: t("dialogue.default.trialType"),
+      jurisdiction: t("dialogue.default.jurisdiction"),
+      stage: "Witness examination",
+      user_role: "defense",
+      difficulty: "Standard",
+      language: t("dialogue.default.language"),
+      goals: t("dialogue.default.goals"),
+      assumptions: t("dialogue.default.assumptions"),
+    };
+  }
 
-  const roles: Record<string, string> = {
-    defense: "Defense counsel",
-    opposing: "Opposing counsel",
-    judge: "Judge",
-    witness: "Witness",
-  };
+  const roleKeys = ["defense", "opposing", "judge", "witness"] as const;
 
   const stages = [
     "Opening statements",
@@ -92,7 +99,48 @@
     "Cross-examination",
     "Closing arguments",
     "Procedural hearing",
-  ];
+  ] as const;
+
+  const difficulties = ["Supportive", "Standard", "Challenging"] as const;
+
+  function roleLabel(role: string) {
+    return (roleKeys as readonly string[]).includes(role)
+      ? t(`role.${role as (typeof roleKeys)[number]}`)
+      : role;
+  }
+
+  function stageLabel(stage: string) {
+    return (stages as readonly string[]).includes(stage)
+      ? t(`stage.${stage as (typeof stages)[number]}`)
+      : stage;
+  }
+
+  function difficultyLabel(value: string) {
+    return (difficulties as readonly string[]).includes(value)
+      ? t(`difficulty.${value as (typeof difficulties)[number]}`)
+      : value;
+  }
+
+  function conditionValue(key: string, value: string) {
+    return key === "user_role"
+      ? roleLabel(value)
+      : key === "stage"
+        ? stageLabel(value)
+        : key === "difficulty"
+          ? difficultyLabel(value)
+          : value;
+  }
+
+  const conditionKeys = [
+    "trial_type",
+    "jurisdiction",
+    "stage",
+    "user_role",
+    "difficulty",
+    "language",
+    "goals",
+    "assumptions",
+  ] as const;
 
   let {
     caseId,
@@ -124,7 +172,7 @@
 
   let law = $state("");
 
-  let conditions = $state<Conditions>(defaults);
+  let conditions = $state<Conditions>(untrack(defaultConditions));
 
   let mode = $state(
     untrack(() => (caps?.analysis.configured ? "ai" : "guided")),
@@ -132,13 +180,11 @@
 
   let rationale = $state("");
 
-  let busy = $state("");
+  let busy = $state<MessageKey | "">("");
   let responding = $derived(
-    [
-      "Reading the case…",
-      "The courtroom is responding…",
-      "Preparing your debrief…",
-    ].includes(busy),
+    busy === "dialogue.busy.reading" ||
+      busy === "dialogue.busy.responding" ||
+      busy === "dialogue.busy.debrief",
   );
 
   let loading = $state(true);
@@ -195,7 +241,7 @@
     sessions = await api<Dialogue[]>(`/cases/${caseId}/dialogues?kind=${kind}`);
   }
 
-  async function run(label: string, operation: () => Promise<void>) {
+  async function run(label: MessageKey, operation: () => Promise<void>) {
     busy = label;
     error = "";
     try {
@@ -241,14 +287,14 @@
     if (busy || (!text.trim() && !finish)) return;
     await run(
       finish
-        ? "Preparing your debrief…"
+        ? "dialogue.busy.debrief"
         : practice
-          ? "The courtroom is responding…"
-          : "Reading the case…",
+          ? "dialogue.busy.responding"
+          : "dialogue.busy.reading",
       async () => {
         const session = active ?? (await create());
         const message = finish
-          ? "End this rehearsal and give me a practice debrief."
+          ? t("dialogue.finishMessage")
           : text.trim();
         const data = {
           text: message,
@@ -284,12 +330,12 @@
   <header class={styles.heading}>
     <div>
       <h2>
-        {practice ? "Prepare for the room." : "Think through the whole case."}
+        {practice
+          ? t("dialogue.practiceTitle")
+          : t("dialogue.assistantTitle")}
       </h2>
       <p>
-        {practice
-          ? "Rehearse an argument, question a witness, or practise directing the hearing. You choose your role and conditions."
-          : "Ask follow-up questions across documents, hearings, findings, and confirmed evidence connections. Every case quotation stays inspectable."}
+        {practice ? t("dialogue.practiceLead") : t("dialogue.assistantLead")}
       </p>
     </div>
     <button
@@ -298,7 +344,7 @@
       onclick={newSession}
     >
       <Plus size={16}></Plus>
-      {practice ? "New rehearsal" : "New conversation"}
+      {practice ? t("dialogue.newRehearsal") : t("dialogue.newConversation")}
     </button>
   </header>
   {#if error}<p role="alert" class={ui.error}>
@@ -311,32 +357,40 @@
       aria-controls="dialogue-history"
       onclick={() => (historyOpen = !historyOpen)}
     >
-      {practice ? "Saved rehearsals" : "Saved conversations"} ({sessions.length})
+      {practice
+        ? t("dialogue.savedRehearsals")
+        : t("dialogue.savedConversations")} ({sessions.length})
       <ChevronDown size={16} />
     </button>
     <aside
       id="dialogue-history"
       class={`${styles.history} ${historyOpen ? styles.historyOpen : ""}`}
-      aria-label={practice ? "Saved rehearsals" : "Saved conversations"}
+      aria-label={practice
+        ? t("dialogue.savedRehearsals")
+        : t("dialogue.savedConversations")}
     >
-      <h3>{practice ? "Your rehearsals" : "Conversations"}</h3>
+      <h3>
+        {practice ? t("dialogue.yourRehearsals") : t("dialogue.conversations")}
+      </h3>
       {#if active}<a
           class={ui.textButton}
           rel="external"
           href={`/api/v1/cases/${caseId}/dialogues/${active.id}/export`}
           download
         >
-          Export {practice ? "rehearsal" : "conversation"}&#32;
+          {practice
+            ? t("dialogue.exportRehearsal")
+            : t("dialogue.exportConversation")}&#32;
           <ExternalLink size={13}></ExternalLink>
         </a>{/if}
       {#if loading}<Skeleton
           variant="rows"
-          label="Loading saved conversations…"
+          label={t("dialogue.loadingSaved")}
         />{:else if sessions.length}{#each sessions as session (session.id)}<button
             disabled={!!busy}
             aria-pressed={active?.id === session.id}
             onclick={() =>
-              run("Opening conversation…", async () => {
+              run("dialogue.busy.opening", async () => {
                 const result = await api<Dialogue>(
                   `/cases/${caseId}/dialogues/${session.id}`,
                 );
@@ -349,40 +403,42 @@
           >
             <span>{session.title}</span>
             <small>
-              {new Date(session.created_at).toLocaleDateString()} ·&#32;
+              {formatDate(session.created_at)} ·&#32;
               {session.status === "complete"
-                ? "Completed"
+                ? t("dialogue.completed")
                 : session.mode === "guided"
-                  ? "Guided drill"
+                  ? t("dialogue.guidedDrill")
                   : session.kind === "practice"
-                    ? "AI rehearsal"
-                    : "Case conversation"}
+                    ? t("dialogue.aiRehearsal")
+                    : t("dialogue.caseConversation")}
             </small>
           </button>{/each}{:else}<p>
           {practice
-            ? "Your practice sessions will appear here."
-            : "Your conversations stay with this case."}
+            ? t("dialogue.emptyPractice")
+            : t("dialogue.emptyAssistant")}
         </p>{/if}
       <p class={styles.boundary}>
         {practice
-          ? "Practice dialogue stays separate from evidence and hearing records."
-          : "Only material from this case is used. Practice conversations stay separate."}
+          ? t("dialogue.boundaryPractice")
+          : t("dialogue.boundaryAssistant")}
       </p>
     </aside>
     <section
       class={styles.main}
       aria-label={practice
-        ? "Courtroom practice"
-        : "Case assistant conversation"}
+        ? t("dialogue.mainPractice")
+        : t("dialogue.mainAssistant")}
     >
-      {#if loading || busy === "Opening conversation…" || busy === "Starting rehearsal…"}<Skeleton
+      {#if loading || busy === "dialogue.busy.opening" || busy === "dialogue.busy.starting"}<Skeleton
           variant={practice && !active ? "form" : "conversation"}
-          label={loading ? "Opening this case’s conversations…" : busy}
+          label={loading || !busy
+            ? t("dialogue.openingConversations")
+            : t(busy)}
         />{:else}{#if practice && !active}<form
             class={styles.setup}
             onsubmit={(e) => {
               e.preventDefault();
-              void run("Starting rehearsal…", async () => {
+              void run("dialogue.busy.starting", async () => {
                 await create();
               });
             }}
@@ -390,18 +446,15 @@
             <div class={styles.setupHeading}>
               <div>
                 <Gavel size={24}></Gavel>
-                <h3>Set the scene.</h3>
-                <p>
-                  Review these assumptions before starting. They describe a
-                  practice scenario, not a prediction.
-                </p>
+                <h3>{t("dialogue.setTitle")}</h3>
+                <p>{t("dialogue.setText")}</p>
               </div>
               <button
                 type="button"
                 class={ui.secondary}
                 disabled={!!busy || !caps?.analysis.configured}
                 onclick={() =>
-                  run("Suggesting trial conditions…", async () => {
+                  run("dialogue.busy.suggesting", async () => {
                     const proposal = await api<{
                       conditions: Conditions;
                       rationale: string;
@@ -414,19 +467,19 @@
                   })}
               >
                 <Sparkles size={16}></Sparkles>
-                Suggest from case
+                {t("dialogue.suggest")}
               </button>
             </div>
-            {#if busy === "Suggesting trial conditions…"}<Skeleton
+            {#if busy === "dialogue.busy.suggesting"}<Skeleton
                 variant="reader"
-                label={busy}
+                label={t(busy)}
               />{:else if rationale}<div class={styles.proposal} role="status">
-                <strong>Suggested setup · review and edit below</strong>
+                <strong>{t("dialogue.suggestedSetup")}</strong>
                 <p>{rationale}</p>
               </div>{/if}
             <div class={styles.fields}>
               <label>
-                Trial type
+                {t("dialogue.field.trial_type")}
                 <input
                   id="trial-type"
                   value={conditions.trial_type}
@@ -440,7 +493,7 @@
                 />
               </label>
               <label>
-                Jurisdiction / court
+                {t("dialogue.field.jurisdiction")}
                 <input
                   value={conditions.jurisdiction}
                   maxlength={200}
@@ -453,7 +506,7 @@
                 />
               </label>
               <label>
-                Stage
+                {t("dialogue.field.stage")}
                 <select
                   value={conditions.stage}
                   onchange={(e) =>
@@ -462,11 +515,13 @@
                       stage: e.currentTarget.value,
                     })}
                 >
-                  {#each stages as stage (stage)}<option>{stage}</option>{/each}
+                  {#each stages as stage (stage)}<option value={stage}
+                      >{stageLabel(stage)}</option
+                    >{/each}
                 </select>
               </label>
               <label>
-                Your role
+                {t("dialogue.field.user_role")}
                 <select
                   value={conditions.user_role}
                   onchange={(e) =>
@@ -478,12 +533,12 @@
                   {#each ["defense", "opposing", "judge"] as role (role)}<option
                       value={role}
                     >
-                      {roles[role]}
+                      {roleLabel(role)}
                     </option>{/each}
                 </select>
               </label>
               <label>
-                Difficulty
+                {t("dialogue.field.difficulty")}
                 <select
                   value={conditions.difficulty}
                   onchange={(e) =>
@@ -492,13 +547,13 @@
                       difficulty: e.currentTarget.value,
                     })}
                 >
-                  {#each ["Supportive", "Standard", "Challenging"] as v (v)}<option
-                      >{v}</option
+                  {#each difficulties as v (v)}<option value={v}
+                      >{difficultyLabel(v)}</option
                     >{/each}
                 </select>
               </label>
               <label>
-                Language
+                {t("dialogue.field.language")}
                 <input
                   value={conditions.language}
                   maxlength={80}
@@ -512,7 +567,7 @@
               </label>
             </div>
             <label>
-              Practice goals
+              {t("dialogue.field.goals")}
               <textarea
                 value={conditions.goals}
                 maxlength={1500}
@@ -524,7 +579,7 @@
                   })}></textarea>
             </label>
             <label>
-              Scenario assumptions and ground rules
+              {t("dialogue.field.assumptions")}
               <textarea
                 value={conditions.assumptions}
                 maxlength={2500}
@@ -537,38 +592,44 @@
             </label>
             <div class={styles.setupFooter}>
               <label>
-                Practice mode
+                {t("dialogue.mode")}
                 <select
                   value={mode}
                   onchange={(e) => (mode = e.currentTarget.value)}
                 >
                   <option value="ai" disabled={!caps?.analysis.configured}>
-                    AI roleplay
+                    {t("dialogue.aiRoleplay")}
                   </option>
                   <option value="guided">
-                    Guided drill · scripted prompts
+                    {t("dialogue.guidedOption")}
                   </option>
                 </select>
               </label>
               <button class={ui.primary} disabled={!!busy}>
                 <Gavel size={16}></Gavel>
-                Start rehearsal
+                {t("dialogue.start")}
               </button>
             </div>
             {#if !caps?.analysis.configured}<p class={styles.hint}>
-                AI roleplay is unavailable. You can still rehearse with guided
-                prompts and a self-review checklist.
+                {t("dialogue.aiUnavailable")}
               </p>{/if}
           </form>{:else}
           <div class={styles.sessionHeader}>
             <div>
               <h3>
-                {active?.title ?? "A question, with the case behind it."}
+                {active?.title ?? t("dialogue.assistantEmptyTitle")}
               </h3>
               <p>
                 {practice
-                  ? `You: ${roles[active!.conditions.user_role]} · ${active!.conditions.stage} · ${active!.mode === "guided" ? "Scripted drill" : "AI roleplay"}`
-                  : "Answers use relevant case excerpts. Open each citation to check the original context."}
+                  ? t("dialogue.practiceMeta", {
+                      role: roleLabel(active!.conditions.user_role),
+                      stage: stageLabel(active!.conditions.stage),
+                      mode:
+                        active!.mode === "guided"
+                          ? t("dialogue.scriptedDrill")
+                          : t("dialogue.aiRoleplay"),
+                    })
+                  : t("dialogue.assistantMeta")}
               </p>
             </div>
             {#if practice && active?.status !== "complete"}<button
@@ -577,18 +638,18 @@
                 onclick={() => send(true)}
               >
                 <Check size={16}></Check>
-                Finish & debrief
+                {t("dialogue.finish")}
               </button>{/if}
           </div>
           {#if practice}<details class={styles.conditions}>
               <summary>
-                Trial conditions <ChevronDown size={15}></ChevronDown>
+                {t("dialogue.conditions")}
+                <ChevronDown size={15}></ChevronDown>
               </summary>
               <dl>
-                {#each Object.entries(active!.conditions) as [key, value] (key)}<div
-                  >
-                    <dt>{key.replaceAll("_", " ")}</dt>
-                    <dd>{key === "user_role" ? roles[value] : value}</dd>
+                {#each conditionKeys as key (key)}<div>
+                    <dt>{t(`dialogue.field.${key}`)}</dt>
+                    <dd>{conditionValue(key, active!.conditions[key])}</dd>
                   </div>{/each}
               </dl>
               <button
@@ -599,27 +660,25 @@
                   newSession();
                 }}
               >
-                Edit setup for a new rehearsal
+                {t("dialogue.editSetup")}
               </button>
             </details>{/if}
           <div
             bind:this={log.current}
             class={styles.messages}
             role="log"
-            aria-label={practice ? "Practice dialogue" : "Case conversation"}
+            aria-label={practice
+              ? t("dialogue.logPractice")
+              : t("dialogue.logAssistant")}
             aria-live="polite"
             aria-relevant="additions"
           >
             {#if !messages.length && !responding}<div class={styles.welcome}>
                 <MessageSquare size={32}></MessageSquare>
-                <h3>Start with what you need to understand.</h3>
-                <p>
-                  Compare accounts, identify missing context, or prepare
-                  questions. Select material below to give a source extra
-                  attention.
-                </p>
+                <h3>{t("dialogue.welcomeTitle")}</h3>
+                <p>{t("dialogue.welcomeText")}</p>
                 <div>
-                  {#each ["Summarize the case and what is still uncertain.", "Where do the witness accounts differ?", "What questions should I prepare for the next hearing?"] as question (question)}<button
+                  {#each [t("dialogue.suggestion1"), t("dialogue.suggestion2"), t("dialogue.suggestion3")] as question (question)}<button
                       class={ui.secondary}
                       onclick={() => {
                         text = question;
@@ -637,9 +696,11 @@
                 <h4>
                   {message.role === "user"
                     ? practice
-                      ? `You · ${roles[message.speaker] ?? message.speaker}`
-                      : "You"
-                    : (roles[message.speaker] ?? message.speaker)}
+                      ? t("dialogue.youRole", {
+                          role: roleLabel(message.speaker),
+                        })
+                      : t("dialogue.you")
+                    : roleLabel(message.speaker)}
                 </h4>
                 <p>{message.text}</p>
                 {#if !!message.citations.length}<div class={styles.citations}>
@@ -650,7 +711,9 @@
                           <span>
                             {citation.source.title}
                             {citation.source.page
-                              ? ` · Page ${citation.source.page}`
+                              ? t("common.pageSuffix", {
+                                  page: citation.source.page,
+                                })
                               : ""}
                           </span>
                           <ChevronDown size={14}></ChevronDown>
@@ -664,8 +727,8 @@
                             target="_blank"
                             rel="external noreferrer"
                           >
-                            Open original <ExternalLink size={13}
-                            ></ExternalLink>
+                            {t("dialogue.openOriginal")}
+                            <ExternalLink size={13}></ExternalLink>
                           </a>{/if}
                         {#if citation.source.hearing_id}<button
                             class={ui.textButton}
@@ -673,14 +736,15 @@
                             onclick={() =>
                               openHearing(citation.source.hearing_id!)}
                           >
-                            Open hearing <ArrowRight size={13}></ArrowRight>
+                            {t("common.openHearing")}
+                            <ArrowRight size={13}></ArrowRight>
                           </button>{/if}
                       </details>{/each}
                   </div>{/if}
                 {#if !!message.legal.length}<div class={styles.legal}>
                     <strong>
                       <BookOpen size={15}></BookOpen>
-                      Legal discovery · verify original text
+                      {t("dialogue.legalDiscovery")}
                     </strong>
                     {#each message.legal as reference, index (index)}<a
                         href={reference.url}
@@ -696,15 +760,15 @@
                   </p>{/if}
               </article>{/each}
             {#if responding}<div class={styles.replyLoading}>
-                <p>{busy}</p>
-                <Skeleton variant="compact" label={busy} />
+                <p>{busy ? t(busy) : ""}</p>
+                <Skeleton variant="compact" label={busy ? t(busy) : undefined} />
               </div>{/if}
           </div>
           {#if active?.status === "complete"}<div class={styles.complete}>
               <Check size={18}></Check>
-              <p>Rehearsal complete. Your dialogue and debrief are saved.</p>
+              <p>{t("dialogue.complete")}</p>
               <button class={ui.secondary} onclick={newSession}>
-                Practise again
+                {t("dialogue.again")}
               </button>
             </div>{:else}{#if canCompose}<form
                 class={styles.composer}
@@ -718,14 +782,11 @@
                   >
                     <summary>
                       <FileText size={15}></FileText>
-                      Reference case material
+                      {t("dialogue.reference")}
                       {selectedRefs.length ? ` (${selectedRefs.length})` : ""}
                       <ChevronDown size={14}></ChevronDown>
                     </summary>
-                    <p>
-                      Choose up to six records. Relevant excerpts are selected;
-                      a reference does not attach every page.
-                    </p>
+                    <p>{t("dialogue.referenceHelp")}</p>
                     {#if initialReference && !references.some((r) => r.id === initialReference)}<label
                       >
                         <input
@@ -738,7 +799,7 @@
                                   (id) => id !== initialReference,
                                 ))}
                         />
-                        Selected evidence passage
+                        {t("dialogue.selectedPassage")}
                       </label>{/if}
                     {#each references as reference (reference.id)}<label>
                         <input
@@ -757,41 +818,43 @@
                           {reference.label}
                           <small>
                             {reference.kind === "hearing"
-                              ? "Hearing transcript"
-                              : "Case document"}
+                              ? t("common.hearingTranscript")
+                              : t("dialogue.caseDocument")}
                           </small>
                         </span>
                       </label>{/each}
                     {#if !references.length && !initialReference}<p>
-                        Add documents or a hearing to reference them here.
+                        {t("dialogue.noReferences")}
                       </p>{/if}
                   </details>{/if}
                 {#if !practice}<details class={styles.referencePicker}>
                     <summary>
                       <BookOpen size={15}></BookOpen>
-                      Include legal lookup
+                      {t("dialogue.legalLookup")}
                       <ChevronDown size={14}></ChevronDown>
                     </summary>
                     <label>
-                      Legal search terms
+                      {t("dialogue.legalTerms")}
                       <input
                         value={law}
                         maxlength={300}
                         disabled={!caps?.legal.configured}
                         oninput={(e) => (law = e.currentTarget.value)}
-                        placeholder="e.g. witness testimony, burden of proof"
+                        placeholder={t("dialogue.legalPlaceholder")}
                       />
                     </label>
                     <p>
                       {caps?.legal.configured
-                        ? "Use legal terms rather than personal details. Check the original legislation before relying on it."
-                        : "Legal search is unavailable. You can reference uploaded legislation from Case documents."}
+                        ? t("dialogue.legalHelp")
+                        : t("dialogue.legalUnavailable")}
                     </p>
                   </details>{/if}
                 <label for="case-message">
                   {practice
-                    ? `Your turn · ${roles[active!.conditions.user_role]}`
-                    : "Ask about this case"}
+                    ? t("dialogue.yourTurn", {
+                        role: roleLabel(active!.conditions.user_role),
+                      })
+                    : t("dialogue.askLabel")}
                 </label>
                 <textarea
                   bind:this={composer.current}
@@ -803,8 +866,8 @@
                   disabled={!!busy}
                   oninput={(e) => (text = e.currentTarget.value)}
                   placeholder={practice
-                    ? "Make your argument, ask a question, or direct the hearing…"
-                    : "Ask a question or follow up on an earlier answer…"}
+                    ? t("dialogue.practicePlaceholder")
+                    : t("dialogue.assistantPlaceholder")}
                   onkeydown={(e) => {
                     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                       e.preventDefault();
@@ -814,14 +877,14 @@
                 <div class={styles.composerFooter}>
                   <span>
                     {practice
-                      ? "Hypothetical practice · never added to evidence"
+                      ? t("dialogue.footerPractice")
                       : caps?.analysis.configured
-                        ? "Citations verify quoted text, not legal correctness."
-                        : "Source search only · AI replies are unavailable"}
+                        ? t("dialogue.footerAi")
+                        : t("dialogue.footerNoAi")}
                   </span>
                   <button class={ui.primary} disabled={!!busy || !text.trim()}>
                     <Send size={15}></Send>
-                    {practice ? "Take your turn" : "Send message"}
+                    {practice ? t("dialogue.takeTurn") : t("dialogue.send")}
                   </button>
                 </div>
               </form>{/if}{/if}

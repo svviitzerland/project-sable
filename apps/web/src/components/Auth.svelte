@@ -4,6 +4,8 @@
   import { ArrowLeft, ArrowRight, Play, ShieldCheck } from "@lucide/svelte";
   import { api, type Capabilities, type User } from "../lib/workspace-api";
   import styles from "./workspace.module.css";
+  import { t } from "../lib/i18n/index.svelte";
+  import LanguageToggle from "./LanguageToggle.svelte";
 
   let {
     caps,
@@ -46,54 +48,52 @@
 
 <div class={styles.auth}>
   <div class={styles.authStory}>
-    <a href={resolve("/")} class={styles.brand}> jude. </a>
+    <header class={styles.authTop}>
+      <a href={resolve("/")} class={styles.brand}> jude. </a>
+      <LanguageToggle />
+    </header>
     <div>
       <h1>
-        Stay with the testimony.
+        {t("auth.title1")}
         <br />
-        Keep the evidence close.
+        {t("auth.title2")}
       </h1>
-      <p>
-        A working space for your case documents, hearing record, and the
-        questions that connect them.
-      </p>
+      <p>{t("auth.lead")}</p>
       <div class={styles.authPrinciple}>
         <ShieldCheck size={23}></ShieldCheck>
         <span>
-          Sources you can inspect.
+          {t("auth.principle1")}
           <br />
-          Judgment that stays with you.
+          {t("auth.principle2")}
         </span>
       </div>
     </div>
     <a href={resolve("/")}>
       <ArrowLeft size={16}></ArrowLeft>
-      Back to the introduction
+      {t("auth.back")}
     </a>
   </div>
   <div class={styles.authForm}>
     <h2>
-      {register ? "Create your workspace." : "Welcome to your workspace."}
+      {register ? t("auth.createTitle") : t("auth.welcomeTitle")}
     </h2>
     <p>
-      {register
-        ? "Start with a case. Bring the evidence together."
-        : "Sign in to continue examining your cases."}
+      {register ? t("auth.createLead") : t("auth.signInLead")}
     </p>
     {#if error}<p class={styles.error} role="alert">
         {error}
       </p>{/if}
     <form onsubmit={submit}>
       {#if register}<label>
-          Your name
+          {t("auth.name")}
           <input name="name" autocomplete="name" required maxlength={100} />
         </label>{/if}
       <label>
-        Email address
+        {t("auth.email")}
         <input name="email" type="email" autocomplete="email" required />
       </label>
       <label>
-        Password
+        {t("auth.password")}
         <input
           name="password"
           type={passwordVisible ? "text" : "password"}
@@ -102,23 +102,29 @@
           autocomplete={register ? "new-password" : "current-password"}
           required
         />
-        {#if register}<small>At least 10 characters.</small>{/if}
+        {#if register}<small>{t("auth.passwordHint")}</small>{/if}
       </label>
       <button
         type="button"
         class={styles.textButton}
         aria-pressed={passwordVisible}
         onclick={() => (passwordVisible = !passwordVisible)}
-        >{passwordVisible ? "Hide password" : "Show password"}</button
+        >{passwordVisible
+          ? t("auth.hidePassword")
+          : t("auth.showPassword")}</button
       >
       <button class={styles.primary} disabled={busy}>
-        {busy ? "Opening workspace…" : register ? "Create account" : "Sign in"}
+        {busy
+          ? t("auth.opening")
+          : register
+            ? t("auth.createAccount")
+            : t("common.signIn")}
         <ArrowRight size={17}></ArrowRight>
       </button>
     </form>
     {#if busy}<Skeleton
         variant="compact"
-        label="Opening your workspace…"
+        label={t("common.openingWorkspace")}
       />{/if}
     <button
       class={styles.textButton}
@@ -128,12 +134,10 @@
         setError("");
       }}
     >
-      {register
-        ? "Already have an account? Sign in"
-        : "New to Jude? Create an account"}
+      {register ? t("auth.haveAccount") : t("auth.newAccount")}
     </button>
     {#if caps?.demo_available}<div class={styles.demoEntry}>
-        <span>Explore before you start</span>
+        <span>{t("auth.exploreFirst")}</span>
         <button
           class={styles.secondary}
           disabled={busy}
@@ -150,14 +154,12 @@
           }}
         >
           <Play size={16}></Play>
-          Open a synthetic case
+          {t("auth.openSynthetic")}
         </button>
-        <p>
-          Explore a fictional case with prepared evidence. No microphone needed.
-        </p>
+        <p>{t("auth.demoNote")}</p>
       </div>{/if}
     <small class={styles.authFootnote}>
-      Use only case material you are authorized to share and process.
+      {t("auth.footnote")}
     </small>
   </div>
 </div>

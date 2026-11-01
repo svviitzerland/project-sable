@@ -1,4 +1,10 @@
 <script lang="ts">
+  import {
+    formatDate,
+    t,
+    tp,
+    type MessageKey,
+  } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import {
     ArrowRight,
@@ -50,7 +56,10 @@
 
   let preview = $state<Preview | null>(null);
 
-  let busy = $state("");
+  let busy = $state<MessageKey | "">("");
+  let reading = $derived(
+    busy === "library.reading" || busy === "library.converting",
+  );
 
   let error = $state("");
 
@@ -98,7 +107,7 @@
   );
 
   async function prepare(selected: File, convert = false) {
-    busy = convert ? "Converting transcript…" : "Reading transcript…";
+    busy = convert ? "library.converting" : "library.reading";
     error = "";
     try {
       const body = new FormData();
@@ -114,6 +123,20 @@
     } finally {
       busy = "";
     }
+  }
+
+  const hearingStatuses = [
+    "ready",
+    "live",
+    "simulation",
+    "paused",
+    "complete",
+  ] as const;
+
+  function hearingStatusLabel(status: string) {
+    return (hearingStatuses as readonly string[]).includes(status)
+      ? t(`hearingStatus.${status as (typeof hearingStatuses)[number]}`)
+      : status;
   }
 
   function editTurn(index: number, values: Partial<Turn>) {
@@ -140,11 +163,8 @@
 <div class={styles.hearings}>
   <div class={styles.sectionHeader}>
     <div>
-      <h2>Hearings</h2>
-      <p>
-        A complete record for every examination. Bring in a transcript, then
-        follow its evidence.
-      </p>
+      <h2>{t("library.title")}</h2>
+      <p>{t("library.lead")}</p>
     </div>
     <button
       class={ui.secondary}
@@ -152,7 +172,7 @@
       disabled={!!busy}
     >
       <Plus size={16}></Plus>
-      New hearing
+      {t("library.new")}
     </button>
   </div>
   <div class={styles.importWell}>
@@ -160,12 +180,9 @@
       <AudioLines size={28}></AudioLines>
     </div>
     <div>
-      <h3>Bring the whole hearing.</h3>
-      <p>
-        Upload a transcript instead of entering each statement. Review it here
-        before adding it to your case.
-      </p>
-      <small> .jude, JSON, CSV, TXT, SRT, VTT, PDF or DOCX · up to 6 MB </small>
+      <h3>{t("library.importTitle")}</h3>
+      <p>{t("library.importText")}</p>
+      <small>{t("library.formats")}</small>
     </div>
     <button
       class={ui.primary}
@@ -173,11 +190,11 @@
       disabled={!!busy}
     >
       <Upload size={16}></Upload>
-      Upload transcript
+      {t("library.upload")}
     </button>
     <input
       bind:this={input.current}
-      aria-label="Upload hearing transcript"
+      aria-label={t("library.uploadLabel")}
       class={ui.srOnly}
       type="file"
       accept=".jude,.zip,.json,.csv,.txt,.md,.srt,.vtt,.pdf,.docx"
@@ -195,25 +212,23 @@
   <div class={styles.formatHint}>
     <a rel="external" href="/api/v1/hearing-template">
       <Download size={14}></Download>
-      Download a .jude hearing template
+      {t("library.template")}
     </a>
-    <span>
-      Readable files with unfamiliar layouts can be converted with AI.
-    </span>
+    <span>{t("library.convertHint")}</span>
   </div>
   {#if error}<p role="alert" class={ui.error}>
       {error}
     </p>{/if}
-  {#if busy && busy !== "Reading transcript…" && busy !== "Converting transcript…"}<Skeleton
+  {#if busy && !reading}<Skeleton
       variant="rows"
       count={1}
-      label={busy}
+      label={t(busy)}
     />{/if}
   {#if creating}<form
       class={styles.newHearing}
       onsubmit={async (e) => {
         e.preventDefault();
-        busy = "Creating hearing…";
+        busy = "library.creating";
         error = "";
         try {
           const hearing = await api<Hearing>(
@@ -230,28 +245,30 @@
       }}
     >
       <label>
-        Hearing title
+        {t("library.hearingTitle")}
         <input
           value={title}
           oninput={(e) => (title = e.currentTarget.value)}
           required
           maxlength={160}
-          placeholder="Witness examination · day two"
+          placeholder={t("library.titlePlaceholder")}
         />
       </label>
       <label>
-        Date&#32;
+        {t("library.date")}&#32;
         <input
           type="date"
           value={date}
           oninput={(e) => (date = e.currentTarget.value)}
         />
       </label>
-      <button class={ui.primary} disabled={!!busy}> Create hearing </button>
+      <button class={ui.primary} disabled={!!busy}>
+        {t("library.create")}
+      </button>
     </form>{/if}
-  {#if file && (preview || error || busy === "Reading transcript…" || busy === "Converting transcript…")}<section
+  {#if file && (preview || error || reading)}<section
       class={styles.preview}
-      aria-label="Transcript import preview"
+      aria-label={t("library.preview")}
     >
       <header>
         <div>
@@ -259,12 +276,12 @@
           <strong>{file.name}</strong>
           <span>
             {preview?.method === "ai_converted"
-              ? "AI conversion · review required"
-              : "Import preview"}
+              ? t("library.aiConversion")
+              : t("library.importPreview")}
           </span>
         </div>
         <button
-          aria-label="Close import preview"
+          aria-label={t("library.closePreview")}
           onclick={() => {
             preview = null;
             file = null;
@@ -276,16 +293,15 @@
         </button>
       </header>
       <p>
-        {preview?.notice ||
-          "Choose a supported text file or use the hearing template."}
+        {preview?.notice || t("library.chooseSupported")}
       </p>
-      {#if busy === "Reading transcript…" || busy === "Converting transcript…"}<Skeleton
+      {#if busy && reading}<Skeleton
           variant="reader"
-          label={busy}
+          label={t(busy)}
         />{:else if preview?.hearing}
         <div class={styles.previewFields}>
           <label>
-            Imported hearing title
+            {t("library.importedTitle")}
             <input
               value={preview.hearing.title}
               maxlength={160}
@@ -293,7 +309,7 @@
             />
           </label>
           <label>
-            Hearing date
+            {t("library.hearingDate")}
             <input
               type="date"
               value={preview.hearing.date}
@@ -306,9 +322,9 @@
               class={styles.previewTurn}
             >
               <label>
-                Speaker {index + 1}
+                {t("library.speakerN", { n: index + 1 })}
                 <input
-                  aria-label={`Speaker for statement ${index + 1}`}
+                  aria-label={t("library.speakerFor", { n: index + 1 })}
                   value={turn.speaker}
                   maxlength={80}
                   oninput={(e) =>
@@ -316,9 +332,9 @@
                 />
               </label>
               <label>
-                Statement {index + 1}
+                {t("library.statementN", { n: index + 1 })}
                 <textarea
-                  aria-label={`Statement ${index + 1}`}
+                  aria-label={t("library.statementN", { n: index + 1 })}
                   value={turn.text}
                   rows={2}
                   maxlength={6000}
@@ -330,7 +346,9 @@
         </div>
         <footer>
           <span>
-            {preview.hearing.segments.length} statements · original upload preserved
+            {t("library.preserved", {
+              statements: tp("count.statements", preview.hearing.segments.length),
+            })}
           </span>
           <button
             class={ui.primary}
@@ -339,7 +357,7 @@
               if (!file || !preview?.hearing) return;
               const selectedFile = file;
               const transcript = preview.hearing;
-              busy = "Importing hearing…";
+              busy = "library.importing";
               error = "";
               try {
                 const body = new FormData();
@@ -359,16 +377,13 @@
             }}
           >
             <Check size={16}></Check>
-            Confirm & import hearing
+            {t("library.confirm")}
           </button>
         </footer>
       {:else}{#if preview?.method === "conversion_required"}<div
             class={styles.conversion}
           >
-            <p>
-              The converter preserves source wording and leaves uncertain timing
-              unknown. You will review its proposed speaker turns before import.
-            </p>
+            <p>{t("library.converterNote")}</p>
             <button
               class={ui.primary}
               disabled={!!busy || !configured}
@@ -377,29 +392,31 @@
               }}
             >
               <Sparkles size={16}></Sparkles>
-              Convert with AI
+              {t("library.convert")}
             </button>
             {#if !configured}<small>
-                AI conversion is unavailable. Download the hearing template, add
-                your transcript, and upload it again.
+                {t("library.convertUnavailable")}
               </small>{/if}
           </div>{/if}{/if}
     </section>{/if}
   <div class={styles.hearingList}>
     <div class={styles.listHeading}>
-      <h3>Case hearings</h3>
+      <h3>{t("library.caseHearings")}</h3>
       <span role="status">
-        {matchingHearings.length} of {detail.hearings.length} hearings
+        {t("library.shownOf", {
+          shown: matchingHearings.length,
+          total: detail.hearings.length,
+        })}
       </span>
     </div>
     {#if detail.hearings.length > 0}<div class={styles.libraryFilters}>
         <label>
-          <span class={ui.srOnly}>Search hearings</span>
+          <span class={ui.srOnly}>{t("library.search")}</span>
           <input
             type="search"
             value={hearingQuery}
             oninput={(e) => (hearingQuery = e.currentTarget.value)}
-            placeholder="Find a hearing or transcript phrase…"
+            placeholder={t("library.searchPlaceholder")}
           />
         </label>
         <button
@@ -407,7 +424,8 @@
           aria-pressed={reviewOnly}
           onclick={() => (reviewOnly = !reviewOnly)}
         >
-          <ShieldCheck size={16}></ShieldCheck> Needs review
+          <ShieldCheck size={16}></ShieldCheck>
+          {t("library.needsReview")}
         </button>
       </div>{/if}
     {#if matchingHearings.length}{#each matchingHearings as { hearing, segments, findings, remaining } (hearing.id)}<button
@@ -418,31 +436,34 @@
           <div>
             <h3>{hearing.title}</h3>
             <p>
-              {hearing.date || "Date not set"} ·&#32;
+              {hearing.date ? formatDate(hearing.date) : t("library.dateNotSet")}
+              ·&#32;
               {hearing.kind === "simulation"
-                ? "Synthetic exercise"
+                ? t("common.syntheticExercise")
                 : hearing.kind === "imported"
-                  ? "Imported transcript"
-                  : "Hearing record"}
+                  ? t("common.importedTranscript")
+                  : t("library.record")}
             </p>
           </div>
           <div class={styles.hearingCounts}>
-            <strong>{segments.length} statements</strong>
+            <strong>{tp("count.statements", segments.length)}</strong>
             <span>
-              {findings.length} findings
+              {tp("count.findings", findings.length)}
               {findings.length > 0
-                ? ` · ${remaining ? `${remaining} to review` : "All reviewed"}`
+                ? ` · ${remaining ? t("hearing.toReview", { count: remaining }) : t("library.allReviewed")}`
                 : ""}
             </span>
           </div>
-          <span class={styles.hearingStatus}>{hearing.status}</span>
+          <span class={styles.hearingStatus}
+            >{hearingStatusLabel(hearing.status)}</span
+          >
           <ArrowRight size={17}></ArrowRight>
         </button>{/each}{:else}{#if detail.hearings.length}<div
           class={styles.empty}
         >
           <Search size={28}></Search>
-          <h3>No hearings match this view.</h3>
-          <p>Try another phrase or show all hearings.</p>
+          <h3>{t("library.noMatchTitle")}</h3>
+          <p>{t("library.noMatchText")}</p>
           <button
             class={ui.secondary}
             onclick={() => {
@@ -450,15 +471,12 @@
               reviewOnly = false;
             }}
           >
-            Clear hearing filters
+            {t("library.clear")}
           </button>
         </div>{:else}<div class={styles.empty}>
           <AudioLines size={32}></AudioLines>
-          <h3>Your first hearing starts here.</h3>
-          <p>
-            Upload a prepared transcript or create a hearing for live audio and
-            manual notes.
-          </p>
+          <h3>{t("library.firstTitle")}</h3>
+          <p>{t("library.firstText")}</p>
         </div>{/if}{/if}
   </div>
 </div>

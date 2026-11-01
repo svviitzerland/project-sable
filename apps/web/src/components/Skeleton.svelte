@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import { onMount } from "svelte";
 
   let {
     variant = "reader",
-    label = "Loading content…",
+    label = t("common.loadingContent"),
     count = 3,
     inverse = false,
   }: {

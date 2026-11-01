@@ -38,6 +38,7 @@ svg { flex-shrink: 0; }
 .button svg { transition: transform .2s; }
 .button:hover svg { transform: translateX(4px); }
 .menu-toggle { display: none; }
+.header-end { display: flex; align-items: center; gap: clamp(14px, 2vw, 32px); }
 .hero-copy { padding-top: 30px; }
 .hero h1 { font-family: "Rufina", Georgia, serif; font-size: clamp(58px, 5.85vw, 90px); line-height: .98; letter-spacing: -.025em; }
 .hero-copy > p { font-size: clamp(19px, 1.8vw, 28px); line-height: 1.35; margin-top: 22px; max-width: 760px; }
@@ -159,6 +160,7 @@ mark { background: #f0deb4; color: #34402a; padding-block: 3px; box-decoration-b
 .site-footer > a:last-child { display: flex; align-items: center; gap: 7px; }
 @media(min-width:1600px) { .hero-copy { padding-top: 42px; } .hero-evidence { margin-top: 35px; padding-bottom: 52px; } }
 @media(max-width:1100px) {
+  .desktop-nav { gap: 18px; } .desktop-nav .button-outline { padding-inline: 20px; }
   .hero h1 { font-size: 7vw; } .hero-copy > p { font-size: 21px; }
   .hero-evidence { width: 90%; padding-inline: 25px; }
   .comparison-statement { padding-left: 0; padding-right: 20px; } .earlier { padding-left: 24px; padding-right: 0; }

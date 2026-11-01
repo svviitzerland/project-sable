@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import { onMount } from "svelte";
   import { X } from "@lucide/svelte";
@@ -21,8 +22,8 @@
 
 <section class={styles.newCaseForm}>
   <div>
-    <h2>Create a case</h2>
-    <button aria-label="Cancel new case" onclick={close}>
+    <h2>{t("newCase.title")}</h2>
+    <button aria-label={t("newCase.cancel")} onclick={close}>
       <X size={18}></X>
     </button>
   </div>
@@ -33,40 +34,40 @@
     }}
   >
     <label>
-      Case title
+      {t("newCase.caseTitle")}
       <input
         name="title"
         required
         maxlength={160}
-        placeholder="e.g. Warehouse inquiry"
+        placeholder={t("newCase.titlePlaceholder")}
         bind:this={titleInput}
       />
     </label>
     <label>
-      Reference (optional)
+      {t("newCase.reference")}
       <input
         name="reference"
         maxlength={100}
-        placeholder="Your case reference"
+        placeholder={t("newCase.referencePlaceholder")}
       />
     </label>
     <label class={styles.fullWidth}>
-      Description (optional)
+      {t("newCase.description")}
       <textarea
         name="description"
         maxlength={2000}
         rows={2}
-        placeholder="Context for this case and its material"></textarea>
+        placeholder={t("newCase.descriptionPlaceholder")}></textarea>
     </label>
     <div>
       <button class={styles.primary} disabled={busy}>
-        {busy ? "Creating…" : "Create case"}
+        {busy ? t("newCase.creating") : t("newCase.create")}
       </button>
       <button type="button" class={styles.secondary} onclick={close}>
-        Cancel
+        {t("common.cancel")}
       </button>
     </div>
   </form>
 </section>
 
-{#if busy}<Skeleton variant="compact" label="Creating case…" />{/if}
+{#if busy}<Skeleton variant="compact" label={t("newCase.skeleton")} />{/if}
