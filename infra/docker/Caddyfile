@@ -1,0 +1,13 @@
+{$JUDE_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	# SSE case updates must stream immediately.
+	reverse_proxy web:3000 {
+		flush_interval -1
+	}
+}

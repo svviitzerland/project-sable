@@ -2,7 +2,7 @@
 
 An evidence-grounded workspace for hearing preparation, testimony review, and courtroom practice. The existing landing page is at `/`; the authenticated product is at `/workspace`.
 
-Jude uses **Svelte 5, SvelteKit 3, and TypeScript for both frontend and backend** in one Vercel project (`apps/web`). An optional **Python voice service** (`apps/voice`: FastAPI, open-source pyannote models, Docker) keeps one label per recurring voice across recording connections and hearings. Database and file storage run on **Supabase**, locally through the Supabase CLI.
+Jude uses **Svelte 5, SvelteKit 3, and TypeScript for both frontend and backend** in one Vercel project (`apps/web`). An optional **Python voice service** (`apps/voice`: FastAPI, open-source pyannote models, Docker) keeps one label per recurring voice across recording connections and hearings. Locally, database and storage can run on the Supabase CLI or SQLite; production runs on AWS (`infra/`).
 
 ## Repository layout
 
@@ -28,6 +28,10 @@ docs/
   research/            research report, notes and public case sources
   phases/              dated work records
 examples/              fictional sample case pack
+infra/
+  terraform/           AWS: VPC, EC2, S3, ECR, IAM (GitHub OIDC), SSM, snapshots
+  docker/              production Compose stack, Caddyfile, deploy script
+.github/workflows/     checks and automatic deploy
 compose.yaml           local Docker service for apps/voice
 ```
 
@@ -49,11 +53,11 @@ Open http://localhost:3000/workspace. Register an account or open a clearly labe
 
 Voice labels (optional): `cp apps/voice/.env.example apps/voice/.env`, set `VOICE_API_TOKEN`, run `docker compose up --build voice`, and add `VOICE_API_URL=http://localhost:8000` plus the same token to `apps/web/.env.local`. See [apps/voice/README.md](apps/voice/README.md).
 
-## Deploy
+## Deploy (AWS)
 
-Import the repository in Vercel, select **SvelteKit**, Root Directory **`apps/web`**, and Node **24.x**. Link a hosted Supabase project and push the same migrations (`supabase link` then `supabase db push`, or run `supabase/migrations/*.sql` in order), then add the private environment variables described in [DEPLOY_VERCEL.md](docs/engineering/DEPLOY_VERCEL.md). Host the optional voice container separately and set an HTTPS `VOICE_API_URL`.
+Production runs on AWS under the codename **project-sable**: one EC2 instance with Docker Compose (Caddy HTTPS, web, voice, PostgreSQL + pgvector), case originals in S3, AI through Amazon Bedrock (Nova Lite screening, Claude Haiku independent review), images in ECR, secrets in SSM. Terraform is in [`infra/terraform`](infra/terraform) and the stack in [`infra/docker`](infra/docker). Pushing to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): checks, image build, ECR push, and an SSM-driven deploy through GitHub OIDC (no AWS keys in GitHub). See [infra/README.md](infra/README.md).
 
-Supabase PostgreSQL/private Storage and QStash remain required hosted services. OpenRouter, Speechmatics, and Pasal.id enable their respective features. Recovery can run from QStash's scheduler, so this repository does not impose a per-minute Vercel Cron requirement on Hobby projects. Configure the schedule after deployment using the documented script. No deployment or live-provider verification has been performed without credentials.
+Vercel + Supabase hosting remains supported (`JUDE_ADAPTER=vercel pnpm build`; [DEPLOY_VERCEL.md](docs/engineering/DEPLOY_VERCEL.md)) but is no longer the default target.
 
 ## Product
 

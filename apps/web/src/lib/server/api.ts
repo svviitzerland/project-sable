@@ -229,7 +229,7 @@ export async function handleApi(
         return json({ status: "ok", service: "jude-sveltekit" });
       if (parts[0] === "capabilities" && method === "GET")
         return json({
-          demo_available: !rt.config.production,
+          demo_available: rt.config.demo,
           storage: rt.config.databaseUrl
             ? "Supabase PostgreSQL"
             : "Local SQLite",
@@ -310,7 +310,7 @@ export async function handleApi(
         }
         if (parts[1] === "demo" && method === "POST") {
           assert(
-            !rt.config.production,
+            rt.config.demo,
             403,
             "Demonstration sign-in is disabled in production.",
           );
@@ -406,7 +406,7 @@ export async function handleApi(
       }
       if (parts[1] === "synthetic" && method === "POST") {
         assert(
-          !rt.config.production,
+          rt.config.demo,
           403,
           "Synthetic fixtures are disabled in production.",
         );

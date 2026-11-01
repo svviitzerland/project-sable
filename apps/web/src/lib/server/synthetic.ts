@@ -31,7 +31,7 @@ export async function simulate(
   hearingId?: string | null,
 ) {
   assert(
-    record.synthetic && !rt.config.production,
+    record.synthetic && rt.config.demo,
     400,
     "Simulation is available only for synthetic demonstration cases.",
   );

@@ -1,0 +1,130 @@
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # GitHub OIDC -> AWS role, no stored AWS keys
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  web:
+    name: Web checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  voice:
+    name: Voice checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/voice
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      - run: uv run ruff check . && uv run ruff format --check .
+      - run: uv run pytest
+
+  deploy:
+    name: Build and deploy to AWS
+    needs: [web, voice]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      PROJECT: ${{ vars.PROJECT_NAME || 'project-sable' }}
+      TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/web
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-web:${{ env.TAG }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-web:latest
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+      - name: Build and push voice image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/voice
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-voice:${{ env.TAG }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-voice:latest
+          cache-from: type=gha,scope=voice
+          cache-to: type=gha,scope=voice,mode=max
+
+      - name: Upload stack files
+        run: aws s3 cp infra/docker/ "s3://${{ vars.JUDE_OPS_BUCKET }}/deploy/" --recursive
+
+      - name: Deploy on the instance
+        run: |
+          set -euo pipefail
+          id=$(aws ssm send-command \
+            --instance-ids "${{ vars.JUDE_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --comment "deploy ${TAG::12}" \
+            --timeout-seconds 1200 \
+            --parameters "commands=[
+              \"aws s3 cp s3://${{ vars.JUDE_OPS_BUCKET }}/deploy/deploy.sh /opt/$PROJECT/deploy.sh --region $AWS_REGION --quiet\",
+              \"chmod +x /opt/$PROJECT/deploy.sh\",
+              \"/opt/$PROJECT/deploy.sh $TAG $TAG\"
+            ]" \
+            --query Command.CommandId --output text)
+          echo "SSM command $id"
+          for _ in $(seq 1 120); do
+            status=$(aws ssm get-command-invocation --command-id "$id" \
+              --instance-id "${{ vars.JUDE_INSTANCE_ID }}" --query Status --output text 2>/dev/null || echo Pending)
+            case "$status" in Pending|InProgress|Delayed) sleep 10 ;; *) break ;; esac
+          done
+          aws ssm get-command-invocation --command-id "$id" --instance-id "${{ vars.JUDE_INSTANCE_ID }}" \
+            --query '[StandardOutputContent,StandardErrorContent]' --output text | tail -40
+          test "$status" = Success
+
+      - name: Smoke test
+        run: |
+          for _ in $(seq 1 30); do
+            curl -fsS "${{ vars.JUDE_URL }}/api/v1/health" && exit 0
+            sleep 10
+          done
+          exit 1

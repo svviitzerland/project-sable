@@ -1,0 +1,28 @@
+#!/bin/bash
+# First boot: install Docker + Compose, record instance settings, then deploy whatever
+# images already exist. Later deploys run /opt/${project}/deploy.sh through SSM from GitHub Actions.
+set -euxo pipefail
+
+dnf install -y docker
+systemctl enable --now docker
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -fsSL "https://github.com/docker/compose/releases/download/v2.39.2/docker-compose-linux-x86_64" \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# 2 GB swap keeps pnpm/torch memory spikes from killing containers on a 4 GB instance.
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+swapon -a || true
+
+mkdir -p /opt/${project}
+cat > /opt/${project}/instance.env <<'ENV'
+${instance_env}
+ENV
+chmod 600 /opt/${project}/instance.env
+
+aws s3 cp "s3://${ops_bucket}/deploy/deploy.sh" /opt/${project}/deploy.sh --region "${region}"
+chmod +x /opt/${project}/deploy.sh
+/opt/${project}/deploy.sh latest || echo "No images yet: the first GitHub Actions run deploys them."

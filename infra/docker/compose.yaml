@@ -1,0 +1,84 @@
+# Production stack on the EC2 instance in /opt/<project> (the Compose project takes that name).
+# Settings come from .env,
+# written by deploy.sh from instance.env and SSM. Images come from ECR.
+services:
+  caddy:
+    image: caddy:2.10
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      JUDE_DOMAIN: ${JUDE_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+
+  web:
+    image: ${JUDE_REGISTRY}/${JUDE_PROJECT}-web:${JUDE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      JUDE_ENV: production
+      JUDE_RUNTIME: local
+      JUDE_DEMO: ${JUDE_DEMO}
+      JUDE_APP_URL: https://${JUDE_DOMAIN}
+      ORIGIN: https://${JUDE_DOMAIN}
+      ADDRESS_HEADER: X-Forwarded-For
+      XFF_DEPTH: "1"
+      DATABASE_URL: postgresql://app:${DB_PASSWORD}@db:5432/app
+      AI_PROVIDER: bedrock
+      AWS_REGION: ${AWS_REGION}
+      BEDROCK_MODEL: ${BEDROCK_MODEL}
+      BEDROCK_REVIEW_MODEL: ${BEDROCK_REVIEW_MODEL}
+      S3_BUCKET: ${S3_BUCKET}
+      VOICE_API_URL: http://voice:8000
+      VOICE_API_TOKEN: ${VOICE_TOKEN}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    image: ${JUDE_REGISTRY}/${JUDE_PROJECT}-web:${JUDE_TAG:-latest}
+    command: ["node", "scripts/migrate.mjs"]
+    environment:
+      DATABASE_URL: postgresql://app:${DB_PASSWORD}@db:5432/app
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  voice:
+    image: ${JUDE_REGISTRY}/${JUDE_PROJECT}-voice:${JUDE_VOICE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      VOICE_API_TOKEN: ${VOICE_TOKEN}
+      VOICE_ENGINE: pyannote
+    volumes:
+      - voice-models:/models
+
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  caddy-data:
+  caddy-config:
+  voice-models:
+  postgres:

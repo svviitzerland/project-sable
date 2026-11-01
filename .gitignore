@@ -34,3 +34,13 @@ __pycache__/
 # Browser test artifacts
 test-results/
 playwright-report/
+
+# Terraform: state holds generated secrets
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+*.tfvars
+!*.tfvars.example

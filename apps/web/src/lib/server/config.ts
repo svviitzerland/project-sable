@@ -34,6 +34,8 @@ export function settings(
   return {
     hosted,
     production,
+    // The labeled synthetic demo case: always in development, opt-in in production.
+    demo: !production || env.JUDE_DEMO === "1",
     databaseUrl,
     appUrl,
     dataDir: resolve(env.JUDE_DATA_DIR || (hosted ? "/tmp/jude" : ".data")),

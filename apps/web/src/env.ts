@@ -4,6 +4,7 @@ export const variables = defineEnvVars({
   VERCEL: privateValue,
   JUDE_RUNTIME: privateValue,
   JUDE_ENV: privateValue,
+  JUDE_DEMO: privateValue,
   JUDE_APP_URL: privateValue,
   JUDE_DATA_DIR: privateValue,
   JUDE_SIMULATION_DELAY: privateValue,

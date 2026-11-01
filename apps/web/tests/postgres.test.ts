@@ -32,7 +32,7 @@ test(
         "DO $$ BEGIN CREATE ROLE anon; EXCEPTION WHEN duplicate_object THEN NULL; END $$; DO $$ BEGIN CREATE ROLE authenticated; EXCEPTION WHEN duplicate_object THEN NULL; END $$; CREATE SCHEMA IF NOT EXISTS storage; CREATE TABLE IF NOT EXISTS storage.buckets(id text PRIMARY KEY,name text,public boolean,file_size_limit bigint);",
       );
       const migrations = (
-        await readdir(new URL("../../../supabase/migrations/", import.meta.url))
+        await readdir(new URL("../migrations/", import.meta.url))
       )
         .filter((f) => f.endsWith(".sql"))
         .sort();
@@ -41,7 +41,7 @@ test(
           await client.query(
             await readFile(
               new URL(
-                `../../../supabase/migrations/${migration}`,
+                `../migrations/${migration}`,
                 import.meta.url,
               ),
               "utf8",
