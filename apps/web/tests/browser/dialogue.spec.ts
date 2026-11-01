@@ -15,8 +15,15 @@ test("case assistant and manually configured courtroom practice", async ({
   await expect(
     page.getByRole("tab", { name: "Case assistant", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
-  await page.getByText("Reference case material (1)", { exact: false }).click();
-  await expect(page.getByLabel("Selected evidence passage")).toBeChecked();
+  await expect(
+    page.getByRole("button", {
+      name: "Remove source: Selected evidence passage",
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Sources (1)" }).click();
+  await expect(
+    page.getByLabel("Selected evidence passage", { exact: true }),
+  ).toBeChecked();
   await page
     .getByLabel("Ask about this case", { exact: true })
     .fill("What does the statement say about arrival time?");
@@ -25,10 +32,10 @@ test("case assistant and manually configured courtroom practice", async ({
     page.getByText("AI replies are unavailable", { exact: false }),
   ).toBeVisible();
   await page
-    .getByRole("log")
-    .locator("details")
+    .getByRole("group", { name: "Sources cited" })
     .first()
-    .locator("summary")
+    .getByRole("button")
+    .first()
     .click();
   await expect(
     page.getByRole("link", { name: "Open original", exact: true }).first(),
@@ -36,7 +43,7 @@ test("case assistant and manually configured courtroom practice", async ({
   await expect(
     page.getByRole("log").locator("blockquote").first(),
   ).toBeVisible();
-  await page.getByText("Include legal lookup", { exact: false }).click();
+  await page.getByRole("button", { name: /^Sources/ }).click();
   await expect(page.getByLabel("Legal search terms")).toBeDisabled();
   await page
     .getByLabel("Ask about this case", { exact: true })
@@ -75,6 +82,7 @@ test("case assistant and manually configured courtroom practice", async ({
     page.getByRole("textbox", { name: "Ask about this case", exact: true }),
   ).toBeFocused();
   await expect(page.getByRole("log").locator("article")).toHaveCount(0);
+  await page.getByRole("button", { name: /^History/ }).click();
   await page
     .getByRole("button", { name: "What does the statement say", exact: false })
     .click();
@@ -89,6 +97,9 @@ test("case assistant and manually configured courtroom practice", async ({
   await page
     .getByRole("tab", { name: "Courtroom practice", exact: true })
     .click();
+  await expect(page.getByRole("radio", { name: "Defense counsel" })).toBeChecked();
+  await page.getByRole("radio", { name: "Judge" }).check();
+  await page.getByRole("button", { name: "Change conditions" }).click();
   await expect(
     page.getByRole("button", { name: "Suggest from case" }),
   ).toBeDisabled();
@@ -98,7 +109,6 @@ test("case assistant and manually configured courtroom practice", async ({
   await page
     .getByLabel("Jurisdiction / court")
     .fill("Practice court — verify local procedure");
-  await page.getByLabel("Your role", { exact: false }).selectOption("judge");
   await page
     .getByLabel("Stage", { exact: false })
     .selectOption("Procedural hearing");
@@ -131,7 +141,7 @@ test("case assistant and manually configured courtroom practice", async ({
   await expect(
     page.getByText("Which exact source supports that point", { exact: false }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Finish & debrief" }).click();
+  await page.getByRole("button", { name: "Finish & see debrief" }).click();
   await expect(
     page.getByText("Rehearsal complete. Your dialogue and debrief are saved."),
   ).toBeVisible();
@@ -152,10 +162,8 @@ test("case assistant and manually configured courtroom practice", async ({
   await expect(page.getByLabel("Trial type", { exact: true })).toHaveValue(
     "Civil hearing practice",
   );
-  await expect(page.getByLabel("Your role", { exact: false })).toHaveValue(
-    "judge",
-  );
-  await page.getByLabel("Your role", { exact: false }).selectOption("opposing");
+  await expect(page.getByRole("radio", { name: "Judge" })).toBeChecked();
+  await page.getByRole("radio", { name: "Opposing counsel" }).check();
   await page.getByRole("button", { name: "Start rehearsal" }).click();
   await expect(
     page.getByRole("textbox", {

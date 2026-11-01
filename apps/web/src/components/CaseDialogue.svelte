@@ -3,16 +3,20 @@
   import Skeleton from "./Skeleton.svelte";
   import {
     ArrowRight,
+    ArrowUp,
     BookOpen,
     Check,
     ChevronDown,
+    Download,
     ExternalLink,
     FileText,
     Gavel,
-    MessageSquare,
+    History,
     Plus,
-    Send,
+    Scale,
+    Shield,
     Sparkles,
+    X,
   } from "@lucide/svelte";
   import { api, type Capabilities } from "../lib/workspace-api";
   import ui from "./workspace.module.css";
@@ -89,6 +93,12 @@
 
   const roleKeys = ["defense", "opposing", "judge", "witness"] as const;
 
+  const practiceRoles = [
+    { key: "defense", icon: Shield },
+    { key: "opposing", icon: Scale },
+    { key: "judge", icon: Gavel },
+  ] as const;
+
   const stages = [
     "Opening statements",
     "Witness examination",
@@ -99,10 +109,17 @@
 
   const difficulties = ["Supportive", "Standard", "Challenging"] as const;
 
+  /** Fixed server speaker names that are shown in the interface language. */
+  const speakerKeys: Record<string, MessageKey> = {
+    "Case assistant": "dialogue.speaker.assistant",
+    "Practice facilitator": "dialogue.speaker.facilitator",
+    "Practice coach": "dialogue.speaker.coach",
+  };
+
   function roleLabel(role: string) {
-    return (roleKeys as readonly string[]).includes(role)
-      ? t(`role.${role as (typeof roleKeys)[number]}`)
-      : role;
+    if ((roleKeys as readonly string[]).includes(role))
+      return t(`role.${role as (typeof roleKeys)[number]}`);
+    return speakerKeys[role] ? t(speakerKeys[role]) : role;
   }
 
   function stageLabel(stage: string) {
@@ -185,6 +202,10 @@
 
   let loading = $state(true);
   let historyOpen = $state(false);
+  let sourcesOpen = $state(false);
+  let editOpen = $state(false);
+  /** Open citation per message id, so each answer expands one source at a time. */
+  let openCitation = $state<Record<string, number>>({});
 
   let error = $state("");
 
@@ -249,17 +270,19 @@
     }
   }
 
-  function newSession() {
+  function newSession(focusId?: string) {
     active = null;
     text = "";
     law = "";
     error = "";
     rationale = "";
+    historyOpen = false;
+    openCitation = {};
     request.current = null;
     requestAnimationFrame(() => {
       (
         document.getElementById(
-          practice ? "trial-type" : "case-message",
+          focusId ?? (practice ? "practice-role-defense" : "case-message"),
         ) as HTMLElement | null
       )?.focus();
     });
@@ -308,6 +331,7 @@
         );
         active = result;
         text = "";
+        sourcesOpen = false;
         request.current = null;
         await refreshList();
         requestAnimationFrame(() => composer.current?.focus());
@@ -315,132 +339,230 @@
     );
   }
 
+  function openSession(session: Dialogue) {
+    return run("dialogue.busy.opening", async () => {
+      const result = await api<Dialogue>(
+        `/cases/${caseId}/dialogues/${session.id}`,
+      );
+      active = result;
+      historyOpen = false;
+      openCitation = {};
+      text = "";
+      error = "";
+      request.current = null;
+    });
+  }
+
+  function toggleRef(id: string, on: boolean) {
+    selectedRefs = on
+      ? [...selectedRefs, id]
+      : selectedRefs.filter((value) => value !== id);
+  }
+
+  function refLabel(id: string) {
+    if (id === initialReference && !references.some((r) => r.id === id))
+      return t("dialogue.selectedPassage");
+    return references.find((r) => r.id === id)?.label ?? id;
+  }
+
+  function setCondition<K extends keyof Conditions>(key: K, value: string) {
+    conditions = { ...conditions, [key]: value };
+  }
+
+  /** Practice titles are generated as "stage · role" enums; show them translated. */
+  function sessionTitle(session: Dialogue) {
+    const { stage, user_role } = session.conditions ?? {};
+    return session.kind === "practice" && session.title === `${stage} · ${user_role}`
+      ? `${stageLabel(stage)} · ${roleLabel(user_role)}`
+      : session.title;
+  }
+
   let messages = $derived(active?.messages ?? []);
 
   let canCompose = $derived(!practice || !!active);
+
+  let showSources = $derived(!practice || active?.mode === "ai");
+
+  let conditionSummary = $derived(
+    [
+      conditions.trial_type,
+      stageLabel(conditions.stage),
+      difficultyLabel(conditions.difficulty),
+      conditions.language,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+  );
 </script>
 
 <div class={styles.screen}>
   <header class={styles.heading}>
-    <div>
-      <h2>
-        {practice ? t("dialogue.practiceTitle") : t("dialogue.assistantTitle")}
-      </h2>
-      <p>
-        {practice ? t("dialogue.practiceLead") : t("dialogue.assistantLead")}
-      </p>
+    <h2>
+      {practice ? t("dialogue.practiceTitle") : t("dialogue.assistantTitle")}
+    </h2>
+    <p>
+      {practice ? t("dialogue.practiceLead") : t("dialogue.assistantLead")}
+    </p>
+    <div class={styles.headingActions}>
+      <button
+        class={styles.historyToggle}
+        aria-expanded={historyOpen}
+        aria-controls="dialogue-history"
+        disabled={loading}
+        onclick={() => (historyOpen = !historyOpen)}
+      >
+        <History size={16} aria-hidden="true"></History>
+        <span>{t("dialogue.history")}</span>
+        <span class={styles.count}>{sessions.length}</span>
+        <ChevronDown size={15} aria-hidden="true" />
+      </button>
+      <button
+        class={ui.secondary}
+        disabled={!!busy || loading}
+        onclick={() => newSession()}
+      >
+        <Plus size={16}></Plus>
+        {practice ? t("dialogue.newRehearsal") : t("dialogue.newConversation")}
+      </button>
     </div>
-    <button
-      class={ui.secondary}
-      disabled={!!busy || loading}
-      onclick={newSession}
-    >
-      <Plus size={16}></Plus>
-      {practice ? t("dialogue.newRehearsal") : t("dialogue.newConversation")}
-    </button>
   </header>
+
+  <aside
+    id="dialogue-history"
+    class={styles.history}
+    hidden={!historyOpen}
+    aria-label={practice
+      ? t("dialogue.savedRehearsals")
+      : t("dialogue.savedConversations")}
+  >
+    {#if loading}<Skeleton
+        variant="rows"
+        label={t("dialogue.loadingSaved")}
+      />{:else if sessions.length}<ul>
+        {#each sessions as session (session.id)}<li>
+            <button
+              disabled={!!busy}
+              aria-pressed={active?.id === session.id}
+              onclick={() => openSession(session)}
+            >
+              <span>{sessionTitle(session)}</span>
+              <small>
+                {formatDate(session.created_at)} ·&#32;
+                {session.status === "complete"
+                  ? t("dialogue.completed")
+                  : session.mode === "guided"
+                    ? t("dialogue.guidedDrill")
+                    : session.kind === "practice"
+                      ? t("dialogue.aiRehearsal")
+                      : t("dialogue.caseConversation")}
+              </small>
+            </button>
+          </li>{/each}
+      </ul>{:else}<p class={styles.quiet}>
+        {practice ? t("dialogue.emptyPractice") : t("dialogue.emptyAssistant")}
+      </p>{/if}
+    <p class={styles.boundary}>
+      {practice
+        ? t("dialogue.boundaryPractice")
+        : t("dialogue.boundaryAssistant")}
+    </p>
+  </aside>
+
   {#if error}<p role="alert" class={ui.error}>
       {error}
     </p>{/if}
-  <div class={styles.layout}>
-    <button
-      class={styles.historyToggle}
-      aria-expanded={historyOpen}
-      aria-controls="dialogue-history"
-      onclick={() => (historyOpen = !historyOpen)}
-    >
-      {practice
-        ? t("dialogue.savedRehearsals")
-        : t("dialogue.savedConversations")} ({sessions.length})
-      <ChevronDown size={16} />
-    </button>
-    <aside
-      id="dialogue-history"
-      class={`${styles.history} ${historyOpen ? styles.historyOpen : ""}`}
-      aria-label={practice
-        ? t("dialogue.savedRehearsals")
-        : t("dialogue.savedConversations")}
-    >
-      <h3>
-        {practice ? t("dialogue.yourRehearsals") : t("dialogue.conversations")}
-      </h3>
-      {#if active}<a
-          class={ui.textButton}
-          rel="external"
-          href={`/api/v1/cases/${caseId}/dialogues/${active.id}/export`}
-          download
-        >
-          {practice
-            ? t("dialogue.exportRehearsal")
-            : t("dialogue.exportConversation")}&#32;
-          <ExternalLink size={13}></ExternalLink>
-        </a>{/if}
-      {#if loading}<Skeleton
-          variant="rows"
-          label={t("dialogue.loadingSaved")}
-        />{:else if sessions.length}{#each sessions as session (session.id)}<button
-            disabled={!!busy}
-            aria-pressed={active?.id === session.id}
-            onclick={() =>
-              run("dialogue.busy.opening", async () => {
-                const result = await api<Dialogue>(
-                  `/cases/${caseId}/dialogues/${session.id}`,
-                );
-                active = result;
-                historyOpen = false;
-                text = "";
-                error = "";
-                request.current = null;
-              })}
-          >
-            <span>{session.title}</span>
-            <small>
-              {formatDate(session.created_at)} ·&#32;
-              {session.status === "complete"
-                ? t("dialogue.completed")
-                : session.mode === "guided"
-                  ? t("dialogue.guidedDrill")
-                  : session.kind === "practice"
-                    ? t("dialogue.aiRehearsal")
-                    : t("dialogue.caseConversation")}
-            </small>
-          </button>{/each}{:else}<p>
-          {practice
-            ? t("dialogue.emptyPractice")
-            : t("dialogue.emptyAssistant")}
-        </p>{/if}
-      <p class={styles.boundary}>
-        {practice
-          ? t("dialogue.boundaryPractice")
-          : t("dialogue.boundaryAssistant")}
-      </p>
-    </aside>
-    <section
-      class={styles.main}
-      aria-label={practice
-        ? t("dialogue.mainPractice")
-        : t("dialogue.mainAssistant")}
-    >
-      {#if loading || busy === "dialogue.busy.opening" || busy === "dialogue.busy.starting"}<Skeleton
+
+  <section
+    class={`${styles.main} ${practice && !active && !loading ? styles.plain : ""}`}
+    aria-label={practice
+      ? t("dialogue.mainPractice")
+      : t("dialogue.mainAssistant")}
+  >
+    {#if loading || busy === "dialogue.busy.opening" || busy === "dialogue.busy.starting"}<div
+        class={styles.pad}
+      >
+        <Skeleton
           variant={practice && !active ? "form" : "conversation"}
           label={loading || !busy
             ? t("dialogue.openingConversations")
             : t(busy)}
-        />{:else}{#if practice && !active}<form
-            class={styles.setup}
-            onsubmit={(e) => {
-              e.preventDefault();
-              void run("dialogue.busy.starting", async () => {
-                await create();
-              });
-            }}
-          >
-            <div class={styles.setupHeading}>
-              <div>
-                <Gavel size={24}></Gavel>
-                <h3>{t("dialogue.setTitle")}</h3>
-                <p>{t("dialogue.setText")}</p>
-              </div>
+        />
+      </div>{:else if practice && !active}<form
+        class={styles.setup}
+        onsubmit={(e) => {
+          e.preventDefault();
+          void run("dialogue.busy.starting", async () => {
+            await create();
+          });
+        }}
+      >
+        <fieldset class={styles.step}>
+          <legend>
+            <span class={styles.stepNumber} aria-hidden="true">1</span>
+            {t("dialogue.step.role")}
+          </legend>
+          <div class={styles.roles}>
+            {#each practiceRoles as role (role.key)}<label class={styles.role}>
+                <input
+                  type="radio"
+                  name="practice-role"
+                  id={`practice-role-${role.key}`}
+                  value={role.key}
+                  checked={conditions.user_role === role.key}
+                  aria-labelledby={`practice-role-${role.key}-name`}
+                  aria-describedby={`practice-role-${role.key}-hint`}
+                  onchange={() => setCondition("user_role", role.key)}
+                />
+                <role.icon size={22} aria-hidden="true"></role.icon>
+                <span
+                  class={styles.roleName}
+                  id={`practice-role-${role.key}-name`}
+                  >{roleLabel(role.key)}</span
+                >
+                <span
+                  class={styles.roleHint}
+                  id={`practice-role-${role.key}-hint`}
+                  >{t(`dialogue.roleHint.${role.key}`)}</span
+                >
+              </label>{/each}
+          </div>
+        </fieldset>
+
+        <section class={styles.step} aria-labelledby="practice-conditions">
+          <h3 class={styles.stepTitle} id="practice-conditions">
+            <span class={styles.stepNumber} aria-hidden="true">2</span>
+            {t("dialogue.step.conditions")}
+          </h3>
+          <div class={styles.summary}>
+            <div>
+              <p class={styles.summaryLine}>{conditionSummary}</p>
+              <p class={styles.quiet}>{conditions.jurisdiction}</p>
+            </div>
+            <button
+              type="button"
+              class={ui.secondary}
+              aria-expanded={editOpen}
+              aria-controls="practice-fields"
+              onclick={() => (editOpen = !editOpen)}
+            >
+              {t("dialogue.editConditions")}
+              <ChevronDown
+                size={15}
+                aria-hidden="true"
+                class={styles.chevron}
+              />
+            </button>
+          </div>
+          {#if rationale && !editOpen}<p class={styles.proposal} role="status">
+              <Sparkles size={15} aria-hidden="true"></Sparkles>
+              <span
+                ><strong>{t("dialogue.suggestedSetup")}</strong>
+                {rationale}</span
+              >
+            </p>{/if}
+          <div id="practice-fields" class={styles.edit} hidden={!editOpen}>
+            <div class={styles.suggestRow}>
+              <p class={styles.quiet}>{t("dialogue.setText")}</p>
               <button
                 type="button"
                 class={ui.secondary}
@@ -465,12 +587,15 @@
             {#if busy === "dialogue.busy.suggesting"}<Skeleton
                 variant="reader"
                 label={t(busy)}
-              />{:else if rationale}<div class={styles.proposal} role="status">
-                <strong>{t("dialogue.suggestedSetup")}</strong>
-                <p>{rationale}</p>
-              </div>{/if}
+              />{:else if rationale}<p class={styles.proposal} role="status">
+                <Sparkles size={15} aria-hidden="true"></Sparkles>
+                <span
+                  ><strong>{t("dialogue.suggestedSetup")}</strong>
+                  {rationale}</span
+                >
+              </p>{/if}
             <div class={styles.fields}>
-              <label>
+              <label class={styles.half}>
                 {t("dialogue.field.trial_type")}
                 <input
                   id="trial-type"
@@ -478,34 +603,24 @@
                   maxlength={160}
                   required
                   oninput={(e) =>
-                    (conditions = {
-                      ...conditions,
-                      trial_type: e.currentTarget.value,
-                    })}
+                    setCondition("trial_type", e.currentTarget.value)}
                 />
               </label>
-              <label>
+              <label class={styles.half}>
                 {t("dialogue.field.jurisdiction")}
                 <input
                   value={conditions.jurisdiction}
                   maxlength={200}
                   required
                   oninput={(e) =>
-                    (conditions = {
-                      ...conditions,
-                      jurisdiction: e.currentTarget.value,
-                    })}
+                    setCondition("jurisdiction", e.currentTarget.value)}
                 />
               </label>
               <label>
                 {t("dialogue.field.stage")}
                 <select
                   value={conditions.stage}
-                  onchange={(e) =>
-                    (conditions = {
-                      ...conditions,
-                      stage: e.currentTarget.value,
-                    })}
+                  onchange={(e) => setCondition("stage", e.currentTarget.value)}
                 >
                   {#each stages as stage (stage)}<option value={stage}
                       >{stageLabel(stage)}</option
@@ -513,31 +628,11 @@
                 </select>
               </label>
               <label>
-                {t("dialogue.field.user_role")}
-                <select
-                  value={conditions.user_role}
-                  onchange={(e) =>
-                    (conditions = {
-                      ...conditions,
-                      user_role: e.currentTarget.value,
-                    })}
-                >
-                  {#each ["defense", "opposing", "judge"] as role (role)}<option
-                      value={role}
-                    >
-                      {roleLabel(role)}
-                    </option>{/each}
-                </select>
-              </label>
-              <label>
                 {t("dialogue.field.difficulty")}
                 <select
                   value={conditions.difficulty}
                   onchange={(e) =>
-                    (conditions = {
-                      ...conditions,
-                      difficulty: e.currentTarget.value,
-                    })}
+                    setCondition("difficulty", e.currentTarget.value)}
                 >
                   {#each difficulties as v (v)}<option value={v}
                       >{difficultyLabel(v)}</option
@@ -551,169 +646,219 @@
                   maxlength={80}
                   required
                   oninput={(e) =>
-                    (conditions = {
-                      ...conditions,
-                      language: e.currentTarget.value,
-                    })}
+                    setCondition("language", e.currentTarget.value)}
                 />
               </label>
-            </div>
-            <label>
-              {t("dialogue.field.goals")}
-              <textarea
-                value={conditions.goals}
-                maxlength={1500}
-                rows={2}
-                oninput={(e) =>
-                  (conditions = {
-                    ...conditions,
-                    goals: e.currentTarget.value,
-                  })}></textarea>
-            </label>
-            <label>
-              {t("dialogue.field.assumptions")}
-              <textarea
-                value={conditions.assumptions}
-                maxlength={2500}
-                rows={3}
-                oninput={(e) =>
-                  (conditions = {
-                    ...conditions,
-                    assumptions: e.currentTarget.value,
-                  })}></textarea>
-            </label>
-            <div class={styles.setupFooter}>
-              <label>
-                {t("dialogue.mode")}
-                <select
-                  value={mode}
-                  onchange={(e) => (mode = e.currentTarget.value)}
-                >
-                  <option value="ai" disabled={!caps?.analysis.configured}>
-                    {t("dialogue.aiRoleplay")}
-                  </option>
-                  <option value="guided">
-                    {t("dialogue.guidedOption")}
-                  </option>
-                </select>
+              <label class={styles.wide}>
+                {t("dialogue.field.goals")}
+                <textarea
+                  value={conditions.goals}
+                  maxlength={1500}
+                  rows={2}
+                  oninput={(e) => setCondition("goals", e.currentTarget.value)}
+                ></textarea>
               </label>
-              <button class={ui.primary} disabled={!!busy}>
-                <Gavel size={16}></Gavel>
-                {t("dialogue.start")}
-              </button>
+              <label class={styles.wide}>
+                {t("dialogue.field.assumptions")}
+                <textarea
+                  value={conditions.assumptions}
+                  maxlength={2500}
+                  rows={3}
+                  oninput={(e) =>
+                    setCondition("assumptions", e.currentTarget.value)}
+                ></textarea>
+              </label>
             </div>
-            {#if !caps?.analysis.configured}<p class={styles.hint}>
-                {t("dialogue.aiUnavailable")}
-              </p>{/if}
-          </form>{:else}
-          <div class={styles.sessionHeader}>
-            <div>
-              <h3>
-                {active?.title ?? t("dialogue.assistantEmptyTitle")}
-              </h3>
-              <p>
-                {practice
-                  ? t("dialogue.practiceMeta", {
-                      role: roleLabel(active!.conditions.user_role),
-                      stage: stageLabel(active!.conditions.stage),
-                      mode:
-                        active!.mode === "guided"
-                          ? t("dialogue.scriptedDrill")
-                          : t("dialogue.aiRoleplay"),
-                    })
-                  : t("dialogue.assistantMeta")}
-              </p>
-            </div>
-            {#if practice && active?.status !== "complete"}<button
-                class={ui.secondary}
+          </div>
+        </section>
+
+        <fieldset class={styles.modes}>
+          <legend>{t("dialogue.mode")}</legend>
+          <label class={styles.modeOption}>
+            <input
+              type="radio"
+              name="practice-mode"
+              value="ai"
+              checked={mode === "ai"}
+              disabled={!caps?.analysis.configured}
+              onchange={() => (mode = "ai")}
+            />
+            <span>
+              <strong>{t("dialogue.modeAi")}</strong>
+              <small
+                >{caps?.analysis.configured
+                  ? t("dialogue.modeAiHint")
+                  : t("dialogue.aiUnavailableShort")}</small
+              >
+            </span>
+          </label>
+          <label class={styles.modeOption}>
+            <input
+              type="radio"
+              name="practice-mode"
+              value="guided"
+              checked={mode === "guided"}
+              onchange={() => (mode = "guided")}
+            />
+            <span>
+              <strong>{t("dialogue.modeGuided")}</strong>
+              <small>{t("dialogue.modeGuidedHint")}</small>
+            </span>
+          </label>
+        </fieldset>
+
+        <div class={styles.startRow}>
+          <p class={styles.quiet}>{t("dialogue.summaryNote")}</p>
+          <button class={`${ui.primary} ${styles.start}`} disabled={!!busy}>
+            <Gavel size={16}></Gavel>
+            {t("dialogue.start")}
+          </button>
+        </div>
+      </form>{:else}
+      {#if active}<div class={styles.sessionHeader}>
+          <div>
+            <h3>{sessionTitle(active)}</h3>
+            <p>
+              {practice
+                ? t("dialogue.practiceMeta", {
+                    role: roleLabel(active.conditions.user_role),
+                    stage: stageLabel(active.conditions.stage),
+                    mode:
+                      active.mode === "guided"
+                        ? t("dialogue.modeGuided")
+                        : t("dialogue.aiRoleplay"),
+                  })
+                : t("dialogue.assistantMeta")}
+            </p>
+          </div>
+          <div class={styles.sessionActions}>
+            <a
+              class={styles.iconLink}
+              rel="external"
+              href={`/api/v1/cases/${caseId}/dialogues/${active.id}/export`}
+              download
+            >
+              <Download size={14} aria-hidden="true"></Download>
+              {practice
+                ? t("dialogue.exportRehearsal")
+                : t("dialogue.exportConversation")}
+            </a>
+            {#if practice && active.status !== "complete"}<button
+                class={ui.primary}
                 disabled={!!busy || !messages.some((m) => m.role === "user")}
                 onclick={() => send(true)}
               >
                 <Check size={16}></Check>
-                {t("dialogue.finish")}
+                {t("dialogue.finishDebrief")}
               </button>{/if}
           </div>
-          {#if practice}<details class={styles.conditions}>
-              <summary>
-                {t("dialogue.conditions")}
-                <ChevronDown size={15}></ChevronDown>
-              </summary>
-              <dl>
-                {#each conditionKeys as key (key)}<div>
-                    <dt>{t(`dialogue.field.${key}`)}</dt>
-                    <dd>{conditionValue(key, active!.conditions[key])}</dd>
-                  </div>{/each}
-              </dl>
-              <button
-                class={ui.secondary}
-                disabled={!!busy}
-                onclick={() => {
-                  conditions = active!.conditions;
-                  newSession();
-                }}
-              >
-                {t("dialogue.editSetup")}
-              </button>
-            </details>{/if}
-          <div
-            bind:this={log.current}
-            class={styles.messages}
-            role="log"
-            aria-label={practice
-              ? t("dialogue.logPractice")
-              : t("dialogue.logAssistant")}
-            aria-live="polite"
-            aria-relevant="additions"
+        </div>{/if}
+      {#if practice && active}<details class={styles.conditions}>
+          <summary>
+            <span>{t("dialogue.conditions")}</span>
+            <ChevronDown size={15} aria-hidden="true"></ChevronDown>
+          </summary>
+          <dl>
+            {#each conditionKeys as key (key)}<div>
+                <dt>{t(`dialogue.field.${key}`)}</dt>
+                <dd>{conditionValue(key, active.conditions[key])}</dd>
+              </div>{/each}
+          </dl>
+          <button
+            class={ui.secondary}
+            disabled={!!busy}
+            onclick={() => {
+              conditions = active!.conditions;
+              mode = active!.mode === "guided" ? "guided" : mode;
+              editOpen = true;
+              newSession("trial-type");
+            }}
           >
-            {#if !messages.length && !responding}<div class={styles.welcome}>
-                <MessageSquare size={32}></MessageSquare>
-                <h3>{t("dialogue.welcomeTitle")}</h3>
-                <p>{t("dialogue.welcomeText")}</p>
-                <div>
-                  {#each [t("dialogue.suggestion1"), t("dialogue.suggestion2"), t("dialogue.suggestion3")] as question (question)}<button
-                      class={ui.secondary}
-                      onclick={() => {
-                        text = question;
-                        composer.current?.focus();
-                      }}
-                    >
-                      {question}
-                      <ArrowRight size={14}></ArrowRight>
-                    </button>{/each}
-                </div>
-              </div>{/if}
-            {#each messages as message (message.id)}<article
-                class={`${styles.message} ${message.role === "user" ? styles.userMessage : ""}`}
-              >
-                <h4>
-                  {message.role === "user"
-                    ? practice
-                      ? t("dialogue.youRole", {
-                          role: roleLabel(message.speaker),
-                        })
-                      : t("dialogue.you")
-                    : roleLabel(message.speaker)}
-                </h4>
-                <p>{message.text}</p>
-                {#if !!message.citations.length}<div class={styles.citations}>
-                    {#each message.citations as citation, index (index)}<details
+            {t("dialogue.editSetup")}
+          </button>
+        </details>{/if}
+      <div
+        bind:this={log.current}
+        class={`${styles.messages} ${practice ? styles.transcript : ""}`}
+        role="log"
+        aria-label={practice
+          ? t("dialogue.logPractice")
+          : t("dialogue.logAssistant")}
+        aria-live="polite"
+        aria-relevant="additions"
+      >
+        {#if !messages.length && !responding}{#if practice}<p
+              class={styles.quiet}
+            >
+              {t("dialogue.footerPractice")}
+            </p>{:else}<div class={styles.welcome}>
+              <h3>{t("dialogue.welcomeTitle")}</h3>
+              <p>{t("dialogue.welcomeShort")}</p>
+              <div class={styles.chips} aria-label={t("dialogue.tryAsking")}>
+                {#each [t("dialogue.suggestion1"), t("dialogue.suggestion2"), t("dialogue.suggestion3")] as question (question)}<button
+                    type="button"
+                    class={styles.chip}
+                    disabled={!!busy}
+                    onclick={() => {
+                      text = question;
+                      void send();
+                    }}
+                  >
+                    {question}
+                    <ArrowRight size={14} aria-hidden="true"></ArrowRight>
+                  </button>{/each}
+              </div>
+            </div>{/if}{/if}
+        {#each messages as message (message.id)}<article
+            class={`${styles.message} ${message.role === "user" ? styles.userMessage : ""}`}
+          >
+            <h4>
+              {message.role === "user"
+                ? practice
+                  ? t("dialogue.youRole", {
+                      role: roleLabel(message.speaker),
+                    })
+                  : t("dialogue.you")
+                : roleLabel(message.speaker)}
+            </h4>
+            <div class={styles.body}>
+              <p>{message.text}</p>
+              {#if !!message.citations.length}<div class={styles.citations}>
+                  <div
+                    class={styles.citationChips}
+                    role="group"
+                    aria-label={t("dialogue.cited")}
+                  >
+                    {#each message.citations as citation, index (index)}<button
+                        type="button"
+                        class={styles.citationChip}
+                        aria-expanded={openCitation[message.id] === index}
+                        aria-controls={`cite-${message.id}-${index}`}
+                        onclick={() =>
+                          (openCitation = {
+                            ...openCitation,
+                            [message.id]:
+                              openCitation[message.id] === index ? -1 : index,
+                          })}
                       >
-                        <summary>
-                          <FileText size={15}></FileText>
-                          <span>
-                            {citation.source.title}
-                            {citation.source.page
-                              ? t("common.pageSuffix", {
-                                  page: citation.source.page,
-                                })
-                              : ""}
-                          </span>
-                          <ChevronDown size={14}></ChevronDown>
-                        </summary>
-                        <blockquote>“{citation.quote}”</blockquote>
-                        <p class={styles.sourceText}>
-                          {citation.source.text}
-                        </p>
+                        <span class={styles.citationNumber}>{index + 1}</span>
+                        <span class={styles.citationTitle}
+                          >{citation.source.title}{citation.source.page
+                            ? t("common.pageSuffix", {
+                                page: citation.source.page,
+                              })
+                            : ""}</span
+                        >
+                      </button>{/each}
+                  </div>
+                  {#each message.citations as citation, index (index)}<div
+                      id={`cite-${message.id}-${index}`}
+                      class={styles.citationPanel}
+                      hidden={openCitation[message.id] !== index}
+                    >
+                      <blockquote>“{citation.quote}”</blockquote>
+                      <p class={styles.sourceText}>{citation.source.text}</p>
+                      <div class={styles.citationLinks}>
                         {#if citation.source.document_id}<a
                             href={`/api/v1/cases/${caseId}/documents/${citation.source.document_id}/original`}
                             target="_blank"
@@ -731,70 +876,138 @@
                             {t("common.openHearing")}
                             <ArrowRight size={13}></ArrowRight>
                           </button>{/if}
-                      </details>{/each}
-                  </div>{/if}
-                {#if !!message.legal.length}<div class={styles.legal}>
-                    <strong>
-                      <BookOpen size={15}></BookOpen>
-                      {t("dialogue.legalDiscovery")}
-                    </strong>
-                    {#each message.legal as reference, index (index)}<a
-                        href={reference.url}
-                        target="_blank"
-                        rel="external noreferrer"
-                      >
-                        {reference.title} · {reference.reference}
-                        <ExternalLink size={13}></ExternalLink>
-                      </a>{/each}
-                  </div>{/if}
-                {#if message.notice}<p class={styles.notice}>
-                    {message.notice}
-                  </p>{/if}
-              </article>{/each}
-            {#if responding}<div class={styles.replyLoading}>
-                <p>{busy ? t(busy) : ""}</p>
-                <Skeleton
-                  variant="compact"
-                  label={busy ? t(busy) : undefined}
-                />
-              </div>{/if}
-          </div>
-          {#if active?.status === "complete"}<div class={styles.complete}>
-              <Check size={18}></Check>
-              <p>{t("dialogue.complete")}</p>
-              <button class={ui.secondary} onclick={newSession}>
-                {t("dialogue.again")}
-              </button>
-            </div>{:else}{#if canCompose}<form
-                class={styles.composer}
-                onsubmit={(e) => {
-                  e.preventDefault();
-                  void send();
-                }}
+                      </div>
+                    </div>{/each}
+                </div>{/if}
+              {#if !!message.legal.length}<div class={styles.legal}>
+                  <strong>
+                    <BookOpen size={14} aria-hidden="true"></BookOpen>
+                    {t("dialogue.legalDiscovery")}
+                  </strong>
+                  {#each message.legal as reference, index (index)}<a
+                      href={reference.url}
+                      target="_blank"
+                      rel="external noreferrer"
+                    >
+                      {reference.title} · {reference.reference}
+                      <ExternalLink size={13}></ExternalLink>
+                    </a>{/each}
+                </div>{/if}
+              {#if message.notice}<p class={styles.notice}>
+                  {message.notice}
+                </p>{/if}
+            </div>
+          </article>{/each}
+        {#if responding}<div class={styles.replyLoading}>
+            <p>{busy ? t(busy) : ""}</p>
+            <Skeleton variant="compact" label={busy ? t(busy) : undefined} />
+          </div>{/if}
+      </div>
+      {#if active?.status === "complete"}<div class={styles.complete}>
+          <Check size={18}></Check>
+          <p>{t("dialogue.complete")}</p>
+          <button class={ui.secondary} onclick={() => newSession()}>
+            {t("dialogue.again")}
+          </button>
+        </div>{:else if canCompose}<form
+          class={styles.composer}
+          onsubmit={(e) => {
+            e.preventDefault();
+            void send();
+          }}
+        >
+          <label
+            for="case-message"
+            class={practice ? styles.turnLabel : ui.srOnly}
+          >
+            {practice
+              ? t("dialogue.yourTurn", {
+                  role: roleLabel(active!.conditions.user_role),
+                })
+              : t("dialogue.askLabel")}
+          </label>
+          <div class={styles.box}>
+            {#if showSources && selectedRefs.length}<ul
+                class={styles.selected}
               >
-                {#if !practice || active?.mode === "ai"}<details
-                    class={styles.referencePicker}
-                  >
-                    <summary>
-                      <FileText size={15}></FileText>
-                      {t("dialogue.reference")}
-                      {selectedRefs.length ? ` (${selectedRefs.length})` : ""}
-                      <ChevronDown size={14}></ChevronDown>
-                    </summary>
-                    <p>{t("dialogue.referenceHelp")}</p>
+                {#each selectedRefs as id (id)}<li>
+                    <FileText size={13} aria-hidden="true"></FileText>
+                    <span>{refLabel(id)}</span>
+                    <button
+                      type="button"
+                      aria-label={t("dialogue.removeSource", {
+                        label: refLabel(id),
+                      })}
+                      onclick={() => toggleRef(id, false)}
+                    >
+                      <X size={13} aria-hidden="true"></X>
+                    </button>
+                  </li>{/each}
+              </ul>{/if}
+            <textarea
+              bind:this={composer.current}
+              id="case-message"
+              value={text}
+              maxlength={5000}
+              rows={2}
+              required
+              disabled={!!busy}
+              oninput={(e) => (text = e.currentTarget.value)}
+              placeholder={practice
+                ? t("dialogue.practicePlaceholder")
+                : t("dialogue.composerPlaceholder")}
+              onkeydown={(e) => {
+                if (
+                  e.key === "Enter" &&
+                  !e.isComposing &&
+                  (!e.shiftKey || e.ctrlKey || e.metaKey)
+                ) {
+                  e.preventDefault();
+                  if (!busy) void send();
+                }
+              }}></textarea>
+            <div class={styles.toolbar}>
+              {#if showSources}<button
+                  type="button"
+                  class={styles.sourcesToggle}
+                  aria-expanded={sourcesOpen}
+                  aria-controls="dialogue-sources"
+                  onclick={() => (sourcesOpen = !sourcesOpen)}
+                >
+                  <Plus size={15} aria-hidden="true"></Plus>
+                  {t("dialogue.sources")}{selectedRefs.length
+                    ? ` (${selectedRefs.length})`
+                    : ""}
+                </button>{:else}<span></span>{/if}
+              <button
+                class={`${ui.primary} ${styles.send}`}
+                disabled={!!busy || !text.trim()}
+              >
+                {practice ? t("dialogue.takeTurn") : t("dialogue.send")}
+                <ArrowUp size={15} aria-hidden="true"></ArrowUp>
+              </button>
+            </div>
+            {#if showSources}<div
+                id="dialogue-sources"
+                class={styles.sources}
+                hidden={!sourcesOpen}
+              >
+                <fieldset>
+                  <legend>
+                    <FileText size={14} aria-hidden="true"></FileText>
+                    {t("dialogue.reference")}
+                  </legend>
+                  <p class={styles.quiet}>{t("dialogue.referenceHelp")}</p>
+                  <div class={styles.refList}>
                     {#if initialReference && !references.some((r) => r.id === initialReference)}<label
                       >
                         <input
                           type="checkbox"
                           checked={selectedRefs.includes(initialReference)}
                           oninput={(e) =>
-                            (selectedRefs = e.currentTarget.checked
-                              ? [...selectedRefs, initialReference]
-                              : selectedRefs.filter(
-                                  (id) => id !== initialReference,
-                                ))}
+                            toggleRef(initialReference, e.currentTarget.checked)}
                         />
-                        {t("dialogue.selectedPassage")}
+                        <span>{t("dialogue.selectedPassage")}</span>
                       </label>{/if}
                     {#each references as reference (reference.id)}<label>
                         <input
@@ -803,11 +1016,7 @@
                           disabled={!selectedRefs.includes(reference.id) &&
                             selectedRefs.length >= 6}
                           oninput={(e) =>
-                            (selectedRefs = e.currentTarget.checked
-                              ? [...selectedRefs, reference.id]
-                              : selectedRefs.filter(
-                                  (id) => id !== reference.id,
-                                ))}
+                            toggleRef(reference.id, e.currentTarget.checked)}
                         />
                         <span>
                           {reference.label}
@@ -818,18 +1027,19 @@
                           </small>
                         </span>
                       </label>{/each}
-                    {#if !references.length && !initialReference}<p>
+                    {#if !references.length && !initialReference}<p
+                        class={styles.quiet}
+                      >
                         {t("dialogue.noReferences")}
                       </p>{/if}
-                  </details>{/if}
-                {#if !practice}<details class={styles.referencePicker}>
-                    <summary>
-                      <BookOpen size={15}></BookOpen>
-                      {t("dialogue.legalLookup")}
-                      <ChevronDown size={14}></ChevronDown>
-                    </summary>
+                  </div>
+                </fieldset>
+                {#if !practice}<div class={styles.legalField}>
                     <label>
-                      {t("dialogue.legalTerms")}
+                      <span class={styles.legend}>
+                        <BookOpen size={14} aria-hidden="true"></BookOpen>
+                        {t("dialogue.legalTerms")}
+                      </span>
                       <input
                         value={law}
                         maxlength={300}
@@ -838,52 +1048,23 @@
                         placeholder={t("dialogue.legalPlaceholder")}
                       />
                     </label>
-                    <p>
+                    <p class={styles.quiet}>
                       {caps?.legal.configured
                         ? t("dialogue.legalHelp")
                         : t("dialogue.legalUnavailable")}
                     </p>
-                  </details>{/if}
-                <label for="case-message">
-                  {practice
-                    ? t("dialogue.yourTurn", {
-                        role: roleLabel(active!.conditions.user_role),
-                      })
-                    : t("dialogue.askLabel")}
-                </label>
-                <textarea
-                  bind:this={composer.current}
-                  id="case-message"
-                  value={text}
-                  maxlength={5000}
-                  rows={3}
-                  required
-                  disabled={!!busy}
-                  oninput={(e) => (text = e.currentTarget.value)}
-                  placeholder={practice
-                    ? t("dialogue.practicePlaceholder")
-                    : t("dialogue.assistantPlaceholder")}
-                  onkeydown={(e) => {
-                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                      e.preventDefault();
-                      if (!busy) void send();
-                    }
-                  }}></textarea>
-                <div class={styles.composerFooter}>
-                  <span>
-                    {practice
-                      ? t("dialogue.footerPractice")
-                      : caps?.analysis.configured
-                        ? t("dialogue.footerAi")
-                        : t("dialogue.footerNoAi")}
-                  </span>
-                  <button class={ui.primary} disabled={!!busy || !text.trim()}>
-                    <Send size={15}></Send>
-                    {practice ? t("dialogue.takeTurn") : t("dialogue.send")}
-                  </button>
-                </div>
-              </form>{/if}{/if}
-        {/if}{/if}
-    </section>
-  </div>
+                  </div>{/if}
+              </div>{/if}
+          </div>
+          <p class={styles.footnote}>
+            {practice
+              ? t("dialogue.footerPractice")
+              : caps?.analysis.configured
+                ? t("dialogue.footerAi")
+                : t("dialogue.footerNoAi")}
+            <span aria-hidden="true"> · {t("dialogue.enterHint")}</span>
+          </p>
+        </form>{/if}
+    {/if}
+  </section>
 </div>
