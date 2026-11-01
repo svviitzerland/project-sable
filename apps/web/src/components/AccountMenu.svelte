@@ -23,12 +23,9 @@
 
   function toggle() {
     if (!open && trigger) {
+      // Opens upward inside the (expanded) rail, aligned with the account button.
       const box = trigger.getBoundingClientRect();
-      // Beside the rail on desktop, above the trigger on narrow screens.
-      const beside = window.innerWidth > 640;
-      position = beside
-        ? { left: box.right + 14, bottom: window.innerHeight - box.bottom }
-        : { left: box.left, bottom: window.innerHeight - box.top + 8 };
+      position = { left: 12, bottom: window.innerHeight - box.top + 8 };
     }
     open = !open;
   }
