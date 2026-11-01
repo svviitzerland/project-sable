@@ -151,7 +151,8 @@
                   : s.confidence === null
                     ? "Confidence unavailable"
                     : `${Math.round(s.confidence * 100)}% word confidence`}
-            {!speakers[s.speaker] && s.origin === "speechmatics"
+            {!speakers[s.speaker] &&
+            ["transcribe", "speechmatics"].includes(s.origin)
               ? " · Role unconfirmed"
               : ""}
           </span>

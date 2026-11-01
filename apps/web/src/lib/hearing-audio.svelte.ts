@@ -19,13 +19,74 @@ type AudioSession = {
   sentBytes: number;
   baseOffset: number;
   finish?: () => void;
+  recorder?: MediaRecorder;
 };
+
+/** Uploads a hearing recording once the session ends; transcription never waits for it. */
+function recordSession(
+  stream: MediaStream,
+  target: { caseId: string; hearingId: string | null },
+  onSaved: () => void,
+  onError: (message: string) => void,
+) {
+  if (typeof MediaRecorder === "undefined" || !target.hearingId) return;
+  const mimeType = [
+    "audio/webm;codecs=opus",
+    "audio/ogg;codecs=opus",
+    "audio/mp4",
+  ].find((type) => MediaRecorder.isTypeSupported(type));
+  if (!mimeType) return;
+  const recorder = new MediaRecorder(stream, {
+    mimeType,
+    audioBitsPerSecond: 32000,
+  });
+  const chunks: Blob[] = [];
+  let started = 0;
+  let offset = 0;
+  recorder.ondataavailable = (event) => {
+    if (event.data.size) chunks.push(event.data);
+  };
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: mimeType.split(";")[0] });
+    if (!blob.size) return;
+    const query = new URLSearchParams({
+      hearing_id: target.hearingId!,
+      start_offset: String(offset),
+      duration: String(Math.round((performance.now() - started) / 100) / 10),
+    });
+    void fetch(`/api/v1/cases/${target.caseId}/recordings?${query}`, {
+      method: "POST",
+      body: blob,
+      credentials: "same-origin",
+      headers: { "Content-Type": blob.type },
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error();
+        onSaved();
+      })
+      .catch(() =>
+        onError(
+          "The transcript is saved, but the audio recording could not be uploaded.",
+        ),
+      );
+  };
+  return {
+    recorder,
+    begin(timelineOffset: number) {
+      if (recorder.state !== "inactive") return;
+      offset = timelineOffset;
+      started = performance.now();
+      recorder.start(10_000);
+    },
+  };
+}
 
 export function createHearingAudio(
   caseId: () => string | null,
   onError: (message: string) => void,
   hearingId: () => string | null,
   onPartial: (text: string) => void,
+  onRecorded: () => void = () => undefined,
 ) {
   let status = $state<"idle" | "connecting" | "recording" | "stopping">("idle");
   const setStatus = (value: typeof status) => {
@@ -40,6 +101,8 @@ export function createHearingAudio(
     }
     clearTimeout(target.timeout);
     clearTimeout(target.rotationTimer);
+    if (target.recorder && target.recorder.state !== "inactive")
+      target.recorder.stop();
     target.stream?.getTracks().forEach((track) => track.stop());
     target.node?.disconnect();
     target.source?.disconnect();
@@ -85,7 +148,8 @@ export function createHearingAudio(
     hearingId();
     return () => untrack(() => cleanup());
   });
-  async function start(language: string, file?: File) {
+  /** `record` keeps an audio copy of microphone sessions (not of uploaded files). */
+  async function start(language: string, file?: File, record = true) {
     if (!caseId() || session.current) return;
     const s: AudioSession = {
       pending: [],
@@ -108,6 +172,7 @@ export function createHearingAudio(
       await context.audioWorklet.addModule("/audio/pcm-worklet.js");
       if (!active()) return;
       let source: AudioNode;
+      let beginRecording: ((offset: number) => void) | undefined;
       if (file) {
         const buffer = await context.decodeAudioData(await file.arrayBuffer());
         if (!active()) return;
@@ -131,6 +196,18 @@ export function createHearingAudio(
         }
         s.stream = stream;
         source = context.createMediaStreamSource(stream);
+        if (record) {
+          const recording = recordSession(
+            stream,
+            { caseId: caseId()!, hearingId: hearingId() },
+            onRecorded,
+            onError,
+          );
+          if (recording) {
+            s.recorder = recording.recorder;
+            beginRecording = recording.begin;
+          }
+        }
       }
       s.source = source;
       const tape = createVoiceTape(context.sampleRate),
@@ -223,6 +300,7 @@ export function createHearingAudio(
               if (first) {
                 s.baseOffset = message.start_offset || 0;
                 tape.setOrigin(s.baseOffset);
+                beginRecording?.(s.baseOffset);
                 const node = new AudioWorkletNode(context, "jude-pcm");
                 s.node = node;
                 node.port.onmessage = (event) => {

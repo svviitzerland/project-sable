@@ -61,6 +61,7 @@ test(
           "jude_analysis_jobs",
           "jude_audio_sessions",
           "jude_voiceprints",
+          "jude_recordings",
           "jude_file_transfers",
         ])
           await assert.rejects(

@@ -237,6 +237,18 @@ export interface Tables {
     purpose: string;
     expires: number;
   };
+  recordings: {
+    id: string;
+    case_id: string;
+    hearing_id: string;
+    storage_key: string;
+    storage: string;
+    mime: string;
+    size: number;
+    start_offset: number;
+    duration: number;
+    created_at: string;
+  };
   voiceprints: {
     id: string;
     case_id: string;

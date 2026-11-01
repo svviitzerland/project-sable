@@ -11,9 +11,9 @@ import {
 import { seconds } from "./database";
 import type { Case, Tables } from "./contracts";
 import { assert, ProviderError } from "./errors";
-import { requestJson } from "./providers";
 import { enqueue } from "./jobs";
 import { stableSpeakers } from "./voice";
+import { TRANSCRIBE_MAX_SECONDS, transcribeUrl } from "./transcribe";
 export const audioInput = z.strictObject({
   hearing_id: z.uuid().nullable(),
   language: z.enum(["id", "en"]),
@@ -29,8 +29,8 @@ export const audioInput = z.strictObject({
 });
 const speechResult = z.object({
   type: z.string(),
-  start_time: z.number().min(0).max(300).optional(),
-  end_time: z.number().min(0).max(300).optional(),
+  start_time: z.number().min(0).max(TRANSCRIBE_MAX_SECONDS).optional(),
+  end_time: z.number().min(0).max(TRANSCRIBE_MAX_SECONDS).optional(),
   speaker: z.string().max(64).optional(),
   alternatives: z
     .array(
@@ -148,7 +148,7 @@ export async function beginAudio(
   body: z.output<typeof audioInput>,
 ) {
   assert(
-    rt.config.speechKey,
+    rt.config.transcribe,
     503,
     "Audio transcription is unavailable. Upload a transcript or add text instead.",
   );
@@ -165,24 +165,17 @@ export async function beginAudio(
       "Another audio connection or hearing is active. Stop it before reconnecting.",
     );
     const hearing = await hearingFor(rt, record.id, body.hearing_id);
-    // Matches the Speechmatics temporary-key endpoint used by @speechmatics/auth.
-    const credentials = await requestJson(
-      rt,
-      "https://mp.speechmatics.com/v1/api_keys?type=rt",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${rt.config.speechKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ttl: 300, region: "eu" }),
-      },
-      "Speechmatics",
-    );
-    if (typeof credentials.key_value !== "string" || !credentials.key_value)
+    let url: string;
+    try {
+      url = await transcribeUrl(rt, {
+        language: body.language,
+        sampleRate: body.sample_rate,
+      });
+    } catch {
       throw new ProviderError(
-        "Speech provider could not create a temporary audio session.",
+        "Speech transcription could not start. Check the server's AWS credentials.",
       );
+    }
     const previous = await rt.db.all(
         "segments",
         "hearing_id=?",
@@ -197,7 +190,8 @@ export async function beginAudio(
         session_hash: hash(cookieToken(request)),
         offset,
         last_sequence: 0,
-        expires: seconds() + 300,
+        // One Transcribe stream lasts up to four hours; the client reconnects before that.
+        expires: seconds() + TRANSCRIBE_MAX_SECONDS + 600,
         status: "active",
       });
       await db.update("cases", { status: "live" }, "id=?", [record.id]);
@@ -207,10 +201,9 @@ export async function beginAudio(
     await publish(rt, record.id, { type: "session" });
     return {
       id: session.id,
-      token: credentials.key_value,
-      url: rt.config.speechUrl,
+      url,
       start_offset: offset,
-      rotate_after: 210,
+      rotate_after: TRANSCRIBE_MAX_SECONDS - 600,
     };
   });
 }
@@ -264,7 +257,7 @@ export async function saveAudio(
           ...group,
           case_id: record.id,
           hearing_id: session.hearing_id,
-          origin: "speechmatics",
+          origin: "transcribe",
           speaker: known.get(providerKey) ?? providerKey,
           start: group.start + session.offset,
           end: group.end + session.offset,

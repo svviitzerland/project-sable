@@ -22,6 +22,53 @@ test("voice tape clips timeline spans as 16 kHz WAV and forgets old audio", asyn
   assert.equal(view.getInt16(44, true), 1000);
   assert.equal(view.getInt16(bytes.length - 2, true), -1000);
   tape.push(pcm(121, 48000, 0));
-  assert.equal(tape.clip(101.5, 104.5), null, "older than the two-minute window");
+  assert.equal(
+    tape.clip(101.5, 104.5),
+    null,
+    "older than the two-minute window",
+  );
   assert.equal(resample(new Int16Array([0, 300]), 16000, 16000).length, 2);
+});
+
+test("AWS event-stream frames round-trip with valid checksums and map Transcribe items", async () => {
+  const { audioEvent, decodeEvent, encodeEvent, toBatchResults, crc32 } =
+    await import("../src/lib/aws-eventstream");
+  // Reference CRC32 of "123456789".
+  assert.equal(crc32(new TextEncoder().encode("123456789")), 0xcbf43926);
+  const pcm = new Uint8Array([1, 2, 3, 4]);
+  const decoded = decodeEvent(audioEvent(pcm));
+  assert.equal(decoded.headers[":event-type"], "AudioEvent");
+  assert.deepEqual([...decoded.payload], [1, 2, 3, 4]);
+  const frame = encodeEvent({ ":message-type": "event" }, new Uint8Array(0));
+  frame[frame.length - 1] ^= 1;
+  assert.throws(() => decodeEvent(frame), /checksum/);
+  assert.deepEqual(
+    toBatchResults({
+      IsPartial: false,
+      Alternatives: [
+        {
+          Items: [
+            {
+              Type: "pronunciation",
+              Content: "Saya",
+              StartTime: 1,
+              EndTime: 1.4,
+              Speaker: "0",
+              Confidence: 0.9,
+            },
+            { Type: "punctuation", Content: "." },
+          ],
+        },
+      ],
+    }),
+    [
+      {
+        type: "word",
+        start_time: 1,
+        end_time: 1.4,
+        alternatives: [{ content: "Saya", speaker: "spk_0", confidence: 0.9 }],
+      },
+      { type: "punctuation", alternatives: [{ content: "." }] },
+    ],
+  );
 });

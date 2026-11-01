@@ -114,6 +114,7 @@ const defaults: Record<keyof Tables, () => Record<string, unknown>> = {
   runtime_events: () => ({ revision: 1 }),
   runtime_rates: () => ({}),
   socket_tickets: () => ({}),
+  recordings: () => ({ id: uid(), created_at: now() }),
   voiceprints: () => ({
     id: uid(),
     samples: 1,
@@ -337,6 +338,9 @@ export async function connectDatabase(config: Settings) {
   connection.exec(localSchema);
   connection.exec(
     `CREATE TABLE IF NOT EXISTS jude_audio_sessions(id VARCHAR(36) PRIMARY KEY, case_id VARCHAR(36) NOT NULL REFERENCES jude_cases(id) ON DELETE CASCADE, hearing_id VARCHAR(36) NOT NULL REFERENCES jude_hearings(id) ON DELETE CASCADE, session_hash VARCHAR(64) NOT NULL REFERENCES jude_sessions(token_hash) ON DELETE CASCADE, offset FLOAT NOT NULL, last_sequence INTEGER NOT NULL, expires FLOAT NOT NULL, status VARCHAR(20) NOT NULL)`,
+  );
+  connection.exec(
+    `CREATE TABLE IF NOT EXISTS jude_recordings(id VARCHAR(36) PRIMARY KEY, case_id VARCHAR(36) NOT NULL REFERENCES jude_cases(id) ON DELETE CASCADE, hearing_id VARCHAR(36) NOT NULL REFERENCES jude_hearings(id) ON DELETE CASCADE, storage_key TEXT NOT NULL, storage VARCHAR(20) NOT NULL, mime VARCHAR(100) NOT NULL, size INTEGER NOT NULL, start_offset FLOAT NOT NULL, duration FLOAT NOT NULL, created_at VARCHAR(40) NOT NULL); CREATE INDEX IF NOT EXISTS ix_jude_recordings_hearing_id ON jude_recordings(hearing_id);`,
   );
   connection.exec(
     `CREATE TABLE IF NOT EXISTS jude_voiceprints(id VARCHAR(36) PRIMARY KEY, case_id VARCHAR(36) NOT NULL REFERENCES jude_cases(id) ON DELETE CASCADE, label VARCHAR(40) NOT NULL, embedding JSON NOT NULL, samples INTEGER NOT NULL, model VARCHAR(200) NOT NULL, aliases JSON NOT NULL, created_at VARCHAR(40) NOT NULL, UNIQUE(case_id, label)); CREATE INDEX IF NOT EXISTS ix_jude_voiceprints_case_id ON jude_voiceprints(case_id);`,

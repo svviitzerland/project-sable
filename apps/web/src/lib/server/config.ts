@@ -34,8 +34,11 @@ export function settings(
     model: env.OPENROUTER_MODEL || "",
     embeddingModel:
       env.OPENROUTER_EMBEDDING_MODEL || "openai/text-embedding-3-small",
-    speechKey: env.SPEECHMATICS_API_KEY || "",
-    speechUrl: env.SPEECHMATICS_URL || "wss://eu.rt.speechmatics.com/v2",
+    // Amazon Transcribe streaming through the server's AWS credentials (on by default with
+    // Bedrock; TRANSCRIBE=1 or 0 overrides).
+    transcribe:
+      env.TRANSCRIBE === "1" ||
+      (env.TRANSCRIBE !== "0" && env.AI_PROVIDER === "bedrock"),
     pasalKey: env.PASAL_API_KEY || "",
     voiceUrl: (env.VOICE_API_URL || "").replace(/\/$/, ""),
     voiceToken: env.VOICE_API_TOKEN || "",

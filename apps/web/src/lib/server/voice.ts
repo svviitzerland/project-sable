@@ -89,7 +89,7 @@ export async function identifySegment(
   ]);
   assert(segment, 404, "Statement not found.");
   assert(
-    segment.origin === "speechmatics",
+    ["transcribe", "speechmatics"].includes(segment.origin),
     409,
     "Only recorded statements can be matched to a voice.",
   );

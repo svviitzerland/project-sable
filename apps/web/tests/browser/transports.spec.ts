@@ -2,13 +2,13 @@ import { test, expect } from "@playwright/test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { randomUUID } from "node:crypto";
 import { zipSync, strToU8 } from "fflate";
 import { register } from "./helpers";
 import { settings } from "../../src/lib/server/config";
 import { connectDatabase } from "../../src/lib/server/database";
 import { handleApi } from "../../src/lib/server/api";
 import type { Runtime } from "../../src/lib/server/runtime";
+import { decodeEvent, encodeEvent } from "../../src/lib/aws-eventstream";
 test("large direct uploads and speech rotation save finalized testimony", async ({
   page,
   context,
@@ -24,12 +24,10 @@ test("large direct uploads and speech rotation save finalized testimony", async 
     tasks: new Set(),
     simulations: new Map(),
   };
-  config.speechKey = "server-secret";
-  rt.fetch = async (input) => {
-    const url = new URL(String(input));
-    if (url.hostname === "mp.speechmatics.com")
-      return Response.json({ key_value: randomUUID() });
-    throw new Error("Unmocked provider");
+  config.transcribe = true;
+  rt.awsCredentials = {
+    accessKeyId: "AKIDEXAMPLE",
+    secretAccessKey: "server-secret",
   };
   const uploads: number[] = [],
     errors: string[] = [],
@@ -79,43 +77,61 @@ test("large direct uploads and speech rotation save finalized testimony", async 
       body: Buffer.from(await response.arrayBuffer()),
     });
   });
-  await page.routeWebSocket(/wss:\/\/eu\.rt\.speechmatics\.com/, (ws) => {
+  // Amazon Transcribe streaming: binary event-stream frames in both directions.
+  await page.routeWebSocket(/wss:\/\/transcribestreaming\./, (ws) => {
     const index = connections.length;
     connections.push(ws.url());
-    let count = 0;
+    expect(ws.url()).not.toContain("server-secret");
     ws.onMessage((data) => {
-      if (typeof data !== "string") {
+      const { headers, payload } = decodeEvent(
+        typeof data === "string" ? Buffer.from(data) : new Uint8Array(data),
+      );
+      expect(headers[":event-type"]).toBe("AudioEvent");
+      if (payload.length) {
         binary.push(index);
-        ws.send(JSON.stringify({ message: "AudioAdded", seq_no: ++count }));
         return;
       }
-      const message = JSON.parse(data);
-      if (message.message === "StartRecognition")
-        ws.send(JSON.stringify({ message: "RecognitionStarted" }));
-      else if (message.message === "EndOfStream") {
-        stops.push(index);
-        expect(message.last_seq_no).toBe(count);
-        ws.send(
-          JSON.stringify({
-            message: "AddTranscript",
-            results: [
-              {
-                type: "word",
-                start_time: 0,
-                end_time: 0.2,
-                alternatives: [
-                  {
-                    content: `Final words ${index}`,
-                    speaker: "S1",
-                    confidence: 0.9,
-                  },
-                ],
-              },
-            ],
-          }),
-        );
-        ws.send(JSON.stringify({ message: "EndOfTranscript" }));
-      }
+      // An empty audio event ends the stream: send the final result, then close.
+      stops.push(index);
+      const body = {
+        Transcript: {
+          Results: [
+            {
+              IsPartial: false,
+              StartTime: 0,
+              EndTime: 0.2,
+              Alternatives: [
+                {
+                  Transcript: `Final words ${index}`,
+                  Items: [
+                    {
+                      Type: "pronunciation",
+                      Content: `Final words ${index}`,
+                      StartTime: 0,
+                      EndTime: 0.2,
+                      Speaker: "0",
+                      Confidence: 0.9,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      };
+      ws.send(
+        Buffer.from(
+          encodeEvent(
+            {
+              ":event-type": "TranscriptEvent",
+              ":message-type": "event",
+              ":content-type": "application/json",
+            },
+            new TextEncoder().encode(JSON.stringify(body)),
+          ),
+        ),
+      );
+      ws.close();
     });
   });
   try {
@@ -178,7 +194,7 @@ test("large direct uploads and speech rotation save finalized testimony", async 
     const segments = await rt.db.all(
       "segments",
       "origin=?",
-      ["speechmatics"],
+      ["transcribe"],
       "ORDER BY start",
     );
     expect(segments).toHaveLength(2);

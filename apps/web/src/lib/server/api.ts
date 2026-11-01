@@ -63,6 +63,12 @@ import {
 } from "./dialogues";
 import { inventory } from "./context";
 import { fileResponse, readUpload } from "./uploads";
+import {
+  deleteRecording,
+  listRecordings,
+  recordingResponse,
+  saveRecording,
+} from "./recordings";
 import { enqueue } from "./jobs";
 import { investigate } from "./analysis";
 import {
@@ -149,6 +155,7 @@ export async function caseDetail(rt: Runtime, record: Case) {
         "ORDER BY created_at",
       )
     ).map((f) => findingOutput.strip().parse(f)),
+    recordings: await listRecordings(rt, record.id),
   };
 }
 function eventStream(rt: Runtime, request: Request, record: Case) {
@@ -238,10 +245,10 @@ export async function handleApi(
               : "Set AI_PROVIDER=bedrock (AWS) or OPENROUTER_API_KEY and OPENROUTER_MODEL.",
           },
           speech: {
-            configured: !!rt.config.speechKey,
-            note: rt.config.speechKey
-              ? "Speechmatics configured."
-              : "Add SPEECHMATICS_API_KEY to enable microphone and prepared audio.",
+            configured: rt.config.transcribe,
+            note: rt.config.transcribe
+              ? "Amazon Transcribe configured."
+              : "Enable Amazon Transcribe (AI_PROVIDER=bedrock or TRANSCRIBE=1) for microphone and prepared audio.",
           },
           voice: {
             configured: voiceConfigured(rt),
@@ -493,6 +500,16 @@ export async function handleApi(
           results: await legalSearch(rt, query),
           note: "Discovery metadata only. Read and verify the linked legal text and its applicability before relying on it.",
         });
+      }
+      if (action === "recordings") {
+        if (parts.length === 3 && method === "POST") {
+          await rate(rt, `recording:${user.id}`, 30);
+          return send(await saveRecording(rt, record, request, url));
+        }
+        if (parts.length === 4 && method === "GET")
+          return recordingResponse(rt, record, parts[3], request);
+        if (parts.length === 4 && method === "DELETE")
+          return send(await deleteRecording(rt, record, parts[3]));
       }
       if (action === "voiceprints" && parts.length === 3 && method === "DELETE")
         return send(await forgetVoices(rt, record));

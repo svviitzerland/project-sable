@@ -15,10 +15,13 @@
     "evaluate": "tsx scripts/evaluate.ts"
   },
   "dependencies": {
+    "@aws-crypto/sha256-js": "^5.2.0",
     "@aws-sdk/client-bedrock-runtime": "^3.1161.0",
     "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/credential-provider-node": "^3.972.92",
     "@lucide/svelte": "^1.64.0",
     "@napi-rs/canvas": "^1.0.13",
+    "@smithy/signature-v4": "^5.7.5",
     "csv-parse": "^7.0.3",
     "fast-xml-parser": "^5.11.2",
     "fflate": "^0.8.3",

@@ -1,19 +1,28 @@
 import { api } from "./workspace-api";
+import {
+  audioEvent,
+  decodeEvent,
+  toBatchResults,
+  type TranscribeResult,
+} from "./aws-eventstream";
 export type SpeechCredentials = {
   id: string;
-  token: string;
   url: string;
   start_offset: number;
   rotate_after: number;
 };
 export type SavedTurn = { id: string; start: number; end: number };
-/** Browser-to-provider stream; only finalized, ordered batches enter the case API. */
+
+/**
+ * Browser-to-Amazon Transcribe stream over a presigned WebSocket. Audio frames are
+ * event-stream encoded; only finalized, ordered batches enter the case API. Emits the same
+ * control messages the audio session expects: ready, error and stopped.
+ */
 export class SpeechConnection {
   private socket: WebSocket;
-  private sent = 0;
-  private acknowledged = 0;
   private sequence = 0;
   private saves = Promise.resolve();
+  private stopping = false;
   private ended = false;
   private closed = false;
   onopen: (() => void) | null = null;
@@ -26,87 +35,48 @@ export class SpeechConnection {
     private partial: (text: string) => void,
     private saved: (turns: SavedTurn[]) => void = () => undefined,
   ) {
-    const url = new URL(credentials.url);
-    url.searchParams.set("jwt", credentials.token);
-    this.socket = new WebSocket(url);
-    this.socket.onopen = () => this.onopen?.();
+    this.socket = new WebSocket(credentials.url);
+    this.socket.binaryType = "arraybuffer";
+    this.socket.onopen = () => {
+      this.onopen?.();
+      // Transcribe starts streaming as soon as the socket opens.
+      this.emit({
+        type: "ready",
+        start_offset: credentials.start_offset,
+        rotate_after: credentials.rotate_after,
+      });
+    };
     this.socket.onerror = () => this.onerror?.();
     this.socket.onclose = () => {
-      if (!this.ended) this.onclose?.();
+      if (this.stopping) this.finish();
+      else if (!this.ended) this.onclose?.();
     };
     this.socket.onmessage = (event) => {
       try {
-        const message = JSON.parse(event.data);
-        if (message.message === "RecognitionStarted")
-          this.emit({
-            type: "ready",
-            start_offset: credentials.start_offset,
-            rotate_after: credentials.rotate_after,
-          });
-        else if (message.message === "AudioAdded")
-          this.acknowledged = message.seq_no;
-        else if (message.message === "AddPartialTranscript")
-          this.partial(message.metadata?.transcript || "");
-        else if (message.message === "AddTranscript") {
-          const batch = {
-            sequence: ++this.sequence,
-            results: message.results || [],
-          };
-          this.saves = this.saves.then(async () => {
-            let last: unknown;
-            for (let attempt = 0; attempt < 3; attempt++)
-              try {
-                const result = await api<{ segments?: SavedTurn[] }>(
-                  `/cases/${caseId}/audio-sessions/${credentials.id}/transcripts`,
-                  { method: "POST", body: JSON.stringify(batch) },
-                );
-                this.partial("");
-                if (result?.segments?.length) this.saved(result.segments);
-                return;
-              } catch (error) {
-                last = error;
-                if (attempt < 2)
-                  await new Promise((resolve) =>
-                    setTimeout(resolve, 500 * (attempt + 1)),
-                  );
-              }
-            throw last;
-          });
-          void this.saves.catch(() =>
-            this.emit({
-              type: "error",
-              message:
-                "Could not save the final transcript. Recording stopped; check the last saved words before restarting.",
-            }),
-          );
-        } else if (message.message === "EndOfTranscript") {
-          this.ended = true;
-          void this.saves
-            .then(() =>
-              api(`/cases/${caseId}/audio-sessions/${credentials.id}/stop`, {
-                method: "POST",
-              }),
-            )
-            .then(() => {
-              if (this.closed) return;
-              this.emit({ type: "stopped" });
-              this.socket.close();
-              this.closed = true;
-              this.onclose?.();
-            })
-            .catch(() =>
-              this.emit({
-                type: "error",
-                message:
-                  "Could not finish saving this audio session. Check the last saved words before restarting.",
-              }),
-            );
-        } else if (message.message === "Error")
+        const { headers, payload } = decodeEvent(event.data as ArrayBuffer);
+        const body = payload.length
+          ? JSON.parse(new TextDecoder().decode(payload))
+          : {};
+        if (headers[":message-type"] === "exception") {
           this.emit({
             type: "error",
             message:
-              "Speech provider reported an error. Check connection settings and quota.",
+              headers[":exception-type"] === "LimitExceededException"
+                ? "Speech transcription limit reached. Wait a moment and reconnect."
+                : "Speech provider reported an error. Check the connection and try again.",
           });
+          return;
+        }
+        if (headers[":event-type"] !== "TranscriptEvent") return;
+        for (const result of (body.Transcript?.Results ??
+          []) as TranscribeResult[]) {
+          if (result.IsPartial) {
+            this.partial(result.Alternatives?.[0]?.Transcript ?? "");
+            continue;
+          }
+          const results = toBatchResults(result);
+          if (results.length) this.queue(results);
+        }
       } catch {
         this.emit({
           type: "error",
@@ -114,6 +84,61 @@ export class SpeechConnection {
         });
       }
     };
+  }
+  private queue(results: ReturnType<typeof toBatchResults>) {
+    const batch = { sequence: ++this.sequence, results };
+    this.saves = this.saves.then(async () => {
+      let last: unknown;
+      for (let attempt = 0; attempt < 3; attempt++)
+        try {
+          const result = await api<{ segments?: SavedTurn[] }>(
+            `/cases/${this.caseId}/audio-sessions/${this.credentials.id}/transcripts`,
+            { method: "POST", body: JSON.stringify(batch) },
+          );
+          this.partial("");
+          if (result?.segments?.length) this.saved(result.segments);
+          return;
+        } catch (error) {
+          last = error;
+          if (attempt < 2)
+            await new Promise((resolve) =>
+              setTimeout(resolve, 500 * (attempt + 1)),
+            );
+        }
+      throw last;
+    });
+    void this.saves.catch(() =>
+      this.emit({
+        type: "error",
+        message:
+          "Could not save the final transcript. Recording stopped; check the last saved words before restarting.",
+      }),
+    );
+  }
+  /** After the end-of-stream frame, Transcribe sends final results and closes. */
+  private finish() {
+    if (this.ended) return;
+    this.ended = true;
+    void this.saves
+      .then(() =>
+        api(
+          `/cases/${this.caseId}/audio-sessions/${this.credentials.id}/stop`,
+          { method: "POST" },
+        ),
+      )
+      .then(() => {
+        if (this.closed) return;
+        this.emit({ type: "stopped" });
+        this.closed = true;
+        this.onclose?.();
+      })
+      .catch(() =>
+        this.emit({
+          type: "error",
+          message:
+            "Could not finish saving this audio session. Check the last saved words before restarting.",
+        }),
+      );
   }
   private emit(message: unknown) {
     if (!this.closed) this.onmessage?.({ data: JSON.stringify(message) });
@@ -126,40 +151,16 @@ export class SpeechConnection {
   }
   send(data: string | ArrayBuffer) {
     if (typeof data !== "string") {
-      if (this.sent - this.acknowledged > 400) {
-        this.emit({
-          type: "error",
-          message:
-            "Audio upload cannot keep up. Recording stopped to avoid losing testimony.",
-        });
-        return;
-      }
-      this.socket.send(data);
-      this.sent++;
+      if (this.socket.readyState === WebSocket.OPEN)
+        this.socket.send(audioEvent(new Uint8Array(data)));
       return;
     }
-    const message = JSON.parse(data);
-    if (message.type === "stop")
-      this.socket.send(
-        JSON.stringify({ message: "EndOfStream", last_seq_no: this.sent }),
-      );
-    else
-      this.socket.send(
-        JSON.stringify({
-          message: "StartRecognition",
-          audio_format: {
-            type: "raw",
-            encoding: "pcm_s16le",
-            sample_rate: message.sample_rate,
-          },
-          transcription_config: {
-            language: message.language,
-            diarization: "speaker",
-            enable_partials: true,
-            max_delay: 2,
-          },
-        }),
-      );
+    // Control messages from the audio session: only "stop" matters for Transcribe.
+    if (JSON.parse(data).type !== "stop" || this.stopping) return;
+    this.stopping = true;
+    if (this.socket.readyState === WebSocket.OPEN)
+      this.socket.send(audioEvent(new Uint8Array(0)));
+    else this.finish();
   }
   close() {
     if (this.closed) return;

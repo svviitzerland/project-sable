@@ -18,6 +18,12 @@ export interface Runtime {
   simulations: Map<string, AbortController>;
   /** Test seam: replaces the Bedrock client. */
   bedrock?: { send: BedrockRuntimeClient["send"] };
+  /** Test seam: fixed AWS credentials for presigning. */
+  awsCredentials?: {
+    accessKeyId: string;
+    secretAccessKey: string;
+    sessionToken?: string;
+  };
   /** Test seam: replaces the S3 client. */
   s3?: { send: S3Client["send"] };
 }

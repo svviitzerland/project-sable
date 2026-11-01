@@ -94,7 +94,17 @@ export type Hearing = {
   source_document_id: string | null;
   created_at: string;
 };
+export type Recording = {
+  id: string;
+  hearing_id: string;
+  mime: string;
+  size: number;
+  start_offset: number;
+  duration: number;
+  created_at: string;
+};
 export type CaseDetail = {
+  recordings: Recording[];
   hearings: Hearing[];
   case: Case;
   documents: Document[];

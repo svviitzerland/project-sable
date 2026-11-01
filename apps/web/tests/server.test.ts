@@ -942,8 +942,11 @@ test("embedding contract validates complete finite vectors; legal URLs stay on P
 test("browser audio session authorization, batching, duplication and scoped speaker offsets", async (t) => {
   const { rt, a, record, client } = await fixture(t),
     base = `/cases/${record.id}`;
-  rt.config.speechKey = "private-key";
-  rt.fetch = async () => Response.json({ key_value: "short-lived-token" });
+  rt.config.transcribe = true;
+  rt.awsCredentials = {
+    accessKeyId: "AKIDEXAMPLE",
+    secretAccessKey: "server-only-secret",
+  };
   const hearing = await a.json(base + "/hearings", "POST", {
     title: "Audio hearing",
   });
@@ -965,9 +968,23 @@ test("browser audio session authorization, batching, duplication and scoped spea
     sample_rate: 48000,
     start_offset: 30,
   });
-  assert.equal(session.token, "short-lived-token");
+  // A presigned Amazon Transcribe URL: signed, short-lived, never the secret itself.
+  const signed = new URL(session.url);
+  assert.equal(signed.protocol, "wss:");
+  assert.equal(
+    signed.host,
+    "transcribestreaming.ap-southeast-1.amazonaws.com:8443",
+  );
+  assert.equal(signed.searchParams.get("language-code"), "en-US");
+  assert.equal(signed.searchParams.get("sample-rate"), "48000");
+  assert.equal(signed.searchParams.get("show-speaker-label"), "true");
+  assert.equal(signed.searchParams.get("X-Amz-Expires"), "300");
+  assert.match(
+    signed.searchParams.get("X-Amz-Signature") ?? "",
+    /^[0-9a-f]{64}$/,
+  );
   assert.equal(session.start_offset, 30);
-  assert.equal(JSON.stringify(session).includes("private-key"), false);
+  assert.equal(JSON.stringify(session).includes("server-only-secret"), false);
   const batch = {
     sequence: 1,
     results: [
@@ -1173,7 +1190,8 @@ test("practice proposals preserve the selected role/language and duplicate manua
 test("voice service keeps one speaker key across connections, never exports voiceprints, and can forget them", async (t) => {
   const { rt, a, record, client } = await fixture(t),
     base = `/cases/${record.id}`;
-  rt.config.speechKey = "private-key";
+  rt.config.transcribe = true;
+  rt.awsCredentials = { accessKeyId: "AKIDEXAMPLE", secretAccessKey: "secret" };
   const identifyCalls: { auth: string | null; candidates: unknown[] }[] = [];
   const answers: {
     match: { id: string; score: number } | null;
@@ -1316,4 +1334,56 @@ test("voice service keeps one speaker key across connections, never exports voic
     ).speaker,
     "voice:voice-1",
   );
+});
+test("hearing recordings store privately, stream byte ranges, stay owner-scoped and can be deleted", async (t) => {
+  const { rt, a, record, client } = await fixture(t),
+    base = `/cases/${record.id}`;
+  const hearing = await a.json(base + "/hearings", "POST", { title: "Sidang" });
+  const audio = new Uint8Array(1000).map((_, i) => i % 256);
+  const post = (owner: ReturnType<typeof client>, type = "audio/webm") =>
+    handleApi(
+      rt,
+      new Request(
+        `http://localhost/api/v1${base}/recordings?hearing_id=${hearing.id}&start_offset=12.5&duration=40`,
+        {
+          method: "POST",
+          headers: { cookie: owner.cookie, "Content-Type": type },
+          body: audio,
+        },
+      ),
+    );
+  assert.equal((await post(a, "application/pdf")).status, 415);
+  const saved = await (await post(a, "audio/webm;codecs=opus")).json();
+  assert.equal(saved.size, 1000);
+  assert.equal(saved.start_offset, 12.5);
+  const detail = await a.json(base);
+  assert.equal(detail.recordings.length, 1);
+  const get = (headers: Record<string, string> = {}) =>
+    handleApi(
+      rt,
+      new Request(`http://localhost/api/v1${base}/recordings/${saved.id}`, {
+        headers: { cookie: a.cookie, ...headers },
+      }),
+    );
+  const full = await get();
+  assert.equal(full.headers.get("content-type"), "audio/webm");
+  assert.equal((await full.arrayBuffer()).byteLength, 1000);
+  const part = await get({ range: "bytes=10-19" });
+  assert.equal(part.status, 206);
+  assert.equal(part.headers.get("content-range"), "bytes 10-19/1000");
+  assert.deepEqual(
+    [...new Uint8Array(await part.arrayBuffer())],
+    [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+  );
+  assert.equal((await get({ range: "bytes=5000-" })).status, 416);
+  const b = client();
+  await b.json("/auth/register", "POST", {
+    email: `${randomUUID()}@example.test`,
+    password: "test-password-123",
+  });
+  assert.equal((await post(b)).status, 404);
+  assert.deepEqual(await a.json(`${base}/recordings/${saved.id}`, "DELETE"), {
+    removed: 1,
+  });
+  assert.equal((await a.json(base)).recordings.length, 0);
 });
