@@ -508,6 +508,8 @@
         <button
           class={styles.newCase}
           data-tour="new-case"
+          aria-label={t("ws.newCase")}
+          title={t("ws.newCase")}
           onclick={() => {
             creating = true;
             sidebar = false;
@@ -533,6 +535,7 @@
           {#each visibleCases as c (c.id)}<button
               class={c.id === caseId ? styles.caseActive : ""}
               aria-current={c.id === caseId ? "page" : undefined}
+              title={c.title}
               onclick={() => {
                 chooseCase(c.id);
                 closeSidebar();

@@ -17,6 +17,9 @@
     footer?: Snippet;
   } = $props();
 
+  // Several modals can be mounted at once; each needs its own title id.
+  const uid = $props.id();
+  const titleId = `modal-title-${uid}`;
   let dialog = $state<HTMLDialogElement>();
   $effect(() => {
     if (!dialog) return;
@@ -28,7 +31,7 @@
 <dialog
   bind:this={dialog}
   class="jude-modal"
-  aria-labelledby="modal-title"
+  aria-labelledby={titleId}
   onclose={onClose}
   onclick={(e) => {
     if (e.target === dialog) onClose();
@@ -36,7 +39,7 @@
 >
   <div class="jude-modal-body">
     <header>
-      <h2 id="modal-title">{title}</h2>
+      <h2 id={titleId}>{title}</h2>
       <button
         class="jude-modal-close"
         onclick={onClose}
