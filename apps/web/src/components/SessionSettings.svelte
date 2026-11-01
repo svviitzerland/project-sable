@@ -3,7 +3,7 @@
   import Skeleton from "./Skeleton.svelte";
   import Modal from "./Modal.svelte";
   import { Download, Trash2 } from "@lucide/svelte";
-  import { api, speakerName, type CaseDetail } from "../lib/workspace-api";
+  import { api, type CaseDetail } from "../lib/workspace-api";
   import styles from "./workspace.module.css";
 
   let {
@@ -74,40 +74,10 @@
     </form>
   </section>
 
-  <section>
-    <h2>{t("settings.speakers")}</h2>
-    <p>{t("settings.speakersText")}</p>
-    {#if speakers.length}{#each speakers as s (s)}<form
-          class={styles.speakerForm}
-          onsubmit={(e) => {
-            e.preventDefault();
-            const label = new FormData(e.currentTarget).get("label");
-            void run(() =>
-              api(`/cases/${detail.case.id}/speakers`, {
-                method: "PATCH",
-                body: JSON.stringify({ speaker: s, label }),
-              }),
-            );
-          }}
-        >
-          <label>
-            {speakerName(s, {})}
-            <input
-              name="label"
-              value={detail.case.speakers[s] ?? ""}
-              placeholder={t("speakers.placeholder")}
-              required
-              maxlength={80}
-            />
-          </label>
-          <button class={styles.secondary} disabled={busy}>
-            {t("speakers.save")}
-          </button>
-        </form>{/each}{:else}<p class={styles.muted}>
-        {t("speakers.empty")}
-      </p>{/if}
-    {#if voices}
-      <p class={styles.muted}>{t("speakers.voices")}</p>
+  {#if voices}
+    <section>
+      <h2>{t("settings.voices")}</h2>
+      <p>{t("settings.voicesText")}</p>
       <button
         class={styles.secondary}
         disabled={busy}
@@ -118,8 +88,8 @@
       >
         {t("speakers.forget")}
       </button>
-    {/if}
-  </section>
+    </section>
+  {/if}
 
   <section>
     <h2>{t("settings.export")}</h2>

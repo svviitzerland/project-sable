@@ -10,8 +10,6 @@ export async function register(page: Page) {
   await page
     .getByRole("button", { name: "Create account", exact: true })
     .click();
-  await expect(
-    page.getByRole("button", { name: "Sign out", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Account" })).toBeVisible();
   return email;
 }

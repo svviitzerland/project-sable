@@ -12,6 +12,7 @@
   import { untrack } from "svelte";
   import Empty from "./Empty.svelte";
   import TranscriptText from "./TranscriptText.svelte";
+  import Modal from "./Modal.svelte";
 
   let {
     segments,
@@ -20,6 +21,7 @@
     onRetry,
     select,
     findings,
+    onRename,
   }: {
     segments: Segment[];
     speakers: Record<string, string>;
@@ -28,7 +30,12 @@
     onRetry: (id: string) => void;
     select: (id: string) => void;
     findings: Finding[];
+    onRename?: (speaker: string, label: string) => Promise<unknown>;
   } = $props();
+
+  // Naming a speaker happens where the voice is heard: click its name.
+  let renaming = $state<string | null>(null);
+  let renameValue = $state("");
 
   let follow = $state(true);
   const phases: Record<string, MessageKey> = {
@@ -134,7 +141,14 @@
         findings.find((f) => f.segment_id === s.id)}
       <article class={styles.segment}>
         <div>
-          <strong>{speakerName(s.speaker, speakers)}</strong>
+          {#if onRename}<button
+              class={styles.speakerButton}
+              title={t("transcript.renameSpeaker")}
+              onclick={() => {
+                renaming = s.speaker;
+                renameValue = speakers[s.speaker] ?? "";
+              }}>{speakerName(s.speaker, speakers)}</button
+            >{:else}<strong>{speakerName(s.speaker, speakers)}</strong>{/if}
           <time>
             {s.origin === "imported" && !s.start && !s.end
               ? t("transcript.noTime")
@@ -189,3 +203,40 @@
       <p>{partial}</p>
     </div>{/if}
 </div>
+
+<Modal
+  open={renaming !== null}
+  title={t("transcript.renameTitle")}
+  onClose={() => (renaming = null)}
+>
+  <form
+    id="rename-speaker"
+    class={styles.renameForm}
+    onsubmit={async (e) => {
+      e.preventDefault();
+      if (!renaming || !renameValue.trim() || !onRename) return;
+      const speaker = renaming;
+      renaming = null;
+      await onRename(speaker, renameValue.trim());
+    }}
+  >
+    <p>{t("transcript.renameText")}</p>
+    <label>
+      {t("transcript.renameLabel")}
+      <input
+        bind:value={renameValue}
+        placeholder={t("transcript.renamePlaceholder")}
+        maxlength={80}
+        required
+      />
+    </label>
+  </form>
+  {#snippet footer()}
+    <button class={styles.secondary} onclick={() => (renaming = null)}>
+      {t("common.cancel")}
+    </button>
+    <button class={styles.primary} type="submit" form="rename-speaker">
+      {t("transcript.renameSave")}
+    </button>
+  {/snippet}
+</Modal>

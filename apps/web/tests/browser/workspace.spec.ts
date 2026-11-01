@@ -159,6 +159,7 @@ test("complete case workflow, imports, evidence, reviews and responsive navigati
     page.getByRole("button", { name: "Search legislation" }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "New case", exact: true }).click();
+  await page.getByRole("button", { name: /Start a blank case/ }).click();
   await page.getByLabel("Case title").fill("Acceptance isolated case");
   await page.getByRole("button", { name: "Create case", exact: true }).click();
   await page.getByRole("tab", { name: "Hearings", exact: true }).click();
@@ -179,6 +180,7 @@ test("complete case workflow, imports, evidence, reviews and responsive navigati
   ).toBeVisible();
   await page.getByRole("tab", { name: "Case documents" }).click();
   await expect(page.getByText("0 documents", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Account" }).click();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password").fill("test-password-12345");
@@ -315,7 +317,9 @@ test("complete case workflow, imports, evidence, reviews and responsive navigati
     page.getByRole("button", { name: "Convert with AI" }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "Close import preview" }).click();
-  await page.getByLabel("Import .jude", { exact: true }).setInputFiles({
+  await page.getByRole("button", { name: "New case", exact: true }).click();
+  await page.getByRole("button", { name: /Import a \.jude archive/ }).click();
+  await page.getByLabel(/Choose a \.jude file/).setInputFiles({
     name: "roundtrip.jude",
     mimeType: "application/vnd.jude+zip",
     buffer: archiveBytes,

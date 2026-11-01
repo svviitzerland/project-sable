@@ -10,11 +10,9 @@
     ChevronRight,
     CircleHelp,
     Download,
-    ExternalLink,
     FileText,
     FolderOpen,
     GitBranch,
-    LogOut,
     Menu,
     MessageSquare,
     Gavel,
@@ -24,6 +22,8 @@
     Settings,
     ShieldCheck,
     X,
+    PanelLeftOpen,
+    PanelLeftClose,
   } from "@lucide/svelte";
   import {
     api,
@@ -49,12 +49,11 @@
   import Documents from "./Documents.svelte";
   import References from "./References.svelte";
   import SessionSettings from "./SessionSettings.svelte";
-  import ArchiveImport from "./ArchiveImport.svelte";
   import HearingLibrary from "./HearingLibrary.svelte";
   import EvidenceWorkspace from "./EvidenceWorkspace.svelte";
   import HearingAudio from "./HearingAudio.svelte";
   import CaseDialogue from "./CaseDialogue.svelte";
-  import LanguageToggle from "./LanguageToggle.svelte";
+  import AccountMenu from "./AccountMenu.svelte";
   import { t, tp } from "../lib/i18n/index.svelte";
   import { maybeStartTour, startTour } from "../lib/tour";
 
@@ -164,9 +163,38 @@
     () => void refresh(),
   );
 
+  // Desktop sidebar: a slim rail that expands on hover or focus, or stays pinned open.
+  let pinned = $state(false);
+  // Transitions and hover expansion switch on after the first paint, so a reload never
+  // animates the rail open and closed.
+  let shellReady = $state(false);
+  onMount(() => {
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => (shellReady = true)),
+    );
+    try {
+      pinned = localStorage.getItem("jude.sidebar.pinned") === "1";
+    } catch {
+      /* Private mode: default to the slim rail. */
+    }
+  });
+  function togglePinned() {
+    pinned = !pinned;
+    try {
+      localStorage.setItem("jude.sidebar.pinned", pinned ? "1" : "0");
+    } catch {
+      /* Not persisted in private mode. */
+    }
+  }
+  const openDemo = () =>
+    action(async () => {
+      const c = await api<Case>("/cases/synthetic", { method: "POST" });
+      await loadCases(c.id);
+    });
+  // The guided tour introduces a case, so it starts once when the first case is open.
   let tourChecked = false;
   $effect(() => {
-    if (user && !tourChecked) {
+    if (user && detail && !tourChecked) {
       tourChecked = true;
       maybeStartTour();
     }
@@ -414,11 +442,13 @@
     <Skeleton variant="workspace" label={t("common.openingWorkspace")} />
   </div>{:else}{#if !user}<div class={styles.app}>
       <Auth {caps} {error} {setError} onUser={setUser}></Auth>
-    </div>{:else}<div class={styles.app}>
+    </div>{:else}<div
+      class={`${styles.app} ${shellReady ? styles.shellReady : ""}`}
+    >
       <a class={styles.skip} href="#workspace-main">{t("ws.skip")}</a>
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions (Handle Escape and trap Tab from the mobile navigation controls.) -->
       <aside
-        class={`${styles.sidebar} ${sidebar ? styles.sidebarOpen : ""}`}
+        class={`${styles.sidebar} ${sidebar ? styles.sidebarOpen : ""} ${pinned ? styles.sidebarPinned : ""}`}
         id="case-navigation"
         aria-label={t("ws.sidebar")}
         onkeydown={(e) => {
@@ -446,7 +476,23 @@
         }}
       >
         <div class={styles.sidebarBrand}>
-          <a href={resolve("/")} class={styles.brand}> jude. </a>
+          <a href={resolve("/")} class={styles.brand}
+            ><span class="side-text">jude.</span><span
+              class={styles.brandMark}
+              aria-hidden="true">j.</span
+            ></a
+          >
+          <button
+            class={styles.pinButton}
+            aria-pressed={pinned}
+            aria-label={pinned ? t("ws.unpinSidebar") : t("ws.pinSidebar")}
+            title={pinned ? t("ws.unpinSidebar") : t("ws.pinSidebar")}
+            onclick={togglePinned}
+          >
+            {#if pinned}<PanelLeftClose size={17}
+              ></PanelLeftClose>{:else}<PanelLeftOpen size={17}
+              ></PanelLeftOpen>{/if}
+          </button>
           <button
             id="close-case-navigation"
             class={styles.mobileClose}
@@ -456,7 +502,9 @@
             <X size={20}></X>
           </button>
         </div>
-        <p class={styles.workspaceLabel}>{t("ws.yourWorkspace")}</p>
+        <p class={`${styles.workspaceLabel} side-text`}>
+          {t("ws.yourWorkspace")}
+        </p>
         <button
           class={styles.newCase}
           data-tour="new-case"
@@ -466,17 +514,9 @@
           }}
         >
           <Plus size={17}></Plus>
-          {t("ws.newCase")}
+          <span class="side-text">{t("ws.newCase")}</span>
         </button>
-        <div data-tour="import">
-          <ArchiveImport
-            onImport={async (id) => {
-              await loadCases(id);
-              tab = "evidence";
-            }}
-          ></ArchiveImport>
-        </div>
-        {#if cases.length > 0}<label class={styles.caseSearch}>
+        {#if cases.length > 0}<label class={`${styles.caseSearch} side-text`}>
             <span class={styles.srOnly}>{t("ws.findCase")}</span>
             <input
               type="search"
@@ -498,8 +538,10 @@
                 closeSidebar();
               }}
             >
-              <FolderOpen size={17}></FolderOpen>
-              <span>
+              <span class={styles.caseInitial} aria-hidden="true"
+                >{c.title.trim().slice(0, 1).toUpperCase()}</span
+              >
+              <span class="side-text">
                 {c.title}
                 <small>
                   {c.synthetic
@@ -518,19 +560,11 @@
             </p>{/if}
         </nav>
         <div class={styles.sidebarBottom}>
-          <span class={styles.accountAvatar}>{user.name.slice(0, 1)}</span>
-          <div>
-            <strong>{user.name}</strong>
-            <small
-              >{user.demo
-                ? t("ws.demoSession")
-                : t("ws.lawyerWorkspace")}</small
-            >
-          </div>
-          <button
-            aria-label={t("ws.signOut")}
-            title={t("ws.signOut")}
-            onclick={() =>
+          <AccountMenu
+            name={user.name}
+            subtitle={user.demo ? t("ws.demoSession") : t("ws.lawyerWorkspace")}
+            onTour={startTour}
+            onSignOut={() =>
               action(async () => {
                 audio.stop();
                 await api("/auth/logout", { method: "POST" });
@@ -539,9 +573,7 @@
                 noteDrafts = {};
                 chooseCase(null);
               })}
-          >
-            <LogOut size={17}></LogOut>
-          </button>
+          />
         </div>
       </aside>
       <main id="workspace-main" class={styles.main}>
@@ -561,21 +593,6 @@
             <ChevronRight size={14}></ChevronRight>
             {session?.title ?? t("ws.workspace")}
           </span>
-          <div class={styles.topbarEnd}>
-            <button
-              class={styles.tourButton}
-              data-tour="help"
-              onclick={startTour}
-            >
-              <CircleHelp size={14}></CircleHelp>
-              {t("tour.replay")}
-            </button>
-            <span data-tour="language"><LanguageToggle /></span>
-            <a href={resolve("/")}>
-              {t("ws.about")}
-              <ExternalLink size={13}></ExternalLink>
-            </a>
-          </div>
         </div>
         {#if error}<div class={styles.error} role="alert">
             <span>{error}</span>
@@ -586,19 +603,26 @@
               <X size={18}></X>
             </button>
           </div>{/if}
-        {#if creating}<NewCase
-            {busy}
-            close={() => (creating = false)}
-            submit={(body) =>
-              action(async () => {
-                const c = await api<Case>("/cases", {
-                  method: "POST",
-                  body: JSON.stringify(body),
-                });
-                await loadCases(c.id);
-                creating = false;
-              })}
-          ></NewCase>{/if}
+        <NewCase
+          open={creating}
+          {busy}
+          close={() => (creating = false)}
+          submit={(body) =>
+            action(async () => {
+              const c = await api<Case>("/cases", {
+                method: "POST",
+                body: JSON.stringify(body),
+              });
+              await loadCases(c.id);
+              creating = false;
+            })}
+          onImported={async (id) => {
+            creating = false;
+            await loadCases(id);
+            tab = "evidence";
+          }}
+          onDemo={caps?.demo_available ? openDemo : undefined}
+        ></NewCase>
         {#if casesLoading}<Skeleton
             variant="case"
             label={t("common.loadingCases")}
@@ -613,13 +637,7 @@
             {#if caps?.demo_available}<button
                 class={styles.secondary}
                 disabled={busy}
-                onclick={() =>
-                  action(async () => {
-                    const c = await api<Case>("/cases/synthetic", {
-                      method: "POST",
-                    });
-                    await loadCases(c.id);
-                  })}
+                onclick={openDemo}
               >
                 {t("ws.trySynthetic")}
                 <ArrowRight size={16}></ArrowRight>
@@ -850,6 +868,7 @@
                         (r) => r.hearing_id === hearing.id,
                       )}
                       onChanged={() => void refresh()}
+                      empty={hearingSegments.length === 0}
                     />{/key}{/if}
                 <div class={styles.hearingGrid}>
                   <section
@@ -865,6 +884,13 @@
                     {#key hearing.id}<Transcript
                         segments={hearingSegments}
                         speakers={session?.speakers ?? {}}
+                        onRename={(speaker, label) =>
+                          action(() =>
+                            api(`/cases/${caseId}/speakers`, {
+                              method: "PATCH",
+                              body: JSON.stringify({ speaker, label }),
+                            }),
+                          )}
                         {partial}
                         {caseId}
                         onRetry={(id) =>

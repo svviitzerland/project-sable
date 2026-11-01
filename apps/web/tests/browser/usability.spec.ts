@@ -6,6 +6,7 @@ test("case setup, case search and mobile conversations keep the next action clea
 }, info) => {
   await register(page);
   await page.getByRole("button", { name: "Create your first case" }).click();
+  await page.getByRole("button", { name: /Start a blank case/ }).click();
   await page.getByLabel("Case title").fill("Usability review");
   await page.getByLabel("Reference (optional)").fill("REF-2026");
   await page.getByRole("button", { name: "Create case", exact: true }).click();

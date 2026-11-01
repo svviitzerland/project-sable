@@ -12,6 +12,7 @@
     caseId,
     recordings = [],
     onChanged = () => undefined,
+    empty = false,
   }: {
     audio: ReturnType<
       typeof import("../lib/hearing-audio.svelte").createHearingAudio
@@ -20,6 +21,7 @@
     caseId: string;
     recordings?: Recording[];
     onChanged?: () => void;
+    empty?: boolean;
   } = $props();
 
   // One small decision modal per start: microphone or prepared file.
@@ -48,7 +50,36 @@
 </script>
 
 <section class={styles.capture} aria-label={t("audio.title")}>
-  {#if audio.status === "idle"}
+  {#if audio.status === "idle" && empty}
+    <div class={styles.captureEmpty}>
+      <span class={styles.captureIcon} aria-hidden="true"
+        ><Mic size={24}></Mic></span
+      >
+      <h3>{t("audio.empty.title")}</h3>
+      <p>{t("audio.empty.text")}</p>
+      <div class={styles.captureActions}>
+        <button
+          class={ui.primary}
+          disabled={!configured}
+          onclick={() => choose("mic")}
+        >
+          <Mic size={16}></Mic>
+          {t("audio.start")}
+        </button>
+        <button
+          class={ui.secondary}
+          disabled={!configured}
+          onclick={() => choose("file")}
+        >
+          <FileAudio size={16}></FileAudio>
+          {t("audio.prepared")}
+        </button>
+      </div>
+      <small role="status"
+        >{configured ? t("audio.empty.alt") : t("audio.unavailable")}</small
+      >
+    </div>
+  {:else if audio.status === "idle"}
     <div class={styles.captureBar}>
       <button
         class={ui.primary}

@@ -16,7 +16,6 @@ const steps: { anchor?: string; title: MessageKey; text: MessageKey }[] = [
     title: "tour.newCase.title",
     text: "tour.newCase.text",
   },
-  { anchor: "import", title: "tour.import.title", text: "tour.import.text" },
   {
     anchor: "tab-documents",
     title: "tour.documents.title",
@@ -42,12 +41,7 @@ const steps: { anchor?: string; title: MessageKey; text: MessageKey }[] = [
     title: "tour.practice.title",
     text: "tour.practice.text",
   },
-  {
-    anchor: "language",
-    title: "tour.language.title",
-    text: "tour.language.text",
-  },
-  { anchor: "help", title: "tour.help.title", text: "tour.help.text" },
+  { anchor: "account", title: "tour.account.title", text: "tour.account.text" },
 ];
 
 function visible(element: Element | null): element is HTMLElement {

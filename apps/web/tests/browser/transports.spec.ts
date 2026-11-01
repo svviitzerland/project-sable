@@ -137,6 +137,7 @@ test("large direct uploads and speech rotation save finalized testimony", async 
   try {
     await register(page);
     await page.getByRole("button", { name: "New case", exact: true }).click();
+    await page.getByRole("button", { name: /Start a blank case/ }).click();
     await page.getByLabel("Case title").fill("Transport case");
     await page
       .getByRole("button", { name: "Create case", exact: true })
