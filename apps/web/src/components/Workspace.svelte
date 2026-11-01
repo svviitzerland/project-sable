@@ -38,11 +38,10 @@
   } from "../lib/workspace-api";
   import { createHearingAudio } from "../lib/hearing-audio.svelte";
   import styles from "./workspace.module.css";
-  import book from "./casebook.module.css";
+  import tabs from "./case-tabs.module.css";
   import { onMount, untrack } from "svelte";
   import Auth from "./Auth.svelte";
   import NewCase from "./NewCase.svelte";
-  import Empty from "./Empty.svelte";
   import StatusLabel from "./StatusLabel.svelte";
   import Transcript from "./Transcript.svelte";
   import ManualTranscript from "./ManualTranscript.svelte";
@@ -358,13 +357,16 @@
   function inspectFinding(id: string) {
     returnTarget.current = document.activeElement as HTMLElement;
     selected = id;
-    if (window.matchMedia("(max-width: 1320px)").matches) {
-      requestAnimationFrame(() => {
-        const inspector = document.getElementById("finding-inspector");
-        inspector?.focus({ preventScroll: true });
-        inspector?.scrollIntoView({ behavior: "instant", block: "start" });
+    // One column on narrow screens: move focus to the opened finding.
+    const narrow = window.matchMedia("(max-width: 960px)").matches;
+    requestAnimationFrame(() => {
+      const inspector = document.getElementById("finding-inspector");
+      if (narrow) inspector?.focus({ preventScroll: true });
+      inspector?.scrollIntoView({
+        behavior: "instant",
+        block: narrow ? "start" : "nearest",
       });
-    }
+    });
   }
 
   async function action(run: () => Promise<unknown>) {
@@ -736,13 +738,18 @@
                     {openHearing}
                   ></CaseDialogue>{/key}{/if}
               {#if tab === "evidence" && !detail.documents.length && !detail.segments.length}<section
-                  class={styles.gettingStarted}
+                  class={tabs.screen}
                 >
-                  <h2>{t("ws.start.title")}</h2>
-                  <p>{t("ws.start.text")}</p>
-                  <div>
-                    <button onclick={() => (tab = "documents")}>
-                      <FileText size={24} />
+                  <header class={tabs.heading}>
+                    <h2>{t("ws.start.title")}</h2>
+                    <p>{t("ws.start.text")}</p>
+                  </header>
+                  <div class={tabs.startOptions}>
+                    <button
+                      class={tabs.startOption}
+                      onclick={() => (tab = "documents")}
+                    >
+                      <FileText size={22} />
                       <span
                         ><strong>{t("ws.start.docs")}</strong><small
                           >{t("ws.start.docsText")}</small
@@ -750,8 +757,11 @@
                       >
                       <ArrowRight size={18} />
                     </button>
-                    <button onclick={() => (tab = "hearing")}>
-                      <AudioLines size={24} />
+                    <button
+                      class={tabs.startOption}
+                      onclick={() => (tab = "hearing")}
+                    >
+                      <AudioLines size={22} />
                       <span
                         ><strong>{t("ws.start.hearing")}</strong><small
                           >{t("ws.start.hearingText")}</small
@@ -760,7 +770,10 @@
                       <ArrowRight size={18} />
                     </button>
                   </div>
-                  <p>{t("ws.start.then")}</p>
+                  <p class={tabs.note}>
+                    <CircleHelp size={15}></CircleHelp>
+                    {t("ws.start.then")}
+                  </p>
                 </section>{:else if tab === "evidence"}{#key caseId}<EvidenceWorkspace
                     {caseId}
                     askAssistant={(reference) => {
@@ -779,327 +792,364 @@
                     configured={!!caps?.analysis.configured}
                   ></HearingLibrary>{/key}{/if}
               {#if tab === "hearing" && hearing}
-                <div class={book.hearingDetailHeader}>
+                <div class={`${tabs.screen} ${tabs.wide}`}>
                   <button
-                    class={book.hearingBack}
+                    class={tabs.back}
                     onclick={() => {
                       audio.stop();
                       hearingId = null;
                     }}
                   >
-                    <ArrowLeft size={15}></ArrowLeft>
+                    <ArrowLeft size={14}></ArrowLeft>
                     {t("hearing.all")}
                   </button>
-                  <h2>{hearing.title}</h2>
-                  <div>
-                    <a
-                      class={styles.secondary}
-                      rel="external"
-                      href={`/api/v1/cases/${caseId}/hearings/${hearing.id}/export.jude`}
-                    >
-                      <Download size={15}></Download>
-                      {t("hearing.export")}
-                    </a>
-                    {#if hearing.kind === "simulation"}<button
-                        class={styles.primary}
-                        disabled={busy ||
-                          hearing.status === "complete" ||
-                          audio.status !== "idle"}
-                        onclick={() =>
-                          action(() =>
-                            api(
-                              `/cases/${caseId}/${hearing.status === "simulation" ? "pause" : "simulation"}?hearing_id=${hearing.id}`,
-                              { method: "POST" },
-                            ),
-                          )}
+                  <header class={tabs.heading}>
+                    <h2>{hearing.title}</h2>
+                    <div class={tabs.headingActions}>
+                      <a
+                        class={tabs.ghost}
+                        rel="external"
+                        href={`/api/v1/cases/${caseId}/hearings/${hearing.id}/export.jude`}
                       >
-                        {#if hearing.status === "simulation"}<Pause size={16}
-                          ></Pause>{:else}<Play size={16}></Play>{/if}&#32;
-                        {hearing.status === "complete"
-                          ? t("hearing.simComplete")
-                          : hearing.status === "simulation"
-                            ? t("hearing.pause")
-                            : t("hearing.startSim")}
-                      </button>{:else}<button
-                        class={styles.primary}
-                        disabled={busy ||
-                          pending > 0 ||
-                          !hearingSegments.length ||
-                          !caps?.analysis.configured}
-                        onclick={() =>
-                          action(() =>
-                            api(
-                              `/cases/${caseId}/hearings/${hearing.id}/analyze`,
-                              { method: "POST" },
-                            ),
-                          )}
-                      >
-                        <ShieldCheck size={16}></ShieldCheck>
-                        {t("hearing.analyze")}
-                      </button>{/if}
-                  </div>
-                </div>
-                <div class={styles.sessionBar}>
-                  <span>
-                    <i class={connected ? styles.onlineDot : styles.offlineDot}
+                        <Download size={15}></Download>
+                        {t("hearing.export")}
+                      </a>
+                      {#if hearing.kind === "simulation"}<button
+                          class={styles.primary}
+                          disabled={busy ||
+                            hearing.status === "complete" ||
+                            audio.status !== "idle"}
+                          onclick={() =>
+                            action(() =>
+                              api(
+                                `/cases/${caseId}/${hearing.status === "simulation" ? "pause" : "simulation"}?hearing_id=${hearing.id}`,
+                                { method: "POST" },
+                              ),
+                            )}
+                        >
+                          {#if hearing.status === "simulation"}<Pause size={16}
+                            ></Pause>{:else}<Play size={16}></Play>{/if}&#32;
+                          {hearing.status === "complete"
+                            ? t("hearing.simComplete")
+                            : hearing.status === "simulation"
+                              ? t("hearing.pause")
+                              : t("hearing.startSim")}
+                        </button>{:else}<button
+                          class={styles.primary}
+                          disabled={busy ||
+                            pending > 0 ||
+                            !hearingSegments.length ||
+                            !caps?.analysis.configured}
+                          onclick={() =>
+                            action(() =>
+                              api(
+                                `/cases/${caseId}/hearings/${hearing.id}/analyze`,
+                                { method: "POST" },
+                              ),
+                            )}
+                        >
+                          <ShieldCheck size={16}></ShieldCheck>
+                          {t("hearing.analyze")}
+                        </button>{/if}
+                    </div>
+                  </header>
+                  <p class={tabs.statusLine}>
+                    <i class={tabs.dot} data-on={connected} aria-hidden="true"
                     ></i>
-                    {hearing.status === "simulation"
-                      ? t("hearing.state.simulation")
-                      : hearing.status === "live"
-                        ? t("hearing.state.live")
-                        : hearing.status === "complete"
-                          ? t("hearing.state.complete")
-                          : t("hearing.state.ready")}
-                    <small>
-                      {connected
+                    <strong>
+                      {hearing.status === "simulation"
+                        ? t("hearing.state.simulation")
+                        : hearing.status === "live"
+                          ? t("hearing.state.live")
+                          : hearing.status === "complete"
+                            ? t("hearing.state.complete")
+                            : t("hearing.state.ready")}
+                    </strong>
+                    <span class={tabs.sep} aria-hidden="true">·</span>
+                    <span
+                      >{connected
                         ? t("hearing.autoUpdates")
-                        : t("hearing.checking")}
-                    </small>
-                  </span>
-                  <span>
-                    {pending > 0
-                      ? tp("count.examining", pending)
-                      : hearingSegments.some(
-                            (s) => s.analysis_state === "pending",
-                          )
-                        ? t("hearing.readyForAnalysis")
-                        : t("hearing.upToDate")}
-                  </span>
-                </div>
-                {#if hearing.kind !== "simulation" && !caps?.analysis.configured}<p
-                    class={styles.notice}
-                  >
-                    {t("hearing.analysisUnavailable")}
-                  </p>{/if}
-                {#if hearing.kind === "simulation"}<p class={styles.notice}>
-                    <CircleHelp size={15}></CircleHelp>
-                    {t("hearing.simNotice")}
-                  </p>{/if}
-                {#if hearing.kind !== "simulation"}{#key hearing.id}<HearingAudio
-                      {audio}
-                      configured={!!caps?.speech.configured}
-                      caseId={detail.case.id}
-                      recordings={detail.recordings.filter(
-                        (r) => r.hearing_id === hearing.id,
-                      )}
-                      onChanged={() => void refresh()}
-                      empty={hearingSegments.length === 0}
-                    />{/key}{/if}
-                <div class={styles.hearingGrid}>
-                  <section
-                    class={styles.transcriptPane}
-                    aria-labelledby="transcript-heading"
-                  >
-                    <div class={styles.paneHeading}>
-                      <h2 id="transcript-heading">{t("hearing.transcript")}</h2>
-                      <span
-                        >{tp("count.statements", hearingSegments.length)}</span
-                      >
-                    </div>
-                    {#key hearing.id}<Transcript
-                        segments={hearingSegments}
-                        speakers={session?.speakers ?? {}}
-                        onRename={(speaker, label) =>
-                          action(() =>
-                            api(`/cases/${caseId}/speakers`, {
-                              method: "PATCH",
-                              body: JSON.stringify({ speaker, label }),
-                            }),
-                          )}
-                        {partial}
-                        {caseId}
-                        onRetry={(id) =>
-                          action(() =>
-                            api(`/cases/${caseId}/transcripts/${id}/retry`, {
-                              method: "POST",
-                            }),
-                          )}
-                        select={(id) => {
-                          const f = hearingFindings.find(
-                            (f) => f.segment_id === id,
-                          );
-                          if (f) {
-                            filter = "all";
-                            inspectFinding(f.id);
-                          }
-                        }}
-                        findings={hearingFindings}
-                      ></Transcript>{/key}
-                    {#key hearing.id}<ManualTranscript
-                        {busy}
-                        submit={(body) =>
-                          action(() =>
-                            api(`/cases/${caseId}/transcripts`, {
-                              method: "POST",
-                              body: JSON.stringify({
-                                ...body,
-                                hearing_id: hearing.id,
+                        : t("hearing.checking")}</span
+                    >
+                    <span class={tabs.sep} aria-hidden="true">·</span>
+                    <span>
+                      {pending > 0
+                        ? tp("count.examining", pending)
+                        : hearingSegments.some(
+                              (s) => s.analysis_state === "pending",
+                            )
+                          ? t("hearing.readyForAnalysis")
+                          : t("hearing.upToDate")}
+                    </span>
+                  </p>
+                  {#if hearing.kind === "simulation" || !caps?.analysis.configured}<p
+                      class={tabs.note}
+                    >
+                      <CircleHelp size={14}></CircleHelp>
+                      {hearing.kind === "simulation"
+                        ? t("hearing.simNotice")
+                        : t("hearing.analysisUnavailable")}
+                    </p>{/if}
+                  {#if hearing.kind !== "simulation"}{#key hearing.id}<HearingAudio
+                        {audio}
+                        configured={!!caps?.speech.configured}
+                        caseId={detail.case.id}
+                        recordings={detail.recordings.filter(
+                          (r) => r.hearing_id === hearing.id,
+                        )}
+                        onChanged={() => void refresh()}
+                        empty={hearingSegments.length === 0}
+                      />{/key}{/if}
+                  <div class={tabs.hearingGrid}>
+                    <section
+                      class={`${tabs.column} ${tabs.transcriptColumn}`}
+                      aria-labelledby="transcript-heading"
+                    >
+                      {#key hearing.id}<Transcript
+                          segments={hearingSegments}
+                          speakers={session?.speakers ?? {}}
+                          onRename={(speaker, label) =>
+                            action(() =>
+                              api(`/cases/${caseId}/speakers`, {
+                                method: "PATCH",
+                                body: JSON.stringify({ speaker, label }),
                               }),
-                            }),
-                          )}
-                      ></ManualTranscript>{/key}
-                  </section>
-                  <section
-                    class={styles.findingPane}
-                    aria-labelledby="findings-heading"
-                  >
-                    <div class={styles.paneHeading}>
-                      <h2 id="findings-heading" tabindex="-1">
-                        {t("hearing.findings")}
-                      </h2>
-                      <span>
-                        {t("hearing.toReview", {
-                          count: unreviewedFindings.length,
-                        })}
-                      </span>
-                    </div>
-                    {#if hearingFindings.length > 0}<div
-                        class={styles.reviewSummary}
-                      >
-                        <span role="status">
-                          {t("hearing.reviewedOf", {
-                            done:
-                              hearingFindings.length -
-                              unreviewedFindings.length,
-                            total: hearingFindings.length,
-                          })}
-                        </span>
-                        <button
-                          class={styles.textButton}
-                          disabled={!nextUnreviewed || busy}
-                          onclick={() => {
-                            if (nextUnreviewed) {
-                              filter = "unreviewed";
-                              inspectFinding(nextUnreviewed.id);
+                            )}
+                          {partial}
+                          {caseId}
+                          onRetry={(id) =>
+                            action(() =>
+                              api(`/cases/${caseId}/transcripts/${id}/retry`, {
+                                method: "POST",
+                              }),
+                            )}
+                          select={(id) => {
+                            const f = hearingFindings.find(
+                              (f) => f.segment_id === id,
+                            );
+                            if (f) {
+                              filter = "all";
+                              inspectFinding(f.id);
                             }
                           }}
-                        >
-                          {t("hearing.nextUnreviewed")}
-                          <ArrowRight size={14}></ArrowRight>
-                        </button>
-                      </div>{/if}
-                    <label class={styles.filterLabel}>
-                      <span class={styles.srOnly}>{t("hearing.filter")}</span>
-                      <select
-                        value={filter}
-                        onchange={(e) => (filter = e.currentTarget.value)}
-                      >
-                        <option value="all">{t("hearing.allFindings")}</option>
-                        <option value="unreviewed"
-                          >{t("hearing.needsReview")}</option
-                        >
-                        {#each statuses as value (value)}<option {value}>
-                            {statusLabel(value)}
-                          </option>{/each}
-                      </select>
-                    </label>
-                    {#if pending > 0}<Skeleton
-                        variant="rows"
-                        count={1}
-                        label={t("hearing.examining")}
-                      />{/if}
-                    <div class={styles.findingList}>
-                      {#if visibleFindings.length}{#each visibleFindings as f (f.id)}<button
-                            class={`${styles.findingRow} ${finding?.id === f.id ? styles.findingSelected : ""}`}
-                            aria-pressed={finding?.id === f.id}
-                            onclick={() => inspectFinding(f.id)}
-                          >
-                            <div>
-                              <StatusLabel status={f.status}></StatusLabel>
-                              {#if f.reviewed}<Check
-                                  size={15}
-                                  aria-label={t("common.reviewed")}
-                                ></Check>{/if}
-                            </div>
-                            <h3>{f.title}</h3>
-                            <p>{f.verification}</p>
-                            <small>
-                              {f.mode === "simulation"
-                                ? t("hearing.mode.simulation")
-                                : f.mode === "imported"
-                                  ? t("hearing.mode.imported")
-                                  : t("hearing.mode.ai")}&#32; · {tp(
-                                "count.sources",
-                                f.citations.length,
-                              )}
-                              <ChevronRight size={14}></ChevronRight>
-                            </small>
-                          </button>{/each}{:else if pending === 0}<Empty
-                          title={filter === "all"
-                            ? t("hearing.emptyTitle")
-                            : t("hearing.emptyFilterTitle")}
-                          text={filter === "all"
-                            ? t("hearing.emptyText")
-                            : t("hearing.emptyFilterText")}
-                          >{#snippet icon()}<ShieldCheck size={30}
-                            ></ShieldCheck>{/snippet}</Empty
-                        >{/if}
-                    </div>
-                  </section>
-                  <section
-                    id="finding-inspector"
-                    tabindex="-1"
-                    class={styles.inspectorPane}
-                    aria-label={t("hearing.inspector")}
-                  >
-                    <button
-                      class={`${styles.textButton} ${styles.returnFindings}`}
-                      onclick={() => {
-                        const target = returnTarget.current?.isConnected
-                          ? returnTarget.current
-                          : document.getElementById("findings-heading");
-                        target?.focus();
-                        target?.scrollIntoView({
-                          behavior: "instant",
-                          block: "center",
-                        });
-                      }}
-                    >
-                      <ArrowLeft size={14}></ArrowLeft>
-                      {t("hearing.backToFindings")}
-                    </button>
-                    {#if finding}{#key finding.id}<FindingInspector
-                          {finding}
-                          segment={hearingSegments.find(
-                            (s) => s.id === finding.segment_id,
-                          )}
-                          {caseId}
+                          findings={hearingFindings}
+                        ></Transcript>{/key}
+                      {#key hearing.id}<ManualTranscript
                           {busy}
-                          note={noteDrafts[finding.id] ?? finding.note}
-                          onNote={(note) =>
-                            (noteDrafts = ((current: typeof noteDrafts) => ({
-                              ...current,
-                              [finding.id]: note,
-                            }))(noteDrafts))}
-                          save={async (body) => {
-                            const savedFindingId = finding.id;
-                            const saved = await action(() =>
-                              api(`/cases/${caseId}/findings/${finding.id}`, {
-                                method: "PATCH",
-                                body: JSON.stringify(body),
+                          submit={(body) =>
+                            action(() =>
+                              api(`/cases/${caseId}/transcripts`, {
+                                method: "POST",
+                                body: JSON.stringify({
+                                  ...body,
+                                  hearing_id: hearing.id,
+                                }),
                               }),
-                            );
-                            if (saved)
-                              noteDrafts = ((current: typeof noteDrafts) => {
-                                if (current[savedFindingId] !== body.note)
-                                  return current;
-                                const next = { ...current };
-                                delete next[savedFindingId];
-                                return next;
-                              })(noteDrafts);
-                            return saved;
-                          }}
-                        ></FindingInspector>{/key}{:else}<Empty
-                        title={t("hearing.inspectorEmptyTitle")}
-                        text={t("hearing.inspectorEmptyText")}
-                        >{#snippet icon()}<BookOpen size={30}
-                          ></BookOpen>{/snippet}</Empty
-                      >{/if}
-                  </section>
+                            )}
+                        ></ManualTranscript>{/key}
+                    </section>
+                    <section
+                      class={tabs.column}
+                      aria-labelledby="findings-heading"
+                    >
+                      <div class={tabs.colHead}>
+                        <div class={tabs.colTitle}>
+                          <h2 id="findings-heading" tabindex="-1">
+                            {t("hearing.findings")}
+                          </h2>
+                          {#if hearingFindings.length > 0}<span
+                              class={`${tabs.chip} ${unreviewedFindings.length ? tabs.chipWarm : tabs.chipDone}`}
+                            >
+                              {unreviewedFindings.length
+                                ? t("hearing.toReview", {
+                                    count: unreviewedFindings.length,
+                                  })
+                                : t("library.allReviewed")}
+                            </span>{/if}
+                        </div>
+                        {#if hearingFindings.length > 0}<div
+                            class={tabs.progress}
+                            aria-hidden="true"
+                          >
+                            <span
+                              style={`width: ${((hearingFindings.length - unreviewedFindings.length) / hearingFindings.length) * 100}%`}
+                            ></span>
+                          </div>
+                          <div class={tabs.reviewLine}>
+                            <span role="status">
+                              {t("hearing.reviewedOf", {
+                                done:
+                                  hearingFindings.length -
+                                  unreviewedFindings.length,
+                                total: hearingFindings.length,
+                              })}
+                            </span>
+                            <button
+                              class={tabs.ghost}
+                              disabled={!nextUnreviewed || busy}
+                              onclick={() => {
+                                if (nextUnreviewed) {
+                                  filter = "unreviewed";
+                                  inspectFinding(nextUnreviewed.id);
+                                }
+                              }}
+                            >
+                              {t("hearing.nextUnreviewed")}
+                              <ArrowRight size={14}></ArrowRight>
+                            </button>
+                          </div>{/if}
+                        <label>
+                          <span class={styles.srOnly}
+                            >{t("hearing.filter")}</span
+                          >
+                          <select
+                            value={filter}
+                            onchange={(e) => (filter = e.currentTarget.value)}
+                          >
+                            <option value="all"
+                              >{t("hearing.allFindings")}</option
+                            >
+                            <option value="unreviewed"
+                              >{t("hearing.needsReview")}</option
+                            >
+                            {#each statuses as value (value)}<option {value}>
+                                {statusLabel(value)}
+                              </option>{/each}
+                          </select>
+                        </label>
+                      </div>
+                      {#if pending > 0}<Skeleton
+                          variant="rows"
+                          count={1}
+                          label={t("hearing.examining")}
+                        />{/if}
+                      <div class={tabs.findings}>
+                        {#if visibleFindings.length}{#each visibleFindings as f (f.id)}{@const open =
+                              finding?.id === f.id}{@const statement =
+                              hearingSegments.find(
+                                (s) => s.id === f.segment_id,
+                              )}
+                            <div
+                              class={`${tabs.card} ${open ? tabs.cardSelected : ""}`}
+                              id={open ? "finding-inspector" : undefined}
+                              role={open ? "region" : undefined}
+                              aria-label={open
+                                ? t("hearing.inspector")
+                                : undefined}
+                              tabindex="-1"
+                            >
+                              <button
+                                class={tabs.cardButton}
+                                aria-pressed={open}
+                                onclick={() => inspectFinding(f.id)}
+                              >
+                                <span class={tabs.cardTop}>
+                                  <StatusLabel status={f.status}></StatusLabel>
+                                  {#if f.reviewed}<span
+                                      class={tabs.reviewedMark}
+                                      ><Check
+                                        size={14}
+                                        aria-label={t("common.reviewed")}
+                                      ></Check></span
+                                    >{/if}
+                                </span>
+                                <h3>{f.title}</h3>
+                                <small class={tabs.cardMode}>
+                                  {f.mode === "simulation"
+                                    ? t("hearing.mode.simulation")
+                                    : f.mode === "imported"
+                                      ? t("hearing.mode.imported")
+                                      : t("hearing.mode.ai")}
+                                </small>
+                              </button>
+                              {#if open}<div class={tabs.cardDetail}>
+                                  {#key f.id}<FindingInspector
+                                      finding={f}
+                                      segment={statement}
+                                      {caseId}
+                                      {busy}
+                                      note={noteDrafts[f.id] ?? f.note}
+                                      onNote={(note) =>
+                                        (noteDrafts = ((
+                                          current: typeof noteDrafts,
+                                        ) => ({
+                                          ...current,
+                                          [f.id]: note,
+                                        }))(noteDrafts))}
+                                      onBack={() => {
+                                        const target = returnTarget.current
+                                          ?.isConnected
+                                          ? returnTarget.current
+                                          : document.getElementById(
+                                              "findings-heading",
+                                            );
+                                        target?.focus();
+                                        target?.scrollIntoView({
+                                          behavior: "instant",
+                                          block: "center",
+                                        });
+                                      }}
+                                      save={async (body) => {
+                                        const savedFindingId = f.id;
+                                        const saved = await action(() =>
+                                          api(
+                                            `/cases/${caseId}/findings/${f.id}`,
+                                            {
+                                              method: "PATCH",
+                                              body: JSON.stringify(body),
+                                            },
+                                          ),
+                                        );
+                                        if (saved)
+                                          noteDrafts = ((
+                                            current: typeof noteDrafts,
+                                          ) => {
+                                            if (
+                                              current[savedFindingId] !==
+                                              body.note
+                                            )
+                                              return current;
+                                            const next = { ...current };
+                                            delete next[savedFindingId];
+                                            return next;
+                                          })(noteDrafts);
+                                        return saved;
+                                      }}
+                                    ></FindingInspector>{/key}
+                                </div>{:else}<div class={tabs.cardQuotes}>
+                                  {#if statement}<p class={tabs.cardQuote}>
+                                      <span>{t("tabs.finding.testimony")}</span>
+                                      <q>{statement.text}</q>
+                                    </p>{/if}
+                                  {#if f.citations[0]?.quote}<p
+                                      class={tabs.cardQuote}
+                                    >
+                                      <span>{t("tabs.finding.source")}</span>
+                                      <q>{f.citations[0].quote}</q>
+                                    </p>{/if}
+                                </div>{/if}
+                            </div>{/each}{:else if pending === 0}<div
+                            class={tabs.empty}
+                          >
+                            <ShieldCheck size={28}></ShieldCheck>
+                            <h3>
+                              {filter === "all"
+                                ? t("hearing.emptyTitle")
+                                : t("hearing.emptyFilterTitle")}
+                            </h3>
+                            <p>
+                              {filter === "all"
+                                ? t("hearing.emptyText")
+                                : t("hearing.emptyFilterText")}
+                            </p>
+                          </div>{/if}
+                      </div>
+                    </section>
+                  </div>
+                  <p class={tabs.footnote}>
+                    {t("hearing.bottomNote")}
+                  </p>
                 </div>
-                <p class={styles.bottomNote}>
-                  {t("hearing.bottomNote")}
-                </p>
               {/if}
               {#if tab === "documents"}{#key caseId}<Documents
                     {caseId}

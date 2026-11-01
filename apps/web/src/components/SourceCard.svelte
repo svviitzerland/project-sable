@@ -2,7 +2,7 @@
   import { t } from "../lib/i18n/index.svelte";
   import { Download, FileText } from "@lucide/svelte";
   import { type Source } from "../lib/workspace-api";
-  import styles from "./workspace.module.css";
+  import styles from "./case-tabs.module.css";
 
   let {
     source,
@@ -18,21 +18,20 @@
 </script>
 
 <div class={styles.sourceCard}>
-  <div>
+  <div class={styles.sourceHead}>
     <FileText size={15}></FileText>
-    <strong>{source.document_name}</strong>
+    <span>
+      <strong>{source.document_name}</strong>
+      <small>
+        {source.section
+          ? t("source.docxSection")
+          : t("common.page", { page: source.page })}
+      </small>
+    </span>
   </div>
-  <span>
-    {source.section
-      ? t("source.docxSection")
-      : t("common.page", { page: source.page })}
-  </span>
   <p>
-    {#if index >= 0 && quote}
-      {source.text.slice(0, index)}
-      <mark>{quote}</mark>
-      {source.text.slice(index + quote.length)}
-    {:else}{source.text}{/if}
+    {#if index >= 0 && quote}{source.text.slice(0, index)}<mark>{quote}</mark
+      >{source.text.slice(index + quote.length)}{:else}{source.text}{/if}
   </p>
   <a
     rel="external"

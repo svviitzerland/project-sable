@@ -1,6 +1,12 @@
 <script lang="ts">
-  import { t, type MessageKey } from "../lib/i18n/index.svelte";
-  import { AudioLines, ChevronRight, RefreshCw } from "@lucide/svelte";
+  import { t, tp, type MessageKey } from "../lib/i18n/index.svelte";
+  import {
+    AudioLines,
+    ChevronRight,
+    RefreshCw,
+    Search,
+    X,
+  } from "@lucide/svelte";
   import {
     userFacingError,
     speakerName,
@@ -8,9 +14,9 @@
     type Finding,
     type Segment,
   } from "../lib/workspace-api";
-  import styles from "./workspace.module.css";
+  import ui from "./workspace.module.css";
+  import styles from "./case-tabs.module.css";
   import { untrack } from "svelte";
-  import Empty from "./Empty.svelte";
   import TranscriptText from "./TranscriptText.svelte";
   import Modal from "./Modal.svelte";
 
@@ -87,62 +93,71 @@
   });
 </script>
 
-<div class={styles.transcriptFilters}>
-  <label>
-    <span class={styles.srOnly}>{t("transcript.search")}</span>
-    <input
-      type="search"
-      placeholder={t("transcript.searchPlaceholder")}
-      value={query}
-      oninput={(e) => (query = e.currentTarget.value)}
-    />
-  </label>
-  <label>
-    <span class={styles.srOnly}>{t("transcript.filterSpeaker")}</span>
-    <select value={speaker} onchange={(e) => (speaker = e.currentTarget.value)}>
-      <option value="">{t("transcript.allSpeakers")}</option>
-      {#each speakerIds as id (id)}<option value={id}>
-          {speakerName(id, speakers)}
-        </option>{/each}
-    </select>
-  </label>
-  {#if filtering}<div class={styles.transcriptResults}>
-      <span role="status">
-        {t("transcript.shownOf", {
-          shown: visibleSegments.length,
-          total: segments.length,
-        })}
-      </span>
-      <button
-        class={styles.textButton}
+<div class={styles.colHead}>
+  <div class={styles.colTitle}>
+    <h2 id="transcript-heading">{t("hearing.transcript")}</h2>
+    <label class={styles.follow}>
+      <input
+        type="checkbox"
+        checked={follow && !filtering}
+        disabled={filtering}
+        oninput={(e) => (follow = e.currentTarget.checked)}
+      />
+      {filtering ? t("transcript.followPaused") : t("transcript.follow")}
+    </label>
+  </div>
+  <div class={styles.filterRow}>
+    <label class={styles.searchBox}>
+      <Search size={15}></Search>
+      <span class={ui.srOnly}>{t("transcript.search")}</span>
+      <input
+        type="search"
+        placeholder={t("transcript.searchPlaceholder")}
+        value={query}
+        oninput={(e) => (query = e.currentTarget.value)}
+      />
+    </label>
+    <label>
+      <span class={ui.srOnly}>{t("transcript.filterSpeaker")}</span>
+      <select
+        value={speaker}
+        onchange={(e) => (speaker = e.currentTarget.value)}
+      >
+        <option value="">{t("transcript.allSpeakers")}</option>
+        {#each speakerIds as id (id)}<option value={id}>
+            {speakerName(id, speakers)}
+          </option>{/each}
+      </select>
+    </label>
+  </div>
+  <div class={styles.results}>
+    <span role="status">
+      {filtering
+        ? t("transcript.shownOf", {
+            shown: visibleSegments.length,
+            total: segments.length,
+          })
+        : tp("count.statements", segments.length)}
+    </span>
+    {#if filtering}<button
+        class={styles.ghost}
         onclick={() => {
           query = "";
           speaker = "";
         }}
       >
+        <X size={14}></X>
         {t("transcript.clear")}
-      </button>
-    </div>{/if}
+      </button>{/if}
+  </div>
 </div>
-<label class={styles.follow}>
-  <input
-    type="checkbox"
-    checked={follow && !filtering}
-    disabled={filtering}
-    oninput={(e) => (follow = e.currentTarget.checked)}
-  />
-  {filtering ? t("transcript.followPaused") : t("transcript.follow")}
-</label>
-<div
-  bind:this={scroller.current}
-  class={`${styles.transcriptScroll} ${filtering ? styles.transcriptFiltered : ""}`}
->
+<div bind:this={scroller.current} class={styles.scroll}>
   {#if visibleSegments.length}{#each visibleSegments as s (s.id)}{@const finding =
         findings.find((f) => f.segment_id === s.id)}
       <article class={styles.segment}>
-        <div>
+        <div class={styles.segmentHead}>
           {#if onRename}<button
-              class={styles.speakerButton}
+              class={ui.speakerButton}
               title={t("transcript.renameSpeaker")}
               onclick={() => {
                 renaming = s.speaker;
@@ -158,7 +173,7 @@
         <p>
           <TranscriptText text={s.text} {term}></TranscriptText>
         </p>
-        <div class={styles.segmentMeta}>
+        <div class={styles.segmentFoot}>
           <span>
             {s.origin === "simulation"
               ? t("transcript.scripted")
@@ -177,6 +192,10 @@
               : ""}
           </span>
           {#if finding}<button onclick={() => select(s.id)}>
+              <i
+                class={`${ui.statusDot} ${ui[finding.status]}`}
+                aria-hidden="true"
+              ></i>
               {t("transcript.viewFinding")}
               <ChevronRight size={12}></ChevronRight>
             </button>{:else}{#if !["skipped", "unavailable", "failed", "interrupted"].includes(s.analysis_state)}<span
@@ -191,13 +210,15 @@
               {t("transcript.retry")}
             </button>
           </div>{/if}
-      </article>{/each}{:else}<Empty
-      title={filtering
-        ? t("transcript.noMatchTitle")
-        : t("transcript.readyTitle")}
-      text={filtering ? t("transcript.noMatchText") : t("transcript.readyText")}
-      >{#snippet icon()}<AudioLines size={28}></AudioLines>{/snippet}</Empty
-    >{/if}
+      </article>{/each}{:else}<div class={styles.empty}>
+      <AudioLines size={26}></AudioLines>
+      <h3>
+        {filtering ? t("transcript.noMatchTitle") : t("transcript.readyTitle")}
+      </h3>
+      <p>
+        {filtering ? t("transcript.noMatchText") : t("transcript.readyText")}
+      </p>
+    </div>{/if}
   {#if partial && !filtering}<div class={styles.partial}>
       <span>{t("transcript.listening")}</span>
       <p>{partial}</p>
@@ -211,7 +232,7 @@
 >
   <form
     id="rename-speaker"
-    class={styles.renameForm}
+    class={ui.renameForm}
     onsubmit={async (e) => {
       e.preventDefault();
       if (!renaming || !renameValue.trim() || !onRename) return;
@@ -232,10 +253,10 @@
     </label>
   </form>
   {#snippet footer()}
-    <button class={styles.secondary} onclick={() => (renaming = null)}>
+    <button class={ui.secondary} onclick={() => (renaming = null)}>
       {t("common.cancel")}
     </button>
-    <button class={styles.primary} type="submit" form="rename-speaker">
+    <button class={ui.primary} type="submit" form="rename-speaker">
       {t("transcript.renameSave")}
     </button>
   {/snippet}

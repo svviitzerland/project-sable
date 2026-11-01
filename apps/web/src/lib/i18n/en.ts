@@ -940,6 +940,23 @@ export const en = {
   "dialogue.aiUnavailableShort": "AI roleplay is not available right now.",
   "dialogue.finishDebrief": "Finish & see debrief",
   "dialogue.history": "History",
+  // Case tabs redesign
+  "tabs.evidence.askHint": "Answers quote the case file. Open any source to read it in full.",
+  "tabs.evidence.loadFailed": "The evidence map could not be loaded.",
+  "tabs.evidence.view": "Evidence view",
+  "tabs.evidence.linkHeading": "Your own link",
+  "tabs.library.import": "Import transcript",
+  "tabs.library.drop": "Drop a transcript here or choose a file",
+  "tabs.library.newText": "Name the session. Inside it you can record, transcribe an audio file or add statements by hand.",
+  "tabs.finding.testimony": "Testimony",
+  "tabs.finding.source": "Source",
+  "tabs.docs.drop": "Drop a document here or choose a file",
+  "tabs.docs.all": "All documents",
+  "tabs.docs.added": "Added {date}",
+  "tabs.references.count.one": "{count} regulation",
+  "tabs.references.count.other": "{count} regulations",
+  "tabs.settings.lead": "Details, export and deletion for this case.",
+  "tabs.settings.detailsText": "The title and case number appear in your case list and in exports.",
 } as const;
 
 export type MessageKey = keyof typeof en;

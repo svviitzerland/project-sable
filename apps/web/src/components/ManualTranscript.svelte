@@ -2,7 +2,8 @@
   import { t } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import { Plus } from "@lucide/svelte";
-  import styles from "./workspace.module.css";
+  import ui from "./workspace.module.css";
+  import styles from "./case-tabs.module.css";
 
   let {
     busy,
@@ -26,7 +27,7 @@
 
 <div class={styles.manual}>
   <button
-    class={styles.textButton}
+    class={styles.ghost}
     aria-expanded={open}
     onclick={() => (open = !open)}
   >
@@ -59,7 +60,7 @@
           rows={3}
           placeholder={t("manual.placeholder")}></textarea>
       </label>
-      <button class={styles.primary} disabled={busy}>
+      <button class={ui.primary} disabled={busy}>
         {busy ? t("common.saving") : t("manual.save")}
       </button>
     </form>{/if}

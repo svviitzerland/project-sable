@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { t } from "../lib/i18n/index.svelte";
+  import { t, tp } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
-  import { BookOpen, Search } from "@lucide/svelte";
+  import { BookOpen, Info, Search } from "@lucide/svelte";
   import { api, type LegalReference } from "../lib/workspace-api";
-  import styles from "./workspace.module.css";
-  import Empty from "./Empty.svelte";
+  import ui from "./workspace.module.css";
+  import styles from "./case-tabs.module.css";
   import LegalResults from "./LegalResults.svelte";
 
   let {
@@ -24,17 +24,13 @@
   let busy = $state(false);
 </script>
 
-<div class={styles.referencePage}>
-  <div class={styles.sectionTitle}>
+<div class={styles.screen}>
+  <header class={styles.heading}>
     <h2>{t("references.title")}</h2>
     <p>{t("references.lead")}</p>
-  </div>
-  <p class={styles.notice}>
-    <BookOpen size={17}></BookOpen>
-    {t("references.notice")}
-  </p>
+  </header>
   <form
-    class={styles.searchForm}
+    class={`${styles.searchBox} ${styles.ask}`}
     onsubmit={async (e) => {
       e.preventDefault();
       busy = true;
@@ -51,8 +47,8 @@
       }
     }}
   >
-    <Search size={18}></Search>
-    <label class={styles.srOnly} for="legal-search">
+    <Search size={20}></Search>
+    <label class={ui.srOnly} for="legal-search">
       {t("references.searchLabel")}
     </label>
     <input
@@ -62,30 +58,40 @@
       oninput={(e) => (query = e.currentTarget.value)}
       minLength={2}
       maxlength={160}
+      disabled={!configured}
       required
     />
-    <button class={styles.primary} disabled={!configured || busy}>
+    <button class={ui.primary} disabled={!configured || busy}>
       {busy ? t("common.searching") : t("references.search")}
     </button>
   </form>
-  {#if error}<p class={styles.error} role="alert">
+  <div class={styles.under}>
+    <p class={styles.note}>
+      <Info size={14}></Info>
+      {t("references.notice")}
+    </p>
+  </div>
+  {#if error}<p class={`${ui.error} ${styles.error}`} role="alert">
       {error}
     </p>{/if}
-  {#if busy}<Skeleton
-      variant="reader"
-      label={t("references.skeleton")}
-    />{:else if !configured}<Empty
-      title={t("references.unavailableTitle")}
-      text={t("references.unavailableText")}
-      >{#snippet icon()}<BookOpen size={32}></BookOpen>{/snippet}</Empty
-    >{:else}{#if results === null}<Empty
-        title={t("references.beginTitle")}
-        text={t("references.beginText")}
-        >{#snippet icon()}<Search size={30}></Search>{/snippet}</Empty
-      >{:else}{#if results.length}<LegalResults {results}
-        ></LegalResults>{:else}<Empty
-          title={t("references.noneTitle")}
-          text={t("references.noneText")}
-          >{#snippet icon()}<Search size={30}></Search>{/snippet}</Empty
-        >{/if}{/if}{/if}
+  {#if busy}<div class={styles.loadingBlock}>
+      <Skeleton variant="reader" label={t("references.skeleton")} />
+    </div>{:else if !configured}<div class={styles.empty}>
+      <BookOpen size={30}></BookOpen>
+      <h3>{t("references.unavailableTitle")}</h3>
+      <p>{t("references.unavailableText")}</p>
+    </div>{:else if results === null}<div class={styles.empty}>
+      <Search size={28}></Search>
+      <h3>{t("references.beginTitle")}</h3>
+      <p>{t("references.beginText")}</p>
+    </div>{:else if results.length}
+    <div class={styles.listHead}>
+      <h3>{tp("tabs.references.count", results.length)}</h3>
+    </div>
+    <LegalResults {results}></LegalResults>
+  {:else}<div class={styles.empty}>
+      <Search size={28}></Search>
+      <h3>{t("references.noneTitle")}</h3>
+      <p>{t("references.noneText")}</p>
+    </div>{/if}
 </div>

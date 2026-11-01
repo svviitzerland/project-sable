@@ -2,12 +2,16 @@
   import { t, tp, type MessageKey } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import {
+    ArrowLeft,
     ArrowRight,
     Check,
+    ChevronDown,
     Download,
     FileText,
     GitBranch,
+    Info,
     Link2,
+    MessageSquare,
     Plus,
     Search,
     X,
@@ -21,7 +25,7 @@
     type Citation,
   } from "../lib/workspace-api";
   import ui from "./workspace.module.css";
-  import styles from "./casebook.module.css";
+  import styles from "./case-tabs.module.css";
   import { untrack } from "svelte";
 
   type GraphNode = {
@@ -182,6 +186,14 @@
 
   let edge = $derived(graph?.edges.find((e) => e.id === edgeId));
 
+  let neighbours = $derived(
+    node && graph
+      ? graph.edges.filter(
+          (e) => e.source_id === node.id || e.target_id === node.id,
+        )
+      : [],
+  );
+
   let nodeMap = $derived(new Map(graph?.nodes.map((n) => [n.id, n]) ?? []));
 
   let visible = $derived((graph?.nodes ?? []).slice(0, 24));
@@ -250,31 +262,31 @@
   }
 </script>
 
-<div class={styles.evidence}>
-  <div class={styles.sectionHeader}>
-    <div>
-      <h2>{t("evidence.title")}</h2>
-      <p>{t("evidence.lead")}</p>
+<div class={`${styles.screen} ${styles.wide}`}>
+  <header class={styles.heading}>
+    <h2>{t("evidence.title")}</h2>
+    <p>{t("evidence.lead")}</p>
+    <div class={styles.headingActions}>
+      <button
+        class={styles.ghost}
+        disabled={!!busy}
+        onclick={() =>
+          run("evidence.finding", async () => {
+            const result = await api<{ notice: string; scope: string }>(
+              `/cases/${caseId}/graph/build`,
+              { method: "POST" },
+            );
+            notice = result.notice;
+            await load();
+          })}
+      >
+        <GitBranch size={16}></GitBranch>
+        {t("evidence.find")}
+      </button>
     </div>
-    <button
-      class={ui.secondary}
-      disabled={!!busy}
-      onclick={() =>
-        run("evidence.finding", async () => {
-          const result = await api<{ notice: string; scope: string }>(
-            `/cases/${caseId}/graph/build`,
-            { method: "POST" },
-          );
-          notice = result.notice;
-          await load();
-        })}
-    >
-      <GitBranch size={16}></GitBranch>
-      {t("evidence.find")}
-    </button>
-  </div>
+  </header>
   <form
-    class={styles.askForm}
+    class={`${styles.searchBox} ${styles.ask}`}
     onsubmit={(e) => {
       e.preventDefault();
       void run("evidence.searching", async () => {
@@ -301,110 +313,137 @@
       <ArrowRight size={16}></ArrowRight>
     </button>
   </form>
-  {#if error}<p class={ui.error} role="alert">
+  <div class={styles.under}>
+    <p class={styles.meta}>{t("tabs.evidence.askHint")}</p>
+    {#if busy && busy !== "evidence.searching"}<p
+        class={styles.meta}
+        role="status"
+      >
+        {t(busy)}
+      </p>{/if}
+  </div>
+  {#if error}<p class={`${ui.error} ${styles.error}`} role="alert">
       {error}
     </p>{/if}
-  {#if busy && busy !== "evidence.searching"}<Skeleton
-      variant="compact"
-      label={t(busy)}
-    />{/if}
-  {#if notice}<p class={styles.graphNotice} role="status">
+  {#if notice}<p class={`${styles.note} ${styles.error}`} role="status">
+      <Info size={15}></Info>
       {notice}
     </p>{/if}
-  {#if busy === "evidence.searching"}<Skeleton
-      variant="reader"
-      label={t("evidence.searching")}
-    />{:else if answer}<section class={styles.answer}>
-      <header>
-        <h3>
+  {#if busy === "evidence.searching"}<div class={styles.answer}>
+      <Skeleton variant="reader" label={t("evidence.searching")} />
+    </div>{:else if answer}<section
+      class={`${styles.surface} ${styles.answer}`}
+      aria-labelledby="evidence-answer"
+    >
+      <div class={styles.answerHead}>
+        <h3 id="evidence-answer">
           {answer.answer
             ? t("evidence.groundedAnswer")
             : t("evidence.relevantPassages")}
         </h3>
-        <span>
+        <span class={styles.chip}>
           {tp("count.sources", answer.sources.length)}
         </span>
         <button
+          class={styles.iconButton}
           aria-label={t("evidence.closeResults")}
           onclick={() => (answer = null)}
         >
           <X size={17}></X>
         </button>
-      </header>
-      {#if answer.answer}<p>{answer.answer}</p>{/if}
-      {#if answer.notice}<p>{answer.notice}</p>{/if}
-      <div class={styles.searchSources}>
-        {#each answer.sources as source, index (index)}<button
-            onclick={() => inspect(source.id)}
-          >
-            <span>{index + 1}</span>
-            <div>
-              <strong>{source.document_name}</strong>
-              <small
-                >{source.section ||
-                  t("common.page", { page: source.page })}</small
-              >
-              <p>
-                {source.text.slice(0, 210)}
-                {source.text.length > 210 ? "…" : ""}
-              </p>
-              {#each answer.citations.filter((c) => c.chunk_id === source.id) as c, i (i)}<blockquote
-                >
-                  “{c.quote}”
-                </blockquote>{/each}
-            </div>
-            <ArrowRight size={15}></ArrowRight>
-          </button>{/each}
       </div>
+      {#if answer.answer}<p class={styles.answerText}>{answer.answer}</p>{/if}
+      {#if answer.notice}<p class={`${styles.quiet} ${styles.error}`}>
+          {answer.notice}
+        </p>{/if}
+      <ol class={styles.sources}>
+        {#each answer.sources as source, index (index)}<li>
+            <button onclick={() => inspect(source.id)}>
+              <span class={styles.number}>{index + 1}</span>
+              <span>
+                <strong>{source.document_name}</strong>
+                <small
+                  >{source.section ||
+                    t("common.page", { page: source.page })}</small
+                >
+                <p>
+                  {source.text.slice(0, 210)}
+                  {source.text.length > 210 ? "…" : ""}
+                </p>
+                {#each answer.citations.filter((c) => c.chunk_id === source.id) as c, i (i)}<blockquote
+                  >
+                    “{c.quote}”
+                  </blockquote>{/each}
+              </span>
+              <ArrowRight size={15}></ArrowRight>
+            </button>
+          </li>{/each}
+      </ol>
     </section>{/if}
-  {#if !graph}{#if graphLoading}<Skeleton
-        variant="graph"
-        label={t("evidence.loadingMap")}
-      />{:else}<button
-        class={ui.secondary}
-        onclick={() => run("evidence.loading", load)}
-        >{t("evidence.retry")}</button
-      >{/if}{:else}
-    <div class={styles.graphToolbar}>
-      <div class={styles.viewSwitch}>
+  {#if !graph}{#if graphLoading}<div class={styles.loadingBlock}>
+        <Skeleton variant="graph" label={t("evidence.loadingMap")} />
+      </div>{:else}<div class={styles.empty}>
+        <GitBranch size={30}></GitBranch>
+        <h3>{t("tabs.evidence.loadFailed")}</h3>
+        <div class={styles.emptyActions}>
+          <button
+            class={ui.secondary}
+            onclick={() => run("evidence.loading", load)}
+            >{t("evidence.retry")}</button
+          >
+        </div>
+      </div>{/if}{:else}
+    <div class={styles.toolbar}>
+      <div
+        class={styles.segmented}
+        role="group"
+        aria-label={t("tabs.evidence.view")}
+      >
         <button
           aria-pressed={view === "graph"}
           onclick={() => (view = "graph")}
         >
-          <GitBranch size={16}></GitBranch>
+          <GitBranch size={15}></GitBranch>
           {t("evidence.map")}
         </button>
         <button aria-pressed={view === "list"} onclick={() => (view = "list")}>
-          <Link2 size={16}></Link2>
+          <Link2 size={15}></Link2>
           {t("evidence.connections")}
         </button>
       </div>
-      <span>
-        {t("evidence.summary", {
-          passages: graph.total_passages,
-          connections: graph.edges.length,
-        })}
-      </span>
+      <div class={styles.toolbarEnd}>
+        <div class={styles.legend}>
+          {#each Object.entries(relationColors) as [name, color] (name)}<span>
+              <i style={`background: ${color};`}></i>
+              {relationLabel(name)}
+            </span>{/each}
+        </div>
+        <span class={styles.meta}>
+          {t("evidence.summary", {
+            passages: graph.total_passages,
+            connections: graph.edges.length,
+          })}
+        </span>
+      </div>
     </div>
-    <div class={styles.graphLayout}>
-      <section
-        class={styles.graphCanvas}
-        aria-label={t("evidence.relationships")}
-      >
+    <div class={styles.evidenceLayout}>
+      <section class={styles.canvas} aria-label={t("evidence.relationships")}>
         {#if view === "graph"}
           {#if visible.length}
             <div class={styles.zoom}>
               <button
                 aria-label={t("evidence.zoomIn")}
+                title={t("evidence.zoomIn")}
                 onclick={() => (zoom = Math.min(2, zoom + 0.2))}
               >
-                <ZoomIn size={17}></ZoomIn>
+                <ZoomIn size={16}></ZoomIn>
               </button>
               <button
                 aria-label={t("evidence.zoomOut")}
+                title={t("evidence.zoomOut")}
                 onclick={() => (zoom = Math.max(0.6, zoom - 0.2))}
               >
-                <ZoomOut size={17}></ZoomOut>
+                <ZoomOut size={16}></ZoomOut>
               </button>
               <button onclick={() => (zoom = 1)}>{t("evidence.reset")}</button>
             </div>
@@ -472,7 +511,7 @@
                 >
                   <circle
                     r={selected === n.id ? 23 : 19}
-                    fill={n.kind === "statement" ? "#ddc9a6" : "#eff3e9"}
+                    fill={n.kind === "statement" ? "#ead9b9" : "#fffefa"}
                     stroke={selected === n.id ? "#a66e27" : "#315541"}
                     stroke-width={selected === n.id ? 3 : 1.5}
                   ></circle>
@@ -497,22 +536,26 @@
                   </text>
                 </g>{/each}
             </svg>
-            <p class={styles.mapCaption}>{t("evidence.mapCaption")}</p>
+            <p class={styles.caption}>{t("evidence.mapCaption")}</p>
+            {#if graph.nodes.length > 24}<p class={styles.caption}>
+                {t("evidence.mapLimit", { count: graph.nodes.length })}
+              </p>{/if}
           {:else}<div class={styles.empty}>
-              <GitBranch size={38}></GitBranch>
+              <GitBranch size={30}></GitBranch>
               <h3>{t("evidence.emptyTitle")}</h3>
               <p>{t("evidence.emptyText")}</p>
             </div>{/if}
-        {:else}<div class={styles.edgeList}>
-            {#if graph.edges.length}{#each graph.edges as e (e.id)}<button
-                  class={edgeId === e.id ? styles.selectedRow : ""}
+        {:else if graph.edges.length}<ul class={styles.edgeList}>
+            {#each graph.edges as e (e.id)}<li>
+                <button
+                  aria-pressed={edgeId === e.id}
                   onclick={() => {
                     inspectEdge(e.id);
                   }}
                 >
                   <span
                     class={styles.relation}
-                    style={`color: ${relationTextColors[e.relation]};`}
+                    style={`color: ${relationTextColors[e.relation]}; margin: 0;`}
                   >
                     {relationLabel(e.relation)}
                   </span>
@@ -521,37 +564,29 @@
                     <ArrowRight size={12}></ArrowRight>&#32;
                     {nodeMap.get(e.target_id)?.label}
                   </strong>
-                  <small>
+                  <span
+                    class={`${styles.chip} ${e.confirmed ? styles.chipDone : ""}`}
+                  >
                     {e.confirmed
                       ? t("common.reviewed")
                       : t("evidence.suggested")}
-                  </small>
-                </button>{/each}{:else}<div class={styles.empty}>
-                <Link2 size={30}></Link2>
-                <h3>{t("evidence.noConnectionsTitle")}</h3>
-                <p>{t("evidence.noConnectionsText")}</p>
-              </div>{/if}
+                  </span>
+                </button>
+              </li>{/each}
+          </ul>{:else}<div class={styles.empty}>
+            <Link2 size={30}></Link2>
+            <h3>{t("evidence.noConnectionsTitle")}</h3>
+            <p>{t("evidence.noConnectionsText")}</p>
           </div>{/if}
-        <div class={styles.legend}>
-          {#each Object.entries(relationColors) as [name, color] (name)}<span>
-              <i style={`background: ${color};`}></i>
-              {relationLabel(name)}
-            </span>{/each}
-        </div>
-        {#if graph.nodes.length > 24 && view === "graph"}<p
-            class={styles.mapCaption}
-          >
-            {t("evidence.mapLimit", { count: graph.nodes.length })}
-          </p>{/if}
       </section>
       <aside
         id="evidence-detail"
         tabindex="-1"
-        class={styles.graphInspector}
+        class={styles.inspector}
         aria-label={t("evidence.inspector")}
       >
         {#if edge || node}<button
-            class={styles.inspectorBack}
+            class={`${styles.back} ${styles.inspectorBack}`}
             onclick={() => {
               const origin = inspectorReturn.current;
               origin?.focus();
@@ -561,6 +596,7 @@
               });
             }}
           >
+            <ArrowLeft size={14}></ArrowLeft>
             {t("evidence.back")}
           </button>{/if}
         {#if edge}
@@ -574,22 +610,22 @@
               ? t("evidence.reviewedLower")
               : t("evidence.suggestedLower")}
           </span>
-          <p>{edge.explanation}</p>
-          <div class={styles.edgeSource}>
+          <p class={styles.passage}>{edge.explanation}</p>
+          <div class={styles.edgeQuote}>
             <button onclick={() => inspect(edge.source_id)}>
               {nodeMap.get(edge.source_id)?.label}
               <ArrowRight size={14}></ArrowRight>
             </button>
             <blockquote>“{edge.source_quote}”</blockquote>
           </div>
-          <div class={styles.edgeSource}>
+          <div class={styles.edgeQuote}>
             <button onclick={() => inspect(edge.target_id)}>
               {nodeMap.get(edge.target_id)?.label}
               <ArrowRight size={14}></ArrowRight>
             </button>
             <blockquote>“{edge.target_quote}”</blockquote>
           </div>
-          <p class={styles.muted}>
+          <p class={`${styles.caption} ${styles.edgeQuote}`}>
             {t(basisKeys[edge.basis] ?? "evidence.basis.recorded")}.&#32;
             {edge.score !== null
               ? t("evidence.similarity", {
@@ -599,6 +635,7 @@
           </p>
           {#if edge.kind === "evidence"}<button
               class={ui.primary}
+              style="margin-top: 16px;"
               disabled={!!busy}
               onclick={() =>
                 run("evidence.savingReview", async () => {
@@ -616,48 +653,58 @@
             </button>{/if}
         {:else}{#if node}
             <h3>{node.label}</h3>
-            <span class={styles.muted}>{nodeDetail(node)}</span>
+            <span class={styles.meta}>{nodeDetail(node)}</span>
             <p class={styles.passage}>{node.text}</p>
-            {#if node.document_id}<a
-                class={ui.textButton}
-                rel="external"
-                href={`/api/v1/cases/${caseId}/documents/${node.document_id}/original`}
-              >
-                <Download size={14}></Download>
-                {t("common.downloadOriginal")}
-              </a>{/if}
-            {#if node.hearing_id}<button
+            <div class={styles.actionsStack}>
+              <button
                 class={ui.secondary}
-                onclick={() => openHearing(node.hearing_id!)}
+                onclick={() =>
+                  askAssistant(
+                    node.kind === "statement" ? node.id : `passage:${node.id}`,
+                  )}
               >
-                {t("common.openHearing")}
-                <ArrowRight size={14}></ArrowRight>
-              </button>{/if}
-            <button
-              class={ui.secondary}
-              onclick={() =>
-                askAssistant(
-                  node.kind === "statement" ? node.id : `passage:${node.id}`,
-                )}
-            >
-              {t("evidence.discuss")}
-              <ArrowRight size={14}></ArrowRight>
-            </button>
-            <h4>{t("evidence.connected")}</h4>
-            {#each graph.edges.filter((e) => e.source_id === node.id || e.target_id === node.id) as e (e.id)}<button
-                class={styles.neighbor}
-                onclick={() => {
-                  inspectEdge(e.id);
-                }}
-              >
-                <span>{relationLabel(e.relation)}</span>
-                {nodeMap.get(
-                  e.source_id === node.id ? e.target_id : e.source_id,
-                )?.label}
-                <ArrowRight size={13}></ArrowRight>
-              </button>{/each}
+                <MessageSquare size={15}></MessageSquare>
+                {t("evidence.discuss")}
+              </button>
+              {#if node.hearing_id}<button
+                  class={styles.ghost}
+                  onclick={() => openHearing(node.hearing_id!)}
+                >
+                  {t("common.openHearing")}
+                  <ArrowRight size={14}></ArrowRight>
+                </button>{/if}
+              {#if node.document_id}<a
+                  class={styles.ghost}
+                  rel="external"
+                  href={`/api/v1/cases/${caseId}/documents/${node.document_id}/original`}
+                >
+                  <Download size={14}></Download>
+                  {t("common.downloadOriginal")}
+                </a>{/if}
+            </div>
+            {#if neighbours.length}<h4>{t("evidence.connected")}</h4>
+              <div class={styles.neighbors}>
+                {#each neighbours as e (e.id)}<button
+                    onclick={() => {
+                      inspectEdge(e.id);
+                    }}
+                  >
+                    <span>{relationLabel(e.relation)}</span>
+                    <strong
+                      >{nodeMap.get(
+                        e.source_id === node.id ? e.target_id : e.source_id,
+                      )?.label}</strong
+                    >
+                    <ArrowRight size={13}></ArrowRight>
+                  </button>{/each}
+              </div>{/if}
             {#if node.kind === "passage"}
-              <button class={ui.secondary} onclick={() => (linking = !linking)}>
+              <h4>{t("tabs.evidence.linkHeading")}</h4>
+              <button
+                class={styles.ghost}
+                aria-expanded={linking}
+                onclick={() => (linking = !linking)}
+              >
                 <Plus size={15}></Plus>
                 {t("evidence.link")}
               </button>
@@ -725,24 +772,29 @@
                 </form>{/if}
             {/if}
           {:else}<div class={styles.empty}>
-              <FileText size={31}></FileText>
+              <FileText size={28}></FileText>
               <h3>{t("evidence.inspectorEmptyTitle")}</h3>
               <p>{t("evidence.inspectorEmptyText")}</p>
             </div>{/if}{/if}
       </aside>
     </div>
-    <p class={styles.graphNotice}>{graph.notice}</p>
-    <details class={styles.allPassages}>
+    {#if graph.notice}<p class={`${styles.note} ${styles.error}`}>
+        <Info size={15}></Info>
+        {graph.notice}
+      </p>{/if}
+    <details class={styles.passages}>
       <summary>
         {t("evidence.browse", { count: graph.nodes.length })}
+        <ChevronDown size={15}></ChevronDown>
       </summary>
-      <div>
-        {#each graph.nodes as n (n.id)}<button onclick={() => inspect(n.id)}>
-            {n.label}
-            <span>{nodeDetail(n)}</span>
-            <ArrowRight size={13}></ArrowRight>
-          </button>{/each}
-      </div>
+      <ul>
+        {#each graph.nodes as n (n.id)}<li>
+            <button onclick={() => inspect(n.id)}>
+              <span>{n.label}</span>
+              <span>{nodeDetail(n)}</span>
+            </button>
+          </li>{/each}
+      </ul>
     </details>
   {/if}
 </div>
