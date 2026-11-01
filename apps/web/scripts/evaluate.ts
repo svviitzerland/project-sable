@@ -35,12 +35,9 @@ if (values.live) {
   const dir = await mkdtemp(join(tmpdir(), "jude-evaluation-"));
   const config = settings({
     ...process.env,
-    VERCEL: "",
-    JUDE_RUNTIME: "local",
     DATABASE_URL: "",
     JUDE_DATA_DIR: dir,
-    SUPABASE_URL: "",
-    SUPABASE_SERVICE_ROLE_KEY: "",
+    S3_BUCKET: "",
     PASAL_API_KEY: "",
   });
   if (!config.openrouterKey || !config.model)

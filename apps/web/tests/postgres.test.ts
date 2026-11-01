@@ -15,10 +15,9 @@ import {
 } from "../src/lib/server/runtime";
 import { ingest } from "../src/lib/server/documents";
 import { retrieve } from "../src/lib/server/retrieval";
-import { stageJob } from "../src/lib/server/jobs";
 
 test(
-  "PostgreSQL migrations, RLS, vector sync, shared locks, rates, jobs and persistence",
+  "PostgreSQL migrations, RLS, vector sync, shared locks, rates and persistence",
   { skip: !process.env.JUDE_TEST_DATABASE_URL },
   async () => {
     const url = process.env.JUDE_TEST_DATABASE_URL!;
@@ -152,14 +151,15 @@ test(
         title: "Hearing",
       });
       await first.db.transaction(async (db) => {
-        const segment = await db.insert("segments", {
+        await db.insert("segments", {
           case_id: record.id,
           hearing_id: hearing.id,
           text: "Saved testimony.",
         });
-        await stageJob(db, segment.id);
       });
-      assert.ok((await second.db.all("analysis_jobs")).length);
+      assert.ok(
+        (await second.db.all("segments", "hearing_id=?", [hearing.id])).length,
+      );
       await first.db.remove("cases", "owner_id=?", [user.id]);
       await first.db.remove("users", "id=?", [user.id]);
     } finally {

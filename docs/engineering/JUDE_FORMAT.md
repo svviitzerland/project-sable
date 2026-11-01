@@ -34,4 +34,4 @@ Limits: 64 MB compressed and expanded; 12 MB manifest; 40 originals, each up to 
 
 Archives are portable copies of case material and originals. A checksum detects byte changes; it does not authenticate the author, establish the truth of extracted passages, or prove a finding. Review imported content against the original files.
 
-On Vercel, large archives use authenticated chunked intake and expiring private download links to stay below the function payload envelope. The archive schema and validation limits are unchanged. See [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md).
+Archives upload as one bounded multipart request and download directly from the API; the production server's body limit is set above the archive limit.

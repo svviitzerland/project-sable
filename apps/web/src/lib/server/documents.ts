@@ -38,7 +38,7 @@ export async function extractPages(
               configurable: true,
             });
         }
-        // Static imports keep PDF.js's worker and native polyfills in Vercel's traced bundle.
+        // Static imports keep PDF.js's worker and native polyfills in the server bundle.
         await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
         const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
         const task = getDocument({

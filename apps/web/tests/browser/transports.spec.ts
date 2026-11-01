@@ -9,7 +9,7 @@ import { settings } from "../../src/lib/server/config";
 import { connectDatabase } from "../../src/lib/server/database";
 import { handleApi } from "../../src/lib/server/api";
 import type { Runtime } from "../../src/lib/server/runtime";
-test("hosted chunked uploads and direct speech rotation save finalized testimony", async ({
+test("large direct uploads and speech rotation save finalized testimony", async ({
   page,
   context,
 }) => {
@@ -24,27 +24,14 @@ test("hosted chunked uploads and direct speech rotation save finalized testimony
     tasks: new Set(),
     simulations: new Map(),
   };
-  Object.assign(config, {
-    hosted: true,
-    speechKey: "server-secret",
-    supabaseUrl: "https://storage.test",
-    storageKey: "storage-secret",
-  });
-  const objects = new Map<string, Uint8Array>();
-  rt.fetch = async (input, init) => {
+  config.speechKey = "server-secret";
+  rt.fetch = async (input) => {
     const url = new URL(String(input));
     if (url.hostname === "mp.speechmatics.com")
       return Response.json({ key_value: randomUUID() });
-    const key = url.pathname
-      .replace("/storage/v1/object/authenticated/", "")
-      .replace("/storage/v1/object/", "");
-    if (init?.method === "POST") {
-      objects.set(key, new Uint8Array(init.body as Buffer));
-      return Response.json({});
-    }
-    return new Response(Buffer.from(objects.get(key) || []));
+    throw new Error("Unmocked provider");
   };
-  const parts: number[] = [],
+  const uploads: number[] = [],
     errors: string[] = [],
     connections: string[] = [],
     stops: number[] = [],
@@ -74,8 +61,8 @@ test("hosted chunked uploads and direct speech rotation save finalized testimony
             : undefined,
       }),
     );
-    if (url.pathname.includes("/parts/"))
-      parts.push(req.postDataBuffer()?.length || 0);
+    if (url.pathname.endsWith("/documents") && req.method() === "POST")
+      uploads.push(req.postDataBuffer()?.length || 0);
     if (url.pathname.endsWith("/audio-sessions") && response.ok) {
       const data = await response.json();
       data.rotate_after = sessions++ === 0 ? 0.3 : 0;
@@ -134,7 +121,7 @@ test("hosted chunked uploads and direct speech rotation save finalized testimony
   try {
     await register(page);
     await page.getByRole("button", { name: "New case", exact: true }).click();
-    await page.getByLabel("Case title").fill("Vercel transport case");
+    await page.getByLabel("Case title").fill("Transport case");
     await page
       .getByRole("button", { name: "Create case", exact: true })
       .click();
@@ -142,7 +129,7 @@ test("hosted chunked uploads and direct speech rotation save finalized testimony
     const docx = zipSync(
       {
         "word/document.xml": strToU8(
-          '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>The hosted witness arrived at eight.</w:t></w:r></w:p></w:body></w:document>',
+          '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>The witness arrived at eight.</w:t></w:r></w:p></w:body></w:document>',
         ),
         "word/media/padding.bin": new Uint8Array(4 * 1024 * 1024),
       },
@@ -160,8 +147,9 @@ test("hosted chunked uploads and direct speech rotation save finalized testimony
     await expect(
       page.getByText("large-source.docx", { exact: true }).first(),
     ).toBeVisible();
-    expect(parts).toHaveLength(3);
-    expect(parts.every((n) => n <= 2 * 1024 * 1024)).toBe(true);
+    // One multipart request carries the whole file.
+    expect(uploads).toHaveLength(1);
+    expect(uploads[0]).toBeGreaterThan(4 * 1024 * 1024);
     await page.getByRole("tab", { name: "Hearings", exact: true }).click();
     await page
       .getByRole("button", { name: "New hearing", exact: true })

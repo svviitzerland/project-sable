@@ -8,7 +8,7 @@ Lawyers in Indonesian criminal proceedings must follow testimony while comparing
 
 The marketing introduction remains at `/`, with a prominent Open workspace action and Sign in links in desktop/mobile navigation. `/workspace` provides account registration/sign-in, isolated cases, document ingestion/search/original download, transcript capture, progressive source-linked findings, independent-review details, review notes, speaker labels, legal discovery, provider status, portable `.jude` export/import, a separate hearing library, and an evidence graph with natural-language search.
 
-Local SQLite and private files work without external accounts. Optional PostgreSQL/pgvector and private Supabase Storage paths are supplied. Speechmatics and OpenRouter integrations are implemented with protocol/contract tests; no live provider credentials were available for verification. Pasal.id responses remain discovery metadata, separate from case evidence.
+Local SQLite and private files work without external accounts. Optional PostgreSQL/pgvector and private S3 storage paths are supplied. Speechmatics, Amazon Bedrock and OpenRouter integrations are implemented with protocol/contract tests; no live provider credentials were available for verification. Pasal.id responses remain discovery metadata, separate from case evidence.
 
 The synthetic hearing is a complete authored exercise: two documents, eight turns, four qualified finding states. It does not claim to measure AI quality. Manual testimony without a configured AI provider is saved with an explicit unavailable state.
 
@@ -25,7 +25,7 @@ The synthetic hearing is a complete authored exercise: two documents, eight turn
 - [x] Show missing-provider states without invented analysis or law.
 - [x] Reproducible evaluation with precision/recall, citation checks, failures, latency, optional WER and human unsupported-conclusion annotations.
 - [x] Desktop/mobile keyboard and workflow verification.
-- [ ] Authorized real Speechmatics, OpenRouter, Pasal.id and hosted Supabase validation.
+- [ ] Authorized real Speechmatics, Bedrock/OpenRouter, Pasal.id and production S3 validation.
 
 ## Hearing and evidence workspace
 
@@ -55,20 +55,20 @@ Layout-matched skeletons cover workspace startup, case lists/records, evidence m
 
 ## Constraints and decisions
 
-Local mode uses one backend worker and recoverable in-process tasks. Hosted Vercel mode uses a transactional analysis outbox, signed QStash callbacks, PostgreSQL leases/rate limits/coalesced events, and scheduled recovery. Cold starts perform no migrations or global status resets. Sessions are application-owned, not Supabase Auth. Backend ownership checks protect every case route. No OCR, native courtroom recording, account recovery, multi-user case sharing, automatic naming of speakers, or operational prosecutor/judge workflow (practice roles are supported). Configured providers receive relevant material; no unverified privacy, accuracy, latency, customer, or commercial claims.
+Local and production modes both run one server process with bounded in-process analysis tasks; production uses PostgreSQL for data, leases, rate limits and coalesced events. Migrations run before the server starts, never inside it. Sessions are application-owned. Backend ownership checks protect every case route. No OCR, native courtroom recording, account recovery, multi-user case sharing, automatic naming of speakers, or operational prosecutor/judge workflow (practice roles are supported). Configured providers receive relevant material; no unverified privacy, accuracy, latency, customer, or commercial claims.
 
 Original brief: “Jude - Evidence-Grounded AI for Courtroom Intelligence.” The portable scope and implementation map are recorded in [`docs/phases/2026-10-30-product-handoff.md`](../phases/2026-10-30-product-handoff.md); its initial failure list is superseded by the completion record.
 
 
-## Vercel deployment behavior
+## Deployment behavior
 
-The native Svelte 5 frontend and TypeScript backend run in one SvelteKit 3 Vercel project rooted at `apps/web`. Supabase PostgreSQL and private Storage remain external durable services. See [DEPLOY_VERCEL.md](../engineering/DEPLOY_VERCEL.md) for the environment contract, migration order and recovery scheduler setup.
+The native Svelte 5 frontend and TypeScript backend run as one SvelteKit 3 Node server (`@sveltejs/adapter-node`) built from `apps/web`. Production runs it in Docker on one AWS EC2 instance with PostgreSQL + pgvector, case originals in a private S3 bucket (`S3_BUCKET`) and AI through Amazon Bedrock (`AI_PROVIDER=bedrock`); see [`infra/README.md`](../../infra/README.md). OpenRouter remains an optional alternative AI provider.
 
-Saved testimony and its analysis job commit together. Signed QStash callbacks validate the request body and destination, enforce a shared lease, and retry transient analysis failures within a bounded attempt count. Authenticated scheduled recovery redelivers stale/unsent work every 15 minutes by default (96 scheduled deliveries per day, plus analysis jobs and retries). Normal job dispatch remains immediate. Cookie-authenticated SSE supplies database-backed update notifications while the UI polls authoritative records.
+Saved testimony is committed before its analysis is queued in the same process. At most three statements analyze at once and duplicate retries coalesce; a full queue or provider failure leaves the statement saved and retryable. Expired audio sessions and temporary coordination rows are cleaned opportunistically when cases load. Cookie-authenticated SSE supplies database-backed update notifications while the UI polls authoritative records.
 
-The browser streams directly to Speechmatics using temporary server-minted credentials. Finalized batches are authenticated, validated and saved idempotently through the TypeScript API. Audio rotates with fresh credentials, preserves final-buffer flushing and bounds reconnect buffering; failures remain explicit. Speaker identifiers are scoped to each provider connection and timeline offsets continue across rotations. Partials remain local to the recording browser. Large uploads use authenticated 2 MB parts with integrity checks; large responses use expiring signed private-storage links. Temporary parts/exports are cleaned by recovery.
+The browser streams directly to Speechmatics using temporary server-minted credentials. Finalized batches are authenticated, validated and saved idempotently through the TypeScript API. Audio rotates with fresh credentials, preserves final-buffer flushing and bounds reconnect buffering; failures remain explicit. Speaker identifiers are scoped to each provider connection and timeline offsets continue across rotations. Partials remain local to the recording browser. Uploads are single bounded multipart requests, and originals and exports download directly from the API.
 
-The previous Python runtime and test harness have been replaced with TypeScript. Existing PostgreSQL data, password hashes, originals and `.jude` version 1 remain compatible; migration 006 adds browser-audio session state. These paths have local/mocked contract checks and a separate PostgreSQL suite; real Vercel/provider acceptance remains a deployment requirement.
+The previous Python runtime and test harness have been replaced with TypeScript. Existing PostgreSQL data, password hashes, originals and `.jude` version 1 remain compatible; migration 006 adds browser-audio session state. These paths have local/mocked contract checks and a separate PostgreSQL suite; real production/provider acceptance remains a deployment requirement.
 
 ## Everyday workspace usability
 

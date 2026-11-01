@@ -1,8 +1,6 @@
 import { defineEnvVars } from "@sveltejs/kit/env";
 const privateValue = { schema: (value: string | undefined) => value || "" };
 export const variables = defineEnvVars({
-  VERCEL: privateValue,
-  JUDE_RUNTIME: privateValue,
   JUDE_ENV: privateValue,
   JUDE_DEMO: privateValue,
   JUDE_APP_URL: privateValue,
@@ -10,9 +8,6 @@ export const variables = defineEnvVars({
   JUDE_SIMULATION_DELAY: privateValue,
   DATABASE_URL: privateValue,
   ALLOWED_ORIGINS: privateValue,
-  SUPABASE_URL: privateValue,
-  SUPABASE_SERVICE_ROLE_KEY: privateValue,
-  SUPABASE_STORAGE_BUCKET: privateValue,
   AI_PROVIDER: privateValue,
   AWS_REGION: privateValue,
   BEDROCK_MODEL: privateValue,
@@ -26,9 +21,4 @@ export const variables = defineEnvVars({
   PASAL_API_KEY: privateValue,
   VOICE_API_URL: privateValue,
   VOICE_API_TOKEN: privateValue,
-  QSTASH_URL: privateValue,
-  QSTASH_TOKEN: privateValue,
-  QSTASH_CURRENT_SIGNING_KEY: privateValue,
-  QSTASH_NEXT_SIGNING_KEY: privateValue,
-  CRON_SECRET: privateValue,
 });

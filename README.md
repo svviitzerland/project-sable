@@ -2,26 +2,24 @@
 
 An evidence-grounded workspace for hearing preparation, testimony review, and courtroom practice. The existing landing page is at `/`; the authenticated product is at `/workspace`.
 
-Jude uses **Svelte 5, SvelteKit 3, and TypeScript for both frontend and backend** in one Vercel project (`apps/web`). An optional **Python voice service** (`apps/voice`: FastAPI, open-source pyannote models, Docker) keeps one label per recurring voice across recording connections and hearings. Locally, database and storage can run on the Supabase CLI or SQLite; production runs on AWS (`infra/`).
+Jude uses **Svelte 5, SvelteKit 3, and TypeScript for both frontend and backend** in one Node server (`apps/web`, `@sveltejs/adapter-node`). An optional **Python voice service** (`apps/voice`: FastAPI, open-source pyannote models, Docker) keeps one label per recurring voice across recording connections and hearings. Locally the app runs on SQLite and local files (or any PostgreSQL with pgvector); production runs on AWS (`infra/`).
 
 ## Repository layout
 
 ```
 apps/
-  web/                 SvelteKit app (Vercel Root Directory: apps/web)
+  web/                 SvelteKit app (Node server, Dockerfile)
     src/routes/        frontend pages and the /api/v1 endpoint
     src/components/    frontend UI
     src/lib/           browser helpers (audio capture, API client)
     src/lib/server/    backend: API, analysis, storage, voice client
+    migrations/        PostgreSQL schema, applied by scripts/migrate.mjs
     tests/             Node and Playwright tests
     evaluation/        synthetic analysis evaluation
   voice/               Python voice API (Docker; optional)
     src/jude_voice/    FastAPI service
     tests/             pytest
     evaluation/        speaker-consistency check on real hearing audio
-supabase/
-  config.toml          Supabase local stack
-  migrations/          PostgreSQL schema, applied locally and to hosted projects
 docs/
   product/             product spec, limitations and problems with sources
   engineering/         architecture, deployment, .jude format
@@ -37,19 +35,16 @@ compose.yaml           local Docker service for apps/voice
 
 ## Run locally
 
-Use Node **24.x**, pnpm 11.25.0, Docker (Docker Desktop or Colima) and the [Supabase CLI](https://supabase.com/docs/guides/local-development).
+Use Node **24.x** and pnpm 11.25.0 (Docker only for the optional voice service or a local PostgreSQL).
 
 ```bash
-supabase start                      # local Postgres + pgvector + Storage, applies supabase/migrations
-supabase status -o env              # prints DB_URL, API_URL and SERVICE_ROLE_KEY
-
 cd apps/web
 pnpm install --frozen-lockfile
-cp .env.example .env.local          # fill the local Supabase block from `supabase status`
+cp .env.example .env.local
 pnpm dev
 ```
 
-Open http://localhost:3000/workspace. Register an account or open a clearly labeled synthetic case. Without the Supabase variables the app falls back to a single local SQLite process with files in `apps/web/.data/`. `supabase db reset` re-applies all migrations to the local database; Studio is at http://127.0.0.1:54323.
+Open http://localhost:3000/workspace. Register an account or open a clearly labeled synthetic case. By default the app runs a single local SQLite process with files in `apps/web/.data/`. To use PostgreSQL instead, start one with pgvector (for example `docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 pgvector/pgvector:pg17`), apply migrations with `DATABASE_URL=... node scripts/migrate.mjs` and set the same `DATABASE_URL` in `.env.local`. Setting `S3_BUCKET` stores originals in S3 through the AWS credential chain.
 
 Voice labels (optional): `cp apps/voice/.env.example apps/voice/.env`, set `VOICE_API_TOKEN`, run `docker compose up --build voice`, and add `VOICE_API_URL=http://localhost:8000` plus the same token to `apps/web/.env.local`. See [apps/voice/README.md](apps/voice/README.md).
 
@@ -57,15 +52,13 @@ Voice labels (optional): `cp apps/voice/.env.example apps/voice/.env`, set `VOIC
 
 Production runs on AWS under the codename **project-sable**: one EC2 instance with Docker Compose (Caddy HTTPS, web, voice, PostgreSQL + pgvector), case originals in S3, AI through Amazon Bedrock (Nova Lite screening, Claude Haiku independent review), images in ECR, secrets in SSM. Terraform is in [`infra/terraform`](infra/terraform) and the stack in [`infra/docker`](infra/docker). Pushing to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): checks, image build, ECR push, and an SSM-driven deploy through GitHub OIDC (no AWS keys in GitHub). See [infra/README.md](infra/README.md).
 
-Vercel + Supabase hosting remains supported (`JUDE_ADAPTER=vercel pnpm build`; [DEPLOY_VERCEL.md](docs/engineering/DEPLOY_VERCEL.md)) but is no longer the default target.
-
 ## Product
 
 - Authenticated, owner-isolated cases; PDF, DOCX, TXT and Markdown ingestion with original downloads and page provenance.
 - Dedicated hearings; reviewed transcript upload, native CSV/TXT/SRT/VTT/JSON/`.jude` parsing, and optional verbatim-checked AI formatting.
 - Live microphone/prepared-audio transcription; finalized testimony persists independently of analysis.
 - Four-step analysis with an independent reviewer and exact-quotation verification; review notes, speaker labels, search, and review queues.
-- Evidence graph, confirmed connections, natural-language search, and optional OpenRouter embeddings.
+- Evidence graph, confirmed connections, natural-language search, and optional OpenRouter embeddings (Bedrock deployments use keyword search).
 - Case-wide assistant and separate courtroom practice with editable conditions, role selection, saved exchanges and debriefs.
 - Portable `.jude` case/hearing archives and separate conversation JSON exports.
 
@@ -83,7 +76,6 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm check:bundle
 pnpm evaluate --predictions evaluation/predictions.fixture.json --fixture --output /tmp/jude-evaluation.json
 ```
 
@@ -102,12 +94,12 @@ pnpm exec playwright install chromium
 pnpm test:e2e
 ```
 
-Set `CHROMIUM_EXECUTABLE` to an installed Chromium path if needed; `JUDE_TEST_URL` selects another app URL. The TypeScript browser suites cover workspace, landing, conversations/practice, chunked uploads and mocked direct speech rotation. Provider mocks are explicitly test-only.
+Set `CHROMIUM_EXECUTABLE` to an installed Chromium path if needed; `JUDE_TEST_URL` selects another app URL. The TypeScript browser suites cover workspace, landing, conversations/practice, large direct uploads and mocked direct speech rotation. Provider mocks are explicitly test-only.
 
-For PostgreSQL, create a disposable database named `jude_test*` (for example `createdb -h 127.0.0.1 -p 54322 -U postgres jude_test` on the local Supabase stack) and run `JUDE_TEST_DATABASE_URL=... pnpm test`. This verifies migrations, RLS denial, vectors, shared locks/rates, jobs and cross-connection persistence; it does not emulate hosted Supabase Storage. See [evaluation guidance](apps/web/evaluation/README.md) before interpreting metrics.
+For PostgreSQL, create a disposable database named `jude_test*` (for example `docker run -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=jude_test -p 55432:5432 pgvector/pgvector:pg17`) and run `JUDE_TEST_DATABASE_URL=postgresql://postgres:pw@127.0.0.1:55432/jude_test pnpm test`. This verifies migrations, RLS denial, vectors, shared locks/rates and cross-connection persistence. See [evaluation guidance](apps/web/evaluation/README.md) before interpreting metrics.
 
 ## Architecture and boundaries
 
-Server-only modules live in `apps/web/src/lib/server`; Zod validates request and model-output contracts. SvelteKit's `/api/v1/[...path]` endpoint enforces account ownership and delegates to those modules. PostgreSQL migrations run separately, never on hosted cold starts. Private keys are declared in `apps/web/src/env.ts` and never exported to browser environment variables.
+Server-only modules live in `apps/web/src/lib/server`; Zod validates request and model-output contracts. SvelteKit's `/api/v1/[...path]` endpoint enforces account ownership and delegates to those modules. PostgreSQL migrations run separately (`scripts/migrate.mjs`), never inside the server. Private keys are declared in `apps/web/src/env.ts` and never exported to browser environment variables.
 
 The app supports human verification, not determinations of guilt, honesty, credibility, or legal outcomes. Legal search returns discovery metadata and links, not verified statute text. Practice output is hypothetical and never enters the evidence record. See [the product spec](docs/product/PRODUCT_SPEC.md), [limitations](docs/product/LIMITATIONS.md), [architecture](docs/engineering/ARCHITECTURE.md), and [portable format](docs/engineering/JUDE_FORMAT.md).

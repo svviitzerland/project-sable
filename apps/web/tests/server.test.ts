@@ -6,12 +6,11 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { zipSync, strToU8 } from "fflate";
 import { settings } from "../src/lib/server/config";
-import { connectDatabase, seconds } from "../src/lib/server/database";
+import { connectDatabase } from "../src/lib/server/database";
 import { handleApi } from "../src/lib/server/api";
 import {
   checkPassword,
   hashPassword,
-  hash,
   type Runtime,
 } from "../src/lib/server/runtime";
 import { pack, unpack, validateArchive } from "../src/lib/server/archive";
@@ -29,9 +28,7 @@ import { z } from "zod";
 import { ProviderError } from "../src/lib/server/errors";
 import { verifyReply } from "../src/lib/server/dialogues";
 import type { ContextSource } from "../src/lib/server/contracts";
-import { stageJob, runJob } from "../src/lib/server/jobs";
 import { normalizeTranscript } from "../src/lib/server/audio";
-import { createHmac } from "node:crypto";
 
 async function fixture(t: TestContext) {
   const dir = await mkdtemp(join(tmpdir(), "jude-ts-"));
@@ -202,13 +199,20 @@ test("provider failures keep operator diagnostics in logs and show actionable us
     /Legal search could not be completed/,
   );
   assert.equal(JSON.parse(logs.at(-1)!).status, null);
-  rt.config.supabaseUrl = "https://private-host";
-  rt.config.storageKey = "private-storage-key";
-  rt.fetch = async () => new Response(upstreamSecret, { status: 403 });
+  rt.config.s3Bucket = "case-files";
+  rt.s3 = {
+    send: async () => {
+      throw Object.assign(new Error(upstreamSecret), {
+        $metadata: { httpStatusCode: 403 },
+      });
+    },
+  };
   await assert.rejects(
     saveFile(rt, "owner/case/file.txt", new Uint8Array([65]), "text/plain"),
-    /The file could not be saved or opened/,
+    /The document could not be saved/,
   );
+  assert.equal(JSON.parse(logs.at(-1)!).status, 403);
+  rt.config.s3Bucket = "";
   rt.fetch = async () => new Response(upstreamSecret, { status: 400 });
   await assert.rejects(
     embed(rt, ["private-document-content"]),
@@ -935,70 +939,6 @@ test("embedding contract validates complete finite vectors; legal URLs stay on P
   assert.equal(safePasalUrl("https://pasal.id/uu/1"), "https://pasal.id/uu/1");
 });
 
-test("durable outbox recovery, signed callbacks and attempt exhaustion", async (t) => {
-  const { rt, a, record } = await fixture(t);
-  await a.json(
-    `/cases/${record.id}/documents`,
-    "POST",
-    upload("source.txt", "A saved assertion appears in the record."),
-  );
-  const hearing = await a.json(`/cases/${record.id}/hearings`, "POST", {
-      title: "Trial",
-    }),
-    segment = await rt.db.insert("segments", {
-      case_id: record.id,
-      hearing_id: hearing.id,
-      text: "A saved assertion.",
-    });
-  await stageJob(rt.db, segment.id);
-  rt.config.hosted = true;
-  rt.config.appUrl = "https://jude.test";
-  rt.config.currentSigningKey = "current-key";
-  rt.config.nextSigningKey = "next-key";
-  rt.config.cronSecret = "recovery-secret";
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
-  rt.config.qstashToken = "token";
-  await a.json("/internal/analysis", "POST", { segment_id: segment.id }, 401);
-  const forbidden = await a.call("/internal/recover");
-  assert.equal(forbidden.status, 401);
-  rt.fetch = async () => new Response("", { status: 503 });
-  await assert.rejects(runJob(rt, segment.id), /retried/);
-  await assert.rejects(runJob(rt, segment.id), /retried/);
-  assert.deepEqual(await runJob(rt, segment.id), { status: "failed" });
-  assert.equal(
-    (await rt.db.one("analysis_jobs", "segment_id=?", [segment.id]))?.attempts,
-    3,
-  );
-  await stageJob(rt.db, segment.id);
-  rt.config.openrouterKey = "";
-  rt.config.model = "";
-  const raw = JSON.stringify({ segment_id: segment.id }),
-    b64 = (s: unknown) => Buffer.from(JSON.stringify(s)).toString("base64url"),
-    header = b64({ alg: "HS256", typ: "JWT" }),
-    payload = b64({
-      iss: "Upstash",
-      sub: "https://jude.test/api/v1/internal/analysis",
-      exp: Math.floor(seconds() + 60),
-      nbf: Math.floor(seconds() - 10),
-      body: Buffer.from(hash(raw), "hex").toString("base64url"),
-    });
-  const signature = `${header}.${payload}.${createHmac("sha256", "next-key").update(`${header}.${payload}`).digest("base64url")}`;
-  const delivered = await handleApi(
-    rt,
-    new Request("https://jude.test/api/v1/internal/analysis", {
-      method: "POST",
-      headers: { "upstash-signature": signature },
-      body: raw,
-    }),
-  );
-  assert.equal(delivered.status, 200, await delivered.text());
-  assert.equal(
-    (await rt.db.one("analysis_jobs", "segment_id=?", [segment.id]))?.status,
-    "done",
-  );
-});
-
 test("browser audio session authorization, batching, duplication and scoped speaker offsets", async (t) => {
   const { rt, a, record, client } = await fixture(t),
     base = `/cases/${record.id}`;
@@ -1076,51 +1016,6 @@ test("browser audio session authorization, batching, duplication and scoped spea
   assert.equal(groups.length, 2);
 });
 
-test("large file parts are private, bounded, owner-checked and digest verified", async (t) => {
-  const { rt, a, record } = await fixture(t);
-  rt.config.hosted = true;
-  rt.config.supabaseUrl = "https://storage.test";
-  rt.config.storageKey = "secret";
-  const objects = new Map<string, Uint8Array>();
-  rt.fetch = async (input, init) => {
-    const url = new URL(String(input)),
-      path = url.pathname
-        .replace("/storage/v1/object/authenticated/", "")
-        .replace("/storage/v1/object/", "");
-    if (init?.method === "POST") {
-      objects.set(path, new Uint8Array(init.body as Buffer));
-      return Response.json({});
-    }
-    return new Response(Buffer.from(objects.get(path) || []));
-  };
-  const size = 3 * 1024 * 1024 + 5,
-    data = Buffer.alloc(size, 65),
-    transfer = await a.json("/transfers", "POST", { name: "large.txt", size });
-  for (let i = 0; i < 2; i++) {
-    const response = await handleApi(
-      rt,
-      new Request(
-        `http://localhost/api/v1/transfers/${transfer.id}/parts/${i}`,
-        {
-          method: "PUT",
-          headers: { cookie: a.cookie },
-          body: data.subarray(
-            i * transfer.part_size,
-            Math.min(size, (i + 1) * transfer.part_size),
-          ),
-        },
-      ),
-    );
-    assert.equal(response.status, 200, await response.text());
-  }
-  const form = new FormData();
-  form.set("upload_id", transfer.id);
-  // Large original text is rejected by the same extracted-text bound as small uploads.
-  await a.json(`/cases/${record.id}/documents`, "POST", form, 422);
-  objects.set([...objects.keys()][0], new Uint8Array([1]));
-  await a.json(`/cases/${record.id}/documents`, "POST", form, 409);
-});
-
 test("PDF extraction runs in Node and empty scans report the OCR requirement", async () => {
   const pdf = await readFile(new URL("./fixtures/text.pdf", import.meta.url));
   const result = await extractPages("text.pdf", pdf);
@@ -1156,14 +1051,6 @@ test("archives produced by the original Python backend import without losing rec
   assert.equal(detail.findings[0].mode, "imported");
 });
 
-test("hosted settings fail closed and never fall back to local storage", () => {
-  assert.throws(() => settings({ VERCEL: "1" }), /PostgreSQL/);
-  assert.throws(
-    () => settings({ VERCEL: "1", DATABASE_URL: "postgresql://localhost/db" }),
-    /JUDE_APP_URL/,
-  );
-});
-
 test("oversized streaming requests without Content-Length are rejected before parsing", async (t) => {
   const { a } = await fixture(t);
   const response = await a.call("/cases", "POST", {
@@ -1172,66 +1059,70 @@ test("oversized streaming requests without Content-Length are rejected before pa
   assert.equal(response.status, 413);
 });
 
-test("recovery authorization, delayed dispatch and large signed downloads", async (t) => {
+test("S3 storage keeps originals private and downloads return the bytes directly", async (t) => {
   const { rt, a, record } = await fixture(t);
-  const segment = await rt.db.insert("segments", {
-    case_id: record.id,
-    text: "Queued testimony.",
-  });
-  await stageJob(rt.db, segment.id);
-  rt.config.hosted = true;
-  rt.config.appUrl = "https://jude.test";
-  rt.config.cronSecret = "recovery";
-  rt.config.qstashToken = "queue";
-  rt.config.supabaseUrl = "https://storage.test";
-  rt.config.storageKey = "storage";
-  const calls: string[] = [];
-  rt.fetch = async (input) => {
-    calls.push(String(input));
-    return Response.json({ messageId: "queued" });
+  const objects = new Map<string, Uint8Array>(),
+    commands: string[] = [];
+  rt.config.s3Bucket = "case-files";
+  rt.s3 = {
+    send: (async (command: {
+      constructor: { name: string };
+      input: { Bucket: string; Key: string; Body?: Uint8Array };
+    }) => {
+      const { Bucket, Key, Body } = command.input;
+      assert.equal(Bucket, "case-files");
+      commands.push(command.constructor.name);
+      if (command.constructor.name === "PutObjectCommand")
+        objects.set(Key, new Uint8Array(Body!));
+      if (command.constructor.name === "GetObjectCommand")
+        return {
+          Body: { transformToByteArray: async () => objects.get(Key)! },
+        };
+      if (command.constructor.name === "DeleteObjectCommand")
+        objects.delete(Key);
+      return {};
+    }) as unknown as NonNullable<Runtime["s3"]>["send"],
   };
-  const forbidden = await a.call("/internal/recover");
-  assert.equal(forbidden.status, 401);
-  assert.deepEqual(calls, []);
-  const recovered = await a.call("/internal/recover", "GET", undefined, {
-    Authorization: "Bearer recovery",
-  });
-  assert.equal(recovered.status, 200);
-  assert.equal((await recovered.json()).dispatched, 1);
-  assert.match(calls[0], /https:\/\/jude.test\/api\/v1\/internal\/analysis/);
-  const doc = await rt.db.insert("documents", {
+  const document = await a.json(
+    `/cases/${record.id}/documents`,
+    "POST",
+    upload("source.txt", "The guard arrived at eight."),
+  );
+  assert.equal(
+    (await rt.db.one("documents", "id=?", [document.id]))?.storage,
+    "s3",
+  );
+  assert.equal(objects.size, 1);
+  const original = await a.call(
+    `/cases/${record.id}/documents/${document.id}/original`,
+  );
+  assert.equal(original.status, 200);
+  assert.equal(await original.text(), "The guard arrived at eight.");
+  assert.deepEqual(commands, ["PutObjectCommand", "GetObjectCommand"]);
+  // Large local originals stream back in one response with download headers.
+  rt.config.s3Bucket = "";
+  const key = `${record.id}/large.pdf`,
+    bytes = new Uint8Array(4 * 1024 * 1024);
+  assert.equal(await saveFile(rt, key, bytes, "application/pdf"), "local");
+  const large = await rt.db.insert("documents", {
     case_id: record.id,
     name: "large.pdf",
     mime: "application/pdf",
     pages: 1,
-    storage: "supabase",
-    storage_key: "owner/case/large.pdf",
-    digest: "fake",
+    storage: "local",
+    storage_key: key,
+    digest: "large",
   });
-  rt.fetch = async (input, init) => {
-    const url = String(input);
-    if (url.includes("/authenticated/"))
-      return new Response(Buffer.alloc(4 * 1024 * 1024));
-    if (url.includes("/object/sign/"))
-      return Response.json({
-        signedURL: "/object/sign/private/export?token=temporary",
-      });
-    assert.equal(init?.method, "POST");
-    return Response.json({});
-  };
   const response = await a.call(
-    `/cases/${record.id}/documents/${doc.id}/original`,
+    `/cases/${record.id}/documents/${large.id}/original`,
   );
-  assert.equal(response.status, 303);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("content-type"), "application/pdf");
   assert.match(
-    response.headers.get("location")!,
-    /^https:\/\/storage.test\/storage\/v1\/object\/sign\//,
+    response.headers.get("content-disposition")!,
+    /attachment; filename\*=UTF-8''large.pdf/,
   );
-  assert.match(response.headers.get("location")!, /download=large.pdf/);
-  assert.equal(
-    (await rt.db.all("file_transfers", "kind=?", ["download"])).length,
-    1,
-  );
+  assert.equal((await response.arrayBuffer()).byteLength, bytes.length);
 });
 
 test("practice proposals preserve the selected role/language and duplicate manual testimony queues once", async (t) => {

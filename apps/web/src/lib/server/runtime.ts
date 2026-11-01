@@ -158,7 +158,6 @@ export async function publish(
   );
 }
 export function schedule(app: Runtime, task: Promise<unknown>) {
-  assert(!app.config.hosted, 500, "Hosted work requires durable job delivery.");
   app.tasks.add(task);
   void task.catch(() => undefined).finally(() => app.tasks.delete(task));
 }

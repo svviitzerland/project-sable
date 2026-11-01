@@ -71,7 +71,7 @@ Kode dalam kurung merujuk ke masalah di atas.
 | 10 | (D5) Inkonsistensi bukan bukti saksi berbohong | Bahasa netral "Berbeda dari BAP"; tanpa skor kredibilitas atau kesalahan | Terpenuhi |
 | 11 | (D1, D2) AI bisa berhalusinasi kutipan | Kutipan wajib persis sama dengan sumber; tanpa kutipan, tanpa temuan | Terpenuhi |
 | 12 | (A2, A3) Hasil kerja belum berbentuk dokumen yang langsung dipakai | Ekspor "Daftar Perbedaan Keterangan Saksi vs BAP" (kutipan, waktu, halaman BAP) untuk pertanyaan lanjutan, permohonan pencatatan di berita acara, dan pledoi | Belum |
-| 13 | Penyedia (Speechmatics, OpenRouter, Pasal.id, Supabase) belum diuji dengan akun asli | Uji end-to-end dengan kunci asli sebelum demo; simulasi sintetis sebagai cadangan | Belum |
+| 13 | Penyedia (Speechmatics, Bedrock/OpenRouter, Pasal.id, S3) belum diuji dengan akun asli | Uji end-to-end dengan kunci asli sebelum demo; simulasi sintetis sebagai cadangan | Belum |
 
 ## Urutan pengerjaan
 

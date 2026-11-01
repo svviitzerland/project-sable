@@ -46,7 +46,7 @@ VOICE_API_URL=http://localhost:8000
 VOICE_API_TOKEN=<same secret>
 ```
 
-Hosted Jude requires an HTTPS `VOICE_API_URL`. Run the container on any Docker host (a CPU instance is enough for live identification: one embedding takes about 30 ms on an Apple M-series laptop after a ~25 s model load). Keep it private behind TLS, and keep the model cache volume so restarts do not re-download.
+Keep `VOICE_API_URL` on a private network (the production Compose stack keeps it internal) or behind HTTPS. Run the container on any Docker host (a CPU instance is enough for live identification: one embedding takes about 30 ms on an Apple M-series laptop after a ~25 s model load). Keep it private behind TLS, and keep the model cache volume so restarts do not re-download.
 
 ## Checks
 

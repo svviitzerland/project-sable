@@ -79,7 +79,7 @@ PROVIDER EXPECTATIONS
 
 File import, source inspection and keyword search work without an AI provider.
 Natural-language semantic retrieval, AI conversion, analysis and generative answers
-need the relevant OpenRouter configuration. Hosted analysis also needs working QStash.
+need a configured AI provider (Amazon Bedrock or OpenRouter).
 Without those providers, the sample still imports but does not magically create AI output.
 
 KEEP THE EXERCISE NOTES OUT OF THE EVIDENCE

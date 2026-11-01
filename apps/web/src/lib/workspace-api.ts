@@ -118,7 +118,7 @@ export const labels: Record<Status, string> = {
 };
 export function userFacingError(message: string) {
   if (
-    !/OPENROUTER_|PASAL_API_KEY|SPEECHMATICS_API_KEY|Supabase|Configure OpenRouter|configured providers|deployment|backend|HTTP \d{3}/i.test(
+    !/OPENROUTER_|PASAL_API_KEY|SPEECHMATICS_API_KEY|Configure OpenRouter|configured providers|deployment|backend|HTTP \d{3}/i.test(
       message,
     )
   )
@@ -134,57 +134,10 @@ export class ApiError extends Error {
     super(message);
   }
 }
-const stagedFiles = new WeakMap<File, { id: string; expires: number }>();
-
-async function stageFiles(form: FormData): Promise<FormData> {
-  const file = form.get("file");
-  if (!(file instanceof File) || file.size <= 3 * 1024 * 1024) return form;
-  const capabilities = await api<{ hosted_uploads: boolean }>("/capabilities");
-  if (!capabilities.hosted_uploads) return form;
-  let staged = stagedFiles.get(file);
-  if (!staged || staged.expires < Date.now()) {
-    const transfer = await api<{ id: string; part_size: number }>(
-      "/transfers",
-      {
-        method: "POST",
-        body: JSON.stringify({ name: file.name, size: file.size }),
-      },
-    );
-    for (
-      let offset = 0, index = 0;
-      offset < file.size;
-      offset += transfer.part_size, index++
-    ) {
-      const response = await fetch(
-        `/api/v1/transfers/${transfer.id}/parts/${index}`,
-        {
-          method: "PUT",
-          credentials: "same-origin",
-          headers: { "Content-Type": "application/octet-stream" },
-          body: file.slice(offset, offset + transfer.part_size),
-        },
-      );
-      if (!response.ok)
-        throw new Error(
-          "File transfer failed. Your case has not changed; retry the upload.",
-        );
-    }
-    staged = { id: transfer.id, expires: Date.now() + 50 * 60 * 1000 };
-    stagedFiles.set(file, staged);
-  }
-  const result = new FormData();
-  for (const [key, value] of form.entries())
-    if (key !== "file") result.append(key, value);
-  result.set("upload_id", staged.id);
-  return result;
-}
-
 export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  if (options.body instanceof FormData)
-    options = { ...options, body: await stageFiles(options.body) };
   const response = await fetch(`/api/v1${path}`, {
     ...options,
     credentials: "same-origin",

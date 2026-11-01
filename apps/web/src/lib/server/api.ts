@@ -18,7 +18,7 @@ import {
   schedule,
   sessionCookie,
 } from "./runtime";
-import { uid } from "./database";
+import { seconds, uid } from "./database";
 import {
   caseInput,
   credentials,
@@ -26,7 +26,6 @@ import {
   hearingFileSchema,
   segmentInput,
   type Case,
-  type User,
 } from "./contracts";
 import { assert, HttpError, reportUnexpectedError } from "./errors";
 import {
@@ -63,14 +62,8 @@ import {
   sendDialogue,
 } from "./dialogues";
 import { inventory } from "./context";
-import {
-  createTransfer,
-  resolveUpload,
-  transferInput,
-  transferResponse,
-  uploadPart,
-} from "./transfers";
-import { deliver, enqueue, recover, stageJob } from "./jobs";
+import { fileResponse, readUpload } from "./uploads";
+import { enqueue } from "./jobs";
 import { investigate } from "./analysis";
 import {
   audioInput,
@@ -107,6 +100,19 @@ async function body<T extends z.ZodType>(
     throw new HttpError(422, "Invalid JSON request.");
   }
   return schema.parse(input);
+}
+// Housekeeping runs opportunistically on case list loads, at most every five minutes.
+const swept = new WeakMap<Runtime, number>();
+async function sweep(rt: Runtime) {
+  if (seconds() - (swept.get(rt) ?? 0) < 300) return;
+  swept.set(rt, seconds());
+  for (const table of [
+    "socket_tickets",
+    "runtime_rates",
+    "runtime_leases",
+  ] as const)
+    await rt.db.remove(table, "expires<?", [seconds()]);
+  await expireAudio(rt);
 }
 export async function caseDetail(rt: Runtime, record: Case) {
   return {
@@ -215,25 +221,14 @@ export async function handleApi(
         403,
         "This origin is not allowed.",
       );
-    let user: User | undefined;
-    const send = async (data: unknown, status = 200) => {
-      if (rt.config.hosted && status === 200 && user) {
-        const bytes = new TextEncoder().encode(JSON.stringify(data));
-        if (bytes.length > 3 * 1024 * 1024)
-          return transferResponse(rt, user, bytes, "application/json");
-      }
-      return json(data, status);
-    };
+    const send = json;
     const route = async (): Promise<Response> => {
       if (parts[0] === "health" && method === "GET")
         return json({ status: "ok", service: "jude-sveltekit" });
       if (parts[0] === "capabilities" && method === "GET")
         return json({
           demo_available: rt.config.demo,
-          storage: rt.config.databaseUrl
-            ? "Supabase PostgreSQL"
-            : "Local SQLite",
-          hosted_uploads: rt.config.hosted,
+          storage: rt.config.databaseUrl ? "PostgreSQL" : "Local SQLite",
           analysis: {
             configured: aiConfigured(rt.config),
             note: aiConfigured(rt.config)
@@ -261,16 +256,6 @@ export async function handleApi(
             note: "Semantic + keyword retrieval when embeddings are available. Keyword search otherwise.",
           },
         });
-      if (parts[0] === "internal") {
-        if (parts[1] === "analysis" && method === "POST")
-          return json(await deliver(rt, request));
-        if (parts[1] === "recover" && method === "GET") {
-          const result = await recover(rt, request);
-          await expireAudio(rt);
-          return json(result);
-        }
-        throw new HttpError(404, "Not found");
-      }
       if (parts[0] === "auth") {
         if (["register", "login"].includes(parts[1]) && method === "POST") {
           await rate(rt, `auth:${clientAddress}`, 10);
@@ -369,21 +354,11 @@ export async function handleApi(
             },
           },
         );
-      user = await authenticate(rt, request);
-      if (parts[0] === "transfers") {
-        if (parts.length === 1 && method === "POST")
-          return json(
-            await createTransfer(rt, user, await body(request, transferInput)),
-          );
-        if (parts.length === 4 && parts[2] === "parts" && method === "PUT")
-          return json(
-            await uploadPart(rt, user, parts[1], Number(parts[3]), request),
-          );
-        throw new HttpError(404, "Not found");
-      }
+      const user = await authenticate(rt, request);
       assert(parts[0] === "cases", 404, "Not found");
       if (parts.length === 1) {
-        if (method === "GET")
+        if (method === "GET") {
+          await sweep(rt);
           return send(
             (
               await rt.db.all(
@@ -394,6 +369,7 @@ export async function handleApi(
               )
             ).map((c) => caseOutput.strip().parse(c)),
           );
+        }
         if (method === "POST")
           return send(
             caseOutput.strip().parse(
@@ -415,7 +391,7 @@ export async function handleApi(
       }
       if (parts[1] === "import" && method === "POST") {
         await rate(rt, `archive:${user.id}`, 5);
-        const file = await resolveUpload(rt, user, request, MAX_ARCHIVE);
+        const file = await readUpload(request, MAX_ARCHIVE);
         return send(
           caseOutput.strip().parse(await importCase(rt, user, file.data)),
         );
@@ -449,7 +425,7 @@ export async function handleApi(
       if (action === "documents") {
         if (parts.length === 3 && method === "POST") {
           await rate(rt, `upload:${user.id}`, 10);
-          const file = await resolveUpload(rt, user, request),
+          const file = await readUpload(request),
             document = await ingest(rt, record, file.name, file.data);
           await publish(rt, caseId, { type: "document" });
           return send(documentOutput.parse(document));
@@ -460,9 +436,7 @@ export async function handleApi(
         ]);
         assert(document, 404, "Document not found");
         if (parts[4] === "original" && method === "GET")
-          return transferResponse(
-            rt,
-            user,
+          return fileResponse(
             await readFileData(rt, document),
             document.mime,
             document.name,
@@ -547,18 +521,15 @@ export async function handleApi(
                 ],
               );
               if (existing) return { segment: existing, created: false };
-              return rt.db.transaction(async (db) => {
-                const segment = await db.insert("segments", {
-                  case_id: caseId,
-                  ...input,
-                  hearing_id: hearing.id,
-                });
-                if (rt.config.hosted) await stageJob(db, segment.id);
-                return { segment, created: true };
+              const segment = await rt.db.insert("segments", {
+                case_id: caseId,
+                ...input,
+                hearing_id: hearing.id,
               });
+              return { segment, created: true };
             },
           );
-          if (created) await enqueue(rt, segment.id);
+          if (created) enqueue(rt, segment.id);
           await publish(rt, caseId, { type: "transcript" });
           return send(segmentOutput.strip().parse(segment));
         }
@@ -592,19 +563,16 @@ export async function handleApi(
             503,
             "Connect OpenRouter before retrying analysis.",
           );
-          await rt.db.transaction(async (db) => {
-            await db.update("segments", { analysis_state: "queued" }, "id=?", [
-              segment.id,
-            ]);
-            if (rt.config.hosted) await stageJob(db, segment.id);
-          });
+          await rt.db.update("segments", { analysis_state: "queued" }, "id=?", [
+            segment.id,
+          ]);
           const fixture =
             segment.origin === "simulation"
               ? (simulation.script.find(
                   (row) => row[1] === segment.text,
                 )?.[3] as string | null)
               : undefined;
-          await enqueue(rt, segment.id, fixture);
+          enqueue(rt, segment.id, fixture);
           return send({ message: "Analysis queued" });
         }
       }
@@ -641,7 +609,7 @@ export async function handleApi(
             `${parts[3] === "preview" ? "conversion" : "hearing-import"}:${user.id}`,
             10,
           );
-          const { name, data, form } = await resolveUpload(rt, user, request);
+          const { name, data, form } = await readUpload(request);
           if (parts[3] === "preview")
             return send(
               await previewHearing(
@@ -709,9 +677,7 @@ export async function handleApi(
               end,
             })),
           });
-          return transferResponse(
-            rt,
-            user,
+          return fileResponse(
             pack(payload),
             "application/vnd.jude+zip",
             `hearing-${hearing.id}.jude`,
@@ -730,26 +696,21 @@ export async function handleApi(
               "hearing_id=? AND analysis_state IN ('pending','unavailable','failed','interrupted')",
               [hearing.id],
             );
-            for (const s of segments) {
+            for (const s of segments)
               await db.update(
                 "segments",
                 { analysis_state: "queued" },
                 "id=?",
                 [s.id],
               );
-              if (rt.config.hosted) await stageJob(db, s.id);
-            }
             return segments.map((s) => s.id);
           });
-          if (rt.config.hosted)
-            await Promise.all(ids.slice(0, 20).map((id) => enqueue(rt, id)));
-          else
-            schedule(
-              rt,
-              (async () => {
-                for (const id of ids) await investigate(rt, id);
-              })(),
-            );
+          schedule(
+            rt,
+            (async () => {
+              for (const id of ids) await investigate(rt, id);
+            })(),
+          );
           return send({ queued: ids.length });
         }
       }
@@ -898,9 +859,7 @@ export async function handleApi(
             ),
           );
         if (parts[4] === "export" && method === "GET")
-          return transferResponse(
-            rt,
-            user,
+          return fileResponse(
             new TextEncoder().encode(
               JSON.stringify({
                 format: "jude-conversation",
@@ -950,9 +909,7 @@ export async function handleApi(
         return send({ message: "Hearing paused" });
       }
       if (action === "export.jude" && method === "GET")
-        return transferResponse(
-          rt,
-          user,
+        return fileResponse(
           await exportCase(rt, record),
           "application/vnd.jude+zip",
           `case-${caseId}.jude`,
@@ -968,9 +925,7 @@ export async function handleApi(
               text,
             }),
           );
-        return transferResponse(
-          rt,
-          user,
+        return fileResponse(
           new TextEncoder().encode(
             JSON.stringify(
               {

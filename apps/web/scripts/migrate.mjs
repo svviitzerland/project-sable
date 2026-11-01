@@ -1,4 +1,4 @@
-// Applies supabase/migrations to a plain PostgreSQL server (Docker on EC2).
+// Applies migrations/ to a plain PostgreSQL server (Docker on EC2).
 // The migrations target Supabase, so a compatibility prelude first creates what Supabase
 // provides by default: the anon/authenticated roles, the extensions schema with pgvector
 // and a minimal storage.buckets table. Every migration is idempotent and runs in order;

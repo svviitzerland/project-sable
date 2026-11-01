@@ -12,7 +12,7 @@ import { seconds } from "./database";
 import type { Case, Tables } from "./contracts";
 import { assert, ProviderError } from "./errors";
 import { requestJson } from "./providers";
-import { enqueue, stageJob } from "./jobs";
+import { enqueue } from "./jobs";
 import { stableSpeakers } from "./voice";
 export const audioInput = z.strictObject({
   hearing_id: z.uuid().nullable(),
@@ -269,7 +269,6 @@ export async function saveAudio(
           start: group.start + session.offset,
           end: group.end + session.offset,
         });
-        if (rt.config.hosted) await stageJob(db, segment.id);
         saved.push({ id: segment.id, start: segment.start, end: segment.end });
       }
       await db.update(
@@ -281,7 +280,7 @@ export async function saveAudio(
       return saved;
     });
     await publish(rt, record.id, { type: "transcript" });
-    await Promise.all(saved.map((s) => enqueue(rt, s.id)));
+    for (const s of saved) enqueue(rt, s.id);
     return { received: body.sequence, segments: saved };
   });
 }

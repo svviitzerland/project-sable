@@ -13,8 +13,7 @@ const diagnosticHints: Record<string, string> = {
   EAI_AGAIN: "Check DNS availability for the configured service.",
   ECONNREFUSED: "Check the database host and port.",
   ETIMEDOUT: "Check database connectivity and network restrictions.",
-  ENETUNREACH:
-    "Check network reachability; use the Supabase transaction pooler.",
+  ENETUNREACH: "Check network reachability to the database host.",
   SELF_SIGNED_CERT_IN_CHAIN: "Check database TLS certificate trust.",
   UNABLE_TO_VERIFY_LEAF_SIGNATURE: "Check database TLS certificate trust.",
   CERT_HAS_EXPIRED: "Check the service TLS certificate expiry.",

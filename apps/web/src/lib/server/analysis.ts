@@ -280,7 +280,6 @@ export async function investigate(
   id: string,
   fixture?: string | null,
 ): Promise<void> {
-  if (rt.config.hosted) return runInvestigation(rt, id, fixture);
   let state = localRuns.get(rt);
   if (!state) {
     state = { active: 0, waiting: [], pending: new Map() };

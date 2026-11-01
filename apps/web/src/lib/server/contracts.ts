@@ -237,22 +237,6 @@ export interface Tables {
     purpose: string;
     expires: number;
   };
-  analysis_jobs: {
-    segment_id: string;
-    status: string;
-    attempts: number;
-    dispatched_at: number;
-    created_at: number;
-  };
-  file_transfers: {
-    id: string;
-    owner_id: string;
-    name: string;
-    size: number;
-    kind: string;
-    parts: Record<string, string>;
-    expires: number;
-  };
   voiceprints: {
     id: string;
     case_id: string;

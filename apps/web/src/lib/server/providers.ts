@@ -16,14 +16,12 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 type ProviderName =
   | "OpenRouter chat"
   | "OpenRouter embeddings"
   | "Pasal.id"
   | "Speechmatics"
-  | "Supabase Storage"
   | "Voice API"
   | "External service";
 
@@ -52,12 +50,9 @@ function providerFailure(
                   : (status === 400 || status === 404 || status === 422) &&
                       provider === "OpenRouter embeddings"
                     ? "Check OPENROUTER_EMBEDDING_MODEL and support for 1536-dimensional output."
-                    : (status === 400 || status === 404) &&
-                        provider === "Supabase Storage"
-                      ? "Check the Supabase project URL, private bucket name and upload restrictions."
-                      : status !== null && status >= 500
-                        ? "The provider returned a server error. Check its service status and retry."
-                        : "Check the provider configuration and request compatibility.";
+                    : status !== null && status >= 500
+                      ? "The provider returned a server error. Check its service status and retry."
+                      : "Check the provider configuration and request compatibility.";
   // Never log provider bodies, URLs, headers, prompts, or raw errors: these can contain secrets/case data.
   console.error(
     JSON.stringify({
@@ -70,7 +65,7 @@ function providerFailure(
     }),
   );
   return new ProviderError(
-    `${provider === "Supabase Storage" ? "The file could not be saved or opened." : provider === "Speechmatics" ? "Audio transcription could not start." : provider === "Pasal.id" ? "Legal search could not be completed." : provider === "Voice API" ? "Voice recognition could not be completed." : "This AI request could not be completed."} ${status === 429 ? "Please wait a moment and try again." : "Please try again later."} Reference: ${reference}`,
+    `${provider === "Speechmatics" ? "Audio transcription could not start." : provider === "Pasal.id" ? "Legal search could not be completed." : provider === "Voice API" ? "Voice recognition could not be completed." : "This AI request could not be completed."} ${status === 429 ? "Please wait a moment and try again." : "Please try again later."} Reference: ${reference}`,
   );
 }
 
@@ -409,12 +404,6 @@ function storageFailure(error: unknown, message: string) {
   );
   return new ProviderError(`${message} Reference: ${reference}`);
 }
-function storageHeaders(rt: Runtime) {
-  return {
-    Authorization: `Bearer ${rt.config.storageKey}`,
-    apikey: rt.config.storageKey,
-  };
-}
 function safeKey(key: string) {
   if (
     !key ||
@@ -429,7 +418,6 @@ export async function saveFile(
   key: string,
   data: Uint8Array,
   mime: string,
-  upsert = false,
 ) {
   safeKey(key);
   if (rt.config.s3Bucket) {
@@ -440,7 +428,7 @@ export async function saveFile(
           Key: key,
           Body: data,
           ContentType: mime,
-          ...(upsert ? {} : { IfNoneMatch: "*" }),
+          IfNoneMatch: "*",
         }),
         { abortSignal: AbortSignal.timeout(45_000) },
       );
@@ -448,31 +436,6 @@ export async function saveFile(
     } catch (error) {
       throw storageFailure(
         error,
-        "The document could not be saved. Please retry the upload.",
-      );
-    }
-  }
-  if (rt.config.supabaseUrl && rt.config.storageKey) {
-    try {
-      await requestResponse(
-        rt,
-        `${rt.config.supabaseUrl}/storage/v1/object/${rt.config.bucket}/${key}`,
-        {
-          method: "POST",
-          headers: {
-            ...storageHeaders(rt),
-            "Content-Type": mime,
-            "x-upsert": String(upsert),
-          },
-          body: Buffer.from(data),
-          signal: AbortSignal.timeout(45_000),
-        },
-        "Supabase Storage",
-      );
-      return "supabase";
-    } catch (error) {
-      if (error instanceof ProviderError) throw error;
-      throw new ProviderError(
         "The document could not be saved. Please retry the upload.",
       );
     }
@@ -504,22 +467,11 @@ export async function readFileData(
       );
     }
   }
-  if (doc.storage !== "supabase")
-    return new Uint8Array(
-      await readFile(join(rt.config.dataDir, "documents", doc.storage_key)),
-    );
-  try {
-    const response = await rt.fetch(
-      `${rt.config.supabaseUrl}/storage/v1/object/authenticated/${rt.config.bucket}/${doc.storage_key}`,
-      { headers: storageHeaders(rt), signal: AbortSignal.timeout(45_000) },
-    );
-    if (!response.ok) throw new Error();
-    return new Uint8Array(await response.arrayBuffer());
-  } catch {
-    throw new ProviderError(
-      "Original document could not be loaded from storage.",
-    );
-  }
+  if (doc.storage !== "local")
+    throw new ProviderError("Original document is no longer in storage.");
+  return new Uint8Array(
+    await readFile(join(rt.config.dataDir, "documents", doc.storage_key)),
+  );
 }
 export async function deleteFile(rt: Runtime, key: string, storage: string) {
   safeKey(key);
@@ -527,41 +479,5 @@ export async function deleteFile(rt: Runtime, key: string, storage: string) {
     await s3(rt).send(
       new DeleteObjectCommand({ Bucket: rt.config.s3Bucket, Key: key }),
     );
-  else if (storage === "supabase")
-    await requestJson(
-      rt,
-      `${rt.config.supabaseUrl}/storage/v1/object/${rt.config.bucket}`,
-      {
-        method: "DELETE",
-        headers: { ...storageHeaders(rt), "Content-Type": "application/json" },
-        body: JSON.stringify({ prefixes: [key] }),
-      },
-      "Supabase Storage",
-    );
   else await rm(join(rt.config.dataDir, "documents", key), { force: true });
-}
-export async function signedFile(rt: Runtime, key: string) {
-  safeKey(key);
-  if (rt.config.s3Bucket)
-    return getSignedUrl(
-      s3(rt) as S3Client,
-      new GetObjectCommand({ Bucket: rt.config.s3Bucket, Key: key }),
-      { expiresIn: 300 },
-    );
-  const data = await requestJson(
-    rt,
-    `${rt.config.supabaseUrl}/storage/v1/object/sign/${rt.config.bucket}/${key}`,
-    {
-      method: "POST",
-      headers: { ...storageHeaders(rt), "Content-Type": "application/json" },
-      body: JSON.stringify({ expiresIn: 300 }),
-    },
-    "Supabase Storage",
-  );
-  if (
-    typeof data.signedURL !== "string" ||
-    !data.signedURL.startsWith("/object/sign/")
-  )
-    throw new ProviderError("Storage did not return a download URL.");
-  return `${rt.config.supabaseUrl}/storage/v1${data.signedURL}`;
 }
