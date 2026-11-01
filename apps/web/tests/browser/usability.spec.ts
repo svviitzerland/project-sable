@@ -87,7 +87,7 @@ test("case setup, case search and mobile conversations keep the next action clea
   await expect(
     page.getByRole("complementary", { name: "Saved conversations" }),
   ).toBeHidden();
-  const history = page.getByRole("button", { name: /Saved conversations/ });
+  const history = page.getByRole("button", { name: /^History/ });
   await history.click();
   await expect(
     page.getByRole("complementary", { name: "Saved conversations" }),
