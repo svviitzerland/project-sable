@@ -56,6 +56,7 @@
   import CaseDialogue from "./CaseDialogue.svelte";
   import LanguageToggle from "./LanguageToggle.svelte";
   import { t, tp } from "../lib/i18n/index.svelte";
+  import { maybeStartTour, startTour } from "../lib/tour";
 
   type Tab =
     | "assistant"
@@ -162,6 +163,21 @@
     },
     () => void refresh(),
   );
+
+  // Audio tools open for empty hearings and while recording, and never close on their
+  // own afterwards, so counsel can restart capture immediately in court.
+  let audioToolsOpen = $state(false);
+  $effect(() => {
+    if (audio.status !== "idle" || hearingSegments.length === 0)
+      audioToolsOpen = true;
+  });
+  let tourChecked = false;
+  $effect(() => {
+    if (user && !tourChecked) {
+      tourChecked = true;
+      maybeStartTour();
+    }
+  });
 
   const refresh = async () => {
     const id = activeCase.current;
@@ -450,6 +466,7 @@
         <p class={styles.workspaceLabel}>{t("ws.yourWorkspace")}</p>
         <button
           class={styles.newCase}
+          data-tour="new-case"
           onclick={() => {
             creating = true;
             sidebar = false;
@@ -458,12 +475,14 @@
           <Plus size={17}></Plus>
           {t("ws.newCase")}
         </button>
-        <ArchiveImport
-          onImport={async (id) => {
-            await loadCases(id);
-            tab = "evidence";
-          }}
-        ></ArchiveImport>
+        <div data-tour="import">
+          <ArchiveImport
+            onImport={async (id) => {
+              await loadCases(id);
+              tab = "evidence";
+            }}
+          ></ArchiveImport>
+        </div>
         {#if cases.length > 0}<label class={styles.caseSearch}>
             <span class={styles.srOnly}>{t("ws.findCase")}</span>
             <input
@@ -550,7 +569,15 @@
             {session?.title ?? t("ws.workspace")}
           </span>
           <div class={styles.topbarEnd}>
-            <LanguageToggle />
+            <button
+              class={styles.tourButton}
+              data-tour="help"
+              onclick={startTour}
+            >
+              <CircleHelp size={14}></CircleHelp>
+              {t("tour.replay")}
+            </button>
+            <span data-tour="language"><LanguageToggle /></span>
             <a href={resolve("/")}>
               {t("ws.about")}
               <ExternalLink size={13}></ExternalLink>
@@ -650,6 +677,7 @@
                   aria-selected={tab === key}
                   aria-controls={`panel-${key}`}
                   id={`tab-${key}`}
+                  data-tour={`tab-${key}`}
                   tabindex={tab === key ? 0 : -1}
                   onkeydown={(event) => {
                     const keys = Object.keys(titles) as Tab[];
@@ -836,8 +864,7 @@
                   </p>{/if}
                 {#if hearing.kind !== "simulation"}<details
                     class={styles.audioTools}
-                    open={hearingSegments.length === 0 ||
-                      audio.status !== "idle"}
+                    bind:open={audioToolsOpen}
                   >
                     <summary>{t("hearing.audioTools")}</summary>
                     {#key hearing.id}<HearingAudio

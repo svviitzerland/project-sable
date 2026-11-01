@@ -177,7 +177,7 @@ test("large direct uploads and speech rotation save finalized testimony", async 
       .getByRole("button", { name: "Create hearing", exact: true })
       .click();
     await page
-      .getByLabel("I have permission to send this audio", { exact: false })
+      .getByLabel("The presiding judge allowed recording", { exact: false })
       .check();
     await page
       .getByRole("button", { name: "Start microphone", exact: true })
@@ -190,7 +190,12 @@ test("large direct uploads and speech rotation save finalized testimony", async 
       page.getByRole("button", { name: "Start microphone", exact: true }),
     ).toBeVisible();
     expect(stops).toEqual([0, 1]);
-    expect(new Set(connections).size).toBe(2);
+    // Each connection opens with its own presigned (SigV4) URL from the server.
+    expect(connections).toHaveLength(2);
+    for (const url of connections)
+      expect(new URL(url).searchParams.get("X-Amz-Signature")).toMatch(
+        /^[0-9a-f]{64}$/,
+      );
     const segments = await rt.db.all(
       "segments",
       "origin=?",

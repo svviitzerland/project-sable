@@ -836,4 +836,38 @@ export const id: Messages = {
     "Cari istilah hukum umum, bukan nama atau detail pribadi perkara. Setiap hasil membuka sumbernya untuk Anda tinjau.",
   "references.noneTitle": "Rujukan tidak ditemukan.",
   "references.noneText": "Coba judul peraturan atau kata kunci hukum lain.",
+  // Tur pertama kali
+  "tour.next": "Lanjut",
+  "tour.back": "Kembali",
+  "tour.done": "Mulai bekerja",
+  "tour.progress": "{{current}} dari {{total}}",
+  "tour.replay": "Panduan",
+  "tour.welcome.title": "Selamat datang di Jude",
+  "tour.welcome.text":
+    "Jude mendengarkan persidangan, membandingkan setiap keterangan dengan berkas perkara, dan menunjukkan bagian yang sesuai atau berbeda dari sumber, lengkap dengan kutipan aslinya. Kesimpulan tetap di tangan Anda.",
+  "tour.newCase.title": "1. Buat perkara",
+  "tour.newCase.text":
+    "Setiap perkara menyimpan dokumen, sidang, temuan, dan catatannya sendiri, terpisah dari perkara lain.",
+  "tour.import.title": "Atau buka contoh",
+  "tour.import.text":
+    "Impor arsip perkara .jude, misalnya contoh perkara publik Sambo, untuk langsung melihat perkara yang lengkap.",
+  "tour.documents.title": "2. Unggah berkas perkara",
+  "tour.documents.text":
+    "Tambahkan BAP, laporan penyidikan, putusan, dan berkas PDF, DOCX, atau teks lainnya. Dokumen asli disimpan secara privat beserta rujukan halamannya.",
+  "tour.hearing.title": "3. Rekam atau impor persidangan",
+  "tour.hearing.text":
+    "Di ruang sidang, pastikan Hakim Ketua mengizinkan perekaman, lalu nyalakan mikrofon: keterangan ditranskripsikan langsung beserta pembicaranya, dan rekaman privat dapat disimpan. Anda juga bisa mengimpor risalah atau file transkrip.",
+  "tour.evidence.title": "4. Tinjau temuan",
+  "tour.evidence.text":
+    "Setiap keterangan dicek terhadap sumber: didukung sumber, berbeda dari sumber, perlu konteks, atau bukti belum cukup. Buka temuan untuk melihat kedua kutipan, lalu tandai sudah ditinjau dengan catatan Anda.",
+  "tour.assistant.title": "5. Tanya tentang perkara",
+  "tour.assistant.text":
+    "Ajukan pertanyaan dengan bahasa sehari-hari; jawaban mengutip bagian persis dari perkara ini saja.",
+  "tour.practice.title": "6. Latihan sidang",
+  "tour.practice.text":
+    "Berlatih sebagai Penasihat Hukum, Penuntut Umum, atau Hakim dengan kondisi dari perkara. Latihan tidak pernah mengubah catatan bukti.",
+  "tour.language.title": "Bahasa",
+  "tour.language.text": "Ganti antara Bahasa Indonesia dan English kapan saja.",
+  "tour.help.title": "Perlu lagi?",
+  "tour.help.text": "Buka panduan ini dari sini kapan pun Anda mau.",
 };

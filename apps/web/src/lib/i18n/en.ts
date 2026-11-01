@@ -828,6 +828,41 @@ export const en = {
     "Search generic legal terms rather than names or personal case details. Every result opens its source for your review.",
   "references.noneTitle": "No references found.",
   "references.noneText": "Try a different regulation title or legal keyword.",
+  // First-run tour
+  "tour.next": "Next",
+  "tour.back": "Back",
+  "tour.done": "Start working",
+  "tour.progress": "{{current}} of {{total}}",
+  "tour.replay": "Guided tour",
+  "tour.welcome.title": "Welcome to Jude",
+  "tour.welcome.text":
+    "Jude listens to the hearing, compares each statement with the case file, and shows where testimony matches or differs from the source, with the exact quote. You stay in charge of every conclusion.",
+  "tour.newCase.title": "1. Create a case",
+  "tour.newCase.text":
+    "Each case keeps its own documents, hearings, findings and notes, isolated from other cases.",
+  "tour.import.title": "Or open an example",
+  "tour.import.text":
+    "Import a .jude case archive, such as the public Sambo case example, to see a complete case right away.",
+  "tour.documents.title": "2. Upload the case file",
+  "tour.documents.text":
+    "Add the BAP, investigation reports, decisions (putusan) and other PDF, DOCX or text files. Originals are kept privately with page references.",
+  "tour.hearing.title": "3. Record or import the hearing",
+  "tour.hearing.text":
+    "In court, confirm the presiding judge allowed recording, then start the microphone: statements are transcribed live with speakers, and a private recording can be kept. You can also import a risalah or transcript file.",
+  "tour.evidence.title": "4. Review the findings",
+  "tour.evidence.text":
+    "Each statement is checked against the sources: supported, differs from the source, needs context, or not enough evidence. Open a finding to see both quotes, then mark it reviewed with your note.",
+  "tour.assistant.title": "5. Ask about the case",
+  "tour.assistant.text":
+    "Ask questions in plain language; answers cite exact passages from this case only.",
+  "tour.practice.title": "6. Rehearse",
+  "tour.practice.text":
+    "Practise as defense counsel, prosecutor or judge with conditions taken from the case. Practice never changes the evidence record.",
+  "tour.language.title": "Language",
+  "tour.language.text":
+    "Switch between Bahasa Indonesia and English at any time.",
+  "tour.help.title": "Need this again?",
+  "tour.help.text": "Open the guided tour from here whenever you like.",
 } as const;
 
 export type MessageKey = keyof typeof en;

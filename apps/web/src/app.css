@@ -211,3 +211,33 @@ mark { background: #f0deb4; color: #34402a; padding-block: 3px; box-decoration-b
 .quote-highlight { position: absolute; inset: 55% -3px 3% -3px; background: #e9bf7c80; z-index: -1; transform-origin: left; }
 .comparison-progress { display: block; height: 2px; background: #a8793b; position: absolute; bottom: 0; left: 0; right: 0; transform-origin: left; }
 @media (prefers-reduced-motion: reduce) { .replay-comparison { display: none; } }
+
+/* driver.js first-run tour, in the workspace's editorial palette */
+.driver-popover.jude-tour {
+  background: #fbf8f1;
+  color: #1d2a22;
+  border-radius: 8px;
+  max-width: 340px;
+  box-shadow: 0 18px 40px rgb(20 35 25 / 22%);
+}
+.driver-popover.jude-tour .driver-popover-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+  font-weight: 500;
+}
+.driver-popover.jude-tour .driver-popover-description {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #3e4b42;
+}
+.driver-popover.jude-tour .driver-popover-footer button {
+  border-radius: 5px;
+  text-shadow: none;
+  font-size: 12.5px;
+  padding: 6px 12px;
+}
+.driver-popover.jude-tour .driver-popover-next-btn {
+  background: #1f3b2d;
+  color: #fff;
+  border-color: #1f3b2d;
+}

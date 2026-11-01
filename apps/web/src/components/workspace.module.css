@@ -1674,3 +1674,27 @@
 .audioTools { margin: 18px 0; border-block: 1px solid var(--line); }
 .audioTools > summary { padding: 16px 4px; cursor: pointer; font-weight: 500; }
 .audioTools[open] > summary { border-bottom: 1px solid var(--line); }
+.tourButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tourButton:hover {
+  background: rgb(0 0 0 / 5%);
+}
+@media (max-width: 640px) {
+  .tourButton {
+    padding: 5px 7px;
+    font-size: 0;
+    gap: 0;
+  }
+}
