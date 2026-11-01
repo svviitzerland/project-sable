@@ -1,3 +1,4 @@
+import { t, type MessageKey } from "./i18n/index.svelte";
 export type User = { id: string; name: string; email: string; demo: boolean };
 export type Case = {
   id: string;
@@ -120,21 +121,61 @@ export type Capabilities = {
   legal: Connection;
   embeddings: Connection;
 };
-export const labels: Record<Status, string> = {
-  supported: "Supported",
-  potential_inconsistency: "Potential inconsistency",
-  context_needed: "Context needed",
-  insufficient_evidence: "Insufficient evidence",
+export const statuses: Status[] = [
+  "supported",
+  "potential_inconsistency",
+  "context_needed",
+  "insufficient_evidence",
+];
+export function statusLabel(status: Status) {
+  return t(`status.${status}`);
+}
+const relations = ["supports", "conflicts", "context", "related"] as const;
+/** Evidence relation names (`supports`, `conflicts`, …) in the UI language. */
+export function relationLabel(relation: string) {
+  return (relations as readonly string[]).includes(relation)
+    ? t(`relation.${relation as (typeof relations)[number]}`)
+    : relation;
+}
+/**
+ * Server `detail` strings stay English; the common ones are shown in the UI
+ * language. Anything not listed here is displayed as the server sent it.
+ */
+const serverMessages: Record<string, MessageKey> = {
+  "Email or password is incorrect.": "error.badCredentials",
+  "An account already uses this email. Sign in instead.": "error.emailTaken",
+  "Sign in to continue": "error.signIn",
+  "Too many requests. Wait a minute and try again.": "error.rateLimited",
+  "The request does not match the expected format.": "error.format",
+  "Invalid JSON request.": "error.format",
+  "Request is too large.": "error.tooLarge",
+  "Not found": "error.notFound",
+  "Case not found": "error.caseNotFound",
+  "Hearing not found": "error.hearingNotFound",
+  "Document not found": "error.documentNotFound",
+  "Finding not found": "error.findingNotFound",
+  "Source not found": "error.sourceNotFound",
+  "Conversation not found": "error.conversationNotFound",
+  "Upload PDF, DOCX, TXT, or Markdown files.": "error.uploadTypes",
+  "Use a UTF-8 text file.": "error.utf8",
+  "Cannot read this .jude archive.": "error.archive",
+  "This operation is already running. Wait for it to finish and retry.":
+    "error.busy",
+  "A hearing is already running.": "error.hearingRunning",
+  "This pair is already linked. Review its existing connection.":
+    "error.alreadyLinked",
 };
 export function userFacingError(message: string) {
+  const known = serverMessages[message.trim()];
+  if (known) return t(known);
   if (
-    !/OPENROUTER_|PASAL_API_KEY|SPEECHMATICS_API_KEY|Configure OpenRouter|configured providers|deployment|backend|HTTP \d{3}/i.test(
+    !/OPENROUTER_|PASAL_API_KEY|SPEECHMATICS_API_KEY|Configure OpenRouter|configured providers|deployment|backend|HTTP \d{3}|could not be completed/i.test(
       message,
     )
   )
     return message;
-  const reference = message.match(/Reference: [a-zA-Z0-9-]+/)?.[0];
-  return `This request could not be completed. Please try again later.${reference ? ` ${reference}` : ""}`;
+  const reference = message.match(/Reference: ([a-zA-Z0-9-]+)/)?.[1];
+  return `${t("error.generic")}${reference ? ` ${t("error.reference", { reference })}` : ""}`;
 }
 export class ApiError extends Error {
   constructor(
@@ -165,8 +206,8 @@ export async function api<T>(
       typeof data?.detail === "string"
         ? userFacingError(data.detail)
         : response.status === 422
-          ? "Check the form fields and try again."
-          : "The server could not complete this request. Please try again.",
+          ? t("error.form")
+          : t("error.server"),
     );
   return data as T;
 }
@@ -174,7 +215,7 @@ export async function api<T>(
 export function speakerName(key: string, labels: Record<string, string>) {
   if (labels[key]) return labels[key];
   const voice = /^voice:voice-(\d+)$/.exec(key);
-  return voice ? `Voice ${voice[1]}` : key;
+  return voice ? t("speakers.voice", { n: voice[1] }) : key;
 }
 export function timestamp(value: number) {
   return new Date(value * 1000).toISOString().slice(11, 19);

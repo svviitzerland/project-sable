@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import { Download, FileText } from "@lucide/svelte";
   import { type Source } from "../lib/workspace-api";
   import styles from "./workspace.module.css";
@@ -23,8 +24,8 @@
   </div>
   <span>
     {source.section
-      ? "DOCX text section · pagination unavailable"
-      : `Page ${source.page}`}
+      ? t("source.docxSection")
+      : t("common.page", { page: source.page })}
   </span>
   <p>
     {#if index >= 0 && quote}
@@ -38,6 +39,6 @@
     href={`/api/v1/cases/${caseId}/documents/${source.document_id}/original`}
   >
     <Download size={13}></Download>
-    Download original
+    {t("common.downloadOriginal")}
   </a>
 </div>

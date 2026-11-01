@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import { api, speakerName, type CaseDetail } from "../lib/workspace-api";
   import styles from "./workspace.module.css";
@@ -19,11 +20,8 @@
 
 <div class={styles.settingsPage}>
   <section>
-    <h2>Speaker labels</h2>
-    <p>
-      Give each speaker a name or courtroom role. Confirm who is speaking before
-      changing a label.
-    </p>
+    <h2>{t("speakers.title")}</h2>
+    <p>{t("speakers.text")}</p>
     {#if speakers.length}{#each speakers as s (s)}<form
           class={styles.speakerForm}
           onsubmit={(e) => {
@@ -42,19 +40,20 @@
             <input
               name="label"
               value={detail.case.speakers[s] ?? ""}
-              placeholder="Verified name or role"
+              placeholder={t("speakers.placeholder")}
               required
               maxlength={80}
             />
           </label>
-          <button class={styles.secondary} disabled={busy}> Save label </button>
+          <button class={styles.secondary} disabled={busy}>
+            {t("speakers.save")}
+          </button>
         </form>{/each}{:else}<p class={styles.muted}>
-        Speakers appear after you add a transcript.
+        {t("speakers.empty")}
       </p>{/if}
     {#if voices}
       <p class={styles.muted}>
-        Recurring voices keep one label across recordings and hearings in this
-        case. A voice match is a suggestion; confirm who is speaking.
+        {t("speakers.voices")}
       </p>
       <button
         class={styles.secondary}
@@ -64,10 +63,10 @@
             api(`/cases/${detail.case.id}/voiceprints`, { method: "DELETE" }),
           )}
       >
-        Forget voiceprints
+        {t("speakers.forget")}
       </button>
     {/if}
   </section>
 </div>
 
-{#if busy}<Skeleton variant="compact" label="Saving speaker labels…" />{/if}
+{#if busy}<Skeleton variant="compact" label={t("speakers.skeleton")} />{/if}

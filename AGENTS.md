@@ -26,6 +26,7 @@ Jude is a SvelteKit + TypeScript courtroom workspace and marketing introduction.
 
 - Preserve typed `/api/v1` contracts and validate input/model output with Zod. Never expose storage, queue, database or provider secrets to browser environment variables.
 - Keep synthetic fixtures labeled. Distinguish configured integrations, mocks and real-provider verification. Findings support human verification, never guilt or credibility determinations.
+- The UI is bilingual (Bahasa Indonesia primary, English). Put every user-facing string in `apps/web/src/lib/i18n/en.ts` and `id.ts` and render it with `t()`; never hardcode copy in components.
 - Add meaningful tests for backend behavior that can regress; run relevant browser workflows before release. Preserve the existing visual identity when refactoring.
 - Production (AWS) runs one web process against PostgreSQL with in-process jobs, S3 (`S3_BUCKET`) and Bedrock (`AI_PROVIDER=bedrock`) via the instance role. Keep infrastructure names on the codename, not the product name. Never commit Terraform state.
 - Local mode uses one SQLite process and local files. Background analysis always runs in-process in both modes. Migrations run before the server starts (`db/`), never inside it. Production PostgreSQL is Amazon RDS.

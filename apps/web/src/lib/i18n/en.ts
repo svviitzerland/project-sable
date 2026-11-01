@@ -1,0 +1,834 @@
+/**
+ * English UI messages. `en` defines the key set: `id.ts` must provide every key
+ * (missing or extra keys fail `pnpm typecheck`). Keys are grouped by area with
+ * dotted prefixes. `{name}` placeholders are interpolated by `t()`; keys ending
+ * in `.one`/`.other` are plural pairs used through `tp()`.
+ */
+export const en = {
+  // Document metadata
+  "meta.title": "Jude — Evidence-grounded courtroom intelligence",
+  "meta.description":
+    "Stay with the testimony. See the whole story. Meet Jude, an evidence-grounded AI courtroom copilot being built for Indonesian legal professionals.",
+  "meta.workspaceTitle": "Case workspace — Jude",
+
+  // Language switcher
+  "lang.group": "Language",
+  "lang.id": "Bahasa Indonesia",
+  "lang.en": "English",
+
+  // Shared words
+  "common.page": "Page {page}",
+  "common.pageSuffix": " · Page {page}",
+  "common.copied": "Copied",
+  "common.copyQuestion": "Copy question",
+  "common.questionToConsider": "A question to consider",
+  "common.whatToVerify": "What to verify",
+  "common.atSource": "At the source",
+  "common.downloadOriginal": "Download original",
+  "common.openHearing": "Open hearing",
+  "common.cancel": "Cancel",
+  "common.tryAgain": "Try again",
+  "common.searching": "Searching…",
+  "common.saving": "Saving…",
+  "common.reviewed": "Reviewed",
+  "common.hearingTranscript": "Hearing transcript",
+  "common.syntheticExercise": "Synthetic exercise",
+  "common.importedTranscript": "Imported transcript",
+  "common.loadingContent": "Loading content…",
+  "common.openingWorkspace": "Opening your workspace…",
+  "common.loadingCases": "Loading your cases…",
+  "common.signIn": "Sign in",
+  "count.statements.one": "{count} statement",
+  "count.statements.other": "{count} statements",
+  "count.sources.one": "{count} source",
+  "count.sources.other": "{count} sources",
+  "count.documents.one": "{count} document",
+  "count.documents.other": "{count} documents",
+  "count.pages.one": "{count} page",
+  "count.pages.other": "{count} pages",
+  "count.passages.one": "{count} matching passage",
+  "count.passages.other": "{count} matching passages",
+  "count.findings.one": "{count} finding",
+  "count.findings.other": "{count} findings",
+  "count.examining.one": "{count} statement being examined",
+  "count.examining.other": "{count} statements being examined",
+
+  // Finding statuses
+  "status.supported": "Supported",
+  "status.potential_inconsistency": "Potential inconsistency",
+  "status.context_needed": "Context needed",
+  "status.insufficient_evidence": "Insufficient evidence",
+
+  // Evidence relations
+  "relation.supports": "supports",
+  "relation.conflicts": "conflicts",
+  "relation.context": "context",
+  "relation.related": "related",
+
+  // Errors shown in the browser (server details mapped in workspace-api.ts)
+  "error.generic":
+    "This request could not be completed. Please try again later.",
+  "error.form": "Check the form fields and try again.",
+  "error.server":
+    "The server could not complete this request. Please try again.",
+  "error.unexpected": "Something went wrong. Try again.",
+  "error.serverUnavailable":
+    "The Jude server is unavailable. Please try reloading the workspace.",
+  "error.loadCase": "Could not load this case.",
+  "error.badCredentials": "Email or password is incorrect.",
+  "error.emailTaken": "An account already uses this email. Sign in instead.",
+  "error.signIn": "Sign in to continue.",
+  "error.rateLimited": "Too many requests. Wait a minute and try again.",
+  "error.format": "The request does not match the expected format.",
+  "error.tooLarge": "Request is too large.",
+  "error.notFound": "Not found.",
+  "error.caseNotFound": "Case not found.",
+  "error.hearingNotFound": "Hearing not found.",
+  "error.documentNotFound": "Document not found.",
+  "error.findingNotFound": "Finding not found.",
+  "error.sourceNotFound": "Source not found.",
+  "error.conversationNotFound": "Conversation not found.",
+  "error.uploadTypes": "Upload PDF, DOCX, TXT, or Markdown files.",
+  "error.utf8": "Use a UTF-8 text file.",
+  "error.archive": "Cannot read this .jude archive.",
+  "error.busy":
+    "This operation is already running. Wait for it to finish and retry.",
+  "error.hearingRunning": "A hearing is already running.",
+  "error.alreadyLinked":
+    "This pair is already linked. Review its existing connection.",
+  "error.reference": "Reference: {reference}",
+
+  // Landing page
+  "landing.skip": "Skip to content",
+  "landing.home": "Jude home",
+  "landing.mainNav": "Main navigation",
+  "landing.mobileNav": "Mobile navigation",
+  "landing.openNav": "Open navigation",
+  "landing.closeNav": "Close navigation",
+  "landing.nav.howItWorks": "How it works",
+  "landing.nav.evidence": "Built on evidence",
+  "landing.nav.approach": "Our approach",
+  "landing.exploreDemo": "Explore the demo",
+  "landing.openWorkspace": "Open workspace",
+  "landing.hero.title1": "Stay with the testimony.",
+  "landing.hero.title2": "See the whole story.",
+  "landing.hero.lead1": "An AI courtroom copilot that connects what is said",
+  "landing.hero.lead2": "to what the evidence shows.",
+  "landing.hero.entry":
+    "Sign in or create an account to start your first case.",
+  "landing.hero.sample": "Synthetic example",
+  "landing.hero.replay": "Replay comparison",
+  "landing.hero.testimony": "Testimony",
+  "landing.hero.quote1": "I arrived at",
+  "landing.hero.time1": "9:30 PM.",
+  "landing.hero.check1": "Check whether both statements",
+  "landing.hero.check2": "refer to the same event.",
+  "landing.hero.earlier": "Earlier statement",
+  "landing.hero.quote2a": "I arrived shortly",
+  "landing.hero.quote2b": "after",
+  "landing.hero.time2": "8:00 PM.",
+  "landing.hero.witnessStatement": "Witness statement",
+  "landing.source.title": "Every finding has a source.",
+  "landing.source.lead":
+    "Jude links testimony to case documents, surfaces possible inconsistencies, and keeps legal judgment with people.",
+  "landing.source.aside":
+    "See the exact passages, compare them side by side, and follow the trail back to the original documents—so you can ask better questions and build stronger arguments.",
+  "landing.workflow.title1": "Keep your attention",
+  "landing.workflow.title2": "where it matters.",
+  "landing.workflow.lead":
+    "Hear the testimony. Follow the argument. Jude is being built to connect the relevant details while you stay with the proceedings.",
+  "landing.step1.title": "Listen in context.",
+  "landing.step1.text":
+    "A searchable transcript brings together what was said, when it was said, and who said it. Uncertain speaker identities stay uncertain.",
+  "landing.step1.from": "Testimony",
+  "landing.step1.to": "Meaningful statements",
+  "landing.step2.title": "Connect the evidence.",
+  "landing.step2.text":
+    "Relevant statements are compared with the case materials. Supporting passages and potential differences retain their document and page references.",
+  "landing.step2.from": "Statement",
+  "landing.step2.to": "Source passage",
+  "landing.step3.title": "Examine both sides.",
+  "landing.step3.text":
+    "Alternative explanations and missing context are considered before a finding is presented. You inspect the sources and decide what deserves a closer look.",
+  "landing.step3.from": "Finding",
+  "landing.step3.to": "Your judgment",
+  "landing.demo.title1": "Look closer.",
+  "landing.demo.title2": "Follow the source.",
+  "landing.demo.disclosure1":
+    "An interactive illustration using synthetic case material.",
+  "landing.demo.disclosure2":
+    "No audio is recorded and no AI analysis runs in this demo.",
+  "landing.demo.lead":
+    "A difference is a starting point for a question. Explore how the available evidence changes the finding.",
+  "landing.demo.choose": "Choose an evidence example",
+  "landing.demo.caseLabel": "Synthetic case / 001",
+  "landing.demo.inHearing": "In the hearing",
+  "landing.demo.inCaseFile": "In the case file",
+  "landing.demo.transcriptAt": "Transcript · {time}",
+  "landing.demo.statementPage": "Witness statement · Page {page}",
+  "landing.demo.marked": "Marked as reviewed",
+  "landing.demo.mark": "Mark as reviewed",
+  "landing.demo.visitOnly": "For this visit only",
+  "landing.demo.excerpts": "Original source excerpts",
+  "landing.demo.synthetic": "Synthetic",
+  "landing.demo.sourceDocument": "Source document",
+  "landing.demo.witnessStatement": "Witness statement",
+  "landing.demo.recordCaps": "HEARING RECORD",
+  "landing.demo.statementCaps": "WITNESS STATEMENT",
+  "landing.demo.pageCaps": "PAGE {page}",
+  "landing.demo.examination": "Examination of the witness",
+  "landing.demo.earlierAccount": "Earlier account of events",
+  "landing.demo.footnote":
+    "Prepared example for demonstration. Not a real case record or legal reference.",
+  "landing.demo.copyUnavailable":
+    "Copy unavailable. Select the question above to copy it manually.",
+  "landing.demo.copiedStatus": "Question copied to clipboard.",
+  "landing.demo.footer":
+    "These labels describe the relationship between a statement and the available evidence. They do not establish credibility, guilt, or a legal conclusion.",
+  "landing.approach.title1": "Your judgment.",
+  "landing.approach.title2": "Better informed.",
+  "landing.approach.lead":
+    "Built around a simple principle: the person examining the evidence should always be able to question the finding.",
+  "landing.approach.faqLink": "A few important questions",
+  "landing.principle1.title": "Traceable by design.",
+  "landing.principle1.text":
+    "A substantive finding should retain its source, passage, and context. An answer without something to inspect is not enough.",
+  "landing.principle2.title": "Uncertainty stays visible.",
+  "landing.principle2.text":
+    "Missing context and insufficient evidence are meaningful results. Jude should surface those limits, rather than force a conclusion.",
+  "landing.principle3.title": "People make the decisions.",
+  "landing.principle3.text":
+    "Jude supports examination and preparation. Professional legal judgment and judicial independence remain with people.",
+  "landing.faq.title1": "Before we enter",
+  "landing.faq.title2": "the courtroom.",
+  "landing.faq.q1": "Who is Jude being built for?",
+  "landing.faq.a1":
+    "The first use case is lawyers in Indonesian criminal proceedings. The current MVP includes a synthetic hearing and a case workspace. Prosecutor and judge workflows would require separate role-specific capabilities and safeguards.",
+  "landing.faq.q2": "Is this a live courtroom product?",
+  "landing.faq.a2":
+    "Jude is intended for evaluation using fictional or authorized material. Use it to organize documents, review transcripts and findings, and prepare questions. The example hearing lets you explore with fictional material. Verify sources and review the results before relying on them in a real proceeding.",
+  "landing.faq.q3": "Does an inconsistency mean a witness is wrong?",
+  "landing.faq.a3":
+    "No. Different accounts can reflect different events, ambiguous questions, incomplete context, or other explanations. Jude is intended to identify what may warrant examination—not decide whether a witness is lying or a defendant is guilty.",
+  "landing.faq.q4": "How will Indonesian legal references be used?",
+  "landing.faq.a4":
+    "The proposed product will retrieve relevant Indonesian legislation through Pasal.id, subject to available permissions. Verified legal text must be distinguished from metadata and unverified references. This demo does not retrieve or present legal advice.",
+  "landing.faq.q5": "Can I upload case documents here?",
+  "landing.faq.a5":
+    "The authenticated workspace accepts text-based PDF, DOCX, TXT, and Markdown documents, with original downloads and inspectable passages. Use synthetic or appropriately authorized material. Scanned PDFs require OCR before upload.",
+  "landing.closing.title1": "Stay present.",
+  "landing.closing.title2": "See what connects.",
+  "landing.closing.lead1": "A closer look at the evidence starts",
+  "landing.closing.lead2": "with a better question.",
+  "landing.closing.note": "Designed for Indonesian legal professionals.",
+  "landing.footer.tagline": "Evidence-grounded courtroom intelligence.",
+  "landing.footer.concept": "Product concept · 2026",
+  "landing.footer.top": "Back to top",
+
+  // Sign-in and registration
+  "auth.title1": "Stay with the testimony.",
+  "auth.title2": "Keep the evidence close.",
+  "auth.lead":
+    "A working space for your case documents, hearing record, and the questions that connect them.",
+  "auth.principle1": "Sources you can inspect.",
+  "auth.principle2": "Judgment that stays with you.",
+  "auth.back": "Back to the introduction",
+  "auth.createTitle": "Create your workspace.",
+  "auth.welcomeTitle": "Welcome to your workspace.",
+  "auth.createLead": "Start with a case. Bring the evidence together.",
+  "auth.signInLead": "Sign in to continue examining your cases.",
+  "auth.name": "Your name",
+  "auth.email": "Email address",
+  "auth.password": "Password",
+  "auth.passwordHint": "At least 10 characters.",
+  "auth.hidePassword": "Hide password",
+  "auth.showPassword": "Show password",
+  "auth.opening": "Opening workspace…",
+  "auth.createAccount": "Create account",
+  "auth.haveAccount": "Already have an account? Sign in",
+  "auth.newAccount": "New to Jude? Create an account",
+  "auth.exploreFirst": "Explore before you start",
+  "auth.openSynthetic": "Open a synthetic case",
+  "auth.demoNote":
+    "Explore a fictional case with prepared evidence. No microphone needed.",
+  "auth.footnote":
+    "Use only case material you are authorized to share and process.",
+
+  // Workspace shell
+  "tab.evidence": "Evidence",
+  "tab.hearing": "Hearings",
+  "tab.documents": "Case documents",
+  "tab.assistant": "Case assistant",
+  "tab.practice": "Courtroom practice",
+  "tab.references": "Legal references",
+  "tab.settings": "Speaker labels",
+  "ws.skip": "Skip to workspace",
+  "ws.sidebar": "Cases and account",
+  "ws.closeNav": "Close case navigation",
+  "ws.openNav": "Open case navigation",
+  "ws.yourWorkspace": "Your workspace",
+  "ws.newCase": "New case",
+  "ws.findCase": "Find a case",
+  "ws.findCasePlaceholder": "Find a case…",
+  "ws.yourCases": "Your cases",
+  "ws.caseWorkspace": "Case workspace",
+  "ws.noMatchingCases": "No matching cases.",
+  "ws.clearSearch": "Clear search",
+  "ws.demoSession": "Demo session",
+  "ws.lawyerWorkspace": "Lawyer workspace",
+  "ws.signOut": "Sign out",
+  "ws.cases": "Cases",
+  "ws.workspace": "Workspace",
+  "ws.about": "About Jude",
+  "ws.dismissError": "Dismiss error",
+  "ws.welcomeTitle": "A place for the whole case.",
+  "ws.welcomeText":
+    "Create a case to bring together documents, testimony, and the questions that deserve a closer look.",
+  "ws.createFirst": "Create your first case",
+  "ws.trySynthetic": "Try a synthetic hearing",
+  "ws.loadingCase": "Loading case record…",
+  "ws.caseLoadFailed": "The case record could not be loaded.",
+  "ws.syntheticMaterial": "Synthetic material",
+  "ws.privateCase": "Private case",
+  "ws.defaultDescription": "Bring testimony and source material together.",
+  "ws.exportJude": "Export .jude",
+  "ws.caseSections": "Case sections",
+  "ws.start.title": "Start with your case material.",
+  "ws.start.text":
+    "Documents are your source files. Hearings hold testimony. Evidence connects the passages between them.",
+  "ws.start.docs": "Add case documents",
+  "ws.start.docsText": "Upload reports, statements, contracts, or legislation.",
+  "ws.start.hearing": "Bring in a hearing",
+  "ws.start.hearingText": "Upload a transcript or start a new hearing record.",
+  "ws.start.then":
+    "Then use the evidence map to compare sources, or ask the case assistant a question.",
+
+  // Hearing detail
+  "hearing.all": "All hearings",
+  "hearing.export": "Export hearing",
+  "hearing.simComplete": "Simulation complete",
+  "hearing.pause": "Pause hearing",
+  "hearing.startSim": "Start simulated hearing",
+  "hearing.analyze": "Analyze hearing",
+  "hearing.state.simulation": "Simulated hearing running",
+  "hearing.state.live": "Live audio session",
+  "hearing.state.complete": "Hearing complete",
+  "hearing.state.ready": "Ready for testimony",
+  "hearing.autoUpdates": "Changes appear automatically",
+  "hearing.checking": "Checking for new testimony…",
+  "hearing.readyForAnalysis": "Saved transcript · ready for analysis",
+  "hearing.upToDate": "All saved testimony is up to date",
+  "hearing.analysisUnavailable":
+    "Automatic analysis is unavailable. You can still read the transcript and compare it with your documents.",
+  "hearing.simNotice":
+    "This example uses fictional testimony and prepared findings. Start the hearing to explore the review process.",
+  "hearing.audioTools": "Record or upload audio",
+  "hearing.transcript": "Transcript",
+  "hearing.findings": "Findings",
+  "hearing.toReview": "{count} to review",
+  "hearing.reviewedOf": "{done} of {total} reviewed",
+  "hearing.nextUnreviewed": "Next unreviewed",
+  "hearing.filter": "Filter findings",
+  "hearing.allFindings": "All findings",
+  "hearing.needsReview": "Needs your review",
+  "hearing.examining": "Examining testimony for findings…",
+  "hearing.mode.simulation": "Scripted example",
+  "hearing.mode.imported": "Imported finding · verify sources",
+  "hearing.mode.ai": "AI · source-validated",
+  "hearing.emptyTitle": "Follow the evidence.",
+  "hearing.emptyFilterTitle": "No findings in this view.",
+  "hearing.emptyText":
+    "Findings appear here as finalized statements are examined. Start the simulation or add a transcript statement.",
+  "hearing.emptyFilterText":
+    "Choose another filter to see the rest of the record.",
+  "hearing.inspector": "Finding and source inspector",
+  "hearing.backToFindings": "Back to findings",
+  "hearing.inspectorEmptyTitle": "Every finding, inspectable.",
+  "hearing.inspectorEmptyText":
+    "Select a finding to compare its testimony with original passages, alternative explanations, and a verification step.",
+  "hearing.bottomNote":
+    "Findings describe evidence relationships. They do not determine credibility, guilt, or legal outcomes.",
+  "hearingStatus.ready": "ready",
+  "hearingStatus.live": "live",
+  "hearingStatus.simulation": "running",
+  "hearingStatus.paused": "paused",
+  "hearingStatus.complete": "complete",
+
+  // New case form
+  "newCase.title": "Create a case",
+  "newCase.cancel": "Cancel new case",
+  "newCase.caseTitle": "Case title",
+  "newCase.titlePlaceholder": "e.g. Warehouse inquiry",
+  "newCase.reference": "Reference (optional)",
+  "newCase.referencePlaceholder": "Your case reference",
+  "newCase.description": "Description (optional)",
+  "newCase.descriptionPlaceholder": "Context for this case and its material",
+  "newCase.creating": "Creating…",
+  "newCase.create": "Create case",
+  "newCase.skeleton": "Creating case…",
+
+  // .jude archive import
+  "archive.importing": "Importing case…",
+  "archive.import": "Import .jude",
+  "archive.tooLarge": "Use a .jude case archive up to 64 MB.",
+
+  // Manual transcript entry
+  "manual.add": "Add transcript text",
+  "manual.speaker": "Speaker label",
+  "manual.defaultSpeaker": "Unknown",
+  "manual.statement": "Finalized statement",
+  "manual.placeholder": "Enter the exact words spoken…",
+  "manual.save": "Save & examine",
+  "manual.skeleton": "Saving testimony…",
+
+  // Speaker labels
+  "speakers.title": "Speaker labels",
+  "speakers.text":
+    "Give each speaker a name or courtroom role. Confirm who is speaking before changing a label.",
+  "speakers.placeholder": "Verified name or role",
+  "speakers.save": "Save label",
+  "speakers.empty": "Speakers appear after you add a transcript.",
+  "speakers.voices":
+    "Recurring voices keep one label across recordings and hearings in this case. A voice match is a suggestion; confirm who is speaking.",
+  "speakers.forget": "Forget voiceprints",
+  "speakers.skeleton": "Saving speaker labels…",
+  "speakers.voice": "Voice {n}",
+
+  // Legal results
+  "legal.uncertain": " (uncertain)",
+  "legal.openOriginal":
+    "Open the original source to read the full legislation.",
+  "legal.article": "Article {article}",
+
+  // Source card
+  "source.docxSection": "DOCX text section · pagination unavailable",
+
+  // Documents
+  "docs.added":
+    "Document added. Select it below to read its passages, or ask the case assistant about it.",
+  "docs.title": "The case file.",
+  "docs.lead":
+    "Original documents, preserved passages, and a trail back to the source.",
+  "docs.addTitle": "Add authorized case documents",
+  "docs.formats":
+    "PDF, DOCX, TXT, or Markdown · up to 6 MB · text-based PDFs only",
+  "docs.note":
+    "Keep the original files and search their text. AI features may process excerpts to help find related material.",
+  "docs.processing": "Processing…",
+  "docs.choose": "Choose a file",
+  "docs.searchLabel": "Search case evidence",
+  "docs.searchPlaceholder": "Search only this case’s evidence…",
+  "docs.search": "Search",
+  "docs.clear": "Clear search results",
+  "docs.processingDoc": "Processing document…",
+  "docs.textSection": "Text section",
+  "docs.ready": "Ready to search",
+  "docs.emptyTitle": "Start with a source.",
+  "docs.emptyText":
+    "Upload your first case document to make its passages available for search and comparison.",
+  "docs.searchingDocs": "Searching case documents…",
+  "docs.loadingPassages": "Loading document passages…",
+  "docs.results": "Search results",
+  "docs.noMatchTitle": "No matching passages.",
+  "docs.noMatchText":
+    "Try different words or add the document containing this detail.",
+  "docs.extracted": "Extracted passages",
+  "docs.openTitle": "Open the record.",
+  "docs.openText":
+    "Choose a document to read its extracted passages, or search for a detail across this case.",
+
+  // Finding inspector
+  "finding.title": "Examine the finding",
+  "finding.hearingAt": "Hearing · {time}",
+  "finding.sourceTab": "Source {n} · {relation}",
+  "finding.loadingPassage": "Loading original passage…",
+  "finding.noCitation": "No source citation supports this finding.",
+  "finding.uncertainty": "Uncertainty",
+  "finding.aboutScripted": "About this scripted finding",
+  "finding.importedReview": "Imported review · not re-run",
+  "finding.independentReview": "Independent review",
+  "finding.alternative": "Alternative: {text}",
+  "finding.missingContext": "Missing context: {text}",
+  "finding.analyst": "Analyst: {text}",
+  "finding.prepared": "Prepared example · not an AI evaluation",
+  "finding.importedVerify":
+    "Imported finding · verify against the original sources",
+  "finding.quoteMatches":
+    "Quoted text matches the source. Review the interpretation yourself.",
+  "finding.legal": "Related legal discovery",
+  "finding.clipboardError":
+    "Clipboard unavailable. Select and copy the question manually.",
+  "finding.questionCopied": "Question copied",
+  "finding.note": "Your review note",
+  "finding.notePlaceholder": "What needs follow-up?",
+  "finding.unsaved": "Unsaved note · Save your changes before leaving.",
+  "finding.reopen": "Reopen for review",
+  "finding.markReviewed": "Mark reviewed",
+  "finding.saveNote": "Save note",
+  "finding.reviewedByYou": "Reviewed by you · saved to the case",
+
+  // Hearing audio capture
+  "audio.title": "Capture this hearing",
+  "audio.text":
+    "Transcribe your microphone or an audio file. The transcript stays with this hearing.",
+  "audio.recognitionLanguage": "Recognition language",
+  "audio.permission":
+    "The presiding judge allowed recording, and I may send this audio for transcription.",
+  "audio.start": "Start microphone",
+  "audio.prepared": "Prepared audio",
+  "audio.cancel": "Cancel connection",
+  "audio.finishing": "Finishing transcript…",
+  "audio.stop": "Stop recording",
+  "audio.connectingAudio": "Connecting audio…",
+  "audio.savingFinal": "Saving final transcript…",
+  "audio.unavailable":
+    "Audio transcription is unavailable. Return to All hearings to upload a transcript instead.",
+  "audio.idle":
+    "Microphone off. Live audio goes to Amazon Transcribe; with recording on, a private copy is kept for replay.",
+  "audio.keepRecording": "Keep an audio recording of this session",
+  "audio.recordings": "Recordings",
+  "audio.recordingItem": "Recording {when} · {duration}",
+  "audio.deleteRecording": "Delete recording",
+  "audio.recordingsNote":
+    "Private to this case. Recording in court needs the presiding judge's permission (Perma 5/2020) and is not allowed in closed hearings.",
+  "audio.recording": "Recording and streaming · keep this tab open",
+  "audio.waiting": "Waiting for final transcript…",
+  "audio.connecting": "Connecting…",
+  "audio.error.finalTimeout":
+    "Final transcription timed out. Check the saved transcript for missing final words.",
+  "audio.error.fileSize": "Use a prepared audio file smaller than 30 MB.",
+  "audio.error.duration": "Prepared audio must be shorter than 30 minutes.",
+  "audio.error.reconnectSlow":
+    "Audio reconnection took too long. Recording stopped; check the final saved words before restarting.",
+  "audio.error.backpressure":
+    "Audio upload cannot keep up. Recording stopped to avoid losing testimony.",
+  "audio.error.connectTimeout":
+    "Audio connection timed out. Check the saved transcript before reconnecting.",
+  "audio.error.rotation":
+    "Audio rotation timed out. Check the saved transcript before restarting.",
+  "audio.error.reconnect":
+    "Could not reconnect audio. Check the saved transcript before restarting.",
+  "audio.error.process":
+    "Could not process the audio connection. Please reconnect.",
+  "audio.error.failed":
+    "Audio connection failed. Saved testimony remains available; check the final words before restarting.",
+  "audio.error.ended":
+    "Audio connection ended unexpectedly. Check the saved transcript before restarting.",
+  "audio.error.permission":
+    "Audio permission was denied. Allow microphone access and try again.",
+  "audio.error.saveFinal":
+    "Could not save the final transcript. Recording stopped; check the last saved words before restarting.",
+  "audio.error.finishSave":
+    "Could not finish saving this audio session. Check the last saved words before restarting.",
+  "audio.error.limit":
+    "Speech transcription limit reached. Wait a moment and reconnect.",
+  "audio.error.recordingUpload":
+    "The transcript is saved, but the audio recording could not be uploaded.",
+  "audio.error.provider":
+    "Speech provider reported an error. Check connection settings and quota.",
+  "audio.error.providerResponse":
+    "Could not process the speech provider response.",
+
+  // Transcript
+  "phase.pending": "Ready to examine",
+  "phase.queued": "Waiting to examine",
+  "phase.extracting": "Reading statement…",
+  "phase.retrieving": "Finding sources…",
+  "phase.analyzing": "Examining…",
+  "phase.reviewing": "Checking findings…",
+  "phase.synthesizing": "Preparing findings…",
+  "phase.complete": "Examined",
+  "phase.saved": "Saved",
+  "transcript.search": "Search this transcript",
+  "transcript.searchPlaceholder": "Find words in this hearing…",
+  "transcript.filterSpeaker": "Filter transcript by speaker",
+  "transcript.allSpeakers": "All speakers",
+  "transcript.shownOf": "{shown} of {total} statements",
+  "transcript.clear": "Clear transcript filters",
+  "transcript.followPaused": "Following paused while filtering",
+  "transcript.follow": "Follow new testimony",
+  "transcript.noTime": "Time not supplied",
+  "transcript.scripted": "Scripted",
+  "transcript.manual": "Manually entered",
+  "transcript.noConfidence": "Confidence unavailable",
+  "transcript.confidence": "{value}% word confidence",
+  "transcript.roleUnconfirmed": " · Role unconfirmed",
+  "transcript.viewFinding": "View finding",
+  "transcript.retry": "Retry analysis",
+  "transcript.noMatchTitle": "No matching statements.",
+  "transcript.readyTitle": "Ready when you are.",
+  "transcript.noMatchText":
+    "Try another phrase or clear the speaker filter. Filters do not change the hearing record.",
+  "transcript.readyText":
+    "Start a simulated hearing, capture audio below, or add a statement below.",
+  "transcript.listening": "Listening · provisional",
+
+  // Hearing library
+  "library.converting": "Converting transcript…",
+  "library.reading": "Reading transcript…",
+  "library.creating": "Creating hearing…",
+  "library.importing": "Importing hearing…",
+  "library.title": "Hearings",
+  "library.lead":
+    "A complete record for every examination. Bring in a transcript, then follow its evidence.",
+  "library.new": "New hearing",
+  "library.importTitle": "Bring the whole hearing.",
+  "library.importText":
+    "Upload a transcript instead of entering each statement. Review it here before adding it to your case.",
+  "library.formats":
+    ".jude, JSON, CSV, TXT, SRT, VTT, PDF or DOCX · up to 6 MB",
+  "library.upload": "Upload transcript",
+  "library.uploadLabel": "Upload hearing transcript",
+  "library.template": "Download a .jude hearing template",
+  "library.convertHint":
+    "Readable files with unfamiliar layouts can be converted with AI.",
+  "library.hearingTitle": "Hearing title",
+  "library.titlePlaceholder": "Witness examination · day two",
+  "library.date": "Date",
+  "library.create": "Create hearing",
+  "library.preview": "Transcript import preview",
+  "library.aiConversion": "AI conversion · review required",
+  "library.importPreview": "Import preview",
+  "library.closePreview": "Close import preview",
+  "library.chooseSupported":
+    "Choose a supported text file or use the hearing template.",
+  "library.importedTitle": "Imported hearing title",
+  "library.hearingDate": "Hearing date",
+  "library.speakerN": "Speaker {n}",
+  "library.speakerFor": "Speaker for statement {n}",
+  "library.statementN": "Statement {n}",
+  "library.preserved": "{statements} · original upload preserved",
+  "library.confirm": "Confirm & import hearing",
+  "library.converterNote":
+    "The converter preserves source wording and leaves uncertain timing unknown. You will review its proposed speaker turns before import.",
+  "library.convert": "Convert with AI",
+  "library.convertUnavailable":
+    "AI conversion is unavailable. Download the hearing template, add your transcript, and upload it again.",
+  "library.caseHearings": "Case hearings",
+  "library.shownOf": "{shown} of {total} hearings",
+  "library.search": "Search hearings",
+  "library.searchPlaceholder": "Find a hearing or transcript phrase…",
+  "library.needsReview": "Needs review",
+  "library.dateNotSet": "Date not set",
+  "library.record": "Hearing record",
+  "library.allReviewed": "All reviewed",
+  "library.noMatchTitle": "No hearings match this view.",
+  "library.noMatchText": "Try another phrase or show all hearings.",
+  "library.clear": "Clear hearing filters",
+  "library.firstTitle": "Your first hearing starts here.",
+  "library.firstText":
+    "Upload a prepared transcript or create a hearing for live audio and manual notes.",
+
+  // Evidence map and search
+  "evidence.title": "Follow the evidence.",
+  "evidence.lead":
+    "Ask the case a question. Trace each answer back to its sources and the connections between them.",
+  "evidence.finding": "Finding connections…",
+  "evidence.find": "Find connections",
+  "evidence.searching": "Searching the case…",
+  "evidence.ask": "Ask about this case",
+  "evidence.askPlaceholder":
+    "What do the witnesses say about the arrival time?",
+  "evidence.searchEvidence": "Search evidence",
+  "evidence.groundedAnswer": "A source-grounded answer",
+  "evidence.relevantPassages": "Relevant passages",
+  "evidence.closeResults": "Close search results",
+  "evidence.loadingMap": "Loading evidence map…",
+  "evidence.loading": "Loading evidence…",
+  "evidence.retry": "Retry loading evidence",
+  "evidence.map": "Evidence map",
+  "evidence.connections": "Connections",
+  "evidence.summary": "{passages} passages · {connections} connections",
+  "evidence.relationships": "Evidence relationships",
+  "evidence.zoomIn": "Zoom in",
+  "evidence.zoomOut": "Zoom out",
+  "evidence.reset": "Reset",
+  "evidence.graph": "Interactive evidence graph",
+  "evidence.edgeLabel": "{relation}: {from} to {to}",
+  "evidence.hearingStatement": "Hearing statement",
+  "evidence.mapCaption":
+    "Select a passage or a connecting line. Dashed connections await review. On a small screen, swipe across the map or use Connections.",
+  "evidence.emptyTitle": "Build a picture of the case.",
+  "evidence.emptyText":
+    "Add case documents or import a .jude case. Their passages will appear here, ready to search and connect.",
+  "evidence.suggested": "Suggested",
+  "evidence.reviewedLower": "reviewed",
+  "evidence.suggestedLower": "suggested",
+  "evidence.noConnectionsTitle": "No connections yet.",
+  "evidence.noConnectionsText":
+    "Find connections automatically, or select a passage to create your own link.",
+  "evidence.mapLimit":
+    "Map shows 24 nodes. All {count} available nodes are listed below; search covers the whole case.",
+  "evidence.inspector": "Evidence inspector",
+  "evidence.back": "Back to evidence",
+  "evidence.examine": "Examine the connection",
+  "evidence.basis.ai": "AI-proposed relationship",
+  "evidence.basis.semantic": "Similar meaning",
+  "evidence.basis.keywords": "Shared terms",
+  "evidence.basis.simulation": "Authored synthetic example",
+  "evidence.basis.imported": "Imported relationship",
+  "evidence.basis.recorded": "Recorded relationship",
+  "evidence.similarity": "Similarity {value}%; not a probability of truth.",
+  "evidence.savingReview": "Saving review…",
+  "evidence.reopen": "Reopen connection",
+  "evidence.confirm": "Confirm connection",
+  "evidence.discuss": "Discuss with assistant",
+  "evidence.connected": "Connected evidence",
+  "evidence.link": "Link another passage",
+  "evidence.savingConnection": "Saving connection…",
+  "evidence.otherPassage": "Other passage",
+  "evidence.choosePassage": "Choose a passage",
+  "evidence.relationship": "Relationship",
+  "evidence.why": "Why are they connected?",
+  "evidence.saveLink": "Save confirmed link",
+  "evidence.inspectorEmptyTitle": "A source behind every connection.",
+  "evidence.inspectorEmptyText":
+    "Select a passage to read the original text, or a link to inspect how two pieces of evidence relate.",
+  "evidence.browse": "Browse available passages and statements ({count})",
+
+  // Case assistant and courtroom practice
+  "dialogue.default.trialType": "Criminal trial",
+  "dialogue.default.jurisdiction": "Indonesia — confirm applicable procedure",
+  "dialogue.default.language": "English",
+  "dialogue.default.goals":
+    "Practice precise questions and source-based arguments.",
+  "dialogue.default.assumptions":
+    "Procedure and scenario details are practice assumptions, not established case facts.",
+  "role.defense": "Defense counsel",
+  "role.opposing": "Opposing counsel",
+  "role.judge": "Judge",
+  "role.witness": "Witness",
+  "stage.Opening statements": "Opening statements",
+  "stage.Witness examination": "Witness examination",
+  "stage.Cross-examination": "Cross-examination",
+  "stage.Closing arguments": "Closing arguments",
+  "stage.Procedural hearing": "Procedural hearing",
+  "difficulty.Supportive": "Supportive",
+  "difficulty.Standard": "Standard",
+  "difficulty.Challenging": "Challenging",
+  "dialogue.busy.reading": "Reading the case…",
+  "dialogue.busy.responding": "The courtroom is responding…",
+  "dialogue.busy.debrief": "Preparing your debrief…",
+  "dialogue.busy.opening": "Opening conversation…",
+  "dialogue.busy.starting": "Starting rehearsal…",
+  "dialogue.busy.suggesting": "Suggesting trial conditions…",
+  "dialogue.finishMessage":
+    "End this rehearsal and give me a practice debrief.",
+  "dialogue.practiceTitle": "Prepare for the room.",
+  "dialogue.assistantTitle": "Think through the whole case.",
+  "dialogue.practiceLead":
+    "Rehearse an argument, question a witness, or practise directing the hearing. You choose your role and conditions.",
+  "dialogue.assistantLead":
+    "Ask follow-up questions across documents, hearings, findings, and confirmed evidence connections. Every case quotation stays inspectable.",
+  "dialogue.newRehearsal": "New rehearsal",
+  "dialogue.newConversation": "New conversation",
+  "dialogue.savedRehearsals": "Saved rehearsals",
+  "dialogue.savedConversations": "Saved conversations",
+  "dialogue.yourRehearsals": "Your rehearsals",
+  "dialogue.conversations": "Conversations",
+  "dialogue.exportRehearsal": "Export rehearsal",
+  "dialogue.exportConversation": "Export conversation",
+  "dialogue.loadingSaved": "Loading saved conversations…",
+  "dialogue.completed": "Completed",
+  "dialogue.guidedDrill": "Guided drill",
+  "dialogue.aiRehearsal": "AI rehearsal",
+  "dialogue.caseConversation": "Case conversation",
+  "dialogue.emptyPractice": "Your practice sessions will appear here.",
+  "dialogue.emptyAssistant": "Your conversations stay with this case.",
+  "dialogue.boundaryPractice":
+    "Practice dialogue stays separate from evidence and hearing records.",
+  "dialogue.boundaryAssistant":
+    "Only material from this case is used. Practice conversations stay separate.",
+  "dialogue.mainPractice": "Courtroom practice",
+  "dialogue.mainAssistant": "Case assistant conversation",
+  "dialogue.openingConversations": "Opening this case’s conversations…",
+  "dialogue.setTitle": "Set the scene.",
+  "dialogue.setText":
+    "Review these assumptions before starting. They describe a practice scenario, not a prediction.",
+  "dialogue.suggest": "Suggest from case",
+  "dialogue.suggestedSetup": "Suggested setup · review and edit below",
+  "dialogue.field.trial_type": "Trial type",
+  "dialogue.field.jurisdiction": "Jurisdiction / court",
+  "dialogue.field.stage": "Stage",
+  "dialogue.field.user_role": "Your role",
+  "dialogue.field.difficulty": "Difficulty",
+  "dialogue.field.language": "Language",
+  "dialogue.field.goals": "Practice goals",
+  "dialogue.field.assumptions": "Scenario assumptions and ground rules",
+  "dialogue.mode": "Practice mode",
+  "dialogue.aiRoleplay": "AI roleplay",
+  "dialogue.guidedOption": "Guided drill · scripted prompts",
+  "dialogue.start": "Start rehearsal",
+  "dialogue.aiUnavailable":
+    "AI roleplay is unavailable. You can still rehearse with guided prompts and a self-review checklist.",
+  "dialogue.assistantEmptyTitle": "A question, with the case behind it.",
+  "dialogue.practiceMeta": "You: {role} · {stage} · {mode}",
+  "dialogue.scriptedDrill": "Scripted drill",
+  "dialogue.assistantMeta":
+    "Answers use relevant case excerpts. Open each citation to check the original context.",
+  "dialogue.finish": "Finish & debrief",
+  "dialogue.conditions": "Trial conditions",
+  "dialogue.editSetup": "Edit setup for a new rehearsal",
+  "dialogue.logPractice": "Practice dialogue",
+  "dialogue.logAssistant": "Case conversation",
+  "dialogue.welcomeTitle": "Start with what you need to understand.",
+  "dialogue.welcomeText":
+    "Compare accounts, identify missing context, or prepare questions. Select material below to give a source extra attention.",
+  "dialogue.suggestion1": "Summarize the case and what is still uncertain.",
+  "dialogue.suggestion2": "Where do the witness accounts differ?",
+  "dialogue.suggestion3":
+    "What questions should I prepare for the next hearing?",
+  "dialogue.you": "You",
+  "dialogue.youRole": "You · {role}",
+  "dialogue.openOriginal": "Open original",
+  "dialogue.legalDiscovery": "Legal discovery · verify original text",
+  "dialogue.complete":
+    "Rehearsal complete. Your dialogue and debrief are saved.",
+  "dialogue.again": "Practise again",
+  "dialogue.reference": "Reference case material",
+  "dialogue.referenceHelp":
+    "Choose up to six records. Relevant excerpts are selected; a reference does not attach every page.",
+  "dialogue.selectedPassage": "Selected evidence passage",
+  "dialogue.caseDocument": "Case document",
+  "dialogue.noReferences": "Add documents or a hearing to reference them here.",
+  "dialogue.legalLookup": "Include legal lookup",
+  "dialogue.legalTerms": "Legal search terms",
+  "dialogue.legalPlaceholder": "e.g. witness testimony, burden of proof",
+  "dialogue.legalHelp":
+    "Use legal terms rather than personal details. Check the original legislation before relying on it.",
+  "dialogue.legalUnavailable":
+    "Legal search is unavailable. You can reference uploaded legislation from Case documents.",
+  "dialogue.yourTurn": "Your turn · {role}",
+  "dialogue.askLabel": "Ask about this case",
+  "dialogue.practicePlaceholder":
+    "Make your argument, ask a question, or direct the hearing…",
+  "dialogue.assistantPlaceholder":
+    "Ask a question or follow up on an earlier answer…",
+  "dialogue.footerPractice": "Hypothetical practice · never added to evidence",
+  "dialogue.footerAi": "Citations verify quoted text, not legal correctness.",
+  "dialogue.footerNoAi": "Source search only · AI replies are unavailable",
+  "dialogue.takeTurn": "Take your turn",
+  "dialogue.send": "Send message",
+
+  // Legal references page
+  "references.title": "Find the relevant legal source.",
+  "references.lead":
+    "Discover Indonesian legislation through Pasal.id, then inspect its text at the original link.",
+  "references.notice":
+    "Open the original source to verify the wording and whether it applies to your case.",
+  "references.searchLabel": "Search Indonesian regulations",
+  "references.placeholder": "Use legal keywords, e.g. keterangan saksi",
+  "references.search": "Search legislation",
+  "references.skeleton": "Searching legal references…",
+  "references.unavailableTitle": "Legal search is unavailable.",
+  "references.unavailableText":
+    "You can still upload legislation under Case documents and reference it in the case assistant.",
+  "references.beginTitle": "Begin with a legal issue.",
+  "references.beginText":
+    "Search generic legal terms rather than names or personal case details. Every result opens its source for your review.",
+  "references.noneTitle": "No references found.",
+  "references.noneText": "Try a different regulation title or legal keyword.",
+} as const;
+
+export type MessageKey = keyof typeof en;
+export type Messages = Record<MessageKey, string>;

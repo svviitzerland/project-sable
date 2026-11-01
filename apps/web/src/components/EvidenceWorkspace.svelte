@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, tp, type MessageKey } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import {
     ArrowRight,
@@ -13,7 +14,12 @@
     ZoomIn,
     ZoomOut,
   } from "@lucide/svelte";
-  import { api, type Source, type Citation } from "../lib/workspace-api";
+  import {
+    api,
+    relationLabel,
+    type Source,
+    type Citation,
+  } from "../lib/workspace-api";
   import ui from "./workspace.module.css";
   import styles from "./casebook.module.css";
   import { untrack } from "svelte";
@@ -96,7 +102,7 @@
 
   let notice = $state("");
 
-  let busy = $state("");
+  let busy = $state<MessageKey | "">("");
 
   let selected = $state<string | null>(null);
 
@@ -143,7 +149,7 @@
     });
   });
 
-  async function run(label: string, fn: () => Promise<void>) {
+  async function run(label: MessageKey, fn: () => Promise<void>) {
     busy = label;
     error = "";
     try {
@@ -166,7 +172,7 @@
             id: sourceFromSearch.id,
             kind: "passage" as const,
             label: sourceFromSearch.document_name,
-            detail: `Page ${sourceFromSearch.page}`,
+            detail: sourceFromSearch.section,
             text: sourceFromSearch.text,
             document_id: sourceFromSearch.document_id,
             page: sourceFromSearch.page,
@@ -213,6 +219,21 @@
       });
   }
 
+  /** Passage pages and statement labels come from the server in English. */
+  function nodeDetail(n: GraphNode) {
+    if (n.kind === "statement") return t("evidence.hearingStatement");
+    const page = /^Page (\d+)$/.exec(n.detail)?.[1] ?? (n.detail ? null : n.page);
+    return page ? t("common.page", { page }) : n.detail;
+  }
+
+  const basisKeys: Record<string, MessageKey> = {
+    ai: "evidence.basis.ai",
+    semantic: "evidence.basis.semantic",
+    keywords: "evidence.basis.keywords",
+    simulation: "evidence.basis.simulation",
+    imported: "evidence.basis.imported",
+  };
+
   function inspect(id: string) {
     selected = id;
     edgeId = null;
@@ -231,17 +252,14 @@
 <div class={styles.evidence}>
   <div class={styles.sectionHeader}>
     <div>
-      <h2>Follow the evidence.</h2>
-      <p>
-        Ask the case a question. Trace each answer back to its sources and the
-        connections between them.
-      </p>
+      <h2>{t("evidence.title")}</h2>
+      <p>{t("evidence.lead")}</p>
     </div>
     <button
       class={ui.secondary}
       disabled={!!busy}
       onclick={() =>
-        run("Finding connections…", async () => {
+        run("evidence.finding", async () => {
           const result = await api<{ notice: string; scope: string }>(
             `/cases/${caseId}/graph/build`,
             { method: "POST" },
@@ -251,14 +269,14 @@
         })}
     >
       <GitBranch size={16}></GitBranch>
-      Find connections
+      {t("evidence.find")}
     </button>
   </div>
   <form
     class={styles.askForm}
     onsubmit={(e) => {
       e.preventDefault();
-      void run("Searching the case…", async () => {
+      void run("evidence.searching", async () => {
         answer = await api<Answer>(`/cases/${caseId}/ask`, {
           method: "POST",
           body: JSON.stringify({ query }),
@@ -267,44 +285,46 @@
     }}
   >
     <Search size={20}></Search>
-    <label class={ui.srOnly} for="ask-evidence"> Ask about this case </label>
+    <label class={ui.srOnly} for="ask-evidence">{t("evidence.ask")}</label>
     <input
       id="ask-evidence"
       value={query}
       oninput={(e) => (query = e.currentTarget.value)}
-      placeholder="What do the witnesses say about the arrival time?"
+      placeholder={t("evidence.askPlaceholder")}
       required
       minLength={2}
       maxlength={600}
     />
     <button class={ui.primary} disabled={!!busy}>
-      Search evidence
+      {t("evidence.searchEvidence")}
       <ArrowRight size={16}></ArrowRight>
     </button>
   </form>
   {#if error}<p class={ui.error} role="alert">
       {error}
     </p>{/if}
-  {#if busy && busy !== "Searching the case…"}<Skeleton
+  {#if busy && busy !== "evidence.searching"}<Skeleton
       variant="compact"
-      label={busy}
+      label={t(busy)}
     />{/if}
   {#if notice}<p class={styles.graphNotice} role="status">
       {notice}
     </p>{/if}
-  {#if busy === "Searching the case…"}<Skeleton
+  {#if busy === "evidence.searching"}<Skeleton
       variant="reader"
-      label="Searching the case…"
+      label={t("evidence.searching")}
     />{:else if answer}<section class={styles.answer}>
       <header>
         <h3>
-          {answer.answer ? "A source-grounded answer" : "Relevant passages"}
+          {answer.answer
+            ? t("evidence.groundedAnswer")
+            : t("evidence.relevantPassages")}
         </h3>
         <span>
-          {answer.sources.length} source{answer.sources.length === 1 ? "" : "s"}
+          {tp("count.sources", answer.sources.length)}
         </span>
         <button
-          aria-label="Close search results"
+          aria-label={t("evidence.closeResults")}
           onclick={() => (answer = null)}
         >
           <X size={17}></X>
@@ -319,7 +339,10 @@
             <span>{index + 1}</span>
             <div>
               <strong>{source.document_name}</strong>
-              <small>{source.section || `Page ${source.page}`}</small>
+              <small
+                >{source.section ||
+                  t("common.page", { page: source.page })}</small
+              >
               <p>
                 {source.text.slice(0, 210)}
                 {source.text.length > 210 ? "…" : ""}
@@ -335,11 +358,11 @@
     </section>{/if}
   {#if !graph}{#if graphLoading}<Skeleton
         variant="graph"
-        label="Loading evidence map…"
+        label={t("evidence.loadingMap")}
       />{:else}<button
         class={ui.secondary}
-        onclick={() => run("Loading evidence…", load)}
-        >Retry loading evidence</button
+        onclick={() => run("evidence.loading", load)}
+        >{t("evidence.retry")}</button
       >{/if}{:else}
     <div class={styles.graphToolbar}>
       <div class={styles.viewSwitch}>
@@ -348,39 +371,42 @@
           onclick={() => (view = "graph")}
         >
           <GitBranch size={16}></GitBranch>
-          Evidence map
+          {t("evidence.map")}
         </button>
         <button aria-pressed={view === "list"} onclick={() => (view = "list")}>
           <Link2 size={16}></Link2>
-          Connections
+          {t("evidence.connections")}
         </button>
       </div>
       <span>
-        {graph.total_passages} passages · {graph.edges.length} connections
+        {t("evidence.summary", {
+          passages: graph.total_passages,
+          connections: graph.edges.length,
+        })}
       </span>
     </div>
     <div class={styles.graphLayout}>
-      <section class={styles.graphCanvas} aria-label="Evidence relationships">
+      <section class={styles.graphCanvas} aria-label={t("evidence.relationships")}>
         {#if view === "graph"}
           {#if visible.length}
             <div class={styles.zoom}>
               <button
-                aria-label="Zoom in"
+                aria-label={t("evidence.zoomIn")}
                 onclick={() => (zoom = Math.min(2, zoom + 0.2))}
               >
                 <ZoomIn size={17}></ZoomIn>
               </button>
               <button
-                aria-label="Zoom out"
+                aria-label={t("evidence.zoomOut")}
                 onclick={() => (zoom = Math.max(0.6, zoom - 0.2))}
               >
                 <ZoomOut size={17}></ZoomOut>
               </button>
-              <button onclick={() => (zoom = 1)}>Reset</button>
+              <button onclick={() => (zoom = 1)}>{t("evidence.reset")}</button>
             </div>
             <svg
               role="group"
-              aria-label="Interactive evidence graph"
+              aria-label={t("evidence.graph")}
               viewBox={`${400 - 400 / zoom} ${300 - 300 / zoom} ${800 / zoom} ${600 / zoom}`}
               class={styles.graphSvg}
             >
@@ -405,7 +431,11 @@
                     <line
                       role="button"
                       tabindex={0}
-                      aria-label={`${e.relation}: ${nodeMap.get(e.source_id)?.label} to ${nodeMap.get(e.target_id)?.label}`}
+                      aria-label={t("evidence.edgeLabel", {
+                        relation: relationLabel(e.relation),
+                        from: nodeMap.get(e.source_id)?.label ?? "",
+                        to: nodeMap.get(e.target_id)?.label ?? "",
+                      })}
                       onclick={() => {
                         inspectEdge(e.id);
                       }}
@@ -427,7 +457,7 @@
                   transform={`translate(${pos.x},${pos.y})`}
                   role="button"
                   tabindex={0}
-                  aria-label={`${n.label}, ${n.detail}`}
+                  aria-label={`${n.label}, ${nodeDetail(n)}`}
                   onclick={() => inspect(n.id)}
                   onkeydown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
@@ -459,22 +489,15 @@
                     {n.label.length > 23 ? n.label.slice(0, 21) + "…" : n.label}
                   </text>
                   <text y={49} text-anchor="middle" class={styles.nodeDetail}>
-                    {n.detail}
+                    {nodeDetail(n)}
                   </text>
                 </g>{/each}
             </svg>
-            <p class={styles.mapCaption}>
-              Select a passage or a connecting line. Dashed connections await
-              review. On a small screen, swipe across the map or use
-              Connections.
-            </p>
+            <p class={styles.mapCaption}>{t("evidence.mapCaption")}</p>
           {:else}<div class={styles.empty}>
               <GitBranch size={38}></GitBranch>
-              <h3>Build a picture of the case.</h3>
-              <p>
-                Add case documents or import a .jude case. Their passages will
-                appear here, ready to search and connect.
-              </p>
+              <h3>{t("evidence.emptyTitle")}</h3>
+              <p>{t("evidence.emptyText")}</p>
             </div>{/if}
         {:else}<div class={styles.edgeList}>
             {#if graph.edges.length}{#each graph.edges as e (e.id)}<button
@@ -487,7 +510,7 @@
                     class={styles.relation}
                     style={`color: ${relationTextColors[e.relation]};`}
                   >
-                    {e.relation}
+                    {relationLabel(e.relation)}
                   </span>
                   <strong>
                     {nodeMap.get(e.source_id)?.label}&#32;
@@ -495,35 +518,33 @@
                     {nodeMap.get(e.target_id)?.label}
                   </strong>
                   <small>
-                    {e.confirmed ? "Reviewed" : "Suggested"}
+                    {e.confirmed
+                      ? t("common.reviewed")
+                      : t("evidence.suggested")}
                   </small>
                 </button>{/each}{:else}<div class={styles.empty}>
                 <Link2 size={30}></Link2>
-                <h3>No connections yet.</h3>
-                <p>
-                  Find connections automatically, or select a passage to create
-                  your own link.
-                </p>
+                <h3>{t("evidence.noConnectionsTitle")}</h3>
+                <p>{t("evidence.noConnectionsText")}</p>
               </div>{/if}
           </div>{/if}
         <div class={styles.legend}>
           {#each Object.entries(relationColors) as [name, color] (name)}<span>
               <i style={`background: ${color};`}></i>
-              {name}
+              {relationLabel(name)}
             </span>{/each}
         </div>
         {#if graph.nodes.length > 24 && view === "graph"}<p
             class={styles.mapCaption}
           >
-            Map shows 24 nodes. All {graph.nodes.length} available nodes are listed
-            below; search covers the whole case.
+            {t("evidence.mapLimit", { count: graph.nodes.length })}
           </p>{/if}
       </section>
       <aside
         id="evidence-detail"
         tabindex="-1"
         class={styles.graphInspector}
-        aria-label="Evidence inspector"
+        aria-label={t("evidence.inspector")}
       >
         {#if edge || node}<button
             class={styles.inspectorBack}
@@ -536,16 +557,18 @@
               });
             }}
           >
-            Back to evidence
+            {t("evidence.back")}
           </button>{/if}
         {#if edge}
-          <h3>Examine the connection</h3>
+          <h3>{t("evidence.examine")}</h3>
           <span
             class={styles.relation}
             style={`color: ${relationTextColors[edge.relation]};`}
           >
-            {edge.relation} ·&#32;
-            {edge.confirmed ? "reviewed" : "suggested"}
+            {relationLabel(edge.relation)} ·&#32;
+            {edge.confirmed
+              ? t("evidence.reviewedLower")
+              : t("evidence.suggestedLower")}
           </span>
           <p>{edge.explanation}</p>
           <div class={styles.edgeSource}>
@@ -563,27 +586,18 @@
             <blockquote>“{edge.target_quote}”</blockquote>
           </div>
           <p class={styles.muted}>
-            {edge.basis === "ai"
-              ? "AI-proposed relationship"
-              : edge.basis === "semantic"
-                ? "Similar meaning"
-                : edge.basis === "keywords"
-                  ? "Shared terms"
-                  : edge.basis === "simulation"
-                    ? "Authored synthetic example"
-                    : edge.basis === "imported"
-                      ? "Imported relationship"
-                      : "Recorded relationship"}
-            .&#32;
+            {t(basisKeys[edge.basis] ?? "evidence.basis.recorded")}.&#32;
             {edge.score !== null
-              ? `Similarity ${(edge.score * 100).toFixed(0)}%; not a probability of truth.`
+              ? t("evidence.similarity", {
+                  value: (edge.score * 100).toFixed(0),
+                })
               : ""}
           </p>
           {#if edge.kind === "evidence"}<button
               class={ui.primary}
               disabled={!!busy}
               onclick={() =>
-                run("Saving review…", async () => {
+                run("evidence.savingReview", async () => {
                   await api(`/cases/${caseId}/links/${edge.id}`, {
                     method: "PATCH",
                     body: JSON.stringify({
@@ -594,11 +608,11 @@
                 })}
             >
               <Check size={16}></Check>
-              {edge.confirmed ? "Reopen connection" : "Confirm connection"}
+              {edge.confirmed ? t("evidence.reopen") : t("evidence.confirm")}
             </button>{/if}
         {:else}{#if node}
             <h3>{node.label}</h3>
-            <span class={styles.muted}>{node.detail}</span>
+            <span class={styles.muted}>{nodeDetail(node)}</span>
             <p class={styles.passage}>{node.text}</p>
             {#if node.document_id}<a
                 class={ui.textButton}
@@ -606,13 +620,13 @@
                 href={`/api/v1/cases/${caseId}/documents/${node.document_id}/original`}
               >
                 <Download size={14}></Download>
-                Download original
+                {t("common.downloadOriginal")}
               </a>{/if}
             {#if node.hearing_id}<button
                 class={ui.secondary}
                 onclick={() => openHearing(node.hearing_id!)}
               >
-                Open hearing
+                {t("common.openHearing")}
                 <ArrowRight size={14}></ArrowRight>
               </button>{/if}
             <button
@@ -622,16 +636,17 @@
                   node.kind === "statement" ? node.id : `passage:${node.id}`,
                 )}
             >
-              Discuss with assistant <ArrowRight size={14}></ArrowRight>
+              {t("evidence.discuss")}
+              <ArrowRight size={14}></ArrowRight>
             </button>
-            <h4>Connected evidence</h4>
+            <h4>{t("evidence.connected")}</h4>
             {#each graph.edges.filter((e) => e.source_id === node.id || e.target_id === node.id) as e (e.id)}<button
                 class={styles.neighbor}
                 onclick={() => {
                   inspectEdge(e.id);
                 }}
               >
-                <span>{e.relation}</span>
+                <span>{relationLabel(e.relation)}</span>
                 {nodeMap.get(
                   e.source_id === node.id ? e.target_id : e.source_id,
                 )?.label}
@@ -640,13 +655,13 @@
             {#if node.kind === "passage"}
               <button class={ui.secondary} onclick={() => (linking = !linking)}>
                 <Plus size={15}></Plus>
-                Link another passage
+                {t("evidence.link")}
               </button>
               {#if linking}<form
                   class={styles.linkForm}
                   onsubmit={(e) => {
                     e.preventDefault();
-                    void run("Saving connection…", async () => {
+                    void run("evidence.savingConnection", async () => {
                       await api(`/cases/${caseId}/links`, {
                         method: "POST",
                         body: JSON.stringify({
@@ -663,22 +678,22 @@
                   }}
                 >
                   <label>
-                    Other passage
+                    {t("evidence.otherPassage")}
                     <select
                       value={target}
                       onchange={(e) => (target = e.currentTarget.value)}
                       required
                     >
-                      <option value="">Choose a passage</option>
+                      <option value="">{t("evidence.choosePassage")}</option>
                       {#each graph.nodes.filter((n) => n.kind === "passage" && n.id !== node.id) as n (n.id)}<option
                           value={n.id}
                         >
-                          {n.label} · {n.detail}
+                          {n.label} · {nodeDetail(n)}
                         </option>{/each}
                     </select>
                   </label>
                   <label>
-                    Relationship
+                    {t("evidence.relationship")}
                     <select
                       value={relation}
                       onchange={(e) => (relation = e.currentTarget.value)}
@@ -686,12 +701,12 @@
                       {#each Object.keys(relationColors) as r (r)}<option
                           value={r}
                         >
-                          {r}
+                          {relationLabel(r)}
                         </option>{/each}
                     </select>
                   </label>
                   <label>
-                    Why are they connected?
+                    {t("evidence.why")}
                     <textarea
                       value={explanation}
                       oninput={(e) => (explanation = e.currentTarget.value)}
@@ -701,29 +716,26 @@
                       rows={3}></textarea>
                   </label>
                   <button class={ui.primary} disabled={!!busy}>
-                    Save confirmed link
+                    {t("evidence.saveLink")}
                   </button>
                 </form>{/if}
             {/if}
           {:else}<div class={styles.empty}>
               <FileText size={31}></FileText>
-              <h3>A source behind every connection.</h3>
-              <p>
-                Select a passage to read the original text, or a link to inspect
-                how two pieces of evidence relate.
-              </p>
+              <h3>{t("evidence.inspectorEmptyTitle")}</h3>
+              <p>{t("evidence.inspectorEmptyText")}</p>
             </div>{/if}{/if}
       </aside>
     </div>
     <p class={styles.graphNotice}>{graph.notice}</p>
     <details class={styles.allPassages}>
       <summary>
-        Browse available passages and statements ({graph.nodes.length})
+        {t("evidence.browse", { count: graph.nodes.length })}
       </summary>
       <div>
         {#each graph.nodes as n (n.id)}<button onclick={() => inspect(n.id)}>
             {n.label}
-            <span>{n.detail}</span>
+            <span>{nodeDetail(n)}</span>
             <ArrowRight size={13}></ArrowRight>
           </button>{/each}
       </div>

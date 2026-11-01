@@ -1,3 +1,4 @@
+import { t } from "./i18n/index.svelte";
 import { api } from "./workspace-api";
 import {
   audioEvent,
@@ -62,8 +63,8 @@ export class SpeechConnection {
             type: "error",
             message:
               headers[":exception-type"] === "LimitExceededException"
-                ? "Speech transcription limit reached. Wait a moment and reconnect."
-                : "Speech provider reported an error. Check the connection and try again.",
+                ? t("audio.error.limit")
+                : t("audio.error.provider"),
           });
           return;
         }
@@ -80,7 +81,7 @@ export class SpeechConnection {
       } catch {
         this.emit({
           type: "error",
-          message: "Could not process the speech provider response.",
+          message: t("audio.error.providerResponse"),
         });
       }
     };
@@ -110,8 +111,7 @@ export class SpeechConnection {
     void this.saves.catch(() =>
       this.emit({
         type: "error",
-        message:
-          "Could not save the final transcript. Recording stopped; check the last saved words before restarting.",
+        message: t("audio.error.saveFinal"),
       }),
     );
   }
@@ -135,8 +135,7 @@ export class SpeechConnection {
       .catch(() =>
         this.emit({
           type: "error",
-          message:
-            "Could not finish saving this audio session. Check the last saved words before restarting.",
+          message: t("audio.error.finishSave"),
         }),
       );
   }

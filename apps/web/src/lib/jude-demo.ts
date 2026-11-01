@@ -1,5 +1,23 @@
+import type { Lang } from "./i18n/core";
+
 export type SourceKind = "transcript" | "statement";
-export const examples = [
+export type Example = {
+  id: "inconsistency" | "supported" | "context";
+  label: string;
+  shortLabel: string;
+  quote: string;
+  earlier: string;
+  time: string;
+  page: string;
+  finding: string;
+  explanation: string;
+  verify: string;
+  question: string;
+  /** Line 2 (index 1) is the highlighted statement in each excerpt. */
+  transcript: readonly string[];
+  statement: readonly string[];
+};
+const en: readonly Example[] = [
   {
     id: "inconsistency",
     label: "Potential inconsistency",
@@ -79,4 +97,89 @@ export const examples = [
       "Witness: I do not recall the exact sequence.",
     ],
   },
-] as const;
+];
+const id: readonly Example[] = [
+  {
+    id: "inconsistency",
+    label: "Berbeda dari sumber",
+    shortLabel: "Keterangan yang berbeda",
+    quote: "Saya tiba pukul 21.30.",
+    earlier: "Saya tiba tak lama setelah pukul 20.00.",
+    time: "00:14:32",
+    page: "4",
+    finding: "Kedua keterangan menyebut waktu kedatangan yang berbeda.",
+    explanation:
+      "Keterangan di persidangan dan keterangan sebelumnya berselisih sekitar 90 menit. Perbedaan itu mungkin relevan, tetapi kutipan ini saja belum menjelaskan mengapa perbedaan itu terjadi.",
+    verify: "Periksa apakah kedua keterangan merujuk pada peristiwa yang sama.",
+    question:
+      "Saat Saudara mengatakan tiba pukul 21.30, lokasi dan tanggal mana yang Saudara maksud?",
+    transcript: [
+      "Penasihat Hukum: Pukul berapa Saudara tiba di gudang?",
+      "Saksi: Saya tiba pukul 21.30.",
+      "Penasihat Hukum: Kita akan kembali ke urutan peristiwanya sebentar lagi.",
+    ],
+    statement: [
+      "Penyidik: Jelaskan kedatangan Saudara pada malam itu.",
+      "Saksi: Saya tiba tak lama setelah pukul 20.00.",
+      "Penyidik: Apakah ada orang lain di sana?",
+      "Saksi: Saya ingat melihat seorang petugas keamanan di dekat pintu masuk.",
+    ],
+  },
+  {
+    id: "supported",
+    label: "Didukung sumber",
+    shortLabel: "Detail yang cocok",
+    quote: "Ada petugas keamanan di pintu masuk.",
+    earlier: "Saya ingat melihat seorang petugas keamanan di dekat pintu masuk.",
+    time: "00:18:06",
+    page: "4",
+    finding:
+      "Kedua keterangan menyebut ada petugas keamanan di dekat pintu masuk.",
+    explanation:
+      "Kedua keterangan konsisten pada detail ini. Kesesuaian dua keterangan tidak dengan sendirinya membuktikan peristiwa itu terjadi atau membenarkan keterangan selebihnya.",
+    verify:
+      "Pastikan identitas petugas keamanan tersebut dan apakah ada catatan independen.",
+    question:
+      "Dapatkah Saudara menggambarkan petugas keamanan itu dan menjelaskan bagaimana Saudara mengenalinya?",
+    transcript: [
+      "Penasihat Hukum: Siapa yang Saudara lihat saat tiba?",
+      "Saksi: Ada petugas keamanan di pintu masuk.",
+      "Penasihat Hukum: Apakah Saudara ingat namanya?",
+      "Saksi: Tidak, saya tidak ingat.",
+    ],
+    statement: [
+      "Penyidik: Apakah ada orang lain di sana?",
+      "Saksi: Saya ingat melihat seorang petugas keamanan di dekat pintu masuk.",
+      "Penyidik: Apakah Saudara berbicara dengan orang itu?",
+      "Saksi: Saya tidak ingat.",
+    ],
+  },
+  {
+    id: "context",
+    label: "Perlu konteks",
+    shortLabel: "Pertanyaan yang belum terjawab",
+    quote: "Dia menyerahkan amplop itu kepada saya di luar.",
+    earlier: "Kami membahas dokumen-dokumen itu di dalam kantor.",
+    time: "00:22:10",
+    page: "6",
+    finding: "Kedua keterangan ini mungkin menggambarkan momen yang berbeda.",
+    explanation:
+      "Penyerahan di luar dan pembahasan di dalam bisa saja sama-sama terjadi. Kutipan ini tidak menyebut siapa orang lain itu atau urutan kejadiannya, sehingga perbedaan keterangan tidak dapat disimpulkan.",
+    verify: "Perjelas siapa yang hadir dan urutan kedua peristiwa itu.",
+    question:
+      "Siapa yang menyerahkan amplop itu kepada Saudara, dan apakah itu terjadi sebelum atau sesudah pembahasan di kantor?",
+    transcript: [
+      "Penasihat Hukum: Apa yang terjadi dengan amplop itu?",
+      "Saksi: Dia menyerahkan amplop itu kepada saya di luar.",
+      "Penasihat Hukum: Mohon jelaskan siapa yang Saudara maksud dengan ‘dia’.",
+    ],
+    statement: [
+      "Penyidik: Di mana pembahasan itu berlangsung?",
+      "Saksi: Kami membahas dokumen-dokumen itu di dalam kantor.",
+      "Penyidik: Apa yang terjadi selanjutnya?",
+      "Saksi: Saya tidak ingat urutan pastinya.",
+    ],
+  },
+];
+/** Synthetic landing-page examples in each UI language (same ids and order). */
+export const examples: Record<Lang, readonly Example[]> = { id, en };

@@ -15,3 +15,5 @@ Keep plans and results for each project phase here. Suggested file format name: 
 - [SvelteKit migration](2026-10-30-sveltekit.md): native Svelte frontend, preserved product flows, server API proxy, and updated Vercel setup.
 
 - [Remove the Vercel runtime](2026-11-01-remove-vercel-runtime.md): AWS-only runtime, in-process analysis, direct uploads/downloads, S3 or local storage.
+
+- [Bilingual interface](2026-11-02-bilingual-interface.md): Bahasa Indonesia and English UI, language toggle, server-rendered language.

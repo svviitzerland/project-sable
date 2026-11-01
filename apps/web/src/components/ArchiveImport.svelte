@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import { Upload } from "@lucide/svelte";
   import { api, type Case } from "../lib/workspace-api";
@@ -18,7 +19,7 @@
 <div class={styles.archiveImport}>
   <label class={styles.archiveButton}>
     <Upload size={16}></Upload>
-    {busy ? "Importing case…" : "Import .jude"}
+    {busy ? t("archive.importing") : t("archive.import")}
     <input
       type="file"
       accept=".jude,.zip,application/zip,application/vnd.jude+zip"
@@ -31,7 +32,7 @@
         error = "";
         try {
           if (file.size > 64 * 1024 * 1024)
-            throw new Error("Use a .jude case archive up to 64 MB.");
+            throw new Error(t("archive.tooLarge"));
           const body = new FormData();
           body.append("file", file);
           const imported = await api<Case>("/cases/import", {
@@ -47,6 +48,10 @@
       }}
     />
   </label>
-  {#if busy}<Skeleton variant="compact" label="Importing case…" inverse />{/if}
+  {#if busy}<Skeleton
+      variant="compact"
+      label={t("archive.importing")}
+      inverse
+    />{/if}
   {#if error}<p role="alert">{error}</p>{/if}
 </div>

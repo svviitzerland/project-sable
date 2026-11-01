@@ -28,7 +28,8 @@
   import {
     api,
     ApiError,
-    labels,
+    statuses,
+    statusLabel,
     type Capabilities,
     type Case,
     type CaseDetail,
@@ -53,6 +54,8 @@
   import EvidenceWorkspace from "./EvidenceWorkspace.svelte";
   import HearingAudio from "./HearingAudio.svelte";
   import CaseDialogue from "./CaseDialogue.svelte";
+  import LanguageToggle from "./LanguageToggle.svelte";
+  import { t, tp } from "../lib/i18n/index.svelte";
 
   type Tab =
     | "assistant"
@@ -73,15 +76,15 @@
     settings: Settings,
   };
 
-  const titles: Record<Tab, string> = {
-    evidence: "Evidence",
-    hearing: "Hearings",
-    documents: "Case documents",
-    assistant: "Case assistant",
-    practice: "Courtroom practice",
-    references: "Legal references",
-    settings: "Speaker labels",
-  };
+  const titles = {
+    evidence: "tab.evidence",
+    hearing: "tab.hearing",
+    documents: "tab.documents",
+    assistant: "tab.assistant",
+    practice: "tab.practice",
+    references: "tab.references",
+    settings: "tab.settings",
+  } as const satisfies Record<Tab, string>;
 
   let user = $state<User | null>(null);
 
@@ -157,6 +160,7 @@
     (text) => {
       partial = text;
     },
+    () => void refresh(),
   );
 
   const refresh = async () => {
@@ -181,8 +185,7 @@
         cases = [];
         noteDrafts = {};
         user = null;
-      } else
-        error = e instanceof Error ? e.message : "Could not load this case.";
+      } else error = e instanceof Error ? e.message : t("error.loadCase");
     } finally {
       if (activeCase.current === id && version === refreshVersion.current)
         detailLoading = false;
@@ -227,11 +230,7 @@
           if (!(e instanceof ApiError && e.status === 401)) throw e;
         }),
     ])
-      .catch(
-        () =>
-          (error =
-            "The Jude server is unavailable. Please try reloading the workspace."),
-      )
+      .catch(() => (error = t("error.serverUnavailable")))
       .finally(() => (booting = false));
   });
 
@@ -299,9 +298,7 @@
     void [sidebar];
     return untrack(() => {
       if (!sidebar) return;
-      const close = document.querySelector<HTMLButtonElement>(
-        '[aria-label="Close case navigation"]',
-      );
+      const close = document.getElementById("close-case-navigation");
       close?.focus();
     });
   });
@@ -333,8 +330,7 @@
       await refresh();
       return true;
     } catch (e) {
-      error =
-        e instanceof Error ? e.message : "Something went wrong. Try again.";
+      error = e instanceof Error ? e.message : t("error.unexpected");
       return false;
     } finally {
       busy = false;
@@ -406,16 +402,16 @@
 </script>
 
 {#if booting}<div class={styles.app}>
-    <Skeleton variant="workspace" label="Opening your workspace…" />
+    <Skeleton variant="workspace" label={t("common.openingWorkspace")} />
   </div>{:else}{#if !user}<div class={styles.app}>
       <Auth {caps} {error} {setError} onUser={setUser}></Auth>
     </div>{:else}<div class={styles.app}>
-      <a class={styles.skip} href="#workspace-main"> Skip to workspace </a>
+      <a class={styles.skip} href="#workspace-main">{t("ws.skip")}</a>
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions (Handle Escape and trap Tab from the mobile navigation controls.) -->
       <aside
         class={`${styles.sidebar} ${sidebar ? styles.sidebarOpen : ""}`}
         id="case-navigation"
-        aria-label="Cases and account"
+        aria-label={t("ws.sidebar")}
         onkeydown={(e) => {
           if (e.key === "Escape") closeSidebar();
           if (
@@ -443,14 +439,15 @@
         <div class={styles.sidebarBrand}>
           <a href={resolve("/")} class={styles.brand}> jude. </a>
           <button
+            id="close-case-navigation"
             class={styles.mobileClose}
             onclick={closeSidebar}
-            aria-label="Close case navigation"
+            aria-label={t("ws.closeNav")}
           >
             <X size={20}></X>
           </button>
         </div>
-        <p class={styles.workspaceLabel}>Your workspace</p>
+        <p class={styles.workspaceLabel}>{t("ws.yourWorkspace")}</p>
         <button
           class={styles.newCase}
           onclick={() => {
@@ -459,7 +456,7 @@
           }}
         >
           <Plus size={17}></Plus>
-          New case
+          {t("ws.newCase")}
         </button>
         <ArchiveImport
           onImport={async (id) => {
@@ -468,17 +465,17 @@
           }}
         ></ArchiveImport>
         {#if cases.length > 0}<label class={styles.caseSearch}>
-            <span class={styles.srOnly}>Find a case</span>
+            <span class={styles.srOnly}>{t("ws.findCase")}</span>
             <input
               type="search"
-              placeholder="Find a case…"
+              placeholder={t("ws.findCasePlaceholder")}
               bind:value={caseSearch}
             />
           </label>{/if}
-        <nav aria-label="Your cases" class={styles.caseList}>
+        <nav aria-label={t("ws.yourCases")} class={styles.caseList}>
           {#if casesLoading}<Skeleton
               variant="rows"
-              label="Loading your cases…"
+              label={t("common.loadingCases")}
               inverse
             />{/if}
           {#each visibleCases as c (c.id)}<button
@@ -494,27 +491,33 @@
                 {c.title}
                 <small>
                   {c.synthetic
-                    ? "Synthetic exercise"
-                    : c.reference || "Case workspace"}
+                    ? t("common.syntheticExercise")
+                    : c.reference || t("ws.caseWorkspace")}
                 </small>
               </span>
             </button>{/each}
           {#if caseSearch && !visibleCases.length}<p
               class={styles.caseSearchEmpty}
             >
-              No matching cases.
-              <button onclick={() => (caseSearch = "")}>Clear search</button>
+              {t("ws.noMatchingCases")}
+              <button onclick={() => (caseSearch = "")}
+                >{t("ws.clearSearch")}</button
+              >
             </p>{/if}
         </nav>
         <div class={styles.sidebarBottom}>
           <span class={styles.accountAvatar}>{user.name.slice(0, 1)}</span>
           <div>
             <strong>{user.name}</strong>
-            <small>{user.demo ? "Demo session" : "Lawyer workspace"}</small>
+            <small
+              >{user.demo
+                ? t("ws.demoSession")
+                : t("ws.lawyerWorkspace")}</small
+            >
           </div>
           <button
-            aria-label="Sign out"
-            title="Sign out"
+            aria-label={t("ws.signOut")}
+            title={t("ws.signOut")}
             onclick={() =>
               action(async () => {
                 audio.stop();
@@ -533,7 +536,7 @@
         <div class={styles.topbar}>
           <button
             class={styles.mobileMenu}
-            aria-label="Open case navigation"
+            aria-label={t("ws.openNav")}
             aria-expanded={sidebar}
             aria-controls="case-navigation"
             onclick={() => (sidebar = true)}
@@ -542,16 +545,24 @@
           </button>
           <span>
             <FolderOpen size={15}></FolderOpen>
-            Cases <ChevronRight size={14}></ChevronRight>
-            {session?.title ?? "Workspace"}
+            {t("ws.cases")}
+            <ChevronRight size={14}></ChevronRight>
+            {session?.title ?? t("ws.workspace")}
           </span>
-          <a href={resolve("/")}>
-            About Jude <ExternalLink size={13}></ExternalLink>
-          </a>
+          <div class={styles.topbarEnd}>
+            <LanguageToggle />
+            <a href={resolve("/")}>
+              {t("ws.about")}
+              <ExternalLink size={13}></ExternalLink>
+            </a>
+          </div>
         </div>
         {#if error}<div class={styles.error} role="alert">
             <span>{error}</span>
-            <button aria-label="Dismiss error" onclick={() => (error = "")}>
+            <button
+              aria-label={t("ws.dismissError")}
+              onclick={() => (error = "")}
+            >
               <X size={18}></X>
             </button>
           </div>{/if}
@@ -570,17 +581,14 @@
           ></NewCase>{/if}
         {#if casesLoading}<Skeleton
             variant="case"
-            label="Loading your cases…"
+            label={t("common.loadingCases")}
           />{:else if !caseId}<div class={styles.welcome}>
             <FolderOpen size={38}></FolderOpen>
-            <h1>A place for the whole case.</h1>
-            <p>
-              Create a case to bring together documents, testimony, and the
-              questions that deserve a closer look.
-            </p>
+            <h1>{t("ws.welcomeTitle")}</h1>
+            <p>{t("ws.welcomeText")}</p>
             <button class={styles.primary} onclick={() => (creating = true)}>
               <Plus size={17}></Plus>
-              Create your first case
+              {t("ws.createFirst")}
             </button>
             {#if caps?.demo_available}<button
                 class={styles.secondary}
@@ -593,29 +601,31 @@
                     await loadCases(c.id);
                   })}
               >
-                Try a synthetic hearing <ArrowRight size={16}></ArrowRight>
+                {t("ws.trySynthetic")}
+                <ArrowRight size={16}></ArrowRight>
               </button>{/if}
           </div>{:else}{#if !detail}{#if detailLoading}<Skeleton
                 variant="case"
-                label="Loading case record…"
+                label={t("ws.loadingCase")}
               />{:else}<div class={styles.loading}>
-                <p>The case record could not be loaded.</p>
+                <p>{t("ws.caseLoadFailed")}</p>
                 <button class={styles.secondary} onclick={refresh}>
-                  Try again
+                  {t("common.tryAgain")}
                 </button>
               </div>{/if}{:else}
             <header class={styles.caseHeader}>
               <div>
                 <h1>{session?.title}</h1>
                 <div class={styles.caseMeta}>
-                  {session?.reference || "Case workspace"}
+                  {session?.reference || t("ws.caseWorkspace")}
                   <span>
-                    {session?.synthetic ? "Synthetic material" : "Private case"}
+                    {session?.synthetic
+                      ? t("ws.syntheticMaterial")
+                      : t("ws.privateCase")}
                   </span>
                 </div>
                 <p>
-                  {session?.description ||
-                    "Bring testimony and source material together."}
+                  {session?.description || t("ws.defaultDescription")}
                 </p>
               </div>
               <div class={styles.headerActions}>
@@ -625,11 +635,15 @@
                   href={`/api/v1/cases/${caseId}/export.jude`}
                 >
                   <Download size={15}></Download>
-                  Export .jude
+                  {t("ws.exportJude")}
                 </a>
               </div>
             </header>
-            <div class={styles.tabs} role="tablist" aria-label="Case sections">
+            <div
+              class={styles.tabs}
+              role="tablist"
+              aria-label={t("ws.caseSections")}
+            >
               {#each Object.keys(titles) as Tab[] as key (key)}{@const Icon =
                   icons[key]}<button
                   role="tab"
@@ -659,7 +673,7 @@
                   onclick={() => (tab = key)}
                 >
                   <Icon size={16}></Icon>
-                  {titles[key]}
+                  {t(titles[key])}
                   {#if key === "documents"}<span>{detail.documents.length}</span
                     >{/if}
                 </button>{/each}
@@ -683,18 +697,14 @@
               {#if tab === "evidence" && !detail.documents.length && !detail.segments.length}<section
                   class={styles.gettingStarted}
                 >
-                  <h2>Start with your case material.</h2>
-                  <p>
-                    Documents are your source files. Hearings hold testimony.
-                    Evidence connects the passages between them.
-                  </p>
+                  <h2>{t("ws.start.title")}</h2>
+                  <p>{t("ws.start.text")}</p>
                   <div>
                     <button onclick={() => (tab = "documents")}>
                       <FileText size={24} />
                       <span
-                        ><strong>Add case documents</strong><small
-                          >Upload reports, statements, contracts, or
-                          legislation.</small
+                        ><strong>{t("ws.start.docs")}</strong><small
+                          >{t("ws.start.docsText")}</small
                         ></span
                       >
                       <ArrowRight size={18} />
@@ -702,17 +712,14 @@
                     <button onclick={() => (tab = "hearing")}>
                       <AudioLines size={24} />
                       <span
-                        ><strong>Bring in a hearing</strong><small
-                          >Upload a transcript or start a new hearing record.</small
+                        ><strong>{t("ws.start.hearing")}</strong><small
+                          >{t("ws.start.hearingText")}</small
                         ></span
                       >
                       <ArrowRight size={18} />
                     </button>
                   </div>
-                  <p>
-                    Then use the evidence map to compare sources, or ask the
-                    case assistant a question.
-                  </p>
+                  <p>{t("ws.start.then")}</p>
                 </section>{:else if tab === "evidence"}{#key caseId}<EvidenceWorkspace
                     {caseId}
                     askAssistant={(reference) => {
@@ -740,7 +747,7 @@
                     }}
                   >
                     <ArrowLeft size={15}></ArrowLeft>
-                    All hearings
+                    {t("hearing.all")}
                   </button>
                   <h2>{hearing.title}</h2>
                   <div>
@@ -750,7 +757,7 @@
                       href={`/api/v1/cases/${caseId}/hearings/${hearing.id}/export.jude`}
                     >
                       <Download size={15}></Download>
-                      Export hearing
+                      {t("hearing.export")}
                     </a>
                     {#if hearing.kind === "simulation"}<button
                         class={styles.primary}
@@ -768,10 +775,10 @@
                         {#if hearing.status === "simulation"}<Pause size={16}
                           ></Pause>{:else}<Play size={16}></Play>{/if}&#32;
                         {hearing.status === "complete"
-                          ? "Simulation complete"
+                          ? t("hearing.simComplete")
                           : hearing.status === "simulation"
-                            ? "Pause hearing"
-                            : "Start simulated hearing"}
+                            ? t("hearing.pause")
+                            : t("hearing.startSim")}
                       </button>{:else}<button
                         class={styles.primary}
                         disabled={busy ||
@@ -787,7 +794,7 @@
                           )}
                       >
                         <ShieldCheck size={16}></ShieldCheck>
-                        Analyze hearing
+                        {t("hearing.analyze")}
                       </button>{/if}
                   </div>
                 </div>
@@ -796,48 +803,51 @@
                     <i class={connected ? styles.onlineDot : styles.offlineDot}
                     ></i>
                     {hearing.status === "simulation"
-                      ? "Simulated hearing running"
+                      ? t("hearing.state.simulation")
                       : hearing.status === "live"
-                        ? "Live audio session"
+                        ? t("hearing.state.live")
                         : hearing.status === "complete"
-                          ? "Hearing complete"
-                          : "Ready for testimony"}
+                          ? t("hearing.state.complete")
+                          : t("hearing.state.ready")}
                     <small>
                       {connected
-                        ? "Changes appear automatically"
-                        : "Checking for new testimony…"}
+                        ? t("hearing.autoUpdates")
+                        : t("hearing.checking")}
                     </small>
                   </span>
                   <span>
                     {pending > 0
-                      ? `${pending} statement${pending > 1 ? "s" : ""} being examined`
+                      ? tp("count.examining", pending)
                       : hearingSegments.some(
                             (s) => s.analysis_state === "pending",
                           )
-                        ? "Saved transcript · ready for analysis"
-                        : "All saved testimony is up to date"}
+                        ? t("hearing.readyForAnalysis")
+                        : t("hearing.upToDate")}
                   </span>
                 </div>
                 {#if hearing.kind !== "simulation" && !caps?.analysis.configured}<p
                     class={styles.notice}
                   >
-                    Automatic analysis is unavailable. You can still read the
-                    transcript and compare it with your documents.
+                    {t("hearing.analysisUnavailable")}
                   </p>{/if}
                 {#if hearing.kind === "simulation"}<p class={styles.notice}>
                     <CircleHelp size={15}></CircleHelp>
-                    This example uses fictional testimony and prepared findings. Start
-                    the hearing to explore the review process.
+                    {t("hearing.simNotice")}
                   </p>{/if}
                 {#if hearing.kind !== "simulation"}<details
                     class={styles.audioTools}
                     open={hearingSegments.length === 0 ||
                       audio.status !== "idle"}
                   >
-                    <summary>Record or upload audio</summary>
+                    <summary>{t("hearing.audioTools")}</summary>
                     {#key hearing.id}<HearingAudio
                         {audio}
                         configured={!!caps?.speech.configured}
+                        caseId={detail.case.id}
+                        recordings={detail.recordings.filter(
+                          (r) => r.hearing_id === hearing.id,
+                        )}
+                        onChanged={() => void refresh()}
                       />{/key}
                   </details>{/if}
                 <div class={styles.hearingGrid}>
@@ -846,8 +856,10 @@
                     aria-labelledby="transcript-heading"
                   >
                     <div class={styles.paneHeading}>
-                      <h2 id="transcript-heading">Transcript</h2>
-                      <span>{hearingSegments.length} statements</span>
+                      <h2 id="transcript-heading">{t("hearing.transcript")}</h2>
+                      <span
+                        >{tp("count.statements", hearingSegments.length)}</span
+                      >
                     </div>
                     {#key hearing.id}<Transcript
                         segments={hearingSegments}
@@ -890,18 +902,25 @@
                     aria-labelledby="findings-heading"
                   >
                     <div class={styles.paneHeading}>
-                      <h2 id="findings-heading" tabindex="-1">Findings</h2>
+                      <h2 id="findings-heading" tabindex="-1">
+                        {t("hearing.findings")}
+                      </h2>
                       <span>
-                        {hearingFindings.filter((f) => !f.reviewed).length} to review
+                        {t("hearing.toReview", {
+                          count: unreviewedFindings.length,
+                        })}
                       </span>
                     </div>
                     {#if hearingFindings.length > 0}<div
                         class={styles.reviewSummary}
                       >
                         <span role="status">
-                          {hearingFindings.length -
-                            unreviewedFindings.length}&#32; of {hearingFindings.length}
-                          reviewed
+                          {t("hearing.reviewedOf", {
+                            done:
+                              hearingFindings.length -
+                              unreviewedFindings.length,
+                            total: hearingFindings.length,
+                          })}
                         </span>
                         <button
                           class={styles.textButton}
@@ -913,28 +932,29 @@
                             }
                           }}
                         >
-                          Next unreviewed <ArrowRight size={14}></ArrowRight>
+                          {t("hearing.nextUnreviewed")}
+                          <ArrowRight size={14}></ArrowRight>
                         </button>
                       </div>{/if}
                     <label class={styles.filterLabel}>
-                      <span class={styles.srOnly}>Filter findings</span>
+                      <span class={styles.srOnly}>{t("hearing.filter")}</span>
                       <select
                         value={filter}
                         onchange={(e) => (filter = e.currentTarget.value)}
                       >
-                        <option value="all">All findings</option>
-                        <option value="unreviewed">Needs your review</option>
-                        {#each Object.entries(labels) as [value, label] (value)}<option
-                            {value}
-                          >
-                            {label}
+                        <option value="all">{t("hearing.allFindings")}</option>
+                        <option value="unreviewed"
+                          >{t("hearing.needsReview")}</option
+                        >
+                        {#each statuses as value (value)}<option {value}>
+                            {statusLabel(value)}
                           </option>{/each}
                       </select>
                     </label>
                     {#if pending > 0}<Skeleton
                         variant="rows"
                         count={1}
-                        label="Examining testimony for findings…"
+                        label={t("hearing.examining")}
                       />{/if}
                     <div class={styles.findingList}>
                       {#if visibleFindings.length}{#each visibleFindings as f (f.id)}<button
@@ -946,28 +966,29 @@
                               <StatusLabel status={f.status}></StatusLabel>
                               {#if f.reviewed}<Check
                                   size={15}
-                                  aria-label="Reviewed"
+                                  aria-label={t("common.reviewed")}
                                 ></Check>{/if}
                             </div>
                             <h3>{f.title}</h3>
                             <p>{f.verification}</p>
                             <small>
                               {f.mode === "simulation"
-                                ? "Scripted example"
+                                ? t("hearing.mode.simulation")
                                 : f.mode === "imported"
-                                  ? "Imported finding · verify sources"
-                                  : "AI · source-validated"}&#32; · {f.citations
-                                .length} source
-                              {f.citations.length !== 1 ? "s" : ""}
+                                  ? t("hearing.mode.imported")
+                                  : t("hearing.mode.ai")}&#32; · {tp(
+                                "count.sources",
+                                f.citations.length,
+                              )}
                               <ChevronRight size={14}></ChevronRight>
                             </small>
                           </button>{/each}{:else if pending === 0}<Empty
                           title={filter === "all"
-                            ? "Follow the evidence."
-                            : "No findings in this view."}
+                            ? t("hearing.emptyTitle")
+                            : t("hearing.emptyFilterTitle")}
                           text={filter === "all"
-                            ? "Findings appear here as finalized statements are examined. Start the simulation or add a transcript statement."
-                            : "Choose another filter to see the rest of the record."}
+                            ? t("hearing.emptyText")
+                            : t("hearing.emptyFilterText")}
                           >{#snippet icon()}<ShieldCheck size={30}
                             ></ShieldCheck>{/snippet}</Empty
                         >{/if}
@@ -977,7 +998,7 @@
                     id="finding-inspector"
                     tabindex="-1"
                     class={styles.inspectorPane}
-                    aria-label="Finding and source inspector"
+                    aria-label={t("hearing.inspector")}
                   >
                     <button
                       class={`${styles.textButton} ${styles.returnFindings}`}
@@ -993,7 +1014,7 @@
                       }}
                     >
                       <ArrowLeft size={14}></ArrowLeft>
-                      Back to findings
+                      {t("hearing.backToFindings")}
                     </button>
                     {#if finding}{#key finding.id}<FindingInspector
                           {finding}
@@ -1027,16 +1048,15 @@
                             return saved;
                           }}
                         ></FindingInspector>{/key}{:else}<Empty
-                        title="Every finding, inspectable."
-                        text="Select a finding to compare its testimony with original passages, alternative explanations, and a verification step."
+                        title={t("hearing.inspectorEmptyTitle")}
+                        text={t("hearing.inspectorEmptyText")}
                         >{#snippet icon()}<BookOpen size={30}
                           ></BookOpen>{/snippet}</Empty
                       >{/if}
                   </section>
                 </div>
                 <p class={styles.bottomNote}>
-                  Findings describe evidence relationships. They do not
-                  determine credibility, guilt, or legal outcomes.
+                  {t("hearing.bottomNote")}
                 </p>
               {/if}
               {#if tab === "documents"}{#key caseId}<Documents

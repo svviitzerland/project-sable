@@ -1017,3 +1017,32 @@
     flex: none;
   }
 }
+.recordings {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #cfd8c5;
+  display: block !important;
+}
+.recordings h4 {
+  font-size: 13px;
+  margin: 0;
+}
+.recordings ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.recordings li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.recordings audio {
+  height: 32px;
+  max-width: 100%;
+  flex: 1 1 220px;
+}

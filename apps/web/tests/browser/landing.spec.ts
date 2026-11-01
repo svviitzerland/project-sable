@@ -98,7 +98,10 @@ test("original landing, smooth finite motion, keyboard access and no-JavaScript 
   await expect(
     page.getByRole("button", { name: "Replay comparison" }),
   ).toBeHidden();
-  const staticPage = await browser.newPage({ javaScriptEnabled: false });
+  const staticPage = await browser.newPage({
+    javaScriptEnabled: false,
+    locale: "en-US",
+  });
   await staticPage.goto(baseURL!);
   await expect(staticPage.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(

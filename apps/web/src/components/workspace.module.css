@@ -314,6 +314,19 @@
 .topbar > a {
   text-decoration: none;
 }
+.topbarEnd {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+.topbarEnd > a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  white-space: nowrap;
+}
 .topbar > span {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1197,6 +1210,12 @@
   font-size: 15px;
   line-height: 1.8;
 }
+.authTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
 .authPrinciple {
   display: flex;
   gap: 14px;
@@ -1441,9 +1460,19 @@
     padding: 0 14px;
     gap: 8px;
   }
-  .topbar > a {
+  .topbar > a,
+  .topbarEnd > a {
     font-size: 10px;
     white-space: nowrap;
+  }
+  .topbarEnd {
+    gap: 8px;
+  }
+  /* Icon-only on phones so the breadcrumb keeps room; the text stays the accessible name. */
+  .topbarEnd > a {
+    font-size: 0;
+    gap: 0;
+    padding: 6px;
   }
   .topbar > span {
     font-size: 11px;
