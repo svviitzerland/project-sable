@@ -53,7 +53,7 @@ gh variable set APP_URL --body "$(terraform output -raw url)"
 
 Then push to `main`: `.github/workflows/deploy.yml` runs web and voice checks, builds both images, pushes them to ECR, uploads `infra/docker/` to the ops bucket and runs `deploy.sh` on the instance through SSM, then smoke-tests `/api/v1/health`.
 
-The GitHub deploy role trusts only `repo:<github_repository>:ref:refs/heads/main` through OIDC; no AWS keys are stored in GitHub. The account already has the GitHub OIDC provider, so `create_github_oidc_provider` defaults to `false`.
+The GitHub deploy role trusts only the `main` branch of `github_repository` through OIDC, accepting both the classic `repo:owner/name` subject and GitHub's immutable `repo:owner@id/name@id` subject (`github_immutable_subject`, from `gh api repos/<owner>/<repo>/actions/oidc/customization/sub`); no AWS keys are stored in GitHub. The account already has the GitHub OIDC provider, so `create_github_oidc_provider` defaults to `false`.
 
 ## Operations
 

@@ -26,7 +26,8 @@ umask 077
 } > .env
 
 # RDS certificate authorities for verified TLS to the database.
-mkdir -p certs
+# Containers run as non-root users: the directory and bundle must be world-readable.
+mkdir -p certs && chmod 755 certs
 curl -fsSL https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o certs/rds-ca.pem.tmp
 mv certs/rds-ca.pem.tmp certs/rds-ca.pem
 chmod 644 certs/rds-ca.pem
