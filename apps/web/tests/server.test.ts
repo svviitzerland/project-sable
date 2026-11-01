@@ -455,12 +455,15 @@ test("demo sign-in imports the bundled public record as the default case", async
   const cases = await demo.json("/cases");
   assert.equal(cases.length, 1);
   const [record] = cases;
-  assert.match(record.title, /796\/Pid\.B\/2022\/PN Jkt\.Sel \(catatan publik\)/);
+  assert.match(
+    record.title,
+    /796\/Pid\.B\/2022\/PN Jkt\.Sel \(catatan publik\)/,
+  );
   assert.match(record.reference, /catatan publik/);
   assert.equal(record.synthetic, false);
   const detail = await demo.json(`/cases/${record.id}`);
-  const putusan = detail.documents.find((d: { mime: string }) =>
-    d.mime === "application/pdf",
+  const putusan = detail.documents.find(
+    (d: { mime: string }) => d.mime === "application/pdf",
   );
   assert.ok(putusan, "the putusan excerpt is bundled as an original PDF");
   assert.equal(putusan.pages, 68);
@@ -476,7 +479,13 @@ test("demo sign-in imports the bundled public record as the default case", async
   const speakers = new Set(
     detail.segments.map((s: { speaker: string }) => s.speaker),
   );
-  for (const role of ["Hakim Ketua", "Penuntut Umum", "Penasihat Hukum", "Saksi Susi", "Saksi Kodir"])
+  for (const role of [
+    "Hakim Ketua",
+    "Penuntut Umum",
+    "Penasihat Hukum",
+    "Saksi Susi",
+    "Saksi Kodir",
+  ])
     assert.ok(speakers.has(role), role);
   // Every finding cites the putusan excerpt, with quotes present in its source passages.
   const original = await demo.call(
@@ -1478,4 +1487,16 @@ test("case settings update details and delete the whole case with its stored fil
     "recordings",
   ] as const)
     assert.equal((await rt.db.all(table, "case_id=?", [record.id])).length, 0);
+});
+test("the public demo case opens with a graph whose edge ids are unique", async (t) => {
+  const { a } = await fixture(t);
+  const demo = await a.json("/cases/synthetic", "POST");
+  assert.match(demo.title, /Sambo/);
+  const detail = await a.json(`/cases/${demo.id}`);
+  assert.ok(detail.findings.length > 50);
+  const graph = await a.json(`/cases/${demo.id}/graph`);
+  const ids = graph.edges.map((e: { id: string }) => e.id);
+  assert.equal(new Set(ids).size, ids.length);
+  const nodes = graph.nodes.map((n: { id: string }) => n.id);
+  assert.equal(new Set(nodes).size, nodes.length);
 });

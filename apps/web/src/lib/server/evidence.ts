@@ -83,7 +83,11 @@ export async function graph(rt: Runtime, caseId: string) {
       hearing_id: s.hearing_id,
       finding_id: f.id,
     });
-    for (const c of cited)
+    // One edge per finding and passage, even when a finding quotes the same page twice.
+    const seen = new Set<string>();
+    for (const c of cited) {
+      if (seen.has(c.chunk_id)) continue;
+      seen.add(c.chunk_id);
       edges.push({
         id: `${f.id}:${c.chunk_id}`,
         source_id: id,
@@ -97,6 +101,7 @@ export async function graph(rt: Runtime, caseId: string) {
         target_quote: c.quote,
         kind: "finding",
       });
+    }
   }
   return {
     nodes,
