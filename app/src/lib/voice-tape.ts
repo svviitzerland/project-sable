@@ -3,7 +3,8 @@
  * sent for voice matching. Audio stays in memory and is discarded as recording advances.
  */
 const KEEP_SECONDS = 120;
-const MIN_SECONDS = 1.6;
+// Real MK hearing audio: 3 s windows matched 96–100% of turns; 2 s windows fragmented voices.
+const MIN_SECONDS = 3;
 const MAX_SECONDS = 25;
 const TARGET_RATE = 16000;
 

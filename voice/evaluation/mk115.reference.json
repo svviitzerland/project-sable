@@ -1,0 +1,786 @@
+[
+ {
+  "n": 1,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 0,
+  "text": "Bisa kita mulai, ya?"
+ },
+ {
+  "n": 2,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 7,
+  "text": "Siap, Majelis."
+ },
+ {
+  "n": 3,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 8,
+  "text": "Sidang Perkara Nomor 115/PUU-XXII/2024 dibuka dan dinyatakan terbuka untuk umum. Assalamualaikum wr. wb. Selamat siang, salam sejahtera untuk kita semua. Ini yang online bisa dengar?"
+ },
+ {
+  "n": 4,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "",
+  "start": 43,
+  "text": "Bisa, Yang Mulia."
+ },
+ {
+  "n": 5,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "",
+  "start": 45,
+  "text": "Bisa, Yang Mulia."
+ },
+ {
+  "n": 6,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "",
+  "start": 46,
+  "text": "Bisa, Yang Mulia."
+ },
+ {
+  "n": 7,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 43,
+  "text": "Baik. Ini sebelum saya persilakan untuk memperkenalkan diri, ya, ini kalau kami lihat permohonan yang kami terima, ini kan diajukan langsung oleh Pemohon Prinsipal, Pak Jovi Andrea Bachtiar. Nah, sekarang kemudian yang hadir adalah baik luring maupun daring, itu adalah Para Kuasa Hukum. Ini surat Kuasanya sudah disampaikan ke Mahkamah, belum?"
+ },
+ {
+  "n": 8,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 89,
+  "text": "Izin, Majelis, tadi kita sudah sampaikan, sudah kita kirim, cuma memang … izin, Majelis, secara prinsip sudah kita sampaikan melalui online, tetapi karena sedang dikirim menuju ke Jakarta akan kita selesaikan selanjutnya untuk disampaikan secara asli."
+ },
+ {
+  "n": 9,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 104,
+  "text": "Ya, Anda sudah pernah beracara di MK sebelumnya?"
+ },
+ {
+  "n": 10,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 110,
+  "text": "Sudah, Majelis."
+ },
+ {
+  "n": 11,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 110,
+  "text": "Tentu pernah membaca PMK 2/2021, ya?"
+ },
+ {
+  "n": 12,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 118,
+  "text": "Siap, Majelis."
+ },
+ {
+  "n": 13,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 118,
+  "text": "Ya. Kalau menurut ketentuan PMK-nya, apa yang Anda ketahui? Termasuk untuk penyampaian surat kuasa dan termasuk juga permohonan untuk hadir di sidang secara daring/online. Apa yang Anda ketahui?"
+ },
+ {
+  "n": 14,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 137,
+  "text": "Secara prinsip memang harus menyatakan dengan aslinya, Majelis."
+ },
+ {
+  "n": 15,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 142,
+  "text": "Bukan, ya. Kalau Anda baca Pasal 37, itu PMK 2/2021, pertama itu termasuk permohonan untuk sidang online-nya, secara daring, itu harus Anda ajukan dua hari kerja sebelum persidangan. Nah, ini Anda surat Kuasanya saja belum ada."
+ },
+ {
+  "n": 16,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 171,
+  "text": "Siap."
+ },
+ {
+  "n": 17,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 171,
+  "text": "Jadi, gimana kami harus … apa … menerima Anda secara legal?"
+ },
+ {
+  "n": 18,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 182,
+  "text": "Izin, Majelis?"
+ },
+ {
+  "n": 19,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 182,
+  "text": "Gimana penjelasannya? Coba dijelaskan dulu!"
+ },
+ {
+  "n": 20,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 185,
+  "text": "Terima kasih, Majelis yang kami muliakan. Assalamualaikum wr. wb. Secara prinsip kami menganggu … siap salah untuk itu. Tetapi, persoalannya adalah Pemohon sendiri hari ini sedang di dalam lapas, LP Padang Sidempuan terkait dengan peristiwa ini langsung. Jadi, kami secara prinsip baru dapat Kuasa itu setelah 3 hari yang … 2 hari yang lalu."
+ },
+ {
+  "n": 21,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 208,
+  "text": "Ya."
+ },
+ {
+  "n": 22,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 208,
+  "text": "Jadi, kami mengupayakan karena sebelumnya beliau sudah memajukan ini. Jadi, kami berupaya untuk hadir di persidangan dengan memohon keikhlasan, kebesaran Majelis untuk bisa memeriksa. Terkait dengan hal-hal yang menjadi kewajiban kami atau tanggung jawab kami, kami akan upayakan itu, Majelis. Jadi, secara prinsip persidangan ini kami memohon dengan sangat terkait dengan emergency-nya Saudara Jovi yang hari ini ditahan di lapas LP Padang Sidempuan."
+ },
+ {
+  "n": 23,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 239,
+  "text": "Oke. Jadi, sekarang Pemohon Prinsipal dalam status tahanan di rutan (…)"
+ },
+ {
+  "n": 24,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 243,
+  "text": "Siap."
+ },
+ {
+  "n": 25,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 243,
+  "text": "Tapi ditempatkan di Lembaga Pemasarakatan Padang Sidempuan. Begitu, ya?"
+ },
+ {
+  "n": 26,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 248,
+  "text": "Siap. Siap, Yang Mulia."
+ },
+ {
+  "n": 27,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 250,
+  "text": "Oke, baik. Nah, sebelum saya respons lebih lanjut, dalam persidangan siang hari ini juga hadir para siswa dan siswi dari Singapore International School, betul, ya? Yang menyaksikan dari balkon ruang sidang utama Mahkamah Konstitusi. Selamat datang, welcome to the constitutional court, ya. Selamat datang di Mahkamah Konstitusi Republik Indonesia dan kami menyambut dengan baik, ya. Kami mempersilakan untuk bisa menyaksikan persidangan ini dan mudah-mudahan ada yang bisa diambil sebagai pelajaran atau pengetahuan bagi Anda semua, para siswa Singapore International School beserta guru pendampingnya. Selamat datang, sekali lagi. Nah, tentu Mahkamah harus berprinsip pada aturan hukum acara yang ada di dalam PMK Nomor 2/2021. Kami memang memahami situasi khusus yang dihadapi oleh pemohon prinsipal, Saudara Jovi Andrea Bachtiar. Tadi sebelum memasuki ruang sidang ini, Majelis Panel yang ditugaskan oleh Rapat Pleno Para Hakim Konstitusi sepakat bahwa soal kehadiran Anda dan juga keabsahan Anda, dan juga tentu kelanjutan permohonan ini, nanti kami akan bawakan, akan kami sampaikan ke Rapat Permusyawaratan Hakim yang Pleno, yang bersembilan. Kami tidak berwenang untuk hanya bertiga ini sebagai panel memutus. Namun demikian, kami mengambil kebijakan semata-mata karena ada situasi khusus dimana Pemohon Prinsipal tidak bisa hadir karena sedang dalam … apa … status tahanan, ya. Dan Saudara juga belum menyampaikan surat kuasa asli untuk hadir, mewakili Pemohon Prinsipal, maka kami sepakat mendengarkan, tetapi ini nasib selanjutnya ini akan kami serahkan kepada Rapat Permusyawaratan Hakim. Nah, untuk sidang hari ini sebagai penghormatan juga terhadap Anda dan juga Majelis bersepakat untuk tidak menutup sama sekali access to justice yang dimiliki oleh warga negara yang mengajukan permohonan kepada Mahkamah Konstitusi, kami sekali lagi dengan itu tadi kalau dalam bahasa Inggrisnya di sekolah SIS ini adalah subject to approval, ya, subject to … nanti keputusan Rapat Permusyawaratan Hakim tentang keabsahan sidang ini dan selanjutnya. Tapi untuk sekali lagi menghormati Anda dan sebagai bentuk penghormatan kami terhadap access to justice. Kami persilakan Anda untuk menyampaikan pokok-pokok Permohonan."
+ },
+ {
+  "n": 28,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 490,
+  "text": "Terima kasih, Majelis."
+ },
+ {
+  "n": 29,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 490,
+  "text": "Tidak dibacakan, tapi disampaikan saja pokok-pokoknya. Karena toh kami juga (...)"
+ },
+ {
+  "n": 30,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 493,
+  "text": "Siap."
+ },
+ {
+  "n": 31,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 493,
+  "text": "Sudah menerima Permohonannya dan kami juga sudah membaca Permohonan itu. Ya, kami persilakan, silakan! Tidak lebih dari 10 menit, ya. Oke."
+ },
+ {
+  "n": 32,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 508,
+  "text": "Terima kasih, Majelis yang kami muliakan. Permohonan uji materi Pasal 30 ayat (3) KUHP Pasal 45 Undang- Undang Nomor 1/2004 tentang Perubahan Kedua atas Undang-Undang Nomor 11 Tahun 2008."
+ },
+ {
+  "n": 33,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 526,
+  "text": "Yang keras lagi, Pak. Sebelumnya, tolong memperkenalkan diri dulu, ya."
+ },
+ {
+  "n": 34,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 530,
+  "text": "Oh, siap, ya. Jadi, terima kasih, Majelis yang kami muliakan. Kami dari Kantor Hukum Adi Guna Prawira dan Rekan. Saya sendiri hadir sebagai Buce Abraham Beruat yang membacakan Permohonan ini."
+ },
+ {
+  "n": 35,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 544,
+  "text": "Ya."
+ },
+ {
+  "n": 36,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 544,
+  "text": "Nanti ada tiga rekan yang bersama-sama dengan kami akan membacakan. Pertama, saya sendiri. Dan kedua, ada Saudara Welly Anggara."
+ },
+ {
+  "n": 37,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 552,
+  "text": "Ya."
+ },
+ {
+  "n": 38,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 554,
+  "text": "Oh, siap, terima kasih. Kemudian, ditutup dengan Saudara Adi Guna Prawira. Dengan hormat, saya yang bertanda, Jovi Andrea Bachtir … Bachtiar, S.H., Warga Negara Indonesia. Secara perorangan sebagai Warga Negara Indonesia dan negarawan … negarawan yang memahami hukum tata negara Republik Indonesia di Fakultas Hukum, Universitas Negeri Gadjah Mada. Bekerja sebagai seorang jaksa yang sedang mengalami upaya kriminalisasi di wilayah hukum Kepolisian Resor Tapanuli Selatan atas kritik di media sosial terhadap sesama penyelenggara negara, pengawal tahanan pada Kejaksaan Negeri Tapanuli Selatan yang bernama Nella Marsela, agar kendaraan dinas Kepala Kejaksaan Negeri Tapanuli Selatan tidak disalahgunakan dan tidak digunakan oleh pegawai yang tidak berhak mengajukan permohonan uji materi Pasal 30 ayat (3) KUHP Pasal 45 ayat (7) Undang-Undang Nomor 1 Tahun 2004. Izin, Majelis, langsung kepada Kedudukan Hukum."
+ },
+ {
+  "n": 39,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 622,
+  "text": "Ya, baik. Silakan, langsung ke Kedudukan Hukum!"
+ },
+ {
+  "n": 40,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 628,
+  "text": "Pasal 4 … Nomor B, saya membacakan."
+ },
+ {
+  "n": 41,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 631,
+  "text": "Ya."
+ },
+ {
+  "n": 42,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 631,
+  "text": "Bahwa Pemohon merupakan satu-satunya jaksa dari ribuan jaksa Indonesia yang dapat dikatakan sebagai pahlawan yang berani, bahkan berhasil berjuang di Mahkamah Konstitusi Yang Terhormat ini untuk membebaskan Kejaksaan Republik Indonesia dari belenggu rasa cemas yang dipimpin oleh jaksa umum yang berasal dari anggota atau pengurus partai politik, yang dibuktikan atas Putusan Mahkamah Konstitusi Nomor 6/PUU/2000 … 22/2024. Saat ini sedang mengalami kriminalisasi, dilaporkan ke wilayah Kepolisian Resor Tapanuli Selatan. Izin, Majelis, kami melanjutkan dengan Saudara dan rekan-rekan kami yang sedang online. Kami mempersilakan, Saudara Welly, untuk membacakan alasan-alasan Pemohon mengajukan Permohonan uji materi ini."
+ },
+ {
+  "n": 43,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 676,
+  "text": "Silakan!"
+ },
+ {
+  "n": 44,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "WELLY ANGGARA",
+  "start": 678,
+  "text": "Baik, terima kasih, Yang Mulia. Mengenai alasan-alasan Pemohon mengajukan Permohonan uji materi KUHP dan Undang-Undang ITE a quo perubahan kedua."
+ },
+ {
+  "n": 45,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 689,
+  "text": "Silakan dilanjutkan (...)"
+ },
+ {
+  "n": 46,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "WELLY ANGGARA",
+  "start": 689,
+  "text": "Tidak jarang ditemukan (suara tidak terdengar jelas) melontarkan kritik terhadap kebijakan pemerintah dan malah mengalami upaya kriminalisasi alias dilaporkan ke kepolisian. Misalkan, seperti Pemohon pada perkara a quo hanya mengkritik agar mobil dinas Kepala Kejaksaan Negeri Tapanuli Selatan tidak disalahgunakan. Tetapi justru dilaporkan ke Kepolisian Resor Tapanuli Selatan atas keberatan seorang pegawai tata usaha berja ... berstatus jabatan pengawal tahanan bernama ... dan seterusnya. Selain itu (...)"
+ },
+ {
+  "n": 47,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 719,
+  "text": "Poin berapa itu? Sebentar! Poin berapa itu yang Anda baca? Di alasan (...)"
+ },
+ {
+  "n": 48,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "WELLY ANGGARA",
+  "start": 723,
+  "text": "Poin kedua, Yang Mulia."
+ },
+ {
+  "n": 49,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 724,
+  "text": "Ha? Poin kedua?"
+ },
+ {
+  "n": 50,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "WELLY ANGGARA",
+  "start": 724,
+  "text": "Yang kedua."
+ },
+ {
+  "n": 51,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 725,
+  "text": "Oke. Silakan, lanjutkan!"
+ },
+ {
+  "n": 52,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "WELLY ANGGARA",
+  "start": 729,
+  "text": "Selain itu, upaya kriminalisasi terhadap warga negara yang mengkritik, dilihat pula dari perkara atas nama Saudara Haris Azhar dan Fathia Moulidianti, dilaporkan oleh Menteri Koordinator Bidang Kemaritiman, dan seterusnya. Izin ke angka tiga, Yang Mulia."
+ },
+ {
+  "n": 53,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 745,
+  "text": "Ya, silakan!"
+ },
+ {
+  "n": 54,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "WELLY ANGGARA",
+  "start": 746,
+  "text": "Terdapat suatu keniscayaan yang akan diperoleh suatu pemahaman bahwa kritik untuk demi kepentingan umum tidak dapat diterima, mengingat pengaturan demikian secara eksplisit pada Pasal 310 ayat (3) KUHP dan Pasal 45 ayat (7) huruf a Undang-Undang ITE Perubahan Kedua tetap harus diakui masih terdapat kelemahan normatif yang dapat menimbulkan ambiguitas dari pemaknaan. Selanjutnya, pada poin empat. Bahwa Pemohon pada permohonan a quo sangat memahami adanya ketentuan dalam Pasal 28J ayat (2) Undang-Undang 45, dan seterusnya, yaitu agar tidak terjadi penyimpangan dalam jabatan dan/atau korupsi, kolusi, dan nepotisme. Selanjutnya, pada angka lima. Bahwa berdasarkan uraian-uraaian pada butir 1 sampai dengan butir 4, ketentuan Pasal 310 ayat (3) KUHP yang tidak secara spesifik menjelaskan makna dari frasa dilakukan demi kepentingan umum, dan Pasal 45 ayat (7) huruf a Undang-Undang ITE Perubahan Kedua yang tidak secara spesifik menjelaskan makna dari frasa dilakukan untuk kepentingan umum, berpotensi besar menimbulkan ambiguitas pemaknaan, sehingga bertentangan dengan asas legalitas yang diatur dalam Pasal 1 ayat (3) Undang-Undang 1945. Kemudian, melangkah kepada angka tujuh, Yang Mulia."
+ },
+ {
+  "n": 55,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 829,
+  "text": "Ya, silakan lanjut!"
+ },
+ {
+  "n": 56,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "WELLY ANGGARA",
+  "start": 830,
+  "text": "Selanjutnya, Pasal 45 ayat (7) Undang-Undang ITE Perubahan Kedua tidak mencantumkan termasuk juga ayat (6) sebagai perbuatan tidak dapat dipidana. Lebih lanjut, berikut Pasal 45 ayat (6) UU ITE Perubahan Kedua secara ekspresif verbis menyatakan sebagai berikut dan seterusnya. Padahal, Mahkamah Konstitusi dalam Putusan Mahkamah Nomor 78 Tahun 2023 telah menyatakan bahwa Pasal 14 dan 15 KUHP berkaitan dengan penyebaran berita bohong bertentangan dengan Undang-Undang Dasar 1945 dan tidak mempunyai kekuatan hukum mengikat. Sehingga jelas, Pasal 45 ayat (7) Undang-Undang ITE yang tidak memasukkan Pasal 45 ayat (6) ke dalam rumusannya bertentangan dengan Pasal 28E ayat (3) Undang-Undang 45 berikut terhadap putusan MK Nomor 78/2023. Selanjutnya, pada angka delapan, Yang Mulia. Bahwa rumusan Pasal 45 ayat (7) Undang-Undang ITE Perubahan Kedua atau a quo yang tidak mencantumkan ayat (6) berpeluang digunakan penyelenggara pemerintahan, baik pejabat negara maupun ASN yang keberatan dikritik dengan dalih tuduhan warga negara tidak dapat dibuktikan, malah melakukan upaya kriminalisasi terhadap warga negara yang mengkritik tersebut. Demikian terhadap Alasan Permohonan ini. Kemudian, terhadap pokok-pokok Permohonan atau Petitum akan disampaikan rekan kami secara daring kepada Saudara Adi Guna Prawira. Terima kasih, Yang Mulia."
+ },
+ {
+  "n": 57,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 922,
+  "text": "Ya, silakan dilanjutkan ke Petitum!"
+ },
+ {
+  "n": 58,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "ADI GUNA PRAWIRA LUBIS",
+  "start": 925,
+  "text": "Baik, Yang Mulia. Terima kasih, Yang Mulia. Berdasarkan seluruh uraian di atas dan bukti-bukti terlampir, diketahui secara jelas dan tidak terbantahkan. Oleh karena itu, Pemohon memohon kepada Yang Mulia Majelis Hakim Mahkamah Konstitusi agar berkenan memberikan atau mengeluarkan putusan sebagai berikut. 1. Menerima dan mengabulkan Permohonan Pemohon untuk seluruhnya. 2. Menyatakan bahwa frasa dilakukan demi kepentingan umum dalam Pasal 310 ayat (3) negara … Kitab Undang-Undang Hukum Pidana bertentangan dengan Undang-Undang Dasar 1945 sepanjang tidak memaknai ‘termasuk juga kritik terhadap kebijakan pemerintah, kritik terhadap penyelenggara negara agar tidak menyalahgunakan kewenangan atau berbuat secara wewenang terhadap masyarakat dan kritik agar penyelenggara negara tidak menggunakan fasilitas negara secara sembarangan, apalagi tanpa hak’ sehingga rumusan Pasal 310 ayat (3) Kitab Undang-Undang Hukum Pidana berubah rumusannya menjadi “‘tidak merupakan pencemaran atau pencemaran tertulis jika perbuatan jelas dilakukan untuk membela diri atau demi kepentingan umum seperti kritik terhadap kebijakan pemerintah, kritik terhadap penyelenggara negara agar tidak menyalahgunakan kewenangan atau berbuat sewenang-wenang terhadap masyarakat, dan kritik agar penyelenggara negara tidak menggunakan fasilitas negara secara sembarangan apalagi tanpa hak”. 3. Menyatakan bahwa frasa perbuatan sebagaimana dimaksud pada ayat (4) tidak dipidana dalam hal … dalam Pasal 45 ayat (7) Undang- Undang Nomor 1 Tahun 2024 tentang Perubahan Kedua atas Undang-Undang Nomor 11 Tahun 2008 tentang Informasi dan Transaksi Elektronik (Tambahan Lembaran Negara Republik Indonesia Nomor 6905) bertentangan dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945 dan tidak mempunyai kekuatan hukum mengikat sepanjang tidak dimaknai ‘perbuatan sebagaimana dimaksud pada ayat (4) dan (6) tidak dipidana dalam hal’. Selain itu, frasa dilakukan untuk kepentingan umum dalam Pasal 45 ayat (7) huruf a Undang-Undang Nomor 1 Tahun 2024 tentang Perubahan Kedua Atas Undang-Undang Nomor 11 Tahun 2008 tentang Informasi dan Transaksi Elektronik (Tambahan Lembaran Negara Republik Indonesia Nomor 6905) juga bertentangan dengan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945 dan tidak mempunyai kekuatan hukum mengikat sepanjang tidak dimaknai ‘termasuk juga kritik terhadap kebijakan pemerintah, kritik terhadap penyelenggara negara agar tidak menyalahkan guna kewenangan atau berbuat kesewenang- wenangan terhadap masyarakat, dan kritik agar penyelenggara negara tidak menggunakan fasilitas negara secara sembarangan apalagi tanpa hak’. Sehingga, rumusan Pasal 45 ayat (7) Undang-Undang Nomor 1 Tahun 2024 tentang Perubahan Kedua atas Undang-Undang Nomor 11 Tahun 2008 tentang Informasi dan Elektronik (Tambahan Lembaran Negara Republik Indonesia Nomor 6905) secara keseluruhan rumusannya berubah menjadi “perbuatan sebagaimana dimaksud pada ayat (4) dan (6) tidak dipidana dalam hal: a) dilakukan untuk kepentingan umum seperti kritik terhadap kebijakan … kebijakan pemerintah, kritik terhadap penyelenggara negara agar tidak menyalahkan … menyalahgunakan kewenangan atau berbuat kesewenangan terhadap masyarakat dan kritik agar penyelenggaran negara tidak menggunakan fasilitas negara secara sembarangan apalagi tanpa hak; b) dilakukan karena terpaksa membela diri”. 4. Memerintahkan agar putusan terhadap perkara ini dimuat dalam Berita Negara Republik Indonesia sebagaimana mestinya. Apabila Yang Mulia Majelis Hakim Mahkamah Konstitusi berpendapat lain, mohon agar diberikan putusan yang seadil-adilnya, semata demi keadilan berdasarkan Ketuhanan Yang Maha Esa. Hormat saya, Pemohon, Jovi Andrea Bachtiar, S.H. Demikian, Yang Mulia."
+ },
+ {
+  "n": 59,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 1188,
+  "text": "Baik, terima kasih. Cukup, ya, untuk pembacaan permohonannya, ya? Ini sekarang saya tanya dulu sebelum dilanjutkan. Ini Surat Kuasa kan kopinya sudah ada, ini posisi aslinya ada di mana ini sekarang?"
+ },
+ {
+  "n": 60,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1210,
+  "text": "Dari Sumatera menuju ke sini, Majelis."
+ },
+ {
+  "n": 61,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 1213,
+  "text": "Oh. Anda sendiri berkantor di sana? Padang Sidempuan atau di Jakarta?"
+ },
+ {
+  "n": 62,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1220,
+  "text": "Di Jakarta, Majelis."
+ },
+ {
+  "n": 63,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 1221,
+  "text": "Oh, di Jakarta. Oke. Baik. Ya, setelah pembacaan Permohonan ini atau Pokok-Pokok Permohonan, maka sesuai dengan Hukum Acara, pada Sidang Pendahuluan ini Majelis Panel akan menyampaikan penasihatan. Namun, sekali lagi saya ingatkan, begitu Surat Kuasa itu … ini dikirim langsung ke Mahkamah atau ke Anda?"
+ },
+ {
+  "n": 64,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1247,
+  "text": "Kita kirim dan langsung kita antarkan, Majelis."
+ },
+ {
+  "n": 65,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 1253,
+  "text": "Ke Mahkamah, aslinya?"
+ },
+ {
+  "n": 66,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1254,
+  "text": "Aslinya, Majelis."
+ },
+ {
+  "n": 67,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 1256,
+  "text": "Oke. Ini nanti Anda berkomunikasi terus dengan Kepaniteraan Mahkamah untuk memastikan bahwa Surat Kuasa itu sebelum sidang yang akan datang itu telah ada di Mahkamah Konstitusi, di Kepaniteraan Mahkamah Konstitusi. Nah, untuk memberikan penasihatan, kami persilakan dulu yang pertama kepada Yang Mulia Prof. Enny Nurbaningsih, kami persilakan."
+ },
+ {
+  "n": 68,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1288,
+  "text": "Baik. Terima kasih, Yang Mulia Ketua Panel, Bapak Arsul Sani dan Anggota Panel Prof. Guntur Hamzah. Saudara Kuasa Pemohon, pada waktu Permohonan awal yang dibuat Saudara Jovi, ya?"
+ },
+ {
+  "n": 69,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1302,
+  "text": "Siap, Majelis."
+ },
+ {
+  "n": 70,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1302,
+  "text": "Jadi, Saudara tidak, belum dilibatkan, ya?"
+ },
+ {
+  "n": 71,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1304,
+  "text": "Siap."
+ },
+ {
+  "n": 72,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1306,
+  "text": "Jadi, masih Saudara Jovi. Ini begini, ini terkait dengan kuasa yang telah disampaikan kopiannya. Ya, ini kan kami scan ya, dari WA ya, tampaknya?"
+ },
+ {
+  "n": 73,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1315,
+  "text": "Siap."
+ },
+ {
+  "n": 74,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1317,
+  "text": "Ini karena posisinya ini yang Pemohonnya atau Prinisipalnya dari tahanan, jadi tolong nanti dicek betul, jangan sampai tanda tangannya ada yang palsu, ya."
+ },
+ {
+  "n": 75,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1326,
+  "text": "Siap."
+ },
+ {
+  "n": 76,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1326,
+  "text": "Ini sudah asli semua tanda tangannya?"
+ },
+ {
+  "n": 77,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1327,
+  "text": "Siap, siap."
+ },
+ {
+  "n": 78,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1327,
+  "text": "Tidak ada yang palsu, ya. Nanti kalau palsu berisiko juga. Itu ya, saya ingatkan saja itu. Kemudian, terkait dengan Permohonan, yang pertama yang sederhana dulu. Saya ini sudah tua, jadi kalau membuat Permohonan itu pakailah standar fontasinya itu yang normal, ya, ini kecil-kecil hurufnya. Seperti itu, Jovi yang lalu juga gitu."
+ },
+ {
+  "n": 79,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1349,
+  "text": "Siap."
+ },
+ {
+  "n": 80,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1348,
+  "text": "Saya sampaikan, “Jovi, Saudara bikinlah yang standar hurufnya.” Ini pakai fontasi berapa ini? 12, Arial, paling tidak gitu, ya. Ini kecil-kecil semua ini. Kayaknya ngirit-ngirit sekali nih Jovi ini, ya, padahal belum di tahanan dia bikin ini, ya. Ya, tolong dibuat yang anu, ya."
+ },
+ {
+  "n": 81,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1368,
+  "text": "Siap, Majelis."
+ },
+ {
+  "n": 82,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1370,
+  "text": "Jadi, dibuat yang standar, jangan yang kecil-kecil. Kemudian, karena Jovi sudah biasa beracara, kalau Saudara Kuasa Hukum sudah biasa juga beracara di MK?"
+ },
+ {
+  "n": 83,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1378,
+  "text": "Sudah berapa kali, Majelis."
+ },
+ {
+  "n": 84,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1381,
+  "text": "Sudah berapa kali, ya. Kayaknya sudah sering dengan Jovi juga?"
+ },
+ {
+  "n": 85,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1382,
+  "text": "Siap, Majelis."
+ },
+ {
+  "n": 86,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1384,
+  "text": "Sudah sering dengan Jovi, jadi nanti tolong perbaiki ya, yang soal teknis itu. Kemudian, soal yang terkait dengan identitas, enggak usah disebut macam-macam, sederhana saja. Pertama, nama, sesuai dengan PMK 2/2021, nama, kemudian kewarganegaraan, pekerjaan, alamat, negarawan, kemudian apa lagi ini enggak usahlah. Itu kalau mau dimunculkan soal kriminalisasi itu dimasukkan poin yang mengantarkan kalau menjelaskan kedudukan hukum nanti. Seperti biasa, ya, jadi dibuat, nanti diperbaiki ya, ini kan belum ada kuasa hukum di sini, ya."
+ },
+ {
+  "n": 87,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1427,
+  "text": "Siap, Majelis."
+ },
+ {
+  "n": 88,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1428,
+  "text": "Nanti dibuat dengan rapi, sebagaimana standar yang ada, nama, kemudian kewarganegaraan, pekerjaan, alamat, pekerjaan gitu ya, pekerjaan, alamat, seperti itu, ya. Kemudian, setelah itu, baru menguraikan. Kalau soal kewenangan, saya kira sudah oke nih, karena sudah biasa. Kayaknya kemarin juga sudah ada perkara yang bersangkutan nih, ya, Jovi, ya. Jadi cuma kalau ini kelihatannya lagi marah ini, jadi tulisannya, “jelas tidak terbantahkan.” Semua gitu, semua gitu ya, okelah. Bisa dipahami sedang marah ini, emosi dia. Tetapi yang jelas, uraiannya ini sudah oke menggambarkan Kewenangan Mahkamah, norma-norma pasal yang dimunculkan, ya. Kemudian, kedudukan hukum saja yang saya kira perlu diperbaiki. Kedudukan hukum perlu diperbaiki. Pertama, ini kan ada kasus konkret sebetulnya. Jadi, kasus konkret itu untuk mengantarkan saja terkait dengan Permohonan ini, kemudian yang terpenting itu adalah kualifikasinya kan sudah jelas, ini perorangan warga negara Indonesia yang berprofesi sebagai jaksa, simple gitu, ya. Kemudian, ini yang terpenting, uraian syarat-syarat kerugian hak konstitusional ini, ya. Ini uraiannya nanti tolong lebih dirapikan lagi karena ini haknya apa yang diberikan oleh Undang-Undang Dasar? Ini belum ada saya cari-cari ini haknya. Haknya belum ada, nanti kalau dibuat tidak ada LS kan, nanti permohonannya NO, report nanti. Haknya ditegaskan dulu, apakah hak itu dimaksudkan sama dengan batu ujinya? Kalau enggak salah, batu ujinya Pasal 28G atau E ini?"
+ },
+ {
+  "n": 89,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "",
+  "start": 1527,
+  "text": "E, Yang Mulia."
+ },
+ {
+  "n": 90,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1532,
+  "text": "E, ya. Ini coba dicek, ya, khusus untuk hak yang diberikan oleh Undang-Undang Dasar, bisa jadi sama dengan batu uji, bisa juga tidak sama nanti, ya. Ini tolong Anda tegaskan di sini haknya apa? Karena hak itulah kemudian menjadi bagian yang urut-urutannya muncul untuk uraian berikutnya dari hak yang diberikan oleh Undang-Undang Dasar itu, kemudian apakah betul hak itu dianggap dirugikan oleh berlakunya Pasal 310 ayat (3) dan 45 ayat (7) Undang-Undang ITE, satunya KUHP. Terus uraian berikutnya adalah berkaitan dengan ini kan jelas mungkin karena kerugiannya berkaitan dengan kasus konkretnya pasti aktual, ya, itu dijelaskan dan kemudian hubungan kausalitasnya. Mungkin tinggal merapikan dari yang sebagian sudah ada di dalam uraian di dalam halaman 5 itu, tetapi yang pertama, haknya itu yang belum ada, belum muncul di sini. Itu tolong Saudara nanti pertegas ya, hak yang diberikan oleh Undang-Undang Dasar dan uraian sampai ke bawahnya itu. Kemudian yang berikutnya, ini kan yang dimohonkan pengujian terkait dengan Pasal 310 ayat (3) dan 45 ayat (7) Undang-Undang ITE. Yang Pasal 310 ayat (3) ini cukup banyak putusan-putusan MK terkait. Memang tidak membatalkan, tidak memaknai juga. Tetapi coba nanti Anda lihat putusan-putusan MK itu menegaskan di dalam putusannya itu ketika berkaitan dengan ITE, ya, itu kemudian harus dikaitkan dengan Pasal 310, kemudian ada 311 seperti itu, itu kan menunjukkan bahwa berbicara ITE tidak bisa dilepaskan dengan norma yang ada dalam KUHP. Itu relevansinya sekarang menurut Anda bagaimana itu dengan melihat adanya putusan-putusan MK? Misalnya Putusan 50 Tahun 2008, itu tegas sekali menyatakan walaupun tidak ada pemaknaannya di situ, tetapi ada pertimbangan hukum yang menegaskan bagaimana kemudian melihat pasal, walaupun pasalnya tidak terkait dengan Pasal 45 ayat (7), ada pasal yang lainnya dari ITE itu, kemudian rujukannya adalah pada Pasal 310 dan 311 KUHP. Itu, ya, yang pertama yang Anda kemudian perhatikan. Kemudian, cobalah dibangun pula argumentasinya, karena ini bicara konstitusionalitas norma, ya, jadi bukan soal implementasi norma kasus konkret yang dihadapi oleh Saudara Jovi, tapi kita bicara konstitusionalitas norma. Coba Anda bangun sebuah argumentasi yang bisa meyakinkan dan komprehensif di dalamnya, bagaimana kemudian mengaitkan ini dengan KUHP yang baru. Karena kemarin kami juga baru ada perkara yang serupa dengan ini juga, ya. Coba Anda bangunkan argumentasi yang kuat, ya, berkaitan dengan KUHP yang baru, yang mana normanya juga diadopsi dalam Pasal 433, 434 KUHP baru, seperti itu, ya? Bagaimana kemudian kalau ini normanya dimaknai seperti Petitum Saudara? Bagaimana kemudian implikasinya kepada KUHP yang baru? Walaupun berlakunya masih tahun 2026, 2 Januari 2026. Coba Anda bangun argumentasi itu, ya. Berikutnya adalah karena permohonannya singkat, saya juga tidak terlalu banyak berpanjang-panjang, tetapi saya lihat karena di sini sebenarnya to the point-to the point yang disampaikan, ada lagi satu hal yang sangat penting, ya. Membaca Pasal 45 ayat (7) itu tidak bisa terlepas dari ketentuan peralihan, ini. Ketentuan peralihan di dalam Undang-Undang 1/2024, ya, Undang-Undang 1/2024, ini kemarin baru saja perkara masuk soal ini juga, hampir sama, ya. Itu di dalam Pasal II disebutkan. Pada saat undang-undang ini mulai berlaku, itu ada sekian banyak pasal, salah satunya adalah Pasal 45 ayat (7). Itu dinyatakan berlaku sampai dengan diberlakukannya Undang-Undang 1 Tahun 2023. Jadi, berlakunya dia hanya sampai di situ, ya. Terus bagaimana kemudian kalau Anda melihat fakta hukum seperti itu? Dengan kemudian persoalan konstitusionalitas norma yang Anda munculkan, kemudian Anda minta Petitumnya adalah Petitum yang Saudara minta ini di sini, itu dampaknya seperti apa nanti? Kalau Mahkamah kabulkan ini, ya. Sementara di dalam ketentuan peralihan itu dinyatakan, ini hanya berlakunya sampai KUHP berlaku, gitu lho, ya. Walaupun dia undang-undang ini berlaku pada tanggal diundangkan. Tapi ada batasan, bagaimana Saudara membangun argumentasinya coba? Yang ada batasan seperti ini karena sebagian dari Pasal 45 ayat (7) itu ada di dalam KUHP baru, 45 ayat (7) itu. Nah, ini yang perlu Anda buat dulu bangunan argumentasi ini, jangan cerita kasus konkret dulu di sini. Karena kalau saya baca Permohonan ini, memang ini Permohonannya tidak banyak, ya. Hanya sekitar 12 halaman saja. Itu lebih banyak Anda diceritakan oleh Jovi, ini adalah kasus-kasus yang sedang dialami dengan Saudara Nella Marsela. Itu hanya sebagai pengantar saja di depan. Di depan saja, di bagian depan saja. Bagian kedudukan hukum, kalau sedikit disinggung di Posita okelah. Tetapi yang penting itu adalah bagaimana dengan kondisi bentangan fakta hukum itu, Anda melihatnya ada persoalan dengan Pasal 1 ayat (2), prinsip kedaulatan rakyat yang kalau Anda pakai di sini sebagai batu uji, sama Pasal 28E ayat (2), kalau ini yang masih digunakan. Itu bagaimana caranya, ya? Supaya MK ini juga bisa mengerti dengan kondisi fakta hukum seperti itu, mengambil keputusannya,           gitu lho. Jadi, ada constraint, ada KUHP baru. Ada constraint di dalam ketentuan peralihan Undang-Undang ITE, gimana coba? Saudara bangun dulu argumentasi itu, baru Saudara memilih Petitumnya apa yang paling tepat untuk itu. Tidak sekadar menjawab persoalan kasus konkret, itu ya, karena ini adalah soal konstitusionalitas norma. Itu tolong Saudara buatkan itu. Saya singkat saja, karena saya lihat ini juga cepat bisa dipahami, tetapi problem-nya di situ."
+ },
+ {
+  "n": 91,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1956,
+  "text": "Siap, Majelis."
+ },
+ {
+  "n": 92,
+  "role": "HAKIM ANGGOTA",
+  "name": "ENNY NURBANINGSIH",
+  "start": 1958,
+  "text": "Itu saja dari saya, terima kasih."
+ },
+ {
+  "n": 93,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 1959,
+  "text": "Terima kasih, Yang Mulia."
+ },
+ {
+  "n": 94,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 1960,
+  "text": "Terima kasih, Yang Mulia Prof. Enny Nurbaningsih. Selanjutnya kami persilakan, Yang Mulia Prof. Guntur Hamzah, untuk menyampaikan penasihatan."
+ },
+ {
+  "n": 95,
+  "role": "HAKIM ANGGOTA",
+  "name": "M. GUNTUR HAMZAH",
+  "start": 1973,
+  "text": "Baik. Terima kasih, Yang Mulia Ketua Panel, Bapak Dr. Arsul Sani dan Yang Mulia Anggota Panel, Prof. Dr. Enny Nurbaningsih. Para Kuasa, baik yang hadir secara langsung dalam ruangan ini dan juga melalui online. Perkara Nomor 115 ini tentu Saudara menguji ada dua undang- undang, ya, yaitu KUHP, khususnya Pasal 310 ayat (3) dan Undang- Undang tentang ITE atau Informasi dan Transaksi Elektronik, Undang- Undang 11/2008, khususnya terkait dengan Pasal 45 ayat (1). Nah, isu hukum yang Saudara angkat dalam konteks Permohonan ini adalah berbicara menyangkut pemberian makna frasa demi kepentingan umum, gitu ya?"
+ },
+ {
+  "n": 96,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 2036,
+  "text": "Siap, Majelis."
+ },
+ {
+  "n": 97,
+  "role": "HAKIM ANGGOTA",
+  "name": "M. GUNTUR HAMZAH",
+  "start": 2036,
+  "text": "Dan frasa untuk kepentingan umum ini di dua undang-undang yang menjadi … apa … objek pengujian Saudara. Baik. Pertama, tentu ini adalah kewajiban kami untuk memberikan kepenasihatan dan Saudara tentu tidak terikat dengan apa yang kami sampaikan, tapi dipertimbangkan dengan sangat, ya."
+ },
+ {
+  "n": 98,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 2062,
+  "text": "Siap, Majelis."
+ },
+ {
+  "n": 99,
+  "role": "HAKIM ANGGOTA",
+  "name": "M. GUNTUR HAMZAH",
+  "start": 2062,
+  "text": "Apakah itu akan diikuti atau tidak, demi untuk … apa namanya … kualitas Permohonan Saudara menjadi lebih baik tentunya."
+ },
+ {
+  "n": 100,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 2071,
+  "text": "Siap, Yang Mulia."
+ },
+ {
+  "n": 101,
+  "role": "HAKIM ANGGOTA",
+  "name": "M. GUNTUR HAMZAH",
+  "start": 2071,
+  "text": "Terkait dengan Kewenangan Mahkamah, saya tidak ada masalah, sudah … karena ini sudah pengalaman, apa lagi Pemohonnya yang mengirim langsung, ke sini ya."
+ },
+ {
+  "n": 102,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 2081,
+  "text": "Siap."
+ },
+ {
+  "n": 103,
+  "role": "HAKIM ANGGOTA",
+  "name": "M. GUNTUR HAMZAH",
+  "start": 2081,
+  "text": "Dan sudah pernah … apa namanya … beberapa kali menjadi Pemohon, ya, dalam pengujian ini. Pengujian di Mahkamah. Sehingga terkait dengan Kewenangan Mahkamah, saya kira ini sudah tidak menjadi soal karena memang benar yang diuji adalah undang-undang, kan gitu."
+ },
+ {
+  "n": 104,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 2101,
+  "text": "Siap, Yang Mulia."
+ },
+ {
+  "n": 105,
+  "role": "HAKIM ANGGOTA",
+  "name": "M. GUNTUR HAMZAH",
+  "start": 2101,
+  "text": "Kemudian terkait dengan Kedudukan Hukum. Nah, ini menjadi penting karena tidak serta-merta, kendatipun Pemohon pernah mengajukan pengujian di Undang-Undang Mahkamah Konstitusi dan diberikan legal standing, tetapi itu bukanlah jaminan bahwa itu juga akan secara otomatis itu juga akan diberikan legal standing pada pengujian kali ini. Oleh karena itu, karena apa? Tentu setiap undang-undang dan setiap norma yang diuji, tentu memiliki karakter yang berbeda. Karena apa? Salah satu yang menjadi dasar kita melihat adalah apakah norma itu … dengan keberadaan norma itu, itu ada kerugian dari Pemohon, ya. Jadi … dan perlu kita lihat juga causal verband-nya, hubungan sebab- akibatnya. Jadi apa artinya? Tidak serta-merta seseorang yang pernah mendapat legal standing untuk satu pengujian, itu kemudian otomatis menjadi pendapat legal standing. Tergantung bagaimana dia menunjukkan, ya, apakah memang ada kerugian konstitusional terkait dengan berlakunya norma tersebut, ya, atau tidak. Nah, ini penting supaya tidak menjadi seakan-akan ini sudah otomatis, karena pernah mengajukan dan ternyata permohonannya … apalagi kalau permohonannya dikabulkan atau dikabulkan sebagian. Kan begitu, ya?"
+ },
+ {
+  "n": 106,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 2194,
+  "text": "Ya, siap."
+ },
+ {
+  "n": 107,
+  "role": "HAKIM ANGGOTA",
+  "name": "M. GUNTUR HAMZAH",
+  "start": 2195,
+  "text": "Jadi, itu penting untuk menjadi edukasi di masyarakat kita bahwa itu tidak ada jaminan seperti itu. Tetap harus juga menjelaskan kedudukan hukum itu, supaya itu kelihatan memang ada benang merahnya dan memang itu terkait erat, ya, dengan norma yang diujikan. Nah, dalam kaitan ini saya … saya melihat, saya sudah membaca ini juga bahwa ini terlalu sumir menjelaskan, ya. Ini mesti dielaborasi, ya, karena ini norma yang diujikan ini menyangkut kepentingan umum, maka tentu harus menjelaskan bagaimana ya,kaitan antara norma kepentingan umum yang terdapat dalam dua undang-undang tersebut dengan kerugian konstitusional yang bersangkutan. Bahwa yang bersangkutan melakukan kritik dan sebagainya, nah, ini perlu dijelaskan, ya, konteksnya. Jadi, konteks ini mesti dijelaskan lebih jauh lagi untuk meletakkan posisi legal standing dari Pemohon, Prinsipal Saudara, ya."
+ },
+ {
+  "n": 108,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 2267,
+  "text": "Siap."
+ },
+ {
+  "n": 109,
+  "role": "HAKIM ANGGOTA",
+  "name": "M. GUNTUR HAMZAH",
+  "start": 2268,
+  "text": "Nah, ini harus diletakkan dulu, karena ini konteksnya harus kita lihat ini. Apakah memang ini konteks ini mendukung statement bahwa dia dirugikan, ada kerugian konstitusionalnya, ya. Ini tolong dijelaskan, ya, misalnya dijelaskan secara gamblang saja, enggak perlu malu-malu, enggak perlu ada yang ditutup-tutupi. Kan terbuka saja, kan. Sampaikan saja bahwa saya misalnya secara kronologis menyampaikan bahwa saya ini begini, begini, begini, ya, pada tanggal ini, jelaskan saja, enggak apa- apa. Nah, ini memang hanya pintu masuk saja. Nah, nanti Majelis yang akan menilai apakah kronologi … apakah peristiwa yang dijelaskan itu memang … apa namanya … secara signifikan ada kaitan kerugian konstitusional dari Pemohon. Nah, ini perlu untuk diketahui terkait dengan legal standing tadi, itu apakah ada hubungan sebab-akibat, ya. Nah, itu untuk legal standing-nya, supaya tidak menganggap bahwa ini legal standing ini sesuatu yang tidak ada masalah, saya punya legal standing karena dulu saya pernah mengajukan permohonan, ya. Jadi, tolong ini disampaikan … apa namanya … dicermati dengan lebih baik lagi, lebih dalam lagi. Nah, itu untuk legal standing. Kemudian untuk alasan-alasan, ya. Nah, Saudara tentu penting, ya, hanya Alasan Permohonan, ya. Jadi Alasan Permohonan ini, saya melihat di … apa namanya … Permohonan Saudara ini, Saudara menyatakan alasan Permohonan dan keempat, pokok permohonan petitum. Itu bukan pokok permohonan petitum, tapi itu hal yang dimohonkan, ya, hal-hal yang dimohonkan. Jadi, Pokok Permohonannya itu justru di atas itu judulnya, kan gitu, di … apa … di Alasan-Alasan, ya. Jadi itu masuk sebetulnya di Posita, tapi ini adalah hal-hal yang dimintakan, jadi hal-hal yang dimohonkan, ya, jadi itu Petitumnya. Nah, menyangkut          positanya,    menyangkut alasan-alasan Permohonan. Nah, yang pertama menurut hemat saya, perlu dijelaskan dulu ... ya, memang ini perlu diketahui ininya nih, original intent-nya. Ini mestinya dijelaskan original intent-nya ... apa namanya ... frasa kepentingan umum itu, ya, dalam undang-undang a quo. Sebab begini, pengertian kepentingan umum ini tersebar sebetulnya, ya. Jadi, kalau kita mengatakan, apakah kepentingan umum itu, itu ... apa ... tidak ada atau tidak jelas, sebetulnya banyak undang-undang, itu sudah memberikan definisi kepentingan umum itu. Jadi, tolong digali, ya. Di berbagai undang-undang, apa sih maknanya kepentingan umum itu? Nah, kalau itu sudah lihat semua pengertian, definisi, di berbagai kepentingan umum, biasanya itu ada di ketentuan umum, ya, di berbagai peraturan perundang-undangan yang memang mencantumkan menyangkut frasa kepentingan umum itu. Nah, kemudian Anda lihat, apakah yang Saudara maksudkan ini memang sudah ... sudah termasuk atau belum? Nah, itu harus diberikan penjelasan bahwa memang ini belum. Bahwa ada di undang-undang, misalnya tentang ... Undang-Undang tentang ... apa ... Penggunaan Hak ... Penggunaan Tanah untuk Kepentingan Umum, kan gitu? Nah, di situ ada frasa kepentingan umum, kan gitu? Nah, coba dilihat, ya, apakah maksudnya itu sudah seperti yang Saudara maksudkan atau masih di luar dari itu? Jadi ... itu satu. Kemudian juga, lihat juga putusan Mahkamah Konstitusi. Sebetulnya putusan Mahkamah Konstitusi menyangkut frasa kepentingan umum ini sudah ... sudah sering, ada beberapa putusan Mahkamah Konstitusi yang sudah ... apa namanya ... sudah menjelaskan tentang apa itu kepentingan umum. Nah, di situ juga Anda akan pelajari lagi, lihat lagi, kumpulin, ya, diinventarisir. Oh, ternyata apa yang dimaksudkan oleh Mahkamah, kepentingan umum, sepertinya belum masuk saya punya maksud atau saya punya kepentingan dari Prinsipal Saudara, ya, belum. Itu yang di ... bahwa memang benar, Mahkamah dalam putusannya ini (ucapan tidak terdengar jelas) sudah menjelaskan tentang kepentingan umum. Hanya ... namun demikian, ya, apa kira-kira argumentasi yang Saudara ingin sampaikan? Bahwa itu belum ter-cover apa yang Saudara maksudkan sebagai kepentingan umum. Nah, itu. Jadi, ada dalam undang-undang, juga sudah ada dalam putusan- putusan Mahkamah Konstitusi. Nah, ini ... dua ini harus diungkapkan dulu, ya. Supaya kita ... ibaratnya kita meletakkan dulu nih, di depan kita nih, oh, ini kepentingan umum dalam undang-undang, ini kepentingan umum dalam Putusan Mahkamah Konstitusi. Oh, unsur-unsurnya seperti ini. Nah, ini yang kami belum ada unsur ini, ini yang kami perlu masukkan, gitu, tambahkan, gitu. Nah, itu baru kelihatan akademiknya ini ... apa namanya ... Permohonan Saudara ini, kan gitu ya."
+ },
+ {
+  "n": 110,
+  "role": "KUASA HUKUM PEMOHON",
+  "name": "BUCE ABRAHAM BERUAT",
+  "start": 2615,
+  "text": "Siap, Yang Mulia."
+ },
+ {
+  "n": 111,
+  "role": "HAKIM ANGGOTA",
+  "name": "M. GUNTUR HAMZAH",
+  "start": 2616,
+  "text": "Bisa dipahami, ya? Nah kemudian, perlu juga Saudara … apa … para lawyer, para Kuasa, untuk mendiskusikan atau me … me … apa namanya … merenungkan. Kalau yang Saudara maksudkan ini seperti yang Saudara inginkan dalam … ini masuk ke Petitum, ya. Ya, jadi Saudara ingin menambahkan, menambahkan dalam norma a quo, norma yang Saudara uji itu, kritik terhadap kebijakan pemerintah, kritik terhadap penyelenggara negara agar tidak menyalahgunakan kewenangan atau berbuat sewenang-wenang terhadap masyarakat dan kritik agar penyelenggara negara tidak menggunakan fasilitas negara secara sembarangan apalagi tanpa hak, itu yang Saudara maksudkan. Nah, pertanyaannya, dalam … apa … kaidah pembentukan peraturan perundang-undangan, apakah itu tidak termasuk penjelasan, ya? Biasanya, ya, penjelasan, misalnya ada kata kepentingan umum, nah, penjelasannya adalah ya, seperti kritik ini, ini, ini, kan begitu. Nah, sementara Saudara ingin memasukkan sebagai norma dalam pasal atau ayat yang Saudara ingin masukkan ini. Jadi, bukan menjadikan sebagai penjelasan, karena memang pengujian ini ada dua, itu menjadikan norma, ada menjadikan tafsir saja. Nah, kalau saya melihat struktur Saudara buat ini, sepertinya Saudara ingin memasukkan menjadi norma, ya, bukan sebagai tafsir. Tapi norma ini, ya, karena Anda mengatakan sehingga rumusan Pasal 310 itu, ya, “Selengkapnya berbunyi, berubah menjadi”, berarti Anda ingin meletakkan, ya kalimat, “Kritik sampai dengan tanpa hak,” ya, itu Saudara ingin menjadikan sebagian dari norma pasal tersebut, kan begitu. Ataukah Saudara sebetulnya pengin itu menjadi tafsirnya? Karena kalau itu menjadi norma Saudara, ini Para Kuasa nih, tolong … apa namanya … disimak baik-baik, dipertimbangkan. Bukankah itu Anda membuat norma kepentingan umum itu menjadi sempit? Kan begitu. Menjadi tampak sempit kan? Padahal kepentingan umum itu sudah diberi makna yang luas. Nah, ketika ada persoalan yang tidak terkait dengan kritik terhadap ini, maka norma kepentingan umum itu tidak menjangkau hal-hal yang di luar dari yang Saudara maksudkan. Kira-kira sampai ke sana enggak, memikirkan itu? Tapi kan sempit kalau itu dimasukkan jadi norma. Tapi kalau Saudara jadikan itu normanya tetap gitu, tetapi ini harus ditafsirkan termasuk itu seperti, ya, menjadikan contoh kritik terhadap kebijakan pemerintah, kritik terhadap penyelenggara negara, itu adalah bagian dari a part of norma tersebut, kan begitu. Sehingga selain yang Saudara maksudkan, adapun yang di luar dari yang Saudara tidak maksudkan, itu juga mencakup kepentingan umum. Karena ini kan kasus konkret Saudara, Saudara merasakan. Tapi ada belum tentu hal seperti ini terjadi, ada hal lain yang terjadi, ya, kepentingan umum juga, tapi tidak seperti yang Saudara rumuskan ini. Nah, ini yang perlu Saudara timbang-timbang, nih. Karena kalau ini seperti Saudara maksudkan ini, ini menjadi normanya menjadi sempit ini. Bahkan masih mending kalau dikatakan sempit, tapi kalau dikatakan bahkan norma yang Saudara rumuskan ini, malah menimbulkan ketidakpastian hukum yang baru. Wah, ini semakin sulit. Padahal maksudnya untuk memberikan back up supaya Prinsipal Saudara ketika melakukan kritik itu tidak di … apa … diproses hukum, gitu kan ya. Kan tidak di … apa namanya … dikenakan seperti sekarang ini dalam posisi dalam rumah tahanan, kan gitu. Nah, ini harus … jadi Saudara harus berpikir sebaliknya, kira-kira sebaliknya bagaimana, nih? Karena sekarang memang Saudara fokus kepada klien Saudara atau Prinsipal Saudara ini, Prinsipal ini, Prinsipal yang memang mengalami kasus konkret ini. Tapi coba dibuka anunya, cakrawala berpikirnya. Karena itu selain mempersempit, norma ini bisa dipandang tidak memberikan kepastian hukum yang baru. Meskipun kami sebagai hakim bisa saja memahami konteks yang Saudara … karena ini ketika nanti dijadikan sebagai norma, berarti kan dia berlaku seperti norma pada umumnya. Berlaku general, umum, kan begitu. Nah, sementara Anda sudah batasi, ya, hanya kepentingan umum itu hanya berupa kritik saja, kan gitu. Bisa dipahami, ya? Nah, oleh karena itu, perbaiki, ya, kalau memang ini Anda pengin melanjutkan. Tetapi seperti yang dikatakan oleh Yang Mulia Ketua Panel tadi bahwa ini pun juga akan kami laporkan ke … apa namanya … ke Pleno RPH Hakim. Saya kira itu ya, terkait dengan Permohonan Saudara, demikian juga di Petitum ketiga sebagai ini. Petitum ketiga lebih ini lagi karena Saudara sudah membuat di situ ya, tindak pidana dalam hal perbuatan sebagaimana yang dimaksud Pasal 6, ya. Jadi, ini sangat … apa namanya … membuat norma baru. Belum lagi coba nanti, ini apakah tidak seperti ini mendorong Mahkamah Konstitusi menjadi betul-betul positive legislator. Nah, itu juga harus hati-hati di situ untuk melihatnya. Bahwa memang itu akan memberikan keuntungan bagi … apa … Prinsipal atau mungkin klien Saudara, tetapi atau rekan kolega Saudara, tetapi itu justru akan membuat Mahkamah dalam … apa namanya … posisi yang justru juga sebaliknya ditengarai atau diini oleh publik bahwa itu tidak boleh juga sampai … apa namanya … ya menjadi positif legislator, seperti yang Saudara inginkan. Bahwa ada kejadian-kejadian, ya ya, tapi apakah itu harus seperti itu terus? Kan, tidak bisa juga. Ya, itu kira-kira yang perlu Saudara pertimbangkan sebagai ini … apa namanya … karena Anda nanti memposisikan bagaimana kalau Saudara sebagai pembentuk undang-undang kan seperti ini ceritanya nih, ya. Apakah sudah tepat merumuskannya seperti itu atau ada pertimbangan lain. Mungkin itu masukan saya, ya, dan ini sifatnya sebagai … anu saja … sebagai masukan untuk perbaikan, tapi sepenuhnya ada di tangan Saudara untuk menindaklanjuti atau tidak, saya kembalikan kepada Saudara. Dan forum selanjutnya saya kembalikan kepada Yang Mulia Ketua Panel. Silakan, Yang Mulia!"
+ },
+ {
+  "n": 112,
+  "role": "KETUA",
+  "name": "ARSUL SANI",
+  "start": 3090,
+  "text": "Terima kasih, Yang Mulia Anggota Panel Prof. Guntur Hamzah. Saya kira nanti Saudara Kuasa Pemohon kalau tidak sempat mencatat semua yang tadi dinasihatkan oleh Yang Mulia Prof. Enny Nurbaningsih maupun Yang Mulia Prof. Guntur Hamzah, nanti bisa dilihat kembali di channel YouTube Mahkamah Konstitusi, ya. Nah, saya melengkapi saja beberapa hal yang tadi telah dinasihatkan oleh Para Yang Mulia Anggota Panel dalam perkara ini. Pertama, umum dulu, umum dulu. Bahwa ketika kita membuat satu dokumen hukum, termasuk permohonan kepada Mahkamah Konstitusi ini, maka ketika menulis tidak boleh dalam keadaan marah. Jadi, harus kepalanya tetap dingin, hatinya dingin, supaya yang kita hasilkan itu juga kemudian bisa ditangkap dengan lebih baik karena bahasanya lebih simpel. Yang kedua, saya kira umum, nanti Kuasa Pemohon juga perlu membuka kembali PMK 2/2021. Kami Para Hakim saja walaupun tiap hari memeriksa dan mengadili tetap bolak-balik harus membuka PMK 2/2021. Itu yang diatur dalam Pasal 10, khususnya Pasal 10 ayat (2) yang menjelaskan tentang struktur permohonan dalam perkara PUU di Mahkamah Konstitusi ini. Kan di sana tadi sudah disinggung oleh Yang Mulia Prof. Enny Nurbaningsih bagaimana mengidentifikasikan diri sebagai Pemohon. Dan itu cukup dilakukan dengan bahasa yang sederhana, tidak juga dengan apa katakanlah meninggikan dirilah, quote unquote ini, ya tadi sudah dijelaskan. Jadi, saya juga sepakat tidak perlulah ada kata negarawan, aktivis, anti-korupsi, pengamat dan lain sebagainya. Yang di Mahkamah Konstitusi ini sama Pak Jovi Andrea sudah kenal semua karena ini permohonan keberapa ya, mungkin sudah lebih dari lima kali ya, saya lihat. Jadi, toh ini Permohonan untuk kami kan yang di Mahkamah Konstitusi ini. Nah, yang berikutnya, ya, saya melihat bahwa karena ini yang bolak-balik disebut, yang digunakan sebagai landasan pengujian atau dasar pengujian ini Pasal 28E ayat (3) Undang-Undang Dasar NRI Tahun 1945. Ini coba dipikirkan kembali ya, apakah ini pas? Tidak terlalu jauh dengan Pasal 310 ayat (3) dari KUHP dan Pasal 45 ayat (7) dari Undang- Undang 1 Tahun 2024. Apa tidak sebaiknya, ini penasihatan, dimasukkan juga sebagai landasan pengujian Pasal 28D ayat (1) bahwa setiap orang, setiap warga negara berhak atas pengakuan, jaminan, perlindungan, dan kepastian hukum yang adil. Kalau Pasal 28E ayat (3) ini kan bicara tentang kebebasan berserikat, berkumpul, dan mengeluarkan pendapat. Nah, tetapi kalau bicara tentang perlunya perlindungan hukum dan kepastian hukum, maka ada di Pasal 28D ayat (1). Jadi, apa tidak sebaiknya, bukan digantikan, bisa juga ditambahkan. Ini kembali kepada Pemohon sebagai landasan pengujian. Kemudian yang berikutnya karena Pasal 310 ya, ini juga pernah dan juga disinggung dalam Permohonan Anda ya, pernah diputus oleh Mahkamah Konstitusi dengan Putusan Nomor 78/2023, ini juga argumentasinya kan disinggung juga dengan lebih baik. Ini kalau di putusan yang terdahulu, ini kan dilakukan pemaknaan terhadap ayat (1)- nya tetapi, ya. Nah, itu barangkali bisa jadi bahan ya, bagi Pemohon untuk melihat kerangka berpikir, kerangka pertimbangan hukum yang disampaikan oleh Mahkamah Konstitusi dalam Perkara 78/2023. Nah, itu beberapa hal. Nah, yang lainnya, ini juga konsistensinya supaya diperhatikan ya, soal penggunaan pasal karena misalnya dalam surat permohonan saya lihat ada juga disebut-sebut Pasal 28F dari Undang-Undang Dasar kita. Ini mau digunakan jadi landasan pengujian atau enggak, sih? Gitu, ya. Satu lagi, saya lihat dalam Petitum ya, ini ada ketidaksesuaian ini antara posita dan petitum, khususnya pada objek norma undang-undang yang dimintakan pengujian. Ini kan, kalau dalam petitum kan, disebutkan juga bahwa Pemohon meminta agar dilakukan juga … ini saya bacakan, ya. Dinyatakan frasa dilakukan … bukan frasa ini, di dalam uraian posita Pemohon menguraikan bahwa salah satu objek ujinya adalah frasa dilakukan untuk kepentingan umum. Sedangkan dalam petitumnya, Pemohon menambahkan permohonan pemaknaan pada frasa perbuatan sebagaimana dimaksud pada ayat (4) tidak dipidana dalam hal. Nah, ini sebaiknya juga dibahas di dalam posita kalau memang ingin juga ditambahkan frasa itu, ya, disempurnakan di dalam permohonannya. Itu saya kira beberapa hal yang Kuasa Pemohon bisa kemudian menyempurnakannya di dalam perbaikan. Saya kira cukup. Ada lagi, Yang Mulia? Baik. Nah, ini Pemohon dengan catatan tadi yang juga disampaikan oleh Yang Mulia Prof. Guntur bahwa ini nanti akan kami sampaikan juga keadaan sidang hari ini ke Rapat Permusyawaratan Hakim yang bersembilan ya, Saudara tetap kemudian diberikan kesempatan untuk mengajukan perbaikan. Tapi dengan catatan Surat Kuasa Saudara sudah diterima, ya, oleh Mahkamah Konstitusi. Karena itu, ya, mungkin dalam 1-2 atau beberapa hari ke depan, Saudara harus melakukan pengecekan ke Kepaniteraan Mahkamah Konstitusi apakah surat Kuasa Asli yang dikirim dari Padang Sidempuan sana telah sampai atau belum. Setelah itu, nanti Saudara bisa atas nama Pemohon Prinsipal menyampaikan perbaikan. Dan untuk itu, Saudara diberi kesempatan untuk menyampaikan perbaikan dengan syarat-syarat tadi surat kuasanya sudah diterima, itu pada hari Rabu, tanggal 18 September 2024, paling lambat pukul 15.00 WIB. Saudara harus menyerahkan berkas Perbaikan Permohonan baik yang berupa hard copy maupun soft copy-nya kepada Kepaniteraan Mahkamah Konstitusi, ya. Nah, sidang selanjutnya untuk mendengarkan perbaikan Saudara nanti kemudian akan dijadwalkan oleh Mahkamah dan melalui Kepaniteraan, nanti Mahkamah Konstitusi akan memberitahukan kepada Saudara selaku Kuasa. Bisa dipahami, kan? Ya. cukup? Ada lagi yang mau disampaikan? Cukup, ya. Oke. Baik, kalau cukup, maka sidang ini bisa kita akhiri dan dengan ini Sidang Perkara Nomor 115/PUU- XXII/2024 ditutup. Jakarta, 3 September 2024 Plt. Panitera, Muhidin"
+ }
+]
