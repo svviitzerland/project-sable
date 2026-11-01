@@ -13,6 +13,7 @@ import type { Case, Tables } from "./contracts";
 import { assert, ProviderError } from "./errors";
 import { requestJson } from "./providers";
 import { enqueue, stageJob } from "./jobs";
+import { stableSpeakers } from "./voice";
 export const audioInput = z.strictObject({
   hearing_id: z.uuid().nullable(),
   language: z.enum(["id", "en"]),
@@ -254,20 +255,22 @@ export async function saveAudio(
       422,
       "Invalid speech transcript.",
     );
-    const ids = await rt.db.transaction(async (db) => {
-      const ids: string[] = [];
+    const known = await stableSpeakers(rt, record.id);
+    const saved = await rt.db.transaction(async (db) => {
+      const saved: { id: string; start: number; end: number }[] = [];
       for (const group of groups) {
+        const providerKey = `${session.id.slice(0, 8)}:${group.speaker}`;
         const segment = await db.insert("segments", {
           ...group,
           case_id: record.id,
           hearing_id: session.hearing_id,
           origin: "speechmatics",
-          speaker: `${session.id.slice(0, 8)}:${group.speaker}`,
+          speaker: known.get(providerKey) ?? providerKey,
           start: group.start + session.offset,
           end: group.end + session.offset,
         });
         if (rt.config.hosted) await stageJob(db, segment.id);
-        ids.push(segment.id);
+        saved.push({ id: segment.id, start: segment.start, end: segment.end });
       }
       await db.update(
         "audio_sessions",
@@ -275,11 +278,11 @@ export async function saveAudio(
         "id=?",
         [id],
       );
-      return ids;
+      return saved;
     });
     await publish(rt, record.id, { type: "transcript" });
-    await Promise.all(ids.map((id) => enqueue(rt, id)));
-    return { received: body.sequence };
+    await Promise.all(saved.map((s) => enqueue(rt, s.id)));
+    return { received: body.sequence, segments: saved };
   });
 }
 export async function endAudio(

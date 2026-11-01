@@ -12,6 +12,7 @@ type ProviderName =
   | "Pasal.id"
   | "Speechmatics"
   | "Supabase Storage"
+  | "Voice API"
   | "External service";
 
 function providerFailure(
@@ -57,7 +58,7 @@ function providerFailure(
     }),
   );
   return new ProviderError(
-    `${provider === "Supabase Storage" ? "The file could not be saved or opened." : provider === "Speechmatics" ? "Audio transcription could not start." : provider === "Pasal.id" ? "Legal search could not be completed." : "This AI request could not be completed."} ${status === 429 ? "Please wait a moment and try again." : "Please try again later."} Reference: ${reference}`,
+    `${provider === "Supabase Storage" ? "The file could not be saved or opened." : provider === "Speechmatics" ? "Audio transcription could not start." : provider === "Pasal.id" ? "Legal search could not be completed." : provider === "Voice API" ? "Voice recognition could not be completed." : "This AI request could not be completed."} ${status === 429 ? "Please wait a moment and try again." : "Please try again later."} Reference: ${reference}`,
   );
 }
 

@@ -173,7 +173,10 @@ test("provider failures keep operator diagnostics in logs and show actionable us
         assert(error instanceof ProviderError);
         assert.equal(error.status, 503);
         assert.match(error.message, /This AI request could not be completed/);
-        assert.doesNotMatch(error.message, /OpenRouter|HTTP|API.key|quota|billing|model ID/i);
+        assert.doesNotMatch(
+          error.message,
+          /OpenRouter|HTTP|API.key|quota|billing|model ID/i,
+        );
         if (status === 429) assert.match(error.message, /wait a moment/);
         const log = JSON.parse(logs.at(-1)!);
         assert.equal(log.event, "jude_provider_failed");
@@ -379,7 +382,10 @@ test("hearing parsers, reviewed words and original document exclusion", async (t
     "POST",
     upload("shared.jude.zip", hearingBytes),
   );
-  assert.equal(renamed.hearing.segments.length, preview.hearing.segments.length);
+  assert.equal(
+    renamed.hearing.segments.length,
+    preview.hearing.segments.length,
+  );
   const unstructured = await a.json(
     base + "/hearings/preview",
     "POST",
@@ -907,7 +913,10 @@ test("embedding contract validates complete finite vectors; legal URLs stay on P
   assert.equal((await embed(rt, ["test"]))?.[0].length, 1536);
   rt.fetch = async () =>
     Response.json({ data: [{ index: 1, embedding: Array(1536).fill(0) }] });
-  await assert.rejects(embed(rt, ["test"]), /Related evidence could not be processed/);
+  await assert.rejects(
+    embed(rt, ["test"]),
+    /Related evidence could not be processed/,
+  );
   assert.equal(safePasalUrl("https://evil.test/law"), null);
   assert.equal(safePasalUrl("javascript:alert(1)"), null);
   assert.equal(safePasalUrl("https://pasal.id/uu/1"), "https://pasal.id/uu/1");
@@ -1251,4 +1260,151 @@ test("practice proposals preserve the selected role/language and duplicate manua
   assert.equal(first.id, second.id);
   await Promise.all([...rt.tasks]);
   assert.equal((await a.json(base)).segments.length, 1);
+});
+test("voice service keeps one speaker key across connections, never exports voiceprints, and can forget them", async (t) => {
+  const { rt, a, record, client } = await fixture(t),
+    base = `/cases/${record.id}`;
+  rt.config.speechKey = "private-key";
+  const identifyCalls: { auth: string | null; candidates: unknown[] }[] = [];
+  const answers: {
+    match: { id: string; score: number } | null;
+    e: number[];
+  }[] = [];
+  rt.fetch = async (input, init) => {
+    const url = String(input);
+    if (url === "https://voice.test/health")
+      return Response.json({ model: "fake-spectral-v1" });
+    if (url === "https://voice.test/v1/identify") {
+      const form = init?.body as FormData;
+      assert.ok(form.get("file") instanceof Blob);
+      identifyCalls.push({
+        auth: new Headers(init?.headers).get("authorization"),
+        candidates: JSON.parse(String(form.get("candidates"))),
+      });
+      const next = answers.shift()!;
+      return Response.json({
+        model: "fake-spectral-v1",
+        dim: 3,
+        embedding: next.e,
+        match: next.match,
+      });
+    }
+    return Response.json({ key_value: "short-lived-token" });
+  };
+  const hearing = await a.json(base + "/hearings", "POST", { title: "Voices" });
+  const open = () =>
+    a.json(base + "/audio-sessions", "POST", {
+      hearing_id: hearing.id,
+      authorized: true,
+      language: "id",
+      sample_rate: 16000,
+    });
+  const word = (content: string, speaker: string, start: number) => ({
+    type: "word",
+    start_time: start,
+    end_time: start + 2,
+    alternatives: [{ content, speaker, confidence: 0.9 }],
+  });
+  const clip = (owner: ReturnType<typeof client>, id: string) =>
+    handleApi(
+      rt,
+      new Request(`http://localhost/api/v1${base}/transcripts/${id}/voice`, {
+        method: "POST",
+        headers: { cookie: owner.cookie, "Content-Type": "audio/wav" },
+        body: new Uint8Array(2000),
+      }),
+    );
+  const first = await open();
+  const saved = await a.json(
+    `${base}/audio-sessions/${first.id}/transcripts`,
+    "POST",
+    { sequence: 1, results: [word("Sidang", "S1", 0), word("Saya", "S2", 2)] },
+  );
+  assert.equal(saved.segments.length, 2);
+  // Not configured: the transcript stays usable and the browser stops trying.
+  assert.equal((await clip(a, saved.segments[0].id)).status, 503);
+  rt.config.voiceUrl = "https://voice.test";
+  rt.config.voiceToken = "voice-secret-0123456789";
+  answers.push({ match: null, e: [1, 0, 0] }, { match: null, e: [0, 1, 0] });
+  const judge = await (await clip(a, saved.segments[0].id)).json();
+  assert.deepEqual(judge, {
+    speaker: "voice:voice-1",
+    created: true,
+    score: null,
+  });
+  await clip(a, saved.segments[1].id);
+  assert.equal(identifyCalls[0].auth, "Bearer voice-secret-0123456789");
+  assert.equal(identifyCalls[1].candidates.length, 1);
+  // Later turns from an identified provider label are keyed on save.
+  const later = await a.json(
+    `${base}/audio-sessions/${first.id}/transcripts`,
+    "POST",
+    { sequence: 2, results: [word("dibuka", "S1", 4)] },
+  );
+  await a.json(`${base}/audio-sessions/${first.id}/stop`, "POST");
+  // A new connection relabels voices; the voiceprint match restores the key.
+  const second = await open();
+  const rotated = await a.json(
+    `${base}/audio-sessions/${second.id}/transcripts`,
+    "POST",
+    { sequence: 1, results: [word("Lanjut", "S2", 0), word("lagi", "S2", 1)] },
+  );
+  const [prints] = [identifyCalls[1].candidates];
+  assert.equal(prints.length, 1);
+  answers.push({ match: { id: "placeholder", score: 0.9 }, e: [0.9, 0.1, 0] });
+  const ids = (await rt.db.all("voiceprints", "case_id=?", [record.id])).map(
+    (p) => [p.label, p.id] as const,
+  );
+  answers[0].match!.id = ids.find(([label]) => label === "voice-1")![1];
+  const restored = await (await clip(a, rotated.segments[0].id)).json();
+  assert.deepEqual(restored, {
+    speaker: "voice:voice-1",
+    created: false,
+    score: 0.9,
+  });
+  await a.json(base + "/speakers", "PATCH", {
+    speaker: "voice:voice-1",
+    label: "Hakim Ketua",
+  });
+  const detail = await a.json(base);
+  const keys = Object.fromEntries(
+    detail.segments.map((s: { id: string; speaker: string }) => [
+      s.id,
+      s.speaker,
+    ]),
+  );
+  assert.equal(keys[saved.segments[0].id], "voice:voice-1");
+  assert.equal(keys[saved.segments[1].id], "voice:voice-2");
+  assert.equal(keys[later.segments[0].id], "voice:voice-1");
+  assert.equal(keys[rotated.segments[0].id], "voice:voice-1");
+  assert.equal(detail.case.speakers["voice:voice-1"], "Hakim Ketua");
+  const merged = await rt.db.one("voiceprints", "label=? AND case_id=?", [
+    "voice-1",
+    record.id,
+  ]);
+  assert.equal(merged!.samples, 2);
+  assert.ok(Math.abs(Math.hypot(...merged!.embedding) - 1) < 1e-4);
+  // Biometric voiceprints stay out of portable archives and other accounts.
+  const archive = new Uint8Array(
+    await (await a.call(base + "/export.jude")).arrayBuffer(),
+  );
+  assert.equal(
+    JSON.stringify(unpack(archive)).includes("fake-spectral"),
+    false,
+  );
+  const b = client();
+  await b.json("/auth/register", "POST", {
+    email: `${randomUUID()}@example.test`,
+    password: "test-password-123",
+  });
+  assert.equal((await clip(b, saved.segments[0].id)).status, 404);
+  assert.deepEqual(await a.json(base + "/voiceprints", "DELETE"), {
+    removed: 2,
+  });
+  assert.equal(
+    (await a.json(base)).segments.find(
+      (s: { id: string }) => s.id === saved.segments[0].id,
+    ).speaker,
+    "voice:voice-1",
+  );
 });

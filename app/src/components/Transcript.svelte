@@ -2,6 +2,7 @@
   import { AudioLines, ChevronRight, RefreshCw } from "@lucide/svelte";
   import {
     userFacingError,
+    speakerName,
     timestamp,
     type Finding,
     type Segment,
@@ -93,7 +94,7 @@
     <select value={speaker} onchange={(e) => (speaker = e.currentTarget.value)}>
       <option value="">All speakers</option>
       {#each speakerIds as id (id)}<option value={id}>
-          {speakers[id] ?? id}
+          {speakerName(id, speakers)}
         </option>{/each}
     </select>
   </label>
@@ -129,7 +130,7 @@
         findings.find((f) => f.segment_id === s.id)}
       <article class={styles.segment}>
         <div>
-          <strong>{speakers[s.speaker] ?? s.speaker}</strong>
+          <strong>{speakerName(s.speaker, speakers)}</strong>
           <time>
             {s.origin === "imported" && !s.start && !s.end
               ? "Time not supplied"

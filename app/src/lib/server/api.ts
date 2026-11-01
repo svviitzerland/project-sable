@@ -79,6 +79,12 @@ import {
   endAudio,
   expireAudio,
 } from "./audio";
+import {
+  forgetVoices,
+  identifySegment,
+  MAX_CLIP_BYTES,
+  voiceConfigured,
+} from "./voice";
 import { seedCase, simulate } from "./synthetic";
 import simulation from "./simulation.json" with { type: "json" };
 const json = (data: unknown, status = 200, headers: HeadersInit = {}) =>
@@ -239,6 +245,12 @@ export async function handleApi(
             note: rt.config.speechKey
               ? "Speechmatics configured."
               : "Add SPEECHMATICS_API_KEY to enable microphone and prepared audio.",
+          },
+          voice: {
+            configured: voiceConfigured(rt),
+            note: voiceConfigured(rt)
+              ? "Voice service configured; recurring voices keep one label."
+              : "Speaker labels last for one recording connection.",
           },
           legal: {
             configured: !!rt.config.pasalKey,
@@ -506,6 +518,8 @@ export async function handleApi(
           note: "Discovery metadata only. Read and verify the linked legal text and its applicability before relying on it.",
         });
       }
+      if (action === "voiceprints" && parts.length === 3 && method === "DELETE")
+        return send(await forgetVoices(rt, record));
       if (action === "transcripts") {
         if (parts.length === 3 && method === "POST") {
           await rate(rt, `transcript:${user.id}`, 30);
@@ -547,6 +561,17 @@ export async function handleApi(
           if (created) await enqueue(rt, segment.id);
           await publish(rt, caseId, { type: "transcript" });
           return send(segmentOutput.strip().parse(segment));
+        }
+        if (parts[4] === "voice" && method === "POST") {
+          await rate(rt, `voice:${user.id}`, 120);
+          return send(
+            await identifySegment(
+              rt,
+              record,
+              parts[3],
+              await boundedBody(request, MAX_CLIP_BYTES),
+            ),
+          );
         }
         if (parts[4] === "retry" && method === "POST") {
           await rate(rt, `retry:${user.id}`, 15);

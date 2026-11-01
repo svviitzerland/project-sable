@@ -18,6 +18,8 @@ export const variables = defineEnvVars({
   SPEECHMATICS_API_KEY: privateValue,
   SPEECHMATICS_URL: privateValue,
   PASAL_API_KEY: privateValue,
+  VOICE_API_URL: privateValue,
+  VOICE_API_TOKEN: privateValue,
   QSTASH_URL: privateValue,
   QSTASH_TOKEN: privateValue,
   QSTASH_CURRENT_SIGNING_KEY: privateValue,

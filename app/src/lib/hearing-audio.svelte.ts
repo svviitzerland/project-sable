@@ -1,6 +1,7 @@
 import { untrack } from "svelte";
 import { api } from "./workspace-api";
 import { SpeechConnection, type SpeechCredentials } from "./speech-connection";
+import { createVoiceTape, createVoiceUploader } from "./voice-tape";
 
 type AudioSession = {
   ws?: SpeechConnection;
@@ -132,6 +133,8 @@ export function createHearingAudio(
         source = context.createMediaStreamSource(stream);
       }
       s.source = source;
+      const tape = createVoiceTape(context.sampleRate),
+        identify = createVoiceUploader(caseId()!);
       const sendChunk = (data: ArrayBuffer) => {
         if (!active()) return;
         if (s.buffering) {
@@ -177,7 +180,17 @@ export function createHearingAudio(
           );
           return;
         }
-        const ws = new SpeechConnection(currentCaseId, credentials, onPartial);
+        const ws = new SpeechConnection(
+          currentCaseId,
+          credentials,
+          onPartial,
+          (turns) => {
+            for (const turn of turns) {
+              const clip = tape.clip(turn.start, turn.end);
+              if (clip) identify(turn.id, clip);
+            }
+          },
+        );
         s.ws = ws;
         clearTimeout(s.timeout);
         s.timeout = window.setTimeout(
@@ -209,11 +222,15 @@ export function createHearingAudio(
               const first = !s.node;
               if (first) {
                 s.baseOffset = message.start_offset || 0;
+                tape.setOrigin(s.baseOffset);
                 const node = new AudioWorkletNode(context, "jude-pcm");
                 s.node = node;
                 node.port.onmessage = (event) => {
                   if (event.data?.type === "flushed") s.finish?.();
-                  else sendChunk(event.data);
+                  else {
+                    tape.push(event.data);
+                    sendChunk(event.data);
+                  }
                 };
                 const silence = context.createGain();
                 silence.gain.value = 0;

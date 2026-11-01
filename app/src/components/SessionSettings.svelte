@@ -1,6 +1,6 @@
 <script lang="ts">
   import Skeleton from "./Skeleton.svelte";
-  import { api, type CaseDetail } from "../lib/workspace-api";
+  import { api, speakerName, type CaseDetail } from "../lib/workspace-api";
   import styles from "./workspace.module.css";
 
   let {
@@ -14,6 +14,7 @@
   } = $props();
 
   let speakers = $derived([...new Set(detail.segments.map((s) => s.speaker))]);
+  let voices = $derived(speakers.some((s) => s.startsWith("voice:")));
 </script>
 
 <div class={styles.settingsPage}>
@@ -37,7 +38,7 @@
           }}
         >
           <label>
-            {s}
+            {speakerName(s, {})}
             <input
               name="label"
               value={detail.case.speakers[s] ?? ""}
@@ -50,6 +51,22 @@
         </form>{/each}{:else}<p class={styles.muted}>
         Speakers appear after you add a transcript.
       </p>{/if}
+    {#if voices}
+      <p class={styles.muted}>
+        Recurring voices keep one label across recordings and hearings in this
+        case. A voice match is a suggestion; confirm who is speaking.
+      </p>
+      <button
+        class={styles.secondary}
+        disabled={busy}
+        onclick={() =>
+          void run(() =>
+            api(`/cases/${detail.case.id}/voiceprints`, { method: "DELETE" }),
+          )}
+      >
+        Forget voiceprints
+      </button>
+    {/if}
   </section>
 </div>
 

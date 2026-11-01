@@ -6,6 +6,7 @@ export type SpeechCredentials = {
   start_offset: number;
   rotate_after: number;
 };
+export type SavedTurn = { id: string; start: number; end: number };
 /** Browser-to-provider stream; only finalized, ordered batches enter the case API. */
 export class SpeechConnection {
   private socket: WebSocket;
@@ -23,6 +24,7 @@ export class SpeechConnection {
     private caseId: string,
     private credentials: SpeechCredentials,
     private partial: (text: string) => void,
+    private saved: (turns: SavedTurn[]) => void = () => undefined,
   ) {
     const url = new URL(credentials.url);
     url.searchParams.set("jwt", credentials.token);
@@ -54,11 +56,12 @@ export class SpeechConnection {
             let last: unknown;
             for (let attempt = 0; attempt < 3; attempt++)
               try {
-                await api(
+                const result = await api<{ segments?: SavedTurn[] }>(
                   `/cases/${caseId}/audio-sessions/${credentials.id}/transcripts`,
                   { method: "POST", body: JSON.stringify(batch) },
                 );
                 this.partial("");
+                if (result?.segments?.length) this.saved(result.segments);
                 return;
               } catch (error) {
                 last = error;

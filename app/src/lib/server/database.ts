@@ -33,6 +33,7 @@ const jsonColumns = new Set([
   "conditions",
   "payload",
   "parts",
+  "aliases",
 ]);
 const boolColumns = new Set(["demo", "synthetic", "reviewed", "confirmed"]);
 const defaults: Record<keyof Tables, () => Record<string, unknown>> = {
@@ -121,6 +122,12 @@ const defaults: Record<keyof Tables, () => Record<string, unknown>> = {
     created_at: seconds(),
   }),
   file_transfers: () => ({ id: uid(), kind: "upload", parts: {} }),
+  voiceprints: () => ({
+    id: uid(),
+    samples: 1,
+    aliases: [],
+    created_at: now(),
+  }),
   audio_sessions: () => ({
     id: uid(),
     offset: 0,
@@ -309,6 +316,9 @@ export async function connectDatabase(config: Settings) {
   connection.exec(localSchema);
   connection.exec(
     `CREATE TABLE IF NOT EXISTS jude_audio_sessions(id VARCHAR(36) PRIMARY KEY, case_id VARCHAR(36) NOT NULL REFERENCES jude_cases(id) ON DELETE CASCADE, hearing_id VARCHAR(36) NOT NULL REFERENCES jude_hearings(id) ON DELETE CASCADE, session_hash VARCHAR(64) NOT NULL REFERENCES jude_sessions(token_hash) ON DELETE CASCADE, offset FLOAT NOT NULL, last_sequence INTEGER NOT NULL, expires FLOAT NOT NULL, status VARCHAR(20) NOT NULL)`,
+  );
+  connection.exec(
+    `CREATE TABLE IF NOT EXISTS jude_voiceprints(id VARCHAR(36) PRIMARY KEY, case_id VARCHAR(36) NOT NULL REFERENCES jude_cases(id) ON DELETE CASCADE, label VARCHAR(40) NOT NULL, embedding JSON NOT NULL, samples INTEGER NOT NULL, model VARCHAR(200) NOT NULL, aliases JSON NOT NULL, created_at VARCHAR(40) NOT NULL, UNIQUE(case_id, label)); CREATE INDEX IF NOT EXISTS ix_jude_voiceprints_case_id ON jude_voiceprints(case_id);`,
   );
   const db = new Database(connection, false, new Mutex());
   // One local development process owns these jobs. Hosted cold starts never reset work.

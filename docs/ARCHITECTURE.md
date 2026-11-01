@@ -22,6 +22,12 @@ Audio rotates after 210 seconds. The worklet flushes the old connection, capture
 
 Uploads above 3 MB use authenticated 2 MB parts with size and SHA-256 checks. Large JSON/export/original responses use five-minute signed private Storage links, backed by ten-minute temporary objects. Recovery removes expired transfer objects, including orphaned parts from a failed metadata commit.
 
+## Voice service
+
+Speechmatics speaker labels last for one connection, so saved turns are keyed `<session>:<label>`. When `VOICE_API_URL` and `VOICE_API_TOKEN` are set, the recording browser keeps the last two minutes of captured PCM in memory. After a batch saves, it cuts each finalized turn of at least 1.6 s (capped at 25 s), resamples it to 16 kHz WAV and posts it to `/api/v1/cases/:id/transcripts/:segment/voice`. The server checks ownership and origin, then calls the Python service's `/v1/identify` with the case's voiceprints for the active model.
+
+A match above the threshold updates that voiceprint's running mean; otherwise a new `voice-N` print is created. The first identification of a provider label claims all its turns and re-keys them to `voice:voice-N`; later saves of that label are keyed directly. Disagreements move only the statement that was heard. User labels attach to `voice:` keys, so one name survives rotations and hearings. Voiceprints live in `jude_voiceprints`, are excluded from `.jude` archives and can be deleted per case. The Python service is stateless and never stores audio. Clip upload failures are ignored because the transcript is already saved.
+
 ## Hearings, archives and conversations
 
 Hearing import is preview/confirm with deterministic native parsers or explicitly requested AI formatting. Imported words must occur in the upload; conversion cannot decode scans or invent speaker identities/timestamps. The original is saved as a private case document. `.jude` version 1 remains a bounded ZIP manifest plus originals, with checksums, provenance and reference checks. Import creates new IDs and resets imported finding/link review state. Practice and assistant history have separate JSON exports.

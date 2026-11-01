@@ -2,7 +2,19 @@
 
 An evidence-grounded workspace for hearing preparation, testimony review, and courtroom practice. The existing landing page is at `/`; the authenticated product is at `/workspace`.
 
-Jude now uses **Svelte 5, SvelteKit 3, and TypeScript for both frontend and backend**. One Vercel project serves the UI and `/api/v1` API. There is no Python server or proxy to deploy. The complete application lives in `app/`. Set the Vercel project's Root Directory to `app`.
+Jude uses **Svelte 5, SvelteKit 3, and TypeScript for both frontend and backend**. One Vercel project serves the UI and `/api/v1` API. The complete application lives in `app/`; set the Vercel project's Root Directory to `app`.
+
+An optional **Python voice service** in `voice/` (FastAPI, open-source pyannote models, Docker) keeps one label per recurring voice across recording connections and hearings. Jude works without it.
+
+## Repository layout
+
+| Path | What it is | Deploys to |
+|---|---|---|
+| `app/` | SvelteKit app: landing page, workspace, `/api/v1`, migrations, tests | Vercel |
+| `voice/` | Python voice API: voiceprints, identification, offline diarization | Any Docker host (optional) |
+| `compose.yaml` | Local Docker services (`voice`) | — |
+| `docs/` | Product spec, architecture, deployment, format, limitations | — |
+| `examples/` | Fictional sample case pack | — |
 
 ## Run locally
 
@@ -15,11 +27,13 @@ cp .env.example .env.local
 pnpm dev
 ```
 
+To enable voice labels locally, run `cp voice/.env.example voice/.env`, set `VOICE_API_TOKEN`, start `docker compose up --build voice`, and add `VOICE_API_URL=http://localhost:8000` plus the same token to `app/.env.local`. See [voice/README.md](voice/README.md).
+
 Open http://localhost:3000/workspace. Register an account or open a clearly labeled synthetic case. Local SQLite and private original files persist in `app/.data/`. Run one local process; hosted operation uses shared PostgreSQL coordination instead. To continue using an existing local database and originals, set `JUDE_DATA_DIR` to the absolute path of the previous `be/.data` directory. Account hashes, sessions, case tables, and `.jude` version 1 remain compatible.
 
 ## Deploy
 
-Import the repository in Vercel, select **SvelteKit**, Root Directory **`app`**, and Node **24.x**. Apply the Supabase migrations and add the private environment variables described in [DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md). Existing databases need the new `006_typescript_audio.sql` migration after 001–005.
+Import the repository in Vercel, select **SvelteKit**, Root Directory **`app`**, and Node **24.x**. Apply the Supabase migrations and add the private environment variables described in [DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md). Existing databases need `006_typescript_audio.sql` and `007_voiceprints.sql` after 001–005. Host the optional voice container separately and set an HTTPS `VOICE_API_URL`.
 
 Supabase PostgreSQL/private Storage and QStash remain required hosted services. OpenRouter, Speechmatics, and Pasal.id enable their respective features. Recovery can run from QStash's scheduler, so this repository does not impose a per-minute Vercel Cron requirement on Hobby projects. Configure the schedule after deployment using the documented script. No deployment or live-provider verification has been performed without credentials.
 
@@ -49,6 +63,14 @@ pnpm test
 pnpm build
 pnpm check:bundle
 pnpm evaluate --predictions evaluation/predictions.fixture.json --fixture --output /tmp/jude-evaluation.json
+```
+
+Voice service:
+
+```bash
+cd voice
+uv run pytest
+uv run ruff check . && uv run ruff format --check .
 ```
 
 With the app running in another terminal:

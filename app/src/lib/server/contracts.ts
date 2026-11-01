@@ -253,6 +253,16 @@ export interface Tables {
     parts: Record<string, string>;
     expires: number;
   };
+  voiceprints: {
+    id: string;
+    case_id: string;
+    label: string;
+    embedding: number[];
+    samples: number;
+    model: string;
+    aliases: string[];
+    created_at: string;
+  };
   audio_sessions: {
     id: string;
     case_id: string;

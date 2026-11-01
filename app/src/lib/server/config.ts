@@ -23,6 +23,8 @@ export function settings(
     ]) {
       if (!env[name]) throw new Error(`Missing deployment setting: ${name}`);
     }
+    if (env.VOICE_API_URL && !env.VOICE_API_URL.startsWith("https://"))
+      throw new Error("Hosted VOICE_API_URL must use HTTPS.");
     if (
       !appUrl.startsWith("https://") ||
       !env.SUPABASE_URL?.startsWith("https://")
@@ -46,6 +48,8 @@ export function settings(
     speechKey: env.SPEECHMATICS_API_KEY || "",
     speechUrl: env.SPEECHMATICS_URL || "wss://eu.rt.speechmatics.com/v2",
     pasalKey: env.PASAL_API_KEY || "",
+    voiceUrl: (env.VOICE_API_URL || "").replace(/\/$/, ""),
+    voiceToken: env.VOICE_API_TOKEN || "",
     qstashUrl: (env.QSTASH_URL || "https://qstash.upstash.io").replace(
       /\/$/,
       "",

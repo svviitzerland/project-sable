@@ -207,6 +207,12 @@ export async function api<T>(
     );
   return data as T;
 }
+/** Display name: the user's label, else "Voice N" for recurring voices, else the raw key. */
+export function speakerName(key: string, labels: Record<string, string>) {
+  if (labels[key]) return labels[key];
+  const voice = /^voice:voice-(\d+)$/.exec(key);
+  return voice ? `Voice ${voice[1]}` : key;
+}
 export function timestamp(value: number) {
   return new Date(value * 1000).toISOString().slice(11, 19);
 }

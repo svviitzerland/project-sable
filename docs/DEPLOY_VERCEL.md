@@ -4,7 +4,7 @@ The frontend and TypeScript API now share **one Vercel deployment**, rooted at *
 
 ## 1. Prepare Supabase
 
-Use a dedicated Supabase project for each environment. Run `app/migrations/001_schema.sql` through `006_typescript_audio.sql`, in numeric order, as the database owner. On an existing database already using 001–005, apply only 006. Back up existing data before applying schema changes.
+Use a dedicated Supabase project for each environment. Run `app/migrations/001_schema.sql` through `007_voiceprints.sql`, in numeric order, as the database owner. On an existing database already using 001–005, apply 006 and 007; on one already at 006, apply only 007. Back up existing data before applying schema changes.
 
 Migrations preserve existing tables and scrypt account hashes. They enable RLS and deny direct browser-role access. Migration 002 installs pgvector in `extensions`, maintains 1536-dimensional vectors, and creates the private `jude-documents` bucket; 005 permits private temporary transfers up to 64 MB. Migration 006 adds authenticated browser audio sessions. If pgvector already lives in another schema, reconcile that before applying 002.
 
@@ -57,7 +57,11 @@ OPENROUTER_MODEL=YOUR_STRICT_JSON_SCHEMA_MODEL_ID
 OPENROUTER_EMBEDDING_MODEL=openai/text-embedding-3-small
 SPEECHMATICS_API_KEY=YOUR_SPEECHMATICS_KEY
 PASAL_API_KEY=YOUR_PASAL_KEY
+VOICE_API_URL=https://YOUR_VOICE_HOST
+VOICE_API_TOKEN=YOUR_LONG_SHARED_SECRET
 ```
+
+The voice service is optional and is not a Vercel function. Build `voice/Dockerfile` and run it on a Docker host behind TLS with the same `VOICE_API_TOKEN`; keep its `/models` cache volume. Hosted settings reject a non-HTTPS `VOICE_API_URL`. See [voice/README.md](../voice/README.md).
 
 The embedding model must support 1536-dimensional output. The default Speechmatics region is EU; `SPEECHMATICS_URL` defaults to `wss://eu.rt.speechmatics.com/v2`. The server mints short-lived EU realtime credentials. `QSTASH_URL` normally stays at its default. `ALLOWED_ORIGINS` is optional for explicitly trusted additional origins; ordinary same-origin use needs no CORS configuration.
 

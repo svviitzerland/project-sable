@@ -1,0 +1,19 @@
+# Local services next to `cd app && pnpm dev`.
+#   cp voice/.env.example voice/.env   # set VOICE_API_TOKEN (and HF_TOKEN for diarization)
+#   docker compose up --build voice
+# Then set VOICE_API_URL=http://localhost:8000 and the same VOICE_API_TOKEN in app/.env.local.
+services:
+  voice:
+    build:
+      context: ./voice
+      args:
+        EXTRAS: ml
+    env_file: ./voice/.env
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - voice-models:/models
+    restart: unless-stopped
+
+volumes:
+  voice-models:
