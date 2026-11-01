@@ -1,3 +1,4 @@
+import { aiConfigured, embeddingsConfigured } from "./config";
 import { z } from "zod";
 import {
   citationSchema,
@@ -134,7 +135,7 @@ export async function buildLinks(rt: Runtime, caseId: string) {
     "ORDER BY id LIMIT 300",
   );
   let notice = "";
-  if (rt.config.openrouterKey) {
+  if (embeddingsConfigured(rt.config)) {
     const missing = chunks.filter(
       (c) => !c.embedding || c.embedding_model !== rt.config.embeddingModel,
     );
@@ -166,7 +167,7 @@ export async function buildLinks(rt: Runtime, caseId: string) {
     if (c.embedding_model !== rt.config.embeddingModel) c.embedding = null;
   const pairs = candidatePairs(chunks.slice(0, 120));
   let proposed: Partial<Link>[] = [];
-  if (pairs.length && rt.config.openrouterKey && rt.config.model)
+  if (pairs.length && aiConfigured(rt.config))
     try {
       const response = await structured(
         rt,
@@ -298,7 +299,7 @@ export async function askEvidence(rt: Runtime, caseId: string, query: string) {
   if (!sources.length)
     result.notice =
       "No relevant passages found. Try different wording or add evidence.";
-  else if (!rt.config.openrouterKey || !rt.config.model)
+  else if (!aiConfigured(rt.config))
     result.notice =
       "AI answers are unavailable. You can inspect the relevant passages below.";
   else {

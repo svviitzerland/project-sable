@@ -1,3 +1,4 @@
+import { aiConfigured, embeddingsConfigured } from "./config";
 import { z } from "zod";
 import { setTimeout as delay } from "node:timers/promises";
 import type { Runtime } from "./runtime";
@@ -234,11 +235,10 @@ export async function handleApi(
             : "Local SQLite",
           hosted_uploads: rt.config.hosted,
           analysis: {
-            configured: !!rt.config.openrouterKey && !!rt.config.model,
-            note:
-              rt.config.openrouterKey && rt.config.model
-                ? "OpenRouter configured; live provider verification required."
-                : "Add OPENROUTER_API_KEY and OPENROUTER_MODEL to the server environment.",
+            configured: aiConfigured(rt.config),
+            note: aiConfigured(rt.config)
+              ? "OpenRouter configured; live provider verification required."
+              : "Add OPENROUTER_API_KEY and OPENROUTER_MODEL to the server environment.",
           },
           speech: {
             configured: !!rt.config.speechKey,
@@ -257,7 +257,7 @@ export async function handleApi(
             note: "Pasal.id discovery metadata and links only; no legal text.",
           },
           embeddings: {
-            configured: !!rt.config.openrouterKey,
+            configured: embeddingsConfigured(rt.config),
             note: "Semantic + keyword retrieval when embeddings are available. Keyword search otherwise.",
           },
         });
@@ -588,8 +588,7 @@ export async function handleApi(
             "Only failed or interrupted analysis can be retried.",
           );
           assert(
-            (rt.config.openrouterKey && rt.config.model) ||
-              segment.origin === "simulation",
+            aiConfigured(rt.config) || segment.origin === "simulation",
             503,
             "Connect OpenRouter before retrying analysis.",
           );
@@ -721,7 +720,7 @@ export async function handleApi(
         if (parts[4] === "analyze" && method === "POST") {
           await rate(rt, `analyze-hearing:${user.id}`, 10);
           assert(
-            rt.config.openrouterKey && rt.config.model,
+            aiConfigured(rt.config),
             503,
             "Connect an OpenRouter analysis model to examine this hearing. Your transcript is saved.",
           );

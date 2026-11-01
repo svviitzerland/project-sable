@@ -1,3 +1,5 @@
+import { exactSourceQuote } from "./quotes";
+import { aiConfigured } from "./config";
 import { z } from "zod";
 import {
   citationSchema,
@@ -91,18 +93,6 @@ class ReplyCitationError extends ProviderError {
   }
 }
 
-function exactSourceQuote(text: string, quote: string): string | undefined {
-  if (!quote.trim()) return undefined;
-  if (text.includes(quote)) return quote;
-  // PDF/DOCX extraction may insert line breaks or nonbreaking spaces. Only
-  // whitespace may differ: preserve all words, numbers, case and punctuation.
-  const tokens = quote.trim().split(/\s+/u);
-  const pattern = tokens
-    .map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-    .join("\\s+");
-  return new RegExp(pattern, "u").exec(text)?.[0];
-}
-
 export function verifyReply(
   citations: Citation[],
   sources: ContextSource[],
@@ -183,7 +173,7 @@ export async function createDialogue(
       422,
       "Review the trial conditions before starting practice.",
     );
-    const ai = !!rt.config.openrouterKey && !!rt.config.model;
+    const ai = aiConfigured(rt.config);
     assert(
       body.kind !== "practice" || body.mode !== "ai" || ai,
       503,
@@ -226,7 +216,7 @@ export async function proposeConditions(
   body: z.output<typeof conditionsSchema>,
 ) {
   assert(
-    rt.config.openrouterKey && rt.config.model,
+    aiConfigured(rt.config),
     503,
     "Connect an OpenRouter model for suggested conditions, or edit the setup manually.",
   );
@@ -319,8 +309,7 @@ export async function sendDialogue(
         notice +=
           " Legal results are discovery metadata; verify the original legal text.";
       } else
-        notice +=
-          " Legal search is unavailable. No legal text was retrieved.";
+        notice += " Legal search is unavailable. No legal text was retrieved.";
     }
     const payload = {
         case_context: packet.context,
@@ -349,10 +338,7 @@ export async function sendDialogue(
       });
       notice =
         "Guided drill · scripted prompts; no AI assessment. Practice does not change the case record.";
-    } else if (
-      dialogue.kind === "assistant" &&
-      (!rt.config.openrouterKey || !rt.config.model)
-    ) {
+    } else if (dialogue.kind === "assistant" && !aiConfigured(rt.config)) {
       responses.push({
         speaker: "Case assistant",
         text: "AI replies are unavailable. Here are relevant case excerpts to inspect; this is a source search, not an answer or legal interpretation.",

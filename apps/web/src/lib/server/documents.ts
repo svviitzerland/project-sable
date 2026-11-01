@@ -1,3 +1,4 @@
+import { embeddingsConfigured } from "./config";
 import { basename, extname } from "node:path";
 import { unzipSync } from "fflate";
 import { XMLParser } from "fast-xml-parser";
@@ -206,7 +207,7 @@ export async function ingest(
     const { pages, mime } = extracted || (await extractPages(name, data)),
       slices = chunkPages(pages);
     let vectors: number[][] | null = null;
-    if (rt.config.openrouterKey) {
+    if (embeddingsConfigured(rt.config)) {
       try {
         vectors = [];
         for (let i = 0; i < slices.length; i += 24)

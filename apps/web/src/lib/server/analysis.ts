@@ -1,8 +1,9 @@
+import { aiConfigured } from "./config";
+import { z } from "zod";
 import type { Runtime } from "./runtime";
 import { publish, safeError } from "./runtime";
 import {
   conclusionSchema,
-  claimSchema,
   assessmentSchema,
   type Conclusion,
   type Source,
@@ -12,6 +13,7 @@ import {
 import { ProviderError } from "./errors";
 import { structured, legalSearch } from "./providers";
 import { retrieve } from "./retrieval";
+import { exactSourceQuote } from "./quotes";
 import simulation from "./simulation.json" with { type: "json" };
 export function validateCitations(
   conclusion: Conclusion,
@@ -45,6 +47,29 @@ export function validateCitations(
     !conclusion.citations.length
   )
     throw new ProviderError("A substantive finding requires source citations.");
+}
+/**
+ * Keep only citations whose quotes occur in their sources (whitespace-tolerant, mapped
+ * back to the exact source text), then apply the status rules. Invented quotes are never
+ * shown; a finding is withheld only when no verified citation supports its status.
+ */
+export function verifiedConclusion(
+  conclusion: Conclusion,
+  sources: Pick<Source, "id" | "text">[],
+): Conclusion {
+  const known = new Map(sources.map((s) => [s.id, s.text]));
+  const citations = conclusion.citations.flatMap((c) => {
+    const text = known.get(c.chunk_id);
+    const quote = text ? exactSourceQuote(text, c.quote) : undefined;
+    return quote ? [{ ...c, quote }] : [];
+  });
+  if (conclusion.citations.length && !citations.length)
+    throw new ProviderError(
+      "Citation verification failed. The finding was withheld because a quoted passage did not match the retrieved evidence.",
+    );
+  const verified = { ...conclusion, citations };
+  validateCitations(verified, sources);
+  return verified;
 }
 export async function analysisState(
   rt: Runtime,
@@ -117,7 +142,7 @@ async function runInvestigation(
       };
       mode = "simulation";
     } else {
-      if (!rt.config.openrouterKey || !rt.config.model) {
+      if (!aiConfigured(rt.config)) {
         await analysisState(
           rt,
           id,
@@ -126,68 +151,97 @@ async function runInvestigation(
         );
         return;
       }
-      await analysisState(rt, id, "extracting");
-      const claim = await structured(
-        rt,
-        "Extract a single meaningful, checkable assertion. Mark questions, fragments and procedural statements not checkable. Do not expand or invent claims. legal_query is empty unless a legal issue is explicitly raised; use only generic legal keywords, no personal data.",
-        { transcript: segment.text, preceding_context: context },
-        claimSchema,
-      );
-      if (!claim.checkable) {
+      // Questions (usually from the bench or counsel) assert nothing; skip them for free.
+      if (/\?\s*$/.test(segment.text.trim())) {
         await analysisState(rt, id, "skipped");
         return;
       }
+      // Cheap path first: retrieval runs in the database, then one default-tier call both
+      // screens the statement and compares it with the sources. Only a potential
+      // inconsistency pays for the independent review model.
       await analysisState(rt, id, "retrieving");
       const { results: sources, mode: method } = await retrieve(
         rt,
         segment.case_id,
-        claim.search_query,
+        [...context.slice(-2).map((c) => c.text), segment.text].join(" "),
         8,
         hearing?.source_document_id,
       );
+      if (!sources.length) {
+        await analysisState(
+          rt,
+          id,
+          "skipped",
+          "No related passage was found in the case documents.",
+        );
+        return;
+      }
+      const packet = {
+        testimony: segment.text,
+        speaker: segment.speaker,
+        preceding_context: context,
+        sources,
+      };
+      await analysisState(rt, id, "analyzing");
+      const screen = await structured(
+        rt,
+        "Evidence screen. First decide whether the testimony makes a checkable factual assertion; questions, greetings, procedure and fragments are not checkable (use preceding_context to read short answers). If checkable, compare it with the sources and return a calibrated finding: supported only with a supporting quote, potential_inconsistency only with a conflicting quote, context_needed when sources are related but do not settle it, insufficient_evidence when they say nothing. A difference in wording, a paraphrase or a possible transcription error is not a contradiction. Give a concrete verification step and one neutral follow-up question.",
+        packet,
+        conclusionSchema.extend({ checkable: z.boolean() }),
+      );
+      if (!screen.checkable) {
+        await analysisState(rt, id, "skipped");
+        return;
+      }
+      conclusion = conclusionSchema.parse(
+        Object.fromEntries(
+          Object.entries(screen).filter(([key]) => key !== "checkable"),
+        ),
+      );
+      conclusion = verifiedConclusion(conclusion, sources);
       let legalNote = "";
-      if (claim.legal_query && rt.config.pasalKey)
+      if (conclusion.status !== "insufficient_evidence" && rt.config.pasalKey)
         try {
-          legal = await legalSearch(rt, claim.legal_query);
+          legal = await legalSearch(rt, conclusion.title.slice(0, 160));
         } catch {
           legalNote =
             "Legal discovery was unavailable; no legal reference was inferred.";
         }
-      const packet = {
-        testimony: segment.text,
-        context,
-        claim: claim.assertion,
-        sources,
-        legal_discovery_metadata_only: legal,
-      };
-      await analysisState(rt, id, "analyzing");
-      const analyst = await structured(
-        rt,
-        "Evidence Analyst: compare the assertion to source material. Identify support, conflicts and context without deciding credibility.",
-        packet,
-        assessmentSchema,
-      );
-      await analysisState(rt, id, "reviewing");
-      const reviewer = await structured(
-        rt,
-        "Adversarial Reviewer: independently examine the original assertion and sources for alternative explanations and missing context. You do not receive the analyst response.",
-        packet,
-        assessmentSchema,
-      );
-      await analysisState(rt, id, "synthesizing");
-      conclusion = await structured(
-        rt,
-        "Evidence Synthesizer: weigh the two assessments. Use calibrated status, exact citations, a concrete verification step, and a suggested question. If evidence is absent use insufficient_evidence. A difference alone does not establish contradiction.",
-        { ...packet, analyst, reviewer },
-        conclusionSchema,
-      );
-      validateCitations(conclusion, sources);
       review = {
-        ...reviewer,
-        analyst_summary: analyst.summary,
+        summary: conclusion.explanation,
+        alternative_explanations: [conclusion.uncertainty].filter(Boolean),
+        missing_context: [],
         retrieval: method,
         legal_note: legalNote,
+        reviewed_by: "screen",
       };
+      if (conclusion.status === "potential_inconsistency") {
+        await analysisState(rt, id, "reviewing");
+        const reviewer = await structured(
+          rt,
+          "Independent reviewer. You have not seen any earlier assessment. Decide whether the sources genuinely conflict with the testimony, or whether the difference can be explained by paraphrase, a different event or time, missing context, or a transcription error. List alternative explanations and missing context. Do not judge credibility.",
+          packet,
+          assessmentSchema.extend({ conflict_confirmed: z.boolean() }),
+          { tier: "review" },
+        );
+        if (!reviewer.conflict_confirmed)
+          conclusion = {
+            ...conclusion,
+            status: "context_needed",
+            uncertainty: [conclusion.uncertainty, reviewer.summary]
+              .filter(Boolean)
+              .join(" "),
+          };
+        review = {
+          ...review,
+          summary: reviewer.summary,
+          alternative_explanations: reviewer.alternative_explanations,
+          missing_context: reviewer.missing_context,
+          screen_summary: conclusion.explanation,
+          reviewed_by: "independent",
+          conflict_confirmed: reviewer.conflict_confirmed,
+        };
+      }
     }
     await rt.db.insert("findings", {
       case_id: segment.case_id,

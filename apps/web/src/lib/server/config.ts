@@ -41,6 +41,20 @@ export function settings(
     supabaseUrl: (env.SUPABASE_URL || "").replace(/\/$/, ""),
     storageKey: env.SUPABASE_SERVICE_ROLE_KEY || "",
     bucket: env.SUPABASE_STORAGE_BUCKET || "jude-documents",
+    // "bedrock" (AWS) or "openrouter"; inferred from the configured credentials.
+    aiProvider: (env.AI_PROVIDER ||
+      (env.BEDROCK_MODEL
+        ? "bedrock"
+        : env.OPENROUTER_API_KEY
+          ? "openrouter"
+          : "")) as "bedrock" | "openrouter" | "",
+    awsRegion: env.AWS_REGION || "ap-southeast-1",
+    // Screening and drafting: cheap model kept in APAC regions. Review: a different family.
+    bedrockModel: env.BEDROCK_MODEL || "apac.amazon.nova-lite-v1:0",
+    bedrockReviewModel:
+      env.BEDROCK_REVIEW_MODEL ||
+      "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+    s3Bucket: env.S3_BUCKET || "",
     openrouterKey: env.OPENROUTER_API_KEY || "",
     model: env.OPENROUTER_MODEL || "",
     embeddingModel:
@@ -62,3 +76,9 @@ export function settings(
   };
 }
 export type Settings = ReturnType<typeof settings>;
+/** Whether structured AI calls can run with the configured provider. */
+export const aiConfigured = (config: Settings) =>
+  config.aiProvider === "bedrock" || (!!config.openrouterKey && !!config.model);
+/** Embeddings stay optional; retrieval falls back to keyword and full-text search. */
+export const embeddingsConfigured = (config: Settings) =>
+  config.aiProvider !== "bedrock" && !!config.openrouterKey;

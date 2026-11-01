@@ -394,40 +394,21 @@ test("hearing parsers, reviewed words and original document exclusion", async (t
   assert.equal(unstructured.method, "conversion_required");
   rt.config.openrouterKey = "fake";
   rt.config.model = "fake";
-  let sources: unknown[] = [];
-  rt.fetch = async (input, init) => {
+  let calls = 0;
+  rt.fetch = async (input) => {
     if (String(input).includes("/embeddings"))
       return new Response("", { status: 503 });
-    const payload = JSON.parse(String(init?.body)),
-      packet = JSON.parse(payload.messages[1].content);
-    if (packet.transcript)
-      return structuredResponse({
-        checkable: true,
-        assertion: "arrival",
-        search_query: "arrived eight",
-        legal_query: "",
-        reason: "time",
-      });
-    sources = packet.sources;
-    if (packet.analyst)
-      return structuredResponse({
-        status: "insufficient_evidence",
-        title: "No independent source",
-        explanation: "Missing",
-        uncertainty: "Unknown",
-        verification: "Check records",
-        question: "When?",
-        citations: [],
-      });
-    return structuredResponse({
-      summary: "No sources",
-      alternative_explanations: [],
-      missing_context: [],
-    });
+    calls++;
+    return new Response("", { status: 500 });
   };
+  // The hearing's own uploaded original is excluded, so nothing can corroborate it and
+  // no model call is spent.
   await investigate(rt, detail.segments[0].id);
-  assert.deepEqual(sources, []);
-  assert.equal((await a.json(base)).findings.length, 1);
+  assert.equal(calls, 0);
+  const skipped = await rt.db.one("segments", "id=?", [detail.segments[0].id]);
+  assert.equal(skipped?.analysis_state, "skipped");
+  assert.match(skipped?.analysis_error ?? "", /No related passage/);
+  assert.equal((await a.json(base)).findings.length, 0);
 });
 
 test("LLM hearing conversion rejects invented words and inferred speakers", async (t) => {
@@ -841,68 +822,100 @@ test("AI conversations reject forged citations and speaking for the user, atomic
   );
 });
 
-test("four-call analysis keeps reviewer independent and withholds hallucinated citations", async (t) => {
+test("analysis screens with one cheap call, reviews only inconsistencies independently on Bedrock, and withholds invented quotes", async (t) => {
   const { a, rt, record } = await fixture(t),
     base = `/cases/${record.id}`;
   await a.json(
     base + "/documents",
     "POST",
-    upload("source.txt", "The witness arrived at eight."),
+    upload("bap.txt", "Saksi menyatakan tiba di gudang pukul 22.30."),
   );
-  const hearing = await a.json(base + "/hearings", "POST", { title: "Trial" }),
-    segment = await rt.db.insert("segments", {
+  const hearing = await a.json(base + "/hearings", "POST", { title: "Sidang" });
+  const say = (text: string) =>
+    rt.db.insert("segments", {
       case_id: record.id,
       hearing_id: hearing.id,
-      text: "I arrived at nine.",
+      text,
     });
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
-  const packets: Record<string, unknown>[] = [];
-  rt.fetch = async (input, init) => {
-    if (String(input).includes("/embeddings"))
-      return new Response("", { status: 503 });
-    const packet = JSON.parse(
-      JSON.parse(String(init?.body)).messages[1].content,
-    );
-    packets.push(packet);
-    if (packet.transcript)
-      return structuredResponse({
-        checkable: true,
-        assertion: "Arrival time",
-        search_query: "witness arrived",
-        legal_query: "",
-        reason: "Check time",
-      });
-    if (packet.analyst)
-      return structuredResponse({
-        status: "potential_inconsistency",
-        title: "Different times",
-        explanation: "Check",
-        uncertainty: "Maybe",
-        verification: "Original",
-        question: "Which arrival?",
-        citations: [
-          {
-            chunk_id: packet.sources[0].id,
-            quote: "invented nine",
-            relation: "conflicts",
-          },
-        ],
-      });
-    return structuredResponse({
-      summary: "Independent assessment",
-      alternative_explanations: [],
-      missing_context: [],
-    });
+  rt.config.aiProvider = "bedrock";
+  const calls: {
+    model: string;
+    role: string;
+    payload: Record<string, unknown>;
+  }[] = [];
+  let screenQuote = "";
+  let confirmed = false;
+  rt.bedrock = {
+    send: (async (command: {
+      input: {
+        modelId: string;
+        system: { text: string }[];
+        messages: { content: { text: string }[] }[];
+      };
+    }) => {
+      const payload = JSON.parse(command.input.messages[0].content[0].text);
+      const role = command.input.system[0].text;
+      calls.push({ model: command.input.modelId, role, payload });
+      const sourceId = (payload.sources as { id: string }[])[0].id;
+      const input = role.includes("Independent reviewer")
+        ? {
+            summary:
+              "Times differ; check whether both refer to the same night.",
+            alternative_explanations: ["Different visit"],
+            missing_context: ["Gate log"],
+            conflict_confirmed: confirmed,
+          }
+        : {
+            checkable: true,
+            status: "potential_inconsistency",
+            title: "Waktu tiba berbeda",
+            explanation: "Keterangan sidang pukul 21.00; BAP pukul 22.30.",
+            uncertainty: "Bisa jadi kunjungan berbeda.",
+            verification: "Periksa BAP halaman 1.",
+            question: "Pukul berapa Saudara tiba?",
+            citations: [
+              { chunk_id: sourceId, quote: screenQuote, relation: "conflicts" },
+            ],
+          };
+      return {
+        output: {
+          message: { content: [{ toolUse: { name: "respond", input } }] },
+        },
+      };
+    }) as never,
   };
-  await investigate(rt, segment.id);
-  assert.equal(packets.length, 4);
-  assert.equal(packets[2].analyst, undefined);
-  assert.equal((await a.json(base)).findings.length, 0);
+  // An invented quote is withheld after one call; the reviewer is never paid for.
+  screenQuote = "pukul 21.00";
+  const invented = await say("Saya tiba pukul sembilan malam.");
+  await investigate(rt, invented.id);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].model, rt.config.bedrockModel);
   assert.equal(
-    (await rt.db.one("segments", "id=?", [segment.id]))?.analysis_state,
+    (await rt.db.one("segments", "id=?", [invented.id]))?.analysis_state,
     "failed",
   );
+  // A verified conflict goes to the review model, which never sees the screen's answer.
+  screenQuote = "pukul 22.30";
+  const unconfirmed = await say("Saya tiba pukul sembilan malam, Yang Mulia.");
+  await investigate(rt, unconfirmed.id);
+  assert.equal(calls.length, 3);
+  assert.equal(calls[2].model, rt.config.bedrockReviewModel);
+  assert.equal(
+    JSON.stringify(calls[2].payload).includes("Waktu tiba berbeda"),
+    false,
+  );
+  let finding = (await a.json(base)).findings.find(
+    (f: { segment_id: string }) => f.segment_id === unconfirmed.id,
+  );
+  assert.equal(finding.status, "context_needed");
+  confirmed = true;
+  const kept = await say("Saya sampai jam sembilan.");
+  await investigate(rt, kept.id);
+  finding = (await a.json(base)).findings.find(
+    (f: { segment_id: string }) => f.segment_id === kept.id,
+  );
+  assert.equal(finding.status, "potential_inconsistency");
+  assert.equal(finding.review.reviewed_by, "independent");
 });
 
 test("embedding contract validates complete finite vectors; legal URLs stay on Pasal", async (t) => {
@@ -924,6 +937,11 @@ test("embedding contract validates complete finite vectors; legal URLs stay on P
 
 test("durable outbox recovery, signed callbacks and attempt exhaustion", async (t) => {
   const { rt, a, record } = await fixture(t);
+  await a.json(
+    `/cases/${record.id}/documents`,
+    "POST",
+    upload("source.txt", "A saved assertion appears in the record."),
+  );
   const hearing = await a.json(`/cases/${record.id}/hearings`, "POST", {
       title: "Trial",
     }),

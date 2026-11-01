@@ -1,3 +1,4 @@
+import { aiConfigured } from "./config";
 import { Receiver } from "@upstash/qstash";
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
@@ -61,7 +62,7 @@ export async function enqueue(
     schedule(rt, investigate(rt, id, fixture));
     return;
   }
-  if (!rt.config.openrouterKey || !rt.config.model) {
+  if (!aiConfigured(rt.config)) {
     await analysisState(
       rt,
       id,

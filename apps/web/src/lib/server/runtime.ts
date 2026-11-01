@@ -1,3 +1,5 @@
+import type { BedrockRuntimeClient } from "@aws-sdk/client-bedrock-runtime";
+import type { S3Client } from "@aws-sdk/client-s3";
 import {
   createHash,
   randomBytes,
@@ -14,6 +16,10 @@ export interface Runtime {
   fetch: typeof fetch;
   tasks: Set<Promise<unknown>>;
   simulations: Map<string, AbortController>;
+  /** Test seam: replaces the Bedrock client. */
+  bedrock?: { send: BedrockRuntimeClient["send"] };
+  /** Test seam: replaces the S3 client. */
+  s3?: { send: S3Client["send"] };
 }
 export const hash = (value: string | Uint8Array) =>
   createHash("sha256").update(value).digest("hex");
