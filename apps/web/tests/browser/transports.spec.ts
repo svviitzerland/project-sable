@@ -176,11 +176,19 @@ test("large direct uploads and speech rotation save finalized testimony", async 
     await page
       .getByRole("button", { name: "Create hearing", exact: true })
       .click();
-    await page
-      .getByLabel("The presiding judge allowed recording", { exact: false })
-      .check();
+    // Starting opens a small modal: language, the judge's permission, recording.
     await page
       .getByRole("button", { name: "Start microphone", exact: true })
+      .click();
+    const modal = page.getByRole("dialog", { name: "Record this hearing" });
+    await expect(
+      modal.getByRole("button", { name: "Start recording", exact: true }),
+    ).toBeDisabled();
+    await modal
+      .getByLabel("The presiding judge allowed recording", { exact: false })
+      .check();
+    await modal
+      .getByRole("button", { name: "Start recording", exact: true })
       .click();
     await expect.poll(() => connections.length).toBe(2);
     await expect.poll(() => binary.includes(1)).toBe(true);

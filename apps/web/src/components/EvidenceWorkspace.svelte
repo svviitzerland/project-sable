@@ -222,7 +222,8 @@
   /** Passage pages and statement labels come from the server in English. */
   function nodeDetail(n: GraphNode) {
     if (n.kind === "statement") return t("evidence.hearingStatement");
-    const page = /^Page (\d+)$/.exec(n.detail)?.[1] ?? (n.detail ? null : n.page);
+    const page =
+      /^Page (\d+)$/.exec(n.detail)?.[1] ?? (n.detail ? null : n.page);
     return page ? t("common.page", { page }) : n.detail;
   }
 
@@ -386,7 +387,10 @@
       </span>
     </div>
     <div class={styles.graphLayout}>
-      <section class={styles.graphCanvas} aria-label={t("evidence.relationships")}>
+      <section
+        class={styles.graphCanvas}
+        aria-label={t("evidence.relationships")}
+      >
         {#if view === "graph"}
           {#if visible.length}
             <div class={styles.zoom}>

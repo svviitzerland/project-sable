@@ -141,7 +141,9 @@ test("complete case workflow, imports, evidence, reviews and responsive navigati
   await page.getByRole("link", { name: "Download original" }).click();
   expect(await readFile((await (await download).path())!)).toEqual(original);
   const archiveDownload = page.waitForEvent("download");
-  await page.getByRole("link", { name: "Export .jude" }).click();
+  // Export now lives in the per-case Settings tab.
+  await page.getByRole("tab", { name: "Settings", exact: true }).click();
+  await page.getByRole("link", { name: "Download .jude" }).click();
   const archiveBytes = await readFile((await (await archiveDownload).path())!),
     manifest = JSON.parse(strFromU8(unzipSync(archiveBytes)["manifest.json"]));
   expect(manifest.segments).toHaveLength(8);

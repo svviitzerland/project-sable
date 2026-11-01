@@ -77,7 +77,9 @@
     <h3>{finding.title}</h3>
     <div class={styles.quote}>
       <span
-        >{t("finding.hearingAt", { time: timestamp(segment?.start ?? 0) })}</span
+        >{t("finding.hearingAt", {
+          time: timestamp(segment?.start ?? 0),
+        })}</span
       >
       <blockquote>“{segment?.text}”</blockquote>
     </div>

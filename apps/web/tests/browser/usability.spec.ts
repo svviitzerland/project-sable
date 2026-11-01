@@ -45,7 +45,7 @@ test("case setup, case search and mobile conversations keep the next action clea
   await expect(
     page.getByLabel("Search case evidence", { exact: true }),
   ).toHaveValue("");
-  await page.getByRole("tab", { name: "Speaker labels" }).click();
+  await page.getByRole("tab", { name: "Settings", exact: true }).click();
   await expect(page.getByRole("tabpanel")).not.toContainText(
     /Supabase|OpenRouter|backend|configured|deployment|Connections/,
   );

@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    formatDate,
-    t,
-    tp,
-    type MessageKey,
-  } from "../lib/i18n/index.svelte";
+  import { formatDate, t, tp, type MessageKey } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import {
     ArrowRight,
@@ -347,7 +342,10 @@
         <footer>
           <span>
             {t("library.preserved", {
-              statements: tp("count.statements", preview.hearing.segments.length),
+              statements: tp(
+                "count.statements",
+                preview.hearing.segments.length,
+              ),
             })}
           </span>
           <button
@@ -436,7 +434,9 @@
           <div>
             <h3>{hearing.title}</h3>
             <p>
-              {hearing.date ? formatDate(hearing.date) : t("library.dateNotSet")}
+              {hearing.date
+                ? formatDate(hearing.date)
+                : t("library.dateNotSet")}
               ·&#32;
               {hearing.kind === "simulation"
                 ? t("common.syntheticExercise")

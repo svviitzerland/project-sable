@@ -164,13 +164,6 @@
     () => void refresh(),
   );
 
-  // Audio tools open for empty hearings and while recording, and never close on their
-  // own afterwards, so counsel can restart capture immediately in court.
-  let audioToolsOpen = $state(false);
-  $effect(() => {
-    if (audio.status !== "idle" || hearingSegments.length === 0)
-      audioToolsOpen = true;
-  });
   let tourChecked = false;
   $effect(() => {
     if (user && !tourChecked) {
@@ -641,29 +634,16 @@
                 </button>
               </div>{/if}{:else}
             <header class={styles.caseHeader}>
-              <div>
-                <h1>{session?.title}</h1>
-                <div class={styles.caseMeta}>
-                  {session?.reference || t("ws.caseWorkspace")}
-                  <span>
-                    {session?.synthetic
-                      ? t("ws.syntheticMaterial")
-                      : t("ws.privateCase")}
-                  </span>
-                </div>
-                <p>
-                  {session?.description || t("ws.defaultDescription")}
-                </p>
-              </div>
-              <div class={styles.headerActions}>
-                <a
-                  class={styles.secondary}
-                  rel="external"
-                  href={`/api/v1/cases/${caseId}/export.jude`}
+              <h1>{session?.title}</h1>
+              <div class={styles.caseMeta}>
+                {#if session?.reference}<span class={styles.caseRef}
+                    >{session.reference}</span
+                  >{/if}
+                <span
+                  >{session?.synthetic
+                    ? t("ws.syntheticMaterial")
+                    : t("ws.privateCase")}</span
                 >
-                  <Download size={15}></Download>
-                  {t("ws.exportJude")}
-                </a>
               </div>
             </header>
             <div
@@ -862,21 +842,15 @@
                     <CircleHelp size={15}></CircleHelp>
                     {t("hearing.simNotice")}
                   </p>{/if}
-                {#if hearing.kind !== "simulation"}<details
-                    class={styles.audioTools}
-                    bind:open={audioToolsOpen}
-                  >
-                    <summary>{t("hearing.audioTools")}</summary>
-                    {#key hearing.id}<HearingAudio
-                        {audio}
-                        configured={!!caps?.speech.configured}
-                        caseId={detail.case.id}
-                        recordings={detail.recordings.filter(
-                          (r) => r.hearing_id === hearing.id,
-                        )}
-                        onChanged={() => void refresh()}
-                      />{/key}
-                  </details>{/if}
+                {#if hearing.kind !== "simulation"}{#key hearing.id}<HearingAudio
+                      {audio}
+                      configured={!!caps?.speech.configured}
+                      caseId={detail.case.id}
+                      recordings={detail.recordings.filter(
+                        (r) => r.hearing_id === hearing.id,
+                      )}
+                      onChanged={() => void refresh()}
+                    />{/key}{/if}
                 <div class={styles.hearingGrid}>
                   <section
                     class={styles.transcriptPane}
@@ -1100,6 +1074,11 @@
                     {detail}
                     {busy}
                     run={action}
+                    onDeleted={async () => {
+                      activeCase.current = null;
+                      tab = "evidence";
+                      await loadCases();
+                    }}
                   ></SessionSettings>{/key}{/if}
             </div>
           {/if}{/if}

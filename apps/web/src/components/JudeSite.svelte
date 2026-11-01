@@ -106,25 +106,25 @@
     <header class="site-header wrap">
       <a class="wordmark" href="#top" aria-label={t("landing.home")}> jude. </a>
       <div class="header-end">
-      <nav class="desktop-nav" aria-label={t("landing.mainNav")}>
-        {#each nav as [label, href] (label)}<a href={`#${href.slice(1)}`}>
-            {t(label)}
-          </a>{/each}
-        <a href={resolve("/workspace")}>{t("common.signIn")}</a>
-        <button class="button button-outline" onclick={() => openDemo()}>
-          {t("landing.exploreDemo")}
+        <nav class="desktop-nav" aria-label={t("landing.mainNav")}>
+          {#each nav as [label, href] (label)}<a href={`#${href.slice(1)}`}>
+              {t(label)}
+            </a>{/each}
+          <a href={resolve("/workspace")}>{t("common.signIn")}</a>
+          <button class="button button-outline" onclick={() => openDemo()}>
+            {t("landing.exploreDemo")}
+          </button>
+        </nav>
+        <LanguageToggle />
+        <button
+          class="menu-toggle"
+          aria-label={menuOpen ? t("landing.closeNav") : t("landing.openNav")}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-navigation"
+          onclick={() => (menuOpen = !menuOpen)}
+        >
+          {#if menuOpen}<X></X>{:else}<Menu></Menu>{/if}
         </button>
-      </nav>
-      <LanguageToggle />
-      <button
-        class="menu-toggle"
-        aria-label={menuOpen ? t("landing.closeNav") : t("landing.openNav")}
-        aria-expanded={menuOpen}
-        aria-controls="mobile-navigation"
-        onclick={() => (menuOpen = !menuOpen)}
-      >
-        {#if menuOpen}<X></X>{:else}<Menu></Menu>{/if}
-      </button>
       </div>
       {#if menuOpen}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions (Escape bubbles from the navigation links and restores the menu trigger.) -->
@@ -419,7 +419,11 @@
             <h3>{t("common.atSource")}</h3>
             <span>{t("landing.demo.synthetic")}</span>
           </div>
-          <div class="source-tabs" role="group" aria-label={t("landing.demo.sourceDocument")}>
+          <div
+            class="source-tabs"
+            role="group"
+            aria-label={t("landing.demo.sourceDocument")}
+          >
             <button
               aria-pressed={source === "transcript"}
               onclick={() => (source = "transcript")}

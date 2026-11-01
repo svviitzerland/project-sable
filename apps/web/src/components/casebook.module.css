@@ -1046,3 +1046,98 @@
   max-width: 100%;
   flex: 1 1 220px;
 }
+
+/* Compact capture bar: two actions, details live in a modal */
+.capture {
+  margin-top: 14px;
+}
+.captureBar,
+.captureLive {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.captureHint {
+  font-size: 12px;
+  color: var(--muted, #6b7466);
+  margin-left: auto;
+}
+.captureLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  padding: 6px 4px;
+  font: inherit;
+  font-size: 13px;
+  color: #23513c;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.captureLive {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #e9ede2;
+}
+.captureLive strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1f3b2d;
+  margin-right: auto;
+}
+.liveDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #b4523f;
+  box-shadow: 0 0 0 0 rgb(180 82 63 / 45%);
+  animation: livePulse 1.6s ease-out infinite;
+}
+.liveDot[data-state="connecting"],
+.liveDot[data-state="stopping"] {
+  background: #c4a35a;
+}
+@keyframes livePulse {
+  to {
+    box-shadow: 0 0 0 9px rgb(180 82 63 / 0%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liveDot {
+    animation: none;
+  }
+}
+.captureForm {
+  display: grid;
+  gap: 14px;
+  font-size: 13.5px;
+}
+.captureForm p {
+  margin: 0;
+  color: #4b5a4f;
+  line-height: 1.5;
+}
+.captureForm label {
+  display: grid;
+  gap: 6px;
+  font-weight: 500;
+}
+.captureForm select,
+.captureForm input[type="file"] {
+  font: inherit;
+  font-weight: 400;
+}
+.captureForm .check {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 9px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+.captureForm .check input {
+  margin-top: 3px;
+}

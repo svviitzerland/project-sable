@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    formatDate,
-    t,
-    type MessageKey,
-  } from "../lib/i18n/index.svelte";
+  import { formatDate, t, type MessageKey } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import {
     ArrowRight,
@@ -293,9 +289,7 @@
           : "dialogue.busy.reading",
       async () => {
         const session = active ?? (await create());
-        const message = finish
-          ? t("dialogue.finishMessage")
-          : text.trim();
+        const message = finish ? t("dialogue.finishMessage") : text.trim();
         const data = {
           text: message,
           reference_ids: selectedRefs,
@@ -330,9 +324,7 @@
   <header class={styles.heading}>
     <div>
       <h2>
-        {practice
-          ? t("dialogue.practiceTitle")
-          : t("dialogue.assistantTitle")}
+        {practice ? t("dialogue.practiceTitle") : t("dialogue.assistantTitle")}
       </h2>
       <p>
         {practice ? t("dialogue.practiceLead") : t("dialogue.assistantLead")}
@@ -761,7 +753,10 @@
               </article>{/each}
             {#if responding}<div class={styles.replyLoading}>
                 <p>{busy ? t(busy) : ""}</p>
-                <Skeleton variant="compact" label={busy ? t(busy) : undefined} />
+                <Skeleton
+                  variant="compact"
+                  label={busy ? t(busy) : undefined}
+                />
               </div>{/if}
           </div>
           {#if active?.status === "complete"}<div class={styles.complete}>

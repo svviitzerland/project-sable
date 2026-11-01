@@ -9,7 +9,11 @@
   ];
 </script>
 
-<div class={`language-toggle ${className}`} role="group" aria-label={t("lang.group")}>
+<div
+  class={`language-toggle ${className}`}
+  role="group"
+  aria-label={t("lang.group")}
+>
   {#each options as option, index (option.lang)}
     {#if index > 0}<span class="divider" aria-hidden="true">|</span>{/if}
     <button

@@ -42,7 +42,7 @@ import {
   MAX_ARCHIVE,
 } from "./archive";
 import { ingest } from "./documents";
-import { legalSearch, readFileData } from "./providers";
+import { deleteFile, legalSearch, readFileData } from "./providers";
 import { retrieve } from "./retrieval";
 import { previewHearing, validateReviewed } from "./hearings";
 import {
@@ -411,6 +411,40 @@ export async function handleApi(
       if (parts.length === 2 && method === "GET") {
         await expireAudio(rt, caseId);
         return send(await caseDetail(rt, await ownedCase(rt, caseId, user.id)));
+      }
+      if (parts.length === 2 && method === "PATCH") {
+        const input = await body(request, caseInput.partial());
+        const [updated] = await rt.db.update(
+          "cases",
+          Object.fromEntries(
+            Object.entries(input).filter(([, v]) => v !== undefined),
+          ),
+          "id=?",
+          [caseId],
+        );
+        await publish(rt, caseId, { type: "case" });
+        return send(caseOutput.strip().parse(updated));
+      }
+      if (parts.length === 2 && method === "DELETE") {
+        assert(
+          !(await rt.db.one("audio_sessions", "case_id=? AND status=?", [
+            caseId,
+            "active",
+          ])) && !rt.simulations.has(caseId),
+          409,
+          "Stop the live hearing before deleting this case.",
+        );
+        // Stored originals and recordings first, then the rows (foreign keys cascade).
+        const files = [
+          ...(await rt.db.all("documents", "case_id=?", [caseId])),
+          ...(await rt.db.all("recordings", "case_id=?", [caseId])),
+        ];
+        for (const file of files)
+          await deleteFile(rt, file.storage_key, file.storage).catch(() => {
+            /* A missing object must not keep the case alive. */
+          });
+        await rt.db.remove("cases", "id=?", [caseId]);
+        return send({ removed: 1 });
       }
       if (action === "events" && method === "GET")
         return eventStream(rt, request, record);

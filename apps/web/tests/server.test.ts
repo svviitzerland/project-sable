@@ -1387,3 +1387,53 @@ test("hearing recordings store privately, stream byte ranges, stay owner-scoped 
   });
   assert.equal((await a.json(base)).recordings.length, 0);
 });
+test("case settings update details and delete the whole case with its stored files", async (t) => {
+  const { rt, a, record, client } = await fixture(t),
+    base = `/cases/${record.id}`;
+  const updated = await a.json(base, "PATCH", {
+    title: "Perkara 12/Pid.B/2026",
+    reference: "12/Pid.B/2026",
+  });
+  assert.equal(updated.title, "Perkara 12/Pid.B/2026");
+  await a.json(
+    base + "/documents",
+    "POST",
+    upload("bap.txt", "Saksi tiba pukul 22.30."),
+  );
+  const hearing = await a.json(base + "/hearings", "POST", {
+    title: "Sidang 1",
+  });
+  await a.json(base + "/transcripts", "POST", {
+    hearing_id: hearing.id,
+    speaker: "Saksi",
+    text: "Saya tiba pukul 21.00.",
+    start: 0,
+  });
+  await handleApi(
+    rt,
+    new Request(
+      `http://localhost/api/v1${base}/recordings?hearing_id=${hearing.id}&start_offset=0&duration=1`,
+      {
+        method: "POST",
+        headers: { cookie: a.cookie, "Content-Type": "audio/webm" },
+        body: new Uint8Array(10),
+      },
+    ),
+  );
+  await Promise.allSettled([...rt.tasks]);
+  const other = client();
+  await other.json("/auth/register", "POST", {
+    email: `${randomUUID()}@example.test`,
+    password: "test-password-123",
+  });
+  await other.json(base, "DELETE", undefined, 404);
+  assert.deepEqual(await a.json(base, "DELETE"), { removed: 1 });
+  await a.json(base, "GET", undefined, 404);
+  for (const table of [
+    "documents",
+    "hearings",
+    "segments",
+    "recordings",
+  ] as const)
+    assert.equal((await rt.db.all(table, "case_id=?", [record.id])).length, 0);
+});

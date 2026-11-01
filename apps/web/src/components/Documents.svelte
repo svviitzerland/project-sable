@@ -44,8 +44,7 @@
     uploadNotice = "";
     try {
       const saved = await run(operation);
-      if (saved && kind === "upload")
-        uploadNotice = t("docs.added");
+      if (saved && kind === "upload") uploadNotice = t("docs.added");
     } finally {
       pending = "";
     }
@@ -194,9 +193,7 @@
           <h3>{t("docs.extracted")}</h3>
           {#each chunks as s (s.id)}{#key s.id}<SourceCard source={s} {caseId}
               ></SourceCard>{/key}{/each}
-        {:else}<Empty
-            title={t("docs.openTitle")}
-            text={t("docs.openText")}
+        {:else}<Empty title={t("docs.openTitle")} text={t("docs.openText")}
             >{#snippet icon()}<BookOpen size={30}></BookOpen>{/snippet}</Empty
           >{/if}{/if}
     </div>
