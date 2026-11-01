@@ -20,7 +20,7 @@ The server mints a short-lived Speechmatics realtime JWT after checking the user
 
 Audio rotates after 210 seconds. The worklet flushes the old connection, captures into a bounded reconnect buffer, then resumes transmission with fresh credentials. Final stop waits for final transcription and HTTP persistence. Errors explicitly prompt users to inspect final saved words. Partials stay in the recording browser; saved turns notify other views. The temporary provider token can live until expiry after sign-out, but revoked sessions cannot save additional testimony. Browser-relayed output is not provider-attested evidence.
 
-Uploads are single bounded multipart requests (6 MB for documents and hearings, the archive limit for `.jude` imports); the Docker image raises the adapter body limit to match. Originals and exports return their bytes directly with the stored Content-Type and an attachment Content-Disposition.
+Uploads are single bounded multipart requests (25 MB for documents, 6 MB for hearings, the archive limit for `.jude` imports); the Docker image raises the adapter body limit to match. Originals and exports return their bytes directly with the stored Content-Type and an attachment Content-Disposition.
 
 ## Voice service
 

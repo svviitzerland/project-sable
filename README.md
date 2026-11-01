@@ -27,7 +27,7 @@ docs/
   engineering/         architecture, deployment, .jude format
   research/            research report, notes and public case sources
   phases/              dated work records
-examples/              fictional sample case pack
+examples/              fictional sample pack and public-record demo pack
 infra/
   terraform/           AWS: VPC, EC2, RDS PostgreSQL, S3, ECR, IAM (GitHub OIDC), SSM, backups
   docker/              production Compose stack, Caddyfile, deploy script
@@ -46,7 +46,7 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Open http://localhost:3000/workspace. Register an account or open a clearly labeled synthetic case. By default the app runs a single local SQLite process with files in `apps/web/.data/`. To use PostgreSQL instead, start one with pgvector (for example `docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 pgvector/pgvector:pg17`), apply migrations with `cd db && npm ci && DATABASE_URL=... npm run migrate` and set the same `DATABASE_URL` in `.env.local`. Setting `S3_BUCKET` stores originals in S3 through the AWS credential chain.
+Open http://localhost:3000/workspace. Register an account or open the demo case, a clearly labeled public court record (Ferdy Sambo, 796/Pid.B/2022/PN Jkt.Sel; see [`examples/sambo-796-public/`](examples/sambo-796-public/README.md)). By default the app runs a single local SQLite process with files in `apps/web/.data/`. To use PostgreSQL instead, start one with pgvector (for example `docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 pgvector/pgvector:pg17`), apply migrations with `cd db && npm ci && DATABASE_URL=... npm run migrate` and set the same `DATABASE_URL` in `.env.local`. Setting `S3_BUCKET` stores originals in S3 through the AWS credential chain.
 
 Voice labels (optional): `cp apps/voice/.env.example apps/voice/.env`, set `VOICE_API_TOKEN`, run `docker compose up --build voice`, and add `VOICE_API_URL=http://localhost:8000` plus the same token to `apps/web/.env.local`. See [apps/voice/README.md](apps/voice/README.md).
 
@@ -64,7 +64,7 @@ Production runs on AWS under the codename **project-sable**: one EC2 instance wi
 - Case-wide assistant and separate courtroom practice with editable conditions, role selection, saved exchanges and debriefs.
 - Portable `.jude` case/hearing archives and separate conversation JSON exports.
 
-Without provider keys, keyword search, manual testimony, source inspection, archive workflows, the authored synthetic hearing, sources-only assistant replies, and guided practice work locally. Scanned PDFs still require OCR before upload. Provider configuration is not proof of service availability or model quality.
+Without provider keys, keyword search, manual testimony, source inspection, archive workflows, the bundled public demo case, sources-only assistant replies, and guided practice work locally. Scanned PDFs still require OCR before upload. Provider configuration is not proof of service availability or model quality.
 
 ## Sample files
 

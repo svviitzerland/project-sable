@@ -10,12 +10,20 @@ The marketing introduction remains at `/`, with a prominent Open workspace actio
 
 Local SQLite and private files work without external accounts. Optional PostgreSQL/pgvector and private S3 storage paths are supplied. Speechmatics, Amazon Bedrock and OpenRouter integrations are implemented with protocol/contract tests; no live provider credentials were available for verification. Pasal.id responses remain discovery metadata, separate from case evidence.
 
-The synthetic hearing is a complete authored exercise: two documents, eight turns, four qualified finding states. It does not claim to measure AI quality. Manual testimony without a configured AI provider is saved with an explicit unavailable state.
+The scripted synthetic hearing (warehouse fixture and simulation endpoints) was removed on 2026-11-02; the only demonstration case is the public record below. Manual testimony without a configured AI provider is saved with an explicit unavailable state.
+
+## Public demo case
+
+Demo sign-in (`/auth/demo`) and `POST /cases/synthetic` (development or `JUDE_DEMO=1`) both import the same single demonstration case, a real public record labeled "Public record" in the workspace: "Perkara Ferdy Sambo — 796/Pid.B/2022/PN Jkt.Sel (catatan publik)". It comes from the bundled archive `apps/web/static/demo/sambo-796-public.jude` (also downloadable at `/demo/sambo-796-public.jude`; sources and limits in [`examples/sambo-796-public/README.md`](../../examples/sambo-796-public/README.md)). It contains a 68-page excerpt of the Direktori Putusan MA PDF (the court's summaries of the testimony of Susi, Diryanto alias Kodir, Damson, Alfonsius Dua Luren, Abdul Somad, Marjuki, Richard Eliezer, Ricky Rizal and Kuat Ma'ruf), the full Amazon Transcribe transcript of the publicly broadcast 8 November 2022 session with role-labeled speakers (two hearings, because a hearing holds at most 500 turns), and findings saved by Jude's Bedrock analysis of the witness turns. The original BAP is not public, so the comparison source is the decision's summary of testimony. Findings remain document comparisons for human verification. No audio is shipped. The fictional Cendana warehouse pack remains under `examples/` for upload practice only.
+
+## Court decisions from the Direktori Putusan MA
+
+Documents may be up to 25 MB, 1,500 PDF pages and 3,000,000 extracted characters (after cleanup). PDF text items are joined by position, so words split across font runs are rejoined. When a document carries Direktori Putusan MA markers, the rotated watermark letters, the `putusan.mahkamahagung.go.id` header, "Hal. X dari Y hal. Putusan Nomor ..." lines and the per-page disclaimer are removed from the extracted text; the stored original is unchanged and quotations are verified against the cleaned passages. The full 696-page decision 796/Pid.B/2022/PN Jkt.Sel ingests in about 2 seconds into 1,812 passages (peak memory about 0.6 GB in a local run). Hearing uploads remain limited to 6 MB.
 
 ## Acceptance
 
 - [x] Registration, sign-in/out, persistent account sessions and isolated cases.
-- [x] Upload authorized text-based PDF/DOCX/TXT/Markdown, preserve originals and provenance.
+- [x] Upload authorized text-based PDF/DOCX/TXT/Markdown, preserve originals and provenance; clean Direktori Putusan MA watermark and footer noise.
 - [x] Case-filtered keyword retrieval; optional embeddings and pgvector, with fallback.
 - [x] Continuous transcript capture independent of bounded four-call analysis.
 - [x] Independent reviewer receives original assertion/evidence without the analyst response.

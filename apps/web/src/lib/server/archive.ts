@@ -15,6 +15,7 @@ import { uid } from "./database";
 import { assert, HttpError } from "./errors";
 import { validateCitations } from "./analysis";
 import { readFileData, saveFile, deleteFile } from "./providers";
+import { MAX_BYTES } from "./documents";
 export const MAX_ARCHIVE = 64 * 1024 * 1024,
   MAX_MANIFEST = 12 * 1024 * 1024;
 const id = z.string().min(1).max(100),
@@ -250,7 +251,7 @@ export function validateArchive(data: Uint8Array) {
     for (const d of docs.values())
       assert(
         d.case_id === archive.case.id &&
-          files[d.file]?.length <= 6 * 1024 * 1024 &&
+          files[d.file]?.length <= MAX_BYTES &&
           hash(files[d.file]) === d.sha256,
         422,
         "Original file integrity or ownership mismatch.",

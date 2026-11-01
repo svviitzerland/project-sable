@@ -204,7 +204,7 @@ export const en = {
   "landing.faq.title2": "the courtroom.",
   "landing.faq.q1": "Who is Jude being built for?",
   "landing.faq.a1":
-    "The first use case is lawyers in Indonesian criminal proceedings. The current MVP includes a synthetic hearing and a case workspace. Prosecutor and judge workflows would require separate role-specific capabilities and safeguards.",
+    "The first use case is lawyers in Indonesian criminal proceedings. The current MVP includes a demo case built from a public court record and a case workspace. Prosecutor and judge workflows would require separate role-specific capabilities and safeguards.",
   "landing.faq.q2": "Is this a live courtroom product?",
   "landing.faq.a2":
     "Jude is intended for evaluation using fictional or authorized material. Use it to organize documents, review transcripts and findings, and prepare questions. The example hearing lets you explore with fictional material. Verify sources and review the results before relying on them in a real proceeding.",
@@ -249,9 +249,9 @@ export const en = {
   "auth.haveAccount": "Already have an account? Sign in",
   "auth.newAccount": "New to Jude? Create an account",
   "auth.exploreFirst": "Explore before you start",
-  "auth.openSynthetic": "Open a synthetic case",
+  "auth.openSynthetic": "Open the demo case",
   "auth.demoNote":
-    "Explore a fictional case with prepared evidence. No microphone needed.",
+    "Explore a real public court record, the Ferdy Sambo case (796/Pid.B/2022/PN Jkt.Sel), with its hearing transcript and findings. No microphone needed.",
   "auth.footnote":
     "Use only case material you are authorized to share and process.",
 
@@ -286,11 +286,12 @@ export const en = {
   "ws.welcomeText":
     "Create a case to bring together documents, testimony, and the questions that deserve a closer look.",
   "ws.createFirst": "Create your first case",
-  "ws.trySynthetic": "Try a synthetic hearing",
+  "ws.trySynthetic": "Open the demo case",
   "ws.loadingCase": "Loading case record…",
   "ws.caseLoadFailed": "The case record could not be loaded.",
   "ws.syntheticMaterial": "Synthetic material",
   "ws.privateCase": "Private case",
+  "ws.publicRecord": "Public record",
   "ws.defaultDescription": "Bring testimony and source material together.",
   "ws.exportJude": "Export .jude",
   "ws.caseSections": "Case sections",
@@ -412,7 +413,7 @@ export const en = {
     "Original documents, preserved passages, and a trail back to the source.",
   "docs.addTitle": "Add authorized case documents",
   "docs.formats":
-    "PDF, DOCX, TXT, or Markdown · up to 6 MB · text-based PDFs only",
+    "PDF, DOCX, TXT, or Markdown · up to 25 MB · text-based PDFs only",
   "docs.note":
     "Keep the original files and search their text. AI features may process excerpts to help find related material.",
   "docs.processing": "Processing…",

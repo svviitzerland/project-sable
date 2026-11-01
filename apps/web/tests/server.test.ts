@@ -446,16 +446,55 @@ test("LLM hearing conversion rejects invented words and inferred speakers", asyn
   );
 });
 
-test("synthetic full pipeline, review notes, portable archive remapping and checksum guards", async (t) => {
-  const { a, rt } = await fixture(t);
+test("demo sign-in imports the bundled public record as the default case", async (t) => {
+  const { client } = await fixture(t);
+  const demo = client();
+  const user = await demo.json("/auth/demo", "POST");
+  assert.equal(user.demo, true);
+  // The public record is the only demonstration case; no fictional case is seeded.
+  const cases = await demo.json("/cases");
+  assert.equal(cases.length, 1);
+  const [record] = cases;
+  assert.match(record.title, /796\/Pid\.B\/2022\/PN Jkt\.Sel \(catatan publik\)/);
+  assert.match(record.reference, /catatan publik/);
+  assert.equal(record.synthetic, false);
+  const detail = await demo.json(`/cases/${record.id}`);
+  const putusan = detail.documents.find((d: { mime: string }) =>
+    d.mime === "application/pdf",
+  );
+  assert.ok(putusan, "the putusan excerpt is bundled as an original PDF");
+  assert.equal(putusan.pages, 68);
+  assert.equal(detail.hearings.length, 2);
+  assert.ok(detail.segments.length > 600);
+  assert.ok(detail.findings.length >= 90);
+  const statuses = new Set(
+    detail.findings.map((f: { status: string }) => f.status),
+  );
+  for (const status of ["supported", "context_needed", "insufficient_evidence"])
+    assert.ok(statuses.has(status), status);
+  // Role labels come from the reviewed transcript, not provider keys alone.
+  const speakers = new Set(
+    detail.segments.map((s: { speaker: string }) => s.speaker),
+  );
+  for (const role of ["Hakim Ketua", "Penuntut Umum", "Penasihat Hukum", "Saksi Susi", "Saksi Kodir"])
+    assert.ok(speakers.has(role), role);
+  // Every finding cites the putusan excerpt, with quotes present in its source passages.
+  const original = await demo.call(
+    `/cases/${record.id}/documents/${putusan.id}/original`,
+  );
+  assert.equal(original.headers.get("content-type"), "application/pdf");
+  for (const finding of detail.findings)
+    for (const citation of finding.citations)
+      assert.ok(citation.quote.trim().length > 0);
+});
+test("demo case route, review notes, portable archive remapping and checksum guards", async (t) => {
+  const { a } = await fixture(t);
+  // The former synthetic route now opens the same public demonstration case.
   const record = await a.json("/cases/synthetic", "POST"),
     base = `/cases/${record.id}`;
-  await a.json(base + "/simulation", "POST");
-  await Promise.all([...rt.tasks]);
+  assert.match(record.reference, /catatan publik/);
   const detail = await a.json(base);
-  assert.equal(detail.segments.length, 8);
-  assert.equal(detail.findings.length, 4);
-  assert.equal(detail.case.status, "complete");
+  assert.ok(detail.findings.length > 0);
   const finding = detail.findings[0];
   await a.json(`${base}/findings/${finding.id}`, "PATCH", {
     reviewed: true,
@@ -464,7 +503,10 @@ test("synthetic full pipeline, review notes, portable archive remapping and chec
   const exported = await a.call(base + "/export.jude"),
     bytes = new Uint8Array(await exported.arrayBuffer());
   const { manifest, files } = unpack(bytes);
-  assert.equal(manifest.findings[0].reviewed, true);
+  assert.equal(
+    manifest.findings.find((f: { id: string }) => f.id === finding.id).reviewed,
+    true,
+  );
   const imported = await a.json(
       "/cases/import",
       "POST",
@@ -478,13 +520,13 @@ test("synthetic full pipeline, review notes, portable archive remapping and chec
     upload("case.jude.zip", bytes),
   );
   assert.notEqual(renamedCase.id, imported.id);
-  assert.equal(copy.findings[0].reviewed, false);
-  assert.equal(copy.findings[0].note, "Verify the original.");
-  assert.equal(copy.findings[0].mode, "imported");
-  assert.notEqual(
-    copy.findings[0].citations[0].chunk_id,
-    finding.citations[0].chunk_id,
+  const copied = copy.findings.find(
+    (f: { note: string }) => f.note === "Verify the original.",
   );
+  assert.equal(copy.findings.length, detail.findings.length);
+  assert.equal(copied.reviewed, false);
+  assert.equal(copied.mode, "imported");
+  assert.notEqual(copied.citations[0].chunk_id, finding.citations[0].chunk_id);
   files[Object.keys(files)[0]] = strToU8("tampered");
   assert.throws(() => validateArchive(pack(manifest, files)), /integrity/);
   assert.throws(

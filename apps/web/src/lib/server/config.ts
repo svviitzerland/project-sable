@@ -42,7 +42,6 @@ export function settings(
     pasalKey: env.PASAL_API_KEY || "",
     voiceUrl: (env.VOICE_API_URL || "").replace(/\/$/, ""),
     voiceToken: env.VOICE_API_TOKEN || "",
-    simulationDelay: Number(env.JUDE_SIMULATION_DELAY || "2.5") * 1000,
   };
 }
 export type Settings = ReturnType<typeof settings>;

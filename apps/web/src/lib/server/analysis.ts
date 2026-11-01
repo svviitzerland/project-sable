@@ -14,7 +14,6 @@ import { ProviderError } from "./errors";
 import { structured, legalSearch } from "./providers";
 import { retrieve } from "./retrieval";
 import { exactSourceQuote } from "./quotes";
-import simulation from "./simulation.json" with { type: "json" };
 export function validateCitations(
   conclusion: Conclusion,
   sources: Pick<Source, "id" | "text">[],
@@ -90,11 +89,7 @@ export async function analysisState(
       phase,
     });
 }
-async function runInvestigation(
-  rt: Runtime,
-  id: string,
-  fixture?: string | null,
-) {
+async function runInvestigation(rt: Runtime, id: string) {
   const start = performance.now(),
     segment = await rt.db.one("segments", "id=?", [id]);
   if (!segment || (await rt.db.one("findings", "segment_id=?", [id]))) return;
@@ -114,134 +109,106 @@ async function runInvestigation(
   try {
     let conclusion: Conclusion,
       review: Record<string, Json>,
-      legal: Legal[] = [],
-      mode = "ai";
-    if (segment.origin === "simulation") {
-      if (!fixture) {
-        await analysisState(rt, id, "skipped");
-        return;
-      }
-      const expected =
-        simulation.expected[fixture as keyof typeof simulation.expected];
-      const chunk = (
-        await rt.db.all("chunks", "case_id=?", [segment.case_id])
-      ).find((c) => c.text.includes(expected.quote));
-      if (!chunk)
-        throw new ProviderError(
-          "The synthetic source fixture is missing. Create a new demonstration case.",
-        );
-      const { quote, relation, ...rest } = expected;
-      conclusion = conclusionSchema.parse({
-        ...rest,
-        citations: [{ chunk_id: chunk.id, quote, relation }],
-      });
-      review = {
-        summary: "Scripted training example, not an AI investigation.",
-        alternative_explanations: [conclusion.uncertainty],
-        missing_context: [conclusion.verification],
-      };
-      mode = "simulation";
-    } else {
-      if (!aiConfigured(rt.config)) {
-        await analysisState(
-          rt,
-          id,
-          "unavailable",
-          "Automatic analysis is unavailable. Your transcript is saved; you can still review it alongside your documents.",
-        );
-        return;
-      }
-      // Questions (usually from the bench or counsel) assert nothing; skip them for free.
-      if (/\?\s*$/.test(segment.text.trim())) {
-        await analysisState(rt, id, "skipped");
-        return;
-      }
-      // Cheap path first: retrieval runs in the database, then one default-tier call both
-      // screens the statement and compares it with the sources. Only a potential
-      // inconsistency pays for the independent review model.
-      await analysisState(rt, id, "retrieving");
-      const { results: sources, mode: method } = await retrieve(
+      legal: Legal[] = [];
+    if (!aiConfigured(rt.config)) {
+      await analysisState(
         rt,
-        segment.case_id,
-        [...context.slice(-2).map((c) => c.text), segment.text].join(" "),
-        8,
-        hearing?.source_document_id,
+        id,
+        "unavailable",
+        "Automatic analysis is unavailable. Your transcript is saved; you can still review it alongside your documents.",
       );
-      if (!sources.length) {
-        await analysisState(
-          rt,
-          id,
-          "skipped",
-          "No related passage was found in the case documents.",
-        );
-        return;
-      }
-      const packet = {
-        testimony: segment.text,
-        speaker: segment.speaker,
-        preceding_context: context,
-        sources,
-      };
-      await analysisState(rt, id, "analyzing");
-      const screen = await structured(
+      return;
+    }
+    // Questions (usually from the bench or counsel) assert nothing; skip them for free.
+    if (/\?\s*$/.test(segment.text.trim())) {
+      await analysisState(rt, id, "skipped");
+      return;
+    }
+    // Cheap path first: retrieval runs in the database, then one default-tier call both
+    // screens the statement and compares it with the sources. Only a potential
+    // inconsistency pays for the independent review model.
+    await analysisState(rt, id, "retrieving");
+    const { results: sources, mode: method } = await retrieve(
+      rt,
+      segment.case_id,
+      [...context.slice(-2).map((c) => c.text), segment.text].join(" "),
+      8,
+      hearing?.source_document_id,
+    );
+    if (!sources.length) {
+      await analysisState(
         rt,
-        "Evidence screen. First decide whether the testimony makes a checkable factual assertion; questions, greetings, procedure and fragments are not checkable (use preceding_context to read short answers). If checkable, compare it with the sources and return a calibrated finding: supported only with a supporting quote, potential_inconsistency only with a conflicting quote, context_needed when sources are related but do not settle it, insufficient_evidence when they say nothing. A difference in wording, a paraphrase or a possible transcription error is not a contradiction. Give a concrete verification step and one neutral follow-up question.",
+        id,
+        "skipped",
+        "No related passage was found in the case documents.",
+      );
+      return;
+    }
+    const packet = {
+      testimony: segment.text,
+      speaker: segment.speaker,
+      preceding_context: context,
+      sources,
+    };
+    await analysisState(rt, id, "analyzing");
+    const screen = await structured(
+      rt,
+      "Evidence screen. First decide whether the testimony makes a checkable factual assertion; questions, greetings, procedure and fragments are not checkable (use preceding_context to read short answers). If checkable, compare it with the sources and return a calibrated finding: supported only with a supporting quote, potential_inconsistency only with a conflicting quote, context_needed when sources are related but do not settle it, insufficient_evidence when they say nothing. A difference in wording, a paraphrase or a possible transcription error is not a contradiction. Give a concrete verification step and one neutral follow-up question.",
+      packet,
+      conclusionSchema.extend({ checkable: z.boolean() }),
+    );
+    if (!screen.checkable) {
+      await analysisState(rt, id, "skipped");
+      return;
+    }
+    conclusion = conclusionSchema.parse(
+      Object.fromEntries(
+        Object.entries(screen).filter(([key]) => key !== "checkable"),
+      ),
+    );
+    conclusion = verifiedConclusion(conclusion, sources);
+    let legalNote = "";
+    if (conclusion.status !== "insufficient_evidence" && rt.config.pasalKey)
+      try {
+        legal = await legalSearch(rt, conclusion.title.slice(0, 160));
+      } catch {
+        legalNote =
+          "Legal discovery was unavailable; no legal reference was inferred.";
+      }
+    review = {
+      summary: conclusion.explanation,
+      alternative_explanations: [conclusion.uncertainty].filter(Boolean),
+      missing_context: [],
+      retrieval: method,
+      legal_note: legalNote,
+      reviewed_by: "screen",
+    };
+    if (conclusion.status === "potential_inconsistency") {
+      await analysisState(rt, id, "reviewing");
+      const reviewer = await structured(
+        rt,
+        "Independent reviewer. You have not seen any earlier assessment. Decide whether the sources genuinely conflict with the testimony, or whether the difference can be explained by paraphrase, a different event or time, missing context, or a transcription error. List alternative explanations and missing context. Do not judge credibility.",
         packet,
-        conclusionSchema.extend({ checkable: z.boolean() }),
+        assessmentSchema.extend({ conflict_confirmed: z.boolean() }),
+        { tier: "review" },
       );
-      if (!screen.checkable) {
-        await analysisState(rt, id, "skipped");
-        return;
-      }
-      conclusion = conclusionSchema.parse(
-        Object.fromEntries(
-          Object.entries(screen).filter(([key]) => key !== "checkable"),
-        ),
-      );
-      conclusion = verifiedConclusion(conclusion, sources);
-      let legalNote = "";
-      if (conclusion.status !== "insufficient_evidence" && rt.config.pasalKey)
-        try {
-          legal = await legalSearch(rt, conclusion.title.slice(0, 160));
-        } catch {
-          legalNote =
-            "Legal discovery was unavailable; no legal reference was inferred.";
-        }
-      review = {
-        summary: conclusion.explanation,
-        alternative_explanations: [conclusion.uncertainty].filter(Boolean),
-        missing_context: [],
-        retrieval: method,
-        legal_note: legalNote,
-        reviewed_by: "screen",
-      };
-      if (conclusion.status === "potential_inconsistency") {
-        await analysisState(rt, id, "reviewing");
-        const reviewer = await structured(
-          rt,
-          "Independent reviewer. You have not seen any earlier assessment. Decide whether the sources genuinely conflict with the testimony, or whether the difference can be explained by paraphrase, a different event or time, missing context, or a transcription error. List alternative explanations and missing context. Do not judge credibility.",
-          packet,
-          assessmentSchema.extend({ conflict_confirmed: z.boolean() }),
-          { tier: "review" },
-        );
-        if (!reviewer.conflict_confirmed)
-          conclusion = {
-            ...conclusion,
-            status: "context_needed",
-            uncertainty: [conclusion.uncertainty, reviewer.summary]
-              .filter(Boolean)
-              .join(" "),
-          };
-        review = {
-          ...review,
-          summary: reviewer.summary,
-          alternative_explanations: reviewer.alternative_explanations,
-          missing_context: reviewer.missing_context,
-          screen_summary: conclusion.explanation,
-          reviewed_by: "independent",
-          conflict_confirmed: reviewer.conflict_confirmed,
+      if (!reviewer.conflict_confirmed)
+        conclusion = {
+          ...conclusion,
+          status: "context_needed",
+          uncertainty: [conclusion.uncertainty, reviewer.summary]
+            .filter(Boolean)
+            .join(" "),
         };
-      }
+      review = {
+        ...review,
+        summary: reviewer.summary,
+        alternative_explanations: reviewer.alternative_explanations,
+        missing_context: reviewer.missing_context,
+        screen_summary: conclusion.explanation,
+        reviewed_by: "independent",
+        conflict_confirmed: reviewer.conflict_confirmed,
+      };
     }
     await rt.db.insert("findings", {
       case_id: segment.case_id,
@@ -249,7 +216,7 @@ async function runInvestigation(
       ...conclusion,
       review,
       legal,
-      mode,
+      mode: "ai",
       elapsed_ms: Math.round(performance.now() - start),
     });
     await analysisState(rt, id, "complete");
@@ -275,11 +242,7 @@ const localRuns = new WeakMap<
     pending: Map<string, Promise<void>>;
   }
 >();
-export async function investigate(
-  rt: Runtime,
-  id: string,
-  fixture?: string | null,
-): Promise<void> {
+export async function investigate(rt: Runtime, id: string): Promise<void> {
   let state = localRuns.get(rt);
   if (!state) {
     state = { active: 0, waiting: [], pending: new Map() };
@@ -302,7 +265,7 @@ export async function investigate(
       await new Promise<void>((resolve) => pool.waiting.push(resolve));
     else pool.active++;
     try {
-      await runInvestigation(rt, id, fixture);
+      await runInvestigation(rt, id);
     } finally {
       const next = pool.waiting.shift();
       if (next) next();

@@ -8,7 +8,7 @@ test("complete case workflow, imports, evidence, reviews and responsive navigati
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const email = await register(page);
-  await page.getByRole("button", { name: "Try a synthetic hearing" }).click();
+  await page.getByRole("button", { name: "Open the demo case" }).click();
   await page.getByRole("tab", { name: "Hearings", exact: true }).click();
   await page
     .getByRole("button", { name: "The warehouse examination", exact: false })

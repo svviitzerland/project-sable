@@ -30,6 +30,7 @@
     ApiError,
     statuses,
     statusLabel,
+    publicRecord,
     type Capabilities,
     type Case,
     type CaseDetail,
@@ -556,7 +557,9 @@
                 <small>
                   {c.synthetic
                     ? t("common.syntheticExercise")
-                    : c.reference || t("ws.caseWorkspace")}
+                    : publicRecord(c)
+                      ? t("ws.publicRecord")
+                      : c.reference || t("ws.caseWorkspace")}
                 </small>
               </span>
             </button>{/each}
@@ -670,7 +673,9 @@
                 <span
                   >{session?.synthetic
                     ? t("ws.syntheticMaterial")
-                    : t("ws.privateCase")}</span
+                    : publicRecord(session)
+                      ? t("ws.publicRecord")
+                      : t("ws.privateCase")}</span
                 >
               </div>
             </header>

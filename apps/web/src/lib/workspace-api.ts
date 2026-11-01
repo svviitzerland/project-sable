@@ -10,6 +10,9 @@ export type Case = {
   created_at: string;
   speakers: Record<string, string>;
 };
+/** The bundled demo built from a published court record (reference ends "catatan publik"). */
+export const publicRecord = (c: Pick<Case, "reference"> | null | undefined) =>
+  !!c && /catatan publik|public record/i.test(c.reference);
 export type Document = {
   id: string;
   case_id: string;

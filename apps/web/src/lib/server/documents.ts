@@ -8,7 +8,13 @@ import { uid } from "./database";
 import type { Case } from "./contracts";
 import { assert, HttpError } from "./errors";
 import { embed, saveFile, deleteFile } from "./providers";
-export const MAX_BYTES = 6 * 1024 * 1024;
+import { cleanCourtPages, joinTextItems } from "./court-text";
+// A full Direktori Putusan MA decision runs to several hundred pages (the 696-page
+// 796/Pid.B/2022/PN Jkt.Sel is 4.2 MB and ~2.4 million characters).
+export const MAX_BYTES = 25 * 1024 * 1024,
+  MAX_PAGES = 1500,
+  MAX_CHARS = 3_000_000;
+const tooLong = `Document exceeds ${MAX_CHARS.toLocaleString("en")} extracted characters. Split it into smaller files.`;
 export type Pages = [number, string][];
 export const cleanName = (name: string) =>
   basename(name.replaceAll("\\", "/"))
@@ -48,27 +54,21 @@ export async function extractPages(
         const pdf = await task.promise;
         try {
           assert(
-            pdf.numPages <= 200,
+            pdf.numPages <= MAX_PAGES,
             422,
-            "Use an unencrypted PDF with at most 200 pages.",
+            `Use an unencrypted PDF with at most ${MAX_PAGES} pages.`,
           );
           let total = 0;
           for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const content = await page.getTextContent();
-            const text = content.items
-              .map((item) =>
-                "str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "",
-              )
-              .join("");
+            const text = joinTextItems(content.items);
             total += text.length;
-            assert(
-              total <= 400_000,
-              422,
-              "Document exceeds 400,000 extracted characters. Split it into smaller files.",
-            );
+            assert(total <= MAX_CHARS * 1.5, 422, tooLong);
             pages.push([i, text]);
             page.cleanup();
+            // Release cached fonts and page objects so long decisions stay bounded.
+            if (i % 50 === 0) await pdf.cleanup();
           }
         } finally {
           await task.destroy();
@@ -81,7 +81,7 @@ export async function extractPages(
           filter: (file) => {
             if (file.name !== "word/document.xml") return false;
             assert(
-              file.originalSize <= 4_000_000,
+              file.originalSize <= 40_000_000,
               422,
               "Document is too large after decompression.",
             );
@@ -148,18 +148,21 @@ export async function extractPages(
       default:
         throw new HttpError(422, "Upload PDF, DOCX, TXT, or Markdown files.");
     }
-    assert(
-      pages.reduce((n, p) => n + p[1].length, 0) <= 400_000,
-      422,
-      "Document exceeds 400,000 extracted characters. Split it into smaller files.",
+    // Direktori Putusan MA watermark/header/footer noise is removed from every format;
+    // PDF line spacing is also normalized. Raw extraction may exceed the limit by the
+    // noise it carries, so the limit applies to the cleaned text.
+    pages = cleanCourtPages(
+      pages.map(([p, text]) => [p, text.replaceAll("\x00", "")]),
+      { tidy: mime === "application/pdf" },
     );
+    assert(pages.reduce((n, p) => n + p[1].length, 0) <= MAX_CHARS, 422, tooLong);
     assert(
       pages.some((p) => p[1].trim()),
       422,
       "No readable text found. Scanned PDFs need OCR before upload.",
     );
     return {
-      pages: pages.map(([p, text]) => [p, text.replaceAll("\x00", "").trim()]),
+      pages: pages.map(([p, text]) => [p, text.trim()]),
       mime,
     };
   } catch (error) {
@@ -190,7 +193,7 @@ export async function ingest(
     assert(
       data.length > 0 && data.length <= MAX_BYTES,
       413,
-      "Upload a non-empty file up to 6 MB.",
+      `Upload a non-empty file up to ${MAX_BYTES / 1024 / 1024} MB.`,
     );
     const name = cleanName(filename),
       digest = hash(data);

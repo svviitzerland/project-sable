@@ -46,7 +46,7 @@ test("skeletons cover delayed workspace, sources, hearings and replies without f
   await page.setViewportSize({ width: 1440, height: 1000 });
   await register(page);
   const releaseGraph = await hold(page, "**/api/v1/cases/*/graph");
-  await page.getByRole("button", { name: "Try a synthetic hearing" }).click();
+  await page.getByRole("button", { name: "Open the demo case" }).click();
   await expect(
     page.getByRole("status", { name: "Loading evidence map…" }),
   ).toBeVisible();
@@ -85,7 +85,7 @@ test("skeletons cover delayed workspace, sources, hearings and replies without f
   const releaseSearch = await hold(page, "**/api/v1/cases/*/search?*");
   await page
     .getByLabel("Search case evidence", { exact: true })
-    .fill("warehouse");
+    .fill("Saguling");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(
     page.getByRole("status", { name: "Searching case documents…" }),
@@ -167,7 +167,7 @@ test("failed evidence loads replace skeletons with a working retry", async ({
       }),
     { times: 1 },
   );
-  await page.getByRole("button", { name: "Try a synthetic hearing" }).click();
+  await page.getByRole("button", { name: "Open the demo case" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "Evidence temporarily unavailable.",
   );

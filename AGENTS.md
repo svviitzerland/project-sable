@@ -9,7 +9,7 @@ Jude is a SvelteKit + TypeScript courtroom workspace and marketing introduction.
 - `db/`: the PostgreSQL schema shared by every service: `migrations/` (ordered, idempotent; add the next number, never edit applied files), `migrate.mjs` and its own Docker image, run as a one-shot job before the web app. Local SQLite mirrors the schema in `apps/web/src/lib/server/database.ts`.
 - `docs/`: `product/` (spec, limitations), `engineering/` (architecture, `.jude` format), `research/` (report, notes, public case sources), `phases/` (dated work records).
 - `infra/`: AWS Terraform (`terraform/`) and the production Compose stack (`docker/`), codename project-sable; see `infra/README.md`. `.github/workflows/deploy.yml` checks, builds and deploys `main` through GitHub OIDC.
-- `examples/`: fictional sample case pack. `compose.yaml`: local Docker service for `apps/voice`.
+- `examples/`: fictional sample case pack (`cendana-warehouse/`) and the public-record demo pack (`sambo-796-public/`, also bundled as `apps/web/static/demo/sambo-796-public.jude`). `compose.yaml`: local Docker service for `apps/voice`.
 - `.impeccable/`: shared Impeccable design context (config, design tokens, surfaces, mocks). The Impeccable skill itself is installed per developer (`bunx impeccable install`, gitignored under `.claude/`) for frontend design and review.
 
 ## Commands

@@ -6,7 +6,7 @@ test("case assistant and manually configured courtroom practice", async ({
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await register(page);
-  await page.getByRole("button", { name: "Try a synthetic hearing" }).click();
+  await page.getByRole("button", { name: "Open the demo case" }).click();
   await page
     .getByRole("button", { name: "Witness statement", exact: false })
     .first()

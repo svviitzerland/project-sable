@@ -207,7 +207,7 @@ export const id: Messages = {
   "landing.faq.title2": "ruang sidang.",
   "landing.faq.q1": "Untuk siapa Jude dibangun?",
   "landing.faq.a1":
-    "Kasus penggunaan pertama adalah advokat dalam perkara pidana di Indonesia. MVP saat ini mencakup sidang sintetis dan ruang kerja perkara. Alur kerja Penuntut Umum dan hakim memerlukan kemampuan serta pengaman tersendiri sesuai perannya.",
+    "Kasus penggunaan pertama adalah advokat dalam perkara pidana di Indonesia. MVP saat ini mencakup perkara demo dari catatan pengadilan publik dan ruang kerja perkara. Alur kerja Penuntut Umum dan hakim memerlukan kemampuan serta pengaman tersendiri sesuai perannya.",
   "landing.faq.q2": "Apakah ini produk untuk sidang sungguhan?",
   "landing.faq.a2":
     "Jude ditujukan untuk evaluasi dengan materi fiktif atau yang sudah mendapat izin. Gunakan untuk menata dokumen, meninjau transkrip dan temuan, serta menyiapkan pertanyaan. Contoh sidang memungkinkan Anda mencoba dengan materi fiktif. Verifikasi sumber dan tinjau hasilnya sebelum mengandalkannya dalam persidangan sungguhan.",
@@ -252,9 +252,9 @@ export const id: Messages = {
   "auth.haveAccount": "Sudah punya akun? Masuk",
   "auth.newAccount": "Baru di Jude? Buat akun",
   "auth.exploreFirst": "Jelajahi sebelum memulai",
-  "auth.openSynthetic": "Buka perkara sintetis",
+  "auth.openSynthetic": "Buka perkara demo",
   "auth.demoNote":
-    "Jelajahi perkara fiktif dengan bukti yang sudah disiapkan. Tanpa mikrofon.",
+    "Jelajahi catatan pengadilan publik, perkara Ferdy Sambo (796/Pid.B/2022/PN Jkt.Sel), lengkap dengan transkrip sidang dan temuannya. Tanpa mikrofon.",
   "auth.footnote":
     "Gunakan hanya materi perkara yang berwenang Anda bagikan dan proses.",
 
@@ -289,11 +289,12 @@ export const id: Messages = {
   "ws.welcomeText":
     "Buat perkara untuk menyatukan dokumen, keterangan, dan pertanyaan yang perlu ditelaah lebih lanjut.",
   "ws.createFirst": "Buat perkara pertama Anda",
-  "ws.trySynthetic": "Coba sidang sintetis",
+  "ws.trySynthetic": "Buka perkara demo",
   "ws.loadingCase": "Memuat catatan perkara…",
   "ws.caseLoadFailed": "Catatan perkara tidak dapat dimuat.",
   "ws.syntheticMaterial": "Materi sintetis",
   "ws.privateCase": "Perkara privat",
+  "ws.publicRecord": "Catatan publik",
   "ws.defaultDescription": "Satukan keterangan dan materi sumber.",
   "ws.exportJude": "Ekspor .jude",
   "ws.caseSections": "Bagian perkara",
@@ -416,7 +417,7 @@ export const id: Messages = {
     "Dokumen asli, kutipan yang terjaga, dan jejak kembali ke sumbernya.",
   "docs.addTitle": "Tambahkan dokumen perkara yang sudah diizinkan",
   "docs.formats":
-    "PDF, DOCX, TXT, atau Markdown · maks. 6 MB · hanya PDF berbasis teks",
+    "PDF, DOCX, TXT, atau Markdown · maks. 25 MB · hanya PDF berbasis teks",
   "docs.note":
     "File asli tetap tersimpan dan teksnya dapat dicari. Fitur AI dapat memproses cuplikan untuk membantu menemukan materi terkait.",
   "docs.processing": "Memproses…",

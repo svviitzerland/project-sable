@@ -41,7 +41,7 @@ import {
   pack,
   MAX_ARCHIVE,
 } from "./archive";
-import { ingest } from "./documents";
+import { ingest, MAX_BYTES } from "./documents";
 import { deleteFile, legalSearch, readFileData } from "./providers";
 import { retrieve } from "./retrieval";
 import { previewHearing, validateReviewed } from "./hearings";
@@ -85,8 +85,7 @@ import {
   MAX_CLIP_BYTES,
   voiceConfigured,
 } from "./voice";
-import { seedCase, simulate } from "./synthetic";
-import simulation from "./simulation.json" with { type: "json" };
+import { seedDemo } from "./synthetic";
 const json = (data: unknown, status = 200, headers: HeadersInit = {}) =>
   new Response(JSON.stringify(data), {
     status,
@@ -315,7 +314,7 @@ export async function handleApi(
             password_hash: "disabled",
             demo: true,
           });
-          await seedCase(rt, account);
+          await seedDemo(rt, account);
           return json(publicUser(account), 200, {
             "Set-Cookie": await sessionCookie(rt, account),
           });
@@ -393,10 +392,10 @@ export async function handleApi(
         assert(
           rt.config.demo,
           403,
-          "Synthetic fixtures are disabled in production.",
+          "The demonstration case is disabled in production.",
         );
         await rate(rt, `seed:${user.id}`, 5);
-        return send(caseOutput.strip().parse(await seedCase(rt, user)));
+        return send(caseOutput.strip().parse(await seedDemo(rt, user)));
       }
       if (parts[1] === "import" && method === "POST") {
         await rate(rt, `archive:${user.id}`, 5);
@@ -468,7 +467,7 @@ export async function handleApi(
       if (action === "documents") {
         if (parts.length === 3 && method === "POST") {
           await rate(rt, `upload:${user.id}`, 10);
-          const file = await readUpload(request),
+          const file = await readUpload(request, MAX_BYTES),
             document = await ingest(rt, record, file.name, file.data);
           await publish(rt, caseId, { type: "document" });
           return send(documentOutput.parse(document));
@@ -612,20 +611,14 @@ export async function handleApi(
             "Only failed or interrupted analysis can be retried.",
           );
           assert(
-            aiConfigured(rt.config) || segment.origin === "simulation",
+            aiConfigured(rt.config),
             503,
             "Connect OpenRouter before retrying analysis.",
           );
           await rt.db.update("segments", { analysis_state: "queued" }, "id=?", [
             segment.id,
           ]);
-          const fixture =
-            segment.origin === "simulation"
-              ? (simulation.script.find(
-                  (row) => row[1] === segment.text,
-                )?.[3] as string | null)
-              : undefined;
-          enqueue(rt, segment.id, fixture);
+          enqueue(rt, segment.id);
           return send({ message: "Analysis queued" });
         }
       }
@@ -948,19 +941,6 @@ export async function handleApi(
         if (parts[4] === "stop" && method === "POST")
           return send(await endAudio(rt, record, request, parts[3]));
       }
-      if (action === "simulation" && method === "POST")
-        return send(
-          await simulate(rt, record, url.searchParams.get("hearing_id")),
-        );
-      if (action === "pause" && method === "POST") {
-        assert(
-          record.status === "simulation",
-          409,
-          "No simulated hearing is running.",
-        );
-        rt.simulations.get(caseId)?.abort();
-        return send({ message: "Hearing paused" });
-      }
       if (action === "export.jude" && method === "GET")
         return fileResponse(
           await exportCase(rt, record),
@@ -985,7 +965,7 @@ export async function handleApi(
                 ...detail,
                 sources,
                 notice:
-                  "Decision support only. Verify original sources. Simulation findings are authored fixtures, not AI output.",
+                  "Decision support only. Verify original sources.",
               },
               null,
               2,
