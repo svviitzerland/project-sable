@@ -2,7 +2,7 @@
 
 `cases.json` contains six synthetic Indonesian examples: direct support, same-event timing conflict, different-day context, missing evidence, instruction injection in a source, and a procedural question. Labels are authored examples requiring independent legal review before using them as a benchmark.
 
-Run from `app/`:
+Run from `apps/web/`:
 
 ```bash
 pnpm evaluate --predictions evaluation/predictions.fixture.json --fixture --output /tmp/jude-fixture-report.json

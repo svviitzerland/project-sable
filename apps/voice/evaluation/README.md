@@ -16,7 +16,7 @@ Checks Jude's live voice matching against an official, speaker-labeled transcrip
 # outside the repository
 uvx yt-dlp -x --audio-format wav --postprocessor-args "ffmpeg:-ar 16000 -ac 1" \
   -o mk115.wav https://www.youtube.com/watch?v=FUI-bAfaWsY
-# from voice/
+# from apps/voice/
 uv sync --extra ml
 uv run python evaluation/speaker_consistency.py /path/to/mk115.wav evaluation/mk115.reference.json \
   --offset 27 --end-offset 31 --window 3 --min-turn 6 --thresholds 0.45 0.55 0.65

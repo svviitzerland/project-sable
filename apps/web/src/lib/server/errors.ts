@@ -4,7 +4,7 @@ const diagnosticHints: Record<string, string> = {
   "28P01": "Check the database password in DATABASE_URL.",
   "28000": "Check the database user and authentication configuration.",
   "42P01":
-    "Check that migrations 001–006 ran in the database used by DATABASE_URL.",
+    "Check that supabase/migrations 001–007 ran in the database used by DATABASE_URL.",
   "42703": "Check that all database migrations completed.",
   "42501": "Check the database role's permissions.",
   "3D000": "Check the database name in DATABASE_URL.",

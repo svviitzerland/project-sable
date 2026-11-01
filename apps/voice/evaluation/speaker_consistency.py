@@ -18,7 +18,6 @@ import argparse
 import json
 from collections import Counter, defaultdict
 
-import numpy as np
 import soundfile as sf
 
 from jude_voice.config import Settings

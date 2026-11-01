@@ -2,38 +2,56 @@
 
 An evidence-grounded workspace for hearing preparation, testimony review, and courtroom practice. The existing landing page is at `/`; the authenticated product is at `/workspace`.
 
-Jude uses **Svelte 5, SvelteKit 3, and TypeScript for both frontend and backend**. One Vercel project serves the UI and `/api/v1` API. The complete application lives in `app/`; set the Vercel project's Root Directory to `app`.
-
-An optional **Python voice service** in `voice/` (FastAPI, open-source pyannote models, Docker) keeps one label per recurring voice across recording connections and hearings. Jude works without it.
+Jude uses **Svelte 5, SvelteKit 3, and TypeScript for both frontend and backend** in one Vercel project (`apps/web`). An optional **Python voice service** (`apps/voice`: FastAPI, open-source pyannote models, Docker) keeps one label per recurring voice across recording connections and hearings. Database and file storage run on **Supabase**, locally through the Supabase CLI.
 
 ## Repository layout
 
-| Path | What it is | Deploys to |
-|---|---|---|
-| `app/` | SvelteKit app: landing page, workspace, `/api/v1`, migrations, tests | Vercel |
-| `voice/` | Python voice API: voiceprints, identification, offline diarization | Any Docker host (optional) |
-| `compose.yaml` | Local Docker services (`voice`) | — |
-| `docs/` | Product spec, architecture, deployment, format, limitations | — |
-| `examples/` | Fictional sample case pack | — |
+```
+apps/
+  web/                 SvelteKit app (Vercel Root Directory: apps/web)
+    src/routes/        frontend pages and the /api/v1 endpoint
+    src/components/    frontend UI
+    src/lib/           browser helpers (audio capture, API client)
+    src/lib/server/    backend: API, analysis, storage, voice client
+    tests/             Node and Playwright tests
+    evaluation/        synthetic analysis evaluation
+  voice/               Python voice API (Docker; optional)
+    src/jude_voice/    FastAPI service
+    tests/             pytest
+    evaluation/        speaker-consistency check on real hearing audio
+supabase/
+  config.toml          Supabase local stack
+  migrations/          PostgreSQL schema, applied locally and to hosted projects
+docs/
+  product/             product spec, limitations and problems with sources
+  engineering/         architecture, deployment, .jude format
+  research/            research report, notes and public case sources
+  phases/              dated work records
+examples/              fictional sample case pack
+compose.yaml           local Docker service for apps/voice
+```
 
 ## Run locally
 
-Use Node **24.x** and pnpm 11.25.0:
+Use Node **24.x**, pnpm 11.25.0, Docker (Docker Desktop or Colima) and the [Supabase CLI](https://supabase.com/docs/guides/local-development).
 
 ```bash
-cd app
+supabase start                      # local Postgres + pgvector + Storage, applies supabase/migrations
+supabase status -o env              # prints DB_URL, API_URL and SERVICE_ROLE_KEY
+
+cd apps/web
 pnpm install --frozen-lockfile
-cp .env.example .env.local
+cp .env.example .env.local          # fill the local Supabase block from `supabase status`
 pnpm dev
 ```
 
-To enable voice labels locally, run `cp voice/.env.example voice/.env`, set `VOICE_API_TOKEN`, start `docker compose up --build voice`, and add `VOICE_API_URL=http://localhost:8000` plus the same token to `app/.env.local`. See [voice/README.md](voice/README.md).
+Open http://localhost:3000/workspace. Register an account or open a clearly labeled synthetic case. Without the Supabase variables the app falls back to a single local SQLite process with files in `apps/web/.data/`. `supabase db reset` re-applies all migrations to the local database; Studio is at http://127.0.0.1:54323.
 
-Open http://localhost:3000/workspace. Register an account or open a clearly labeled synthetic case. Local SQLite and private original files persist in `app/.data/`. Run one local process; hosted operation uses shared PostgreSQL coordination instead. To continue using an existing local database and originals, set `JUDE_DATA_DIR` to the absolute path of the previous `be/.data` directory. Account hashes, sessions, case tables, and `.jude` version 1 remain compatible.
+Voice labels (optional): `cp apps/voice/.env.example apps/voice/.env`, set `VOICE_API_TOKEN`, run `docker compose up --build voice`, and add `VOICE_API_URL=http://localhost:8000` plus the same token to `apps/web/.env.local`. See [apps/voice/README.md](apps/voice/README.md).
 
 ## Deploy
 
-Import the repository in Vercel, select **SvelteKit**, Root Directory **`app`**, and Node **24.x**. Apply the Supabase migrations and add the private environment variables described in [DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md). Existing databases need `006_typescript_audio.sql` and `007_voiceprints.sql` after 001–005. Host the optional voice container separately and set an HTTPS `VOICE_API_URL`.
+Import the repository in Vercel, select **SvelteKit**, Root Directory **`apps/web`**, and Node **24.x**. Link a hosted Supabase project and push the same migrations (`supabase link` then `supabase db push`, or run `supabase/migrations/*.sql` in order), then add the private environment variables described in [DEPLOY_VERCEL.md](docs/engineering/DEPLOY_VERCEL.md). Host the optional voice container separately and set an HTTPS `VOICE_API_URL`.
 
 Supabase PostgreSQL/private Storage and QStash remain required hosted services. OpenRouter, Speechmatics, and Pasal.id enable their respective features. Recovery can run from QStash's scheduler, so this repository does not impose a per-minute Vercel Cron requirement on Hobby projects. Configure the schedule after deployment using the documented script. No deployment or live-provider verification has been performed without credentials.
 
@@ -56,7 +74,7 @@ For upload/import practice, use the [fictional Cendana warehouse sample pack](ex
 ## Checks
 
 ```bash
-cd app
+cd apps/web
 pnpm lint
 pnpm typecheck
 pnpm test
@@ -68,7 +86,7 @@ pnpm evaluate --predictions evaluation/predictions.fixture.json --fixture --outp
 Voice service:
 
 ```bash
-cd voice
+cd apps/voice
 uv run pytest
 uv run ruff check . && uv run ruff format --check .
 ```
@@ -82,10 +100,10 @@ pnpm test:e2e
 
 Set `CHROMIUM_EXECUTABLE` to an installed Chromium path if needed; `JUDE_TEST_URL` selects another app URL. The TypeScript browser suites cover workspace, landing, conversations/practice, chunked uploads and mocked direct speech rotation. Provider mocks are explicitly test-only.
 
-For PostgreSQL, provision a disposable database named `jude_test*` on a server with pgvector and run `JUDE_TEST_DATABASE_URL=... pnpm test`. This verifies migrations, RLS denial, vectors, shared locks/rates, jobs and cross-connection persistence; it does not emulate hosted Supabase Storage. See [evaluation guidance](app/evaluation/README.md) before interpreting metrics.
+For PostgreSQL, create a disposable database named `jude_test*` (for example `createdb -h 127.0.0.1 -p 54322 -U postgres jude_test` on the local Supabase stack) and run `JUDE_TEST_DATABASE_URL=... pnpm test`. This verifies migrations, RLS denial, vectors, shared locks/rates, jobs and cross-connection persistence; it does not emulate hosted Supabase Storage. See [evaluation guidance](apps/web/evaluation/README.md) before interpreting metrics.
 
 ## Architecture and boundaries
 
-Server-only modules live in `app/src/lib/server`; Zod validates request and model-output contracts. SvelteKit's `/api/v1/[...path]` endpoint enforces account ownership and delegates to those modules. PostgreSQL migrations run separately, never on hosted cold starts. Private keys are declared in `app/src/env.ts` and never exported to browser environment variables.
+Server-only modules live in `apps/web/src/lib/server`; Zod validates request and model-output contracts. SvelteKit's `/api/v1/[...path]` endpoint enforces account ownership and delegates to those modules. PostgreSQL migrations run separately, never on hosted cold starts. Private keys are declared in `apps/web/src/env.ts` and never exported to browser environment variables.
 
-The app supports human verification, not determinations of guilt, honesty, credibility, or legal outcomes. Legal search returns discovery metadata and links, not verified statute text. Practice output is hypothetical and never enters the evidence record. See [the product spec](docs/PRODUCT_SPEC.md), [architecture](docs/ARCHITECTURE.md), and [portable format](docs/JUDE_FORMAT.md).
+The app supports human verification, not determinations of guilt, honesty, credibility, or legal outcomes. Legal search returns discovery metadata and links, not verified statute text. Practice output is hypothetical and never enters the evidence record. See [the product spec](docs/product/PRODUCT_SPEC.md), [limitations](docs/product/LIMITATIONS.md), [architecture](docs/engineering/ARCHITECTURE.md), and [portable format](docs/engineering/JUDE_FORMAT.md).

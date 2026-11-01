@@ -1,10 +1,10 @@
 # Architecture
 
-Svelte 5 and SvelteKit 3 serve the landing page, workspace, and TypeScript `/api/v1` API in one Node 24 Vercel project. Server modules are under `app/src/lib/server`; the catch-all endpoint delegates to `api.ts`. Zod validates requests, portable records and model output. Private environment variables are declared explicitly in `app/src/env.ts`. No frontend proxy, Python service, or app-hosted WebSocket is required.
+Svelte 5 and SvelteKit 3 serve the landing page, workspace, and TypeScript `/api/v1` API in one Node 24 Vercel project. Server modules are under `apps/web/src/lib/server`; the catch-all endpoint delegates to `api.ts`. Zod validates requests, portable records and model output. Private environment variables are declared explicitly in `apps/web/src/env.ts`. No frontend proxy or app-hosted WebSocket is required; the Python voice service in `apps/voice` is optional.
 
 Opaque account cookies are HttpOnly and SameSite Strict, with Secure in production. Scrypt hashes and hashed 12-hour session tokens retain compatibility with the previous implementation. Every case route, notification stream, file transfer and conversation verifies ownership. API mutations reject foreign origins. Browser database roles have no table access.
 
-The typed SQL layer uses `node:sqlite` locally and `pg` for PostgreSQL. Existing table names, JSON data, IDs, account hashes and migrations 001–005 are preserved. Migration 006 adds audio session state. PostgreSQL migrations are applied separately; hosted cold starts never create schemas or reset another instance's jobs. One local process creates/additively upgrades SQLite and marks abandoned local work interrupted. Original files remain separate from extracted chunks in private Storage or the local data directory.
+The typed SQL layer uses `node:sqlite` locally and `pg` for PostgreSQL. Existing table names, JSON data, IDs, account hashes and migrations 001–005 are preserved. Migration 006 adds audio session state and 007 adds voiceprints. Migrations live in `supabase/migrations` and run against Supabase (local CLI or hosted). PostgreSQL migrations are applied separately; hosted cold starts never create schemas or reset another instance's jobs. One local process creates/additively upgrades SQLite and marks abandoned local work interrupted. Original files remain separate from extracted chunks in private Storage or the local data directory.
 
 ## Evidence and analysis
 

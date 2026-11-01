@@ -1,10 +1,10 @@
 # Deploy Jude as one SvelteKit project
 
-The frontend and TypeScript API now share **one Vercel deployment**, rooted at **`app`**. Supabase stores durable data/files; QStash delivers analysis jobs. Python and a second API project are no longer required.
+The frontend and TypeScript API now share **one Vercel deployment**, rooted at **`apps/web`**. Supabase stores durable data/files; QStash delivers analysis jobs. Python and a second API project are no longer required.
 
 ## 1. Prepare Supabase
 
-Use a dedicated Supabase project for each environment. Run `app/migrations/001_schema.sql` through `007_voiceprints.sql`, in numeric order, as the database owner. On an existing database already using 001–005, apply 006 and 007; on one already at 006, apply only 007. Back up existing data before applying schema changes.
+Use a dedicated Supabase project for each environment. Apply `supabase/migrations/001_schema.sql` through `007_voiceprints.sql` in numeric order as the database owner: `supabase link --project-ref <ref>` then `supabase db push`, or run the files in the SQL editor. The same files run locally with `supabase start`. On an existing database already using 001–005, apply 006 and 007; on one already at 006, apply only 007. Back up existing data before applying schema changes.
 
 Migrations preserve existing tables and scrypt account hashes. They enable RLS and deny direct browser-role access. Migration 002 installs pgvector in `extensions`, maintains 1536-dimensional vectors, and creates the private `jude-documents` bucket; 005 permits private temporary transfers up to 64 MB. Migration 006 adds authenticated browser audio sessions. If pgvector already lives in another schema, reconcile that before applying 002.
 
@@ -19,15 +19,15 @@ Choose the branch containing the TypeScript migration:
 | Setting | Value |
 | --- | --- |
 | Framework Preset | **SvelteKit** |
-| Root Directory | **`app`** |
+| Root Directory | **`apps/web`** |
 | Node.js Version | **24.x** |
 | Install Command | `pnpm install --frozen-lockfile` |
 | Build Command | `pnpm build` |
 | Output Directory | Leave the preset default |
 
-`app/vite.config.ts` configures the Vercel adapter, Node 24 and a 300-second maximum function duration. The app uses streaming HTTP for notifications; it does not host WebSockets. Ensure your Vercel function settings and plan permit the configured duration. No Uvicorn start command or separate frontend/backend URL is needed.
+`apps/web/vite.config.ts` configures the Vercel adapter, Node 24 and a 300-second maximum function duration. The app uses streaming HTTP for notifications; it does not host WebSockets. Ensure your Vercel function settings and plan permit the configured duration. No Uvicorn start command or separate frontend/backend URL is needed.
 
-If this project was previously configured with Root Directory `fe`, change it to `app` in Vercel project settings before the next deployment. The repository rename does not change that dashboard setting automatically.
+If this project was previously configured with Root Directory `fe`, change it to `apps/web` in Vercel project settings before the next deployment. The repository rename does not change that dashboard setting automatically.
 
 ## 3. Add private environment variables
 
@@ -61,7 +61,7 @@ VOICE_API_URL=https://YOUR_VOICE_HOST
 VOICE_API_TOKEN=YOUR_LONG_SHARED_SECRET
 ```
 
-The voice service is optional and is not a Vercel function. Build `voice/Dockerfile` and run it on a Docker host behind TLS with the same `VOICE_API_TOKEN`; keep its `/models` cache volume. Hosted settings reject a non-HTTPS `VOICE_API_URL`. See [voice/README.md](../voice/README.md).
+The voice service is optional and is not a Vercel function. Build `apps/voice/Dockerfile` and run it on a Docker host behind TLS with the same `VOICE_API_TOKEN`; keep its `/models` cache volume. Hosted settings reject a non-HTTPS `VOICE_API_URL`. See [apps/voice/README.md](../../apps/voice/README.md).
 
 The embedding model must support 1536-dimensional output. The default Speechmatics region is EU; `SPEECHMATICS_URL` defaults to `wss://eu.rt.speechmatics.com/v2`. The server mints short-lived EU realtime credentials. `QSTASH_URL` normally stays at its default. `ALLOWED_ORIGINS` is optional for explicitly trusted additional origins; ordinary same-origin use needs no CORS configuration.
 
@@ -71,7 +71,7 @@ Remove obsolete `API_INTERNAL_URL`, `PUBLIC_API_WS_URL`, `PUBLIC_HOSTED_UPLOADS`
 
 Normal testimony saves and its analysis outbox entry commit atomically. QStash dispatches analysis immediately. Recovery finds jobs that were never dispatched or became stale, retries a bounded batch, expires abandoned audio state, and removes expired temporary files. **Do not omit this schedule.**
 
-The repository no longer commits a per-minute Vercel Cron. Use QStash's scheduler to avoid coupling deployment to Vercel's cron-plan restrictions. From `app`, with the production `JUDE_APP_URL`, `QSTASH_TOKEN`, and `CRON_SECRET` in a local, uncommitted env file, run once after deploying:
+The repository no longer commits a per-minute Vercel Cron. Use QStash's scheduler to avoid coupling deployment to Vercel's cron-plan restrictions. From `apps/web`, with the production `JUDE_APP_URL`, `QSTASH_TOKEN`, and `CRON_SECRET` in a local, uncommitted env file, run once after deploying:
 
 ```bash
 node --env-file=.env.local --import tsx scripts/configure-recovery.ts
@@ -81,7 +81,7 @@ This creates or updates a stable schedule for that app URL: `GET /api/v1/interna
 
 For an existing every-minute schedule, update any explicit `JUDE_RECOVERY_CRON` override to `*/15 * * * *` and rerun the command above with the same app URL. Changing the code or environment variable alone does not update an existing QStash schedule. Re-run after changing the origin or recovery secret. Remove the old origin's schedule after a domain migration.
 
-If your Vercel plan supports your desired cron frequency, you may instead add a `crons` entry to `app/vercel.json` for `/api/v1/internal/recover`; Vercel supplies `CRON_SECRET` as its Bearer token. Configure one scheduler, not duplicate sweeps.
+If your Vercel plan supports your desired cron frequency, you may instead add a `crons` entry to `apps/web/vercel.json` for `/api/v1/internal/recover`; Vercel supplies `CRON_SECRET` as its Bearer token. Configure one scheduler, not duplicate sweeps.
 
 ## 5. Verify the deployed app
 

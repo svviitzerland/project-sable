@@ -36,10 +36,10 @@ uv run uvicorn jude_voice.main:app --port 8000
 With Docker, from the repository root:
 
 ```bash
-docker compose up --build voice    # reads voice/.env, caches models in a volume
+docker compose up --build voice    # reads apps/voice/.env, caches models in a volume
 ```
 
-`docker build --build-arg EXTRAS= .` builds a lightweight image without torch (fake engine only). Then set the same token in `app/.env.local`:
+`docker build --build-arg EXTRAS= .` builds a lightweight image without torch (fake engine only). Then set the same token in `apps/web/.env.local`:
 
 ```bash
 VOICE_API_URL=http://localhost:8000
