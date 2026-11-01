@@ -232,8 +232,10 @@ export async function handleApi(
           analysis: {
             configured: aiConfigured(rt.config),
             note: aiConfigured(rt.config)
-              ? "OpenRouter configured; live provider verification required."
-              : "Add OPENROUTER_API_KEY and OPENROUTER_MODEL to the server environment.",
+              ? rt.config.aiProvider === "bedrock"
+                ? "Amazon Bedrock configured."
+                : "OpenRouter configured; live provider verification required."
+              : "Set AI_PROVIDER=bedrock (AWS) or OPENROUTER_API_KEY and OPENROUTER_MODEL.",
           },
           speech: {
             configured: !!rt.config.speechKey,

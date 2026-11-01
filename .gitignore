@@ -43,3 +43,9 @@ tfplan
 crash.log
 *.tfvars
 !*.tfvars.example
+
+# SvelteKit Node build output
+apps/web/build/
+
+# Local agent tooling (Impeccable install, personal settings)
+.claude/

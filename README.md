@@ -13,13 +13,15 @@ apps/
     src/components/    frontend UI
     src/lib/           browser helpers (audio capture, API client)
     src/lib/server/    backend: API, analysis, storage, voice client
-    migrations/        PostgreSQL schema, applied by scripts/migrate.mjs
     tests/             Node and Playwright tests
     evaluation/        synthetic analysis evaluation
   voice/               Python voice API (Docker; optional)
     src/jude_voice/    FastAPI service
     tests/             pytest
     evaluation/        speaker-consistency check on real hearing audio
+db/                    PostgreSQL schema shared by every service
+  migrations/          ordered SQL migrations
+  migrate.mjs          migration runner (its own Docker image, runs before the web app)
 docs/
   product/             product spec, limitations and problems with sources
   engineering/         architecture, deployment, .jude format
@@ -27,7 +29,7 @@ docs/
   phases/              dated work records
 examples/              fictional sample case pack
 infra/
-  terraform/           AWS: VPC, EC2, S3, ECR, IAM (GitHub OIDC), SSM, snapshots
+  terraform/           AWS: VPC, EC2, RDS PostgreSQL, S3, ECR, IAM (GitHub OIDC), SSM, backups
   docker/              production Compose stack, Caddyfile, deploy script
 .github/workflows/     checks and automatic deploy
 compose.yaml           local Docker service for apps/voice
@@ -44,7 +46,7 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Open http://localhost:3000/workspace. Register an account or open a clearly labeled synthetic case. By default the app runs a single local SQLite process with files in `apps/web/.data/`. To use PostgreSQL instead, start one with pgvector (for example `docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 pgvector/pgvector:pg17`), apply migrations with `DATABASE_URL=... node scripts/migrate.mjs` and set the same `DATABASE_URL` in `.env.local`. Setting `S3_BUCKET` stores originals in S3 through the AWS credential chain.
+Open http://localhost:3000/workspace. Register an account or open a clearly labeled synthetic case. By default the app runs a single local SQLite process with files in `apps/web/.data/`. To use PostgreSQL instead, start one with pgvector (for example `docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 pgvector/pgvector:pg17`), apply migrations with `cd db && npm ci && DATABASE_URL=... npm run migrate` and set the same `DATABASE_URL` in `.env.local`. Setting `S3_BUCKET` stores originals in S3 through the AWS credential chain.
 
 Voice labels (optional): `cp apps/voice/.env.example apps/voice/.env`, set `VOICE_API_TOKEN`, run `docker compose up --build voice`, and add `VOICE_API_URL=http://localhost:8000` plus the same token to `apps/web/.env.local`. See [apps/voice/README.md](apps/voice/README.md).
 

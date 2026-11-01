@@ -1,4 +1,4 @@
-# Web app (SvelteKit Node server) with its migrations:  docker build -t web apps/web
+# Web app (SvelteKit Node server):  docker build -t web apps/web
 FROM node:24-slim AS build
 RUN corepack enable && corepack prepare pnpm@11.25.0 --activate
 WORKDIR /srv
@@ -17,8 +17,6 @@ RUN mkdir -p /srv/.data && chown node /srv/.data
 COPY --from=build --chown=node /srv/build ./build
 COPY --from=build --chown=node /srv/node_modules ./node_modules
 COPY --from=build --chown=node /srv/package.json ./package.json
-COPY --from=build --chown=node /srv/scripts/migrate.mjs ./scripts/migrate.mjs
-COPY --from=build --chown=node /srv/migrations ./migrations
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \

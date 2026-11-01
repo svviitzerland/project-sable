@@ -77,7 +77,7 @@ resource "aws_s3_bucket_policy" "tls_only" {
 
 # Container images built by GitHub Actions.
 resource "aws_ecr_repository" "app" {
-  for_each             = toset(["web", "voice"])
+  for_each             = toset(["web", "voice", "migrate"])
   name                 = "${var.project}-${each.key}"
   image_tag_mutability = "MUTABLE"
   force_delete         = true

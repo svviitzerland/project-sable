@@ -81,3 +81,27 @@ variable "snapshot_retention_days" {
   type        = number
   default     = 7
 }
+
+variable "db_instance_class" {
+  description = "RDS PostgreSQL class. db.t4g.micro (2 vCPU burst, 1 GB) is the cheapest that runs pgvector comfortably for case-sized corpora."
+  type        = string
+  default     = "db.t4g.micro"
+}
+
+variable "db_engine_version" {
+  description = "PostgreSQL major.minor on RDS (pgvector is included)."
+  type        = string
+  default     = "17.11"
+}
+
+variable "db_backup_days" {
+  description = "Automated backup retention with point-in-time restore."
+  type        = number
+  default     = 7
+}
+
+variable "db_deletion_protection" {
+  description = "Protect the database from terraform destroy and keep a final snapshot."
+  type        = bool
+  default     = true
+}

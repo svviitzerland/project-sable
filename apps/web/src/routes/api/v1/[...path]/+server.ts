@@ -1,6 +1,9 @@
 import * as env from "$app/env/private";
 import { settings } from "../../../../lib/server/config";
-import { connectDatabase } from "../../../../lib/server/database";
+import {
+  connectDatabase,
+  resetInterruptedWork,
+} from "../../../../lib/server/database";
 import type { Runtime } from "../../../../lib/server/runtime";
 import { handleApi } from "../../../../lib/server/api";
 import type { RequestHandler } from "./$types";
@@ -8,9 +11,12 @@ let runtime: Promise<Runtime> | undefined;
 function getRuntime() {
   return (runtime ??= (async (): Promise<Runtime> => {
     const config = settings(env);
+    const db = await connectDatabase(config);
+    // SQLite resets inside connectDatabase; PostgreSQL resets here, once per server process.
+    if (db.postgres) await resetInterruptedWork(db);
     return {
       config,
-      db: await connectDatabase(config),
+      db,
       fetch,
       tasks: new Set(),
       simulations: new Map(),

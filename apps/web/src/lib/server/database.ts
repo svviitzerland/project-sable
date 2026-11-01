@@ -267,6 +267,36 @@ export class Database {
     else (this.connection as DatabaseSync).close();
   }
 }
+/**
+ * The app runs as one server process, so work that was in flight when it stopped can never
+ * finish: mark it interrupted (retryable) and close live sessions. Call once per process.
+ */
+export async function resetInterruptedWork(db: Database) {
+  await db.update(
+    "segments",
+    {
+      analysis_state: "interrupted",
+      analysis_error: "Analysis was interrupted. Retry this statement.",
+    },
+    "analysis_state IN ('queued','extracting','retrieving','analyzing','reviewing','synthesizing')",
+    [],
+  );
+  await db.update(
+    "cases",
+    { status: "paused" },
+    "status IN ('live','simulation')",
+    [],
+  );
+  await db.update(
+    "hearings",
+    { status: "paused" },
+    "status IN ('live','simulation')",
+    [],
+  );
+  await db.update("audio_sessions", { status: "closed" }, "status=?", [
+    "active",
+  ]);
+}
 export async function connectDatabase(config: Settings) {
   if (config.databaseUrl) {
     return new Database(
@@ -313,30 +343,7 @@ export async function connectDatabase(config: Settings) {
   );
   const db = new Database(connection, false, new Mutex());
   // One local development process owns these jobs.
-  await db.update(
-    "segments",
-    {
-      analysis_state: "interrupted",
-      analysis_error: "Analysis was interrupted. Retry this statement.",
-    },
-    "analysis_state IN ('queued','extracting','retrieving','analyzing','reviewing','synthesizing')",
-    [],
-  );
-  await db.update(
-    "cases",
-    { status: "paused" },
-    "status IN ('live','simulation')",
-    [],
-  );
-  await db.update(
-    "hearings",
-    { status: "paused" },
-    "status IN ('live','simulation')",
-    [],
-  );
-  await db.update("audio_sessions", { status: "closed" }, "status=?", [
-    "active",
-  ]);
+  await resetInterruptedWork(db);
   const legacyCases = await db.query<{ case_id: string }>(
     "SELECT DISTINCT case_id FROM jude_segments WHERE hearing_id IS NULL",
   );

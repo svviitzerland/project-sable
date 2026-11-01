@@ -4,11 +4,11 @@ Codename **project-sable**: infrastructure, buckets, images and the repository u
 
 ## Shape
 
-One EC2 instance (`t3a.medium`, Amazon Linux 2023, Singapore `ap-southeast-1`) runs the whole stack with Docker Compose. It is the cheapest setup that keeps the app's single-process model: background analysis runs in-process, so no queue service is needed.
+One EC2 instance (`t3a.medium`, Amazon Linux 2023, Singapore `ap-southeast-1`) runs the application containers with Docker Compose; the database is a separate managed **Amazon RDS PostgreSQL** instance in private subnets. Background analysis runs in-process in the web container, so no queue service is needed.
 
 ```
 Internet ──443──▶ Caddy (automatic HTTPS) ──▶ web (SvelteKit Node server)
-                                                 │  ├─▶ db (PostgreSQL 17 + pgvector, volume)
+                                                 │  ├─▶ RDS PostgreSQL 17 + pgvector (private subnets, TLS)
                                                  │  ├─▶ voice (FastAPI + pyannote, CPU)
                                                  │  ├─▶ S3 (case originals, private, TLS-only)
                                                  │  └─▶ Bedrock (Nova Lite screen, Claude Haiku review)
@@ -19,7 +19,7 @@ GitHub Actions ──OIDC──▶ ECR push ──▶ SSM RunCommand ──▶ /
 |---|---|---|
 | Compute | 1 EC2, Docker Compose, Elastic IP | Simple, cheap, no cold starts for pyannote |
 | Access | SSM Session Manager | No SSH key, no port 22 |
-| Database | PostgreSQL in Docker on the encrypted root volume, daily EBS snapshots (7 days) | The schema is relational and uses transactions and pgvector; no rewrite |
+| Database | Amazon RDS PostgreSQL 17 (`db.t4g.micro`, gp3, encrypted, 7-day backups with point-in-time restore, deletion protection, `rds.force_ssl`) | Relational case data, transactions, full-text search and pgvector in one engine; managed and independent of the app server |
 | Files | S3, private, SSE, TLS-only policy | Replaces Supabase Storage |
 | AI | Bedrock through the instance role | No API keys; `apac.*` profile keeps the default model in Asia Pacific |
 | Images | ECR (last 5 kept, scan on push) | Built by GitHub Actions on x86 runners |
@@ -27,7 +27,13 @@ GitHub Actions ──OIDC──▶ ECR push ──▶ SSM RunCommand ──▶ /
 | HTTPS | Caddy + Let's Encrypt on `<elastic-ip>.sslip.io` unless `domain` is set | The browser microphone requires HTTPS |
 | Budget | Optional AWS Budget alert (`budget_email`) | Credit protection |
 
-Rough monthly cost at low use: instance ~$27, 40 GB gp3 ~$4, Elastic IP ~$4, snapshots/S3/ECR ~$1–2, Bedrock ~$0.15 per two-hour hearing. Prices change; check the AWS console.
+Rough monthly cost at low use: instance ~$27, RDS db.t4g.micro + 20 GB ~$15, 40 GB gp3 ~$4, Elastic IP ~$4, snapshots/S3/ECR ~$1–2, Bedrock ~$0.15 per two-hour hearing. Prices change; check the AWS console.
+
+## Database and retrieval decisions
+
+- **PostgreSQL** fits the data: cases, documents, chunks, hearings, statements, findings and links are relational, and findings must stay consistent with the quotes they cite. Full-text search and optional pgvector live in the same transactional engine.
+- **Not DynamoDB**: no full-text or vector search (another service would be required) and a full data-layer rewrite. **Not DocumentDB**: ~$60+/month minimum, Mongo rewrite, weak Indonesian text search.
+- **Retrieval (RAG)**: per-case PostgreSQL search plus the witness's own BAP sent whole to the model; Bedrock screens with Nova Lite and only potential inconsistencies go to Claude Haiku for independent review. Bedrock Titan embeddings with pgvector can be added without new services. **S3 Vectors** is reserved for a future large corpus (for example tens of thousands of Supreme Court decisions), not case-sized document sets.
 
 ## First setup
 
@@ -39,9 +45,10 @@ terraform apply                     # ~5 minutes; prints url, instance_id, bucke
 # GitHub repository settings (the workflow reads these)
 gh secret set AWS_DEPLOY_ROLE_ARN --body "$(terraform output -raw github_deploy_role_arn)"
 gh variable set AWS_REGION --body ap-southeast-1
-gh variable set JUDE_INSTANCE_ID --body "$(terraform output -raw instance_id)"
-gh variable set JUDE_OPS_BUCKET --body "$(terraform output -raw ops_bucket)"
-gh variable set JUDE_URL --body "$(terraform output -raw url)"
+gh variable set PROJECT_NAME --body project-sable
+gh variable set DEPLOY_INSTANCE_ID --body "$(terraform output -raw instance_id)"
+gh variable set DEPLOY_OPS_BUCKET --body "$(terraform output -raw ops_bucket)"
+gh variable set APP_URL --body "$(terraform output -raw url)"
 ```
 
 Then push to `main`: `.github/workflows/deploy.yml` runs web and voice checks, builds both images, pushes them to ECR, uploads `infra/docker/` to the ops bucket and runs `deploy.sh` on the instance through SSM, then smoke-tests `/api/v1/health`.
@@ -53,7 +60,8 @@ The GitHub deploy role trusts only `repo:<github_repository>:ref:refs/heads/main
 - Shell: `aws ssm start-session --target <instance_id>` then `cd /opt/<project> && sudo docker compose ps`.
 - Logs: `sudo docker compose logs -f web`.
 - Manual deploy of a tag: `sudo /opt/<project>/deploy.sh <git-sha>`.
-- Restore: create a volume from the latest `Backup=<project>-daily` snapshot.
+- Database restore: RDS point-in-time restore (console or `aws rds restore-db-instance-to-point-in-time`), then point `DB_HOST` at the new endpoint.
+- Instance volume restore (model cache, Caddy certificates): the latest `Backup=<project>-daily` snapshot.
 
 ## State
 

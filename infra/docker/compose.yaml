@@ -1,6 +1,6 @@
 # Production stack on the EC2 instance in /opt/<project> (the Compose project takes that name).
-# Settings come from .env,
-# written by deploy.sh from instance.env and SSM. Images come from ECR.
+# Settings come from .env, written by deploy.sh from instance.env and SSM. Images come from ECR.
+# PostgreSQL is Amazon RDS (DB_HOST), reached over verified TLS with the RDS CA bundle.
 services:
   caddy:
     image: caddy:2.10
@@ -23,13 +23,12 @@ services:
     restart: unless-stopped
     environment:
       JUDE_ENV: production
-      JUDE_RUNTIME: local
       JUDE_DEMO: ${JUDE_DEMO}
       JUDE_APP_URL: https://${JUDE_DOMAIN}
       ORIGIN: https://${JUDE_DOMAIN}
       ADDRESS_HEADER: X-Forwarded-For
       XFF_DEPTH: "1"
-      DATABASE_URL: postgresql://app:${DB_PASSWORD}@db:5432/app
+      DATABASE_URL: postgresql://app:${DB_PASSWORD}@${DB_HOST}:5432/app?sslmode=verify-full&sslrootcert=/certs/rds-ca.pem
       AI_PROVIDER: bedrock
       AWS_REGION: ${AWS_REGION}
       BEDROCK_MODEL: ${BEDROCK_MODEL}
@@ -37,20 +36,18 @@ services:
       S3_BUCKET: ${S3_BUCKET}
       VOICE_API_URL: http://voice:8000
       VOICE_API_TOKEN: ${VOICE_TOKEN}
+    volumes:
+      - ./certs:/certs:ro
     depends_on:
-      db:
-        condition: service_healthy
       migrate:
         condition: service_completed_successfully
 
   migrate:
-    image: ${JUDE_REGISTRY}/${JUDE_PROJECT}-web:${JUDE_TAG:-latest}
-    command: ["node", "scripts/migrate.mjs"]
+    image: ${JUDE_REGISTRY}/${JUDE_PROJECT}-migrate:${JUDE_TAG:-latest}
     environment:
-      DATABASE_URL: postgresql://app:${DB_PASSWORD}@db:5432/app
-    depends_on:
-      db:
-        condition: service_healthy
+      DATABASE_URL: postgresql://app:${DB_PASSWORD}@${DB_HOST}:5432/app?sslmode=verify-full&sslrootcert=/certs/rds-ca.pem
+    volumes:
+      - ./certs:/certs:ro
     restart: "no"
 
   voice:
@@ -62,23 +59,7 @@ services:
     volumes:
       - voice-models:/models
 
-  db:
-    image: pgvector/pgvector:pg17
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: app
-      POSTGRES_DB: app
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app -d app"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
 volumes:
   caddy-data:
   caddy-config:
   voice-models:
-  postgres:

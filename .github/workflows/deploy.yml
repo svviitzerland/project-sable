@@ -83,6 +83,15 @@ jobs:
           cache-from: type=gha,scope=web
           cache-to: type=gha,scope=web,mode=max
 
+      - name: Build and push migrate image
+        uses: docker/build-push-action@v6
+        with:
+          context: db
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-migrate:${{ env.TAG }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-migrate:latest
+
       - name: Build and push voice image
         uses: docker/build-push-action@v6
         with:
@@ -95,18 +104,18 @@ jobs:
           cache-to: type=gha,scope=voice,mode=max
 
       - name: Upload stack files
-        run: aws s3 cp infra/docker/ "s3://${{ vars.JUDE_OPS_BUCKET }}/deploy/" --recursive
+        run: aws s3 cp infra/docker/ "s3://${{ vars.DEPLOY_OPS_BUCKET }}/deploy/" --recursive
 
       - name: Deploy on the instance
         run: |
           set -euo pipefail
           id=$(aws ssm send-command \
-            --instance-ids "${{ vars.JUDE_INSTANCE_ID }}" \
+            --instance-ids "${{ vars.DEPLOY_INSTANCE_ID }}" \
             --document-name AWS-RunShellScript \
             --comment "deploy ${TAG::12}" \
             --timeout-seconds 1200 \
             --parameters "commands=[
-              \"aws s3 cp s3://${{ vars.JUDE_OPS_BUCKET }}/deploy/deploy.sh /opt/$PROJECT/deploy.sh --region $AWS_REGION --quiet\",
+              \"aws s3 cp s3://${{ vars.DEPLOY_OPS_BUCKET }}/deploy/deploy.sh /opt/$PROJECT/deploy.sh --region $AWS_REGION --quiet\",
               \"chmod +x /opt/$PROJECT/deploy.sh\",
               \"/opt/$PROJECT/deploy.sh $TAG $TAG\"
             ]" \
@@ -114,17 +123,17 @@ jobs:
           echo "SSM command $id"
           for _ in $(seq 1 120); do
             status=$(aws ssm get-command-invocation --command-id "$id" \
-              --instance-id "${{ vars.JUDE_INSTANCE_ID }}" --query Status --output text 2>/dev/null || echo Pending)
+              --instance-id "${{ vars.DEPLOY_INSTANCE_ID }}" --query Status --output text 2>/dev/null || echo Pending)
             case "$status" in Pending|InProgress|Delayed) sleep 10 ;; *) break ;; esac
           done
-          aws ssm get-command-invocation --command-id "$id" --instance-id "${{ vars.JUDE_INSTANCE_ID }}" \
+          aws ssm get-command-invocation --command-id "$id" --instance-id "${{ vars.DEPLOY_INSTANCE_ID }}" \
             --query '[StandardOutputContent,StandardErrorContent]' --output text | tail -40
           test "$status" = Success
 
       - name: Smoke test
         run: |
           for _ in $(seq 1 30); do
-            curl -fsS "${{ vars.JUDE_URL }}/api/v1/health" && exit 0
+            curl -fsS "${{ vars.APP_URL }}/api/v1/health" && exit 0
             sleep 10
           done
           exit 1

@@ -25,6 +25,12 @@ umask 077
   echo "JUDE_VOICE_TAG=$VOICE_TAG"
 } > .env
 
+# RDS certificate authorities for verified TLS to the database.
+mkdir -p certs
+curl -fsSL https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o certs/rds-ca.pem.tmp
+mv certs/rds-ca.pem.tmp certs/rds-ca.pem
+chmod 644 certs/rds-ca.pem
+
 aws ecr get-login-password --region "$AWS_REGION" |
   docker login --username AWS --password-stdin "$JUDE_REGISTRY" >/dev/null
 

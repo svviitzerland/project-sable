@@ -94,6 +94,7 @@ locals {
     BEDROCK_MODEL        = var.bedrock_model
     BEDROCK_REVIEW_MODEL = var.bedrock_review_model
     JUDE_DEMO            = var.enable_demo ? "1" : "0"
+    DB_HOST              = aws_db_instance.main.address
     DB_PASSWORD_PARAM    = aws_ssm_parameter.db_password.name
     VOICE_TOKEN_PARAM    = aws_ssm_parameter.voice_token.name
   }
