@@ -2,31 +2,37 @@
   import { t } from "../lib/i18n/index.svelte";
   import { ExternalLink } from "@lucide/svelte";
   import { type LegalReference } from "../lib/workspace-api";
-  import styles from "./workspace.module.css";
+  import styles from "./case-tabs.module.css";
 
   let { results }: { results: LegalReference[] } = $props();
 </script>
 
-<div class={styles.lawResults}>
-  {#each results as r (r.id)}<article>
-      <span>
-        {r.reference} · {r.status}
-        {r.status_uncertain ? t("legal.uncertain") : ""}
-      </span>
+<ul class={styles.law}>
+  {#each results as r (r.id)}<li>
+      <div class={styles.lawMeta}>
+        {#if r.reference}<span class={styles.chip}>{r.reference}</span>{/if}
+        {#if r.status}<span
+            class={`${styles.chip} ${r.status_uncertain ? styles.chipWarm : ""}`}
+          >
+            {r.status}{r.status_uncertain ? t("legal.uncertain") : ""}
+          </span>{/if}
+      </div>
       <h3>
         <a href={r.url} target="_blank" rel="external noreferrer">
-          {r.title}
-          <ExternalLink size={14}></ExternalLink>
+          {r.title}<ExternalLink size={14}></ExternalLink>
         </a>
       </h3>
-      <p>{t("legal.openOriginal")}</p>
-      {#each r.articles as a (a.url)}<a
-          href={a.url}
-          target="_blank"
-          rel="external noreferrer"
-        >
-          {t("legal.article", { article: a.article })}
-          <ExternalLink size={12}></ExternalLink>
-        </a>{/each}
-    </article>{/each}
-</div>
+      {#if r.articles.length}<div class={styles.lawArticles}>
+          {#each r.articles as a (a.url)}<a
+              class={styles.chip}
+              href={a.url}
+              target="_blank"
+              rel="external noreferrer"
+            >
+              {t("legal.article", { article: a.article })}
+              <ExternalLink size={12}></ExternalLink>
+            </a>{/each}
+        </div>{/if}
+    </li>{/each}
+</ul>
+<p class={`${styles.meta} ${styles.lawNote}`}>{t("legal.openOriginal")}</p>

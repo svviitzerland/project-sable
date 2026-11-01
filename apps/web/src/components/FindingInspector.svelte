@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
-  import { Check, Download, ShieldCheck } from "@lucide/svelte";
+  import { ArrowLeft, Check, ChevronDown, Copy } from "@lucide/svelte";
   import {
     api,
     relationLabel,
@@ -10,9 +10,9 @@
     type Segment,
     type Source,
   } from "../lib/workspace-api";
-  import styles from "./workspace.module.css";
+  import ui from "./workspace.module.css";
+  import styles from "./case-tabs.module.css";
   import { untrack } from "svelte";
-  import StatusLabel from "./StatusLabel.svelte";
   import SourceCard from "./SourceCard.svelte";
   import LegalResults from "./LegalResults.svelte";
 
@@ -24,6 +24,7 @@
     note,
     onNote,
     save,
+    onBack,
   }: {
     note: string;
     onNote: (note: string) => void;
@@ -32,6 +33,8 @@
     caseId: string;
     busy: boolean;
     save: (body: { reviewed: boolean; note: string }) => Promise<boolean>;
+    /** Returns focus to the finding list on one-column layouts. */
+    onBack?: () => void;
   } = $props();
 
   let source = $state<Source | null>(null);
@@ -67,23 +70,17 @@
   });
 </script>
 
-<div class={styles.inspector}>
-  <div class={styles.paneHeading}>
-    <h2>{t("finding.title")}</h2>
-    <ShieldCheck size={17}></ShieldCheck>
+<div class={styles.detail}>
+  <div class={styles.testimony}>
+    <span
+      >{t("finding.hearingAt", {
+        time: timestamp(segment?.start ?? 0),
+      })}</span
+    >
+    <blockquote>“{segment?.text}”</blockquote>
   </div>
-  <div class={styles.inspectorBody}>
-    <StatusLabel status={finding.status}></StatusLabel>
-    <h3>{finding.title}</h3>
-    <div class={styles.quote}>
-      <span
-        >{t("finding.hearingAt", {
-          time: timestamp(segment?.start ?? 0),
-        })}</span
-      >
-      <blockquote>“{segment?.text}”</blockquote>
-    </div>
-    <p>{finding.explanation}</p>
+  <p>{finding.explanation}</p>
+  <div>
     <h4>{t("common.atSource")}</h4>
     {#if finding.citations.length > 1}<div class={styles.citationTabs}>
         {#each finding.citations as c, i (i)}<button
@@ -100,7 +97,7 @@
             })}
           </button>{/each}
       </div>{/if}
-    {#if sourceError}<p role="alert" class={styles.error}>
+    {#if sourceError}<p role="alert" class={ui.error}>
         {sourceError}
       </p>{:else}{#if source && source.id === citation?.chunk_id}<SourceCard
           {source}
@@ -109,23 +106,51 @@
         ></SourceCard>{:else if citation}<Skeleton
           variant="reader"
           label={t("finding.loadingPassage")}
-        />{:else}<p class={styles.muted}>
+        />{:else}<p class={styles.quiet}>
           {t("finding.noCitation")}
         </p>{/if}{/if}
-    <div class={styles.verify}>
-      <h4>{t("common.whatToVerify")}</h4>
-      <p>{finding.verification}</p>
-    </div>
+  </div>
+  <div class={styles.verify}>
+    <h4>{t("common.whatToVerify")}</h4>
+    <p>{finding.verification}</p>
+  </div>
+  <div>
     <h4>{t("finding.uncertainty")}</h4>
-    <p>{finding.uncertainty}</p>
-    <details class={styles.reviewDetails}>
-      <summary>
-        {finding.mode === "simulation"
-          ? t("finding.aboutScripted")
-          : finding.mode === "imported"
-            ? t("finding.importedReview")
-            : t("finding.independentReview")}
-      </summary>
+    <p class={styles.quiet}>{finding.uncertainty}</p>
+  </div>
+  <div class={styles.question}>
+    <h4>{t("common.questionToConsider")}</h4>
+    <p>{finding.question}</p>
+    <button
+      class={styles.ghost}
+      onclick={async () => {
+        try {
+          await navigator.clipboard.writeText(finding.question);
+          copied = true;
+          copyError = "";
+        } catch {
+          copyError = t("finding.clipboardError");
+        }
+      }}
+    >
+      {#if copied}<Check size={14}></Check>{:else}<Copy size={14}></Copy>{/if}
+      {copied ? t("common.copied") : t("common.copyQuestion")}
+    </button>
+    <span class={ui.srOnly} role="status">
+      {copied ? t("finding.questionCopied") : ""}
+    </span>
+    {#if copyError}<p role="alert" class={styles.draft}>{copyError}</p>{/if}
+  </div>
+  <details class={styles.reviewDetails}>
+    <summary>
+      {finding.mode === "simulation"
+        ? t("finding.aboutScripted")
+        : finding.mode === "imported"
+          ? t("finding.importedReview")
+          : t("finding.independentReview")}
+      <ChevronDown size={15}></ChevronDown>
+    </summary>
+    <div>
       <p>{finding.review.summary}</p>
       {#each finding.review.alternative_explanations as item, i (i)}<p>
           {t("finding.alternative", { text: item })}
@@ -144,36 +169,16 @@
             ? t("finding.importedVerify")
             : t("finding.quoteMatches")}
       </small>
-    </details>
-    {#if finding.legal.length > 0}
+    </div>
+  </details>
+  {#if finding.legal.length > 0}
+    <div>
       <h4>{t("finding.legal")}</h4>
       <LegalResults results={finding.legal}></LegalResults>
-    {/if}
-    <div class={styles.question}>
-      <h4>{t("common.questionToConsider")}</h4>
-      <p>{finding.question}</p>
-      <button
-        class={styles.textButton}
-        onclick={async () => {
-          try {
-            await navigator.clipboard.writeText(finding.question);
-            copied = true;
-            copyError = "";
-          } catch {
-            copyError = t("finding.clipboardError");
-          }
-        }}
-      >
-        {#if copied}<Check size={14}></Check>{:else}<Download size={14}
-          ></Download>{/if}
-        {copied ? t("common.copied") : t("common.copyQuestion")}
-      </button>
-      <span class={styles.srOnly} role="status">
-        {copied ? t("finding.questionCopied") : ""}
-      </span>
-      {#if copyError}<p role="alert">{copyError}</p>{/if}
     </div>
-    <label class={styles.noteField}>
+  {/if}
+  <div class={styles.review}>
+    <label>
       {t("finding.note")}
       <textarea
         value={note}
@@ -182,12 +187,12 @@
         maxlength={4000}
         placeholder={t("finding.notePlaceholder")}></textarea>
     </label>
-    {#if note !== finding.note}<p class={styles.draftNotice} role="status">
+    {#if note !== finding.note}<p class={styles.draft} role="status">
         {t("finding.unsaved")}
       </p>{/if}
     <div class={styles.reviewActions}>
       <button
-        class={styles.primary}
+        class={finding.reviewed ? ui.secondary : ui.primary}
         disabled={busy}
         onclick={() => save({ reviewed: !finding.reviewed, note })}
       >
@@ -195,7 +200,7 @@
         {finding.reviewed ? t("finding.reopen") : t("finding.markReviewed")}
       </button>
       <button
-        class={styles.secondary}
+        class={styles.ghost}
         disabled={busy || note === finding.note}
         onclick={() => save({ reviewed: finding.reviewed, note })}
       >
@@ -206,5 +211,12 @@
         <Check size={14}></Check>
         {t("finding.reviewedByYou")}
       </p>{/if}
+    {#if onBack}<button
+        class={`${styles.back} ${styles.backToFindings}`}
+        onclick={onBack}
+      >
+        <ArrowLeft size={14}></ArrowLeft>
+        {t("hearing.backToFindings")}
+      </button>{/if}
   </div>
 </div>
