@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { register } from "./helpers";
+import { documentButton, register, uploadDocument } from "./helpers";
 
 test.use({ actionTimeout: 15000 });
 
@@ -65,15 +65,18 @@ test("skeletons cover delayed workspace, sources, hearings and replies without f
     page.getByRole("heading", { name: "A place for the whole case." }),
   ).toHaveCount(0);
   await releaseCases();
-  await page.getByRole("tab", { name: /^Case documents/ }).click();
+  // Upload a small labeled document so the reader and search do not depend on demo content.
+  await uploadDocument(
+    page,
+    "skeleton-witness.txt",
+    "Synthetic test note. The witness crossed the Saguling bridge at eight.",
+  );
+  const uploaded = documentButton(page, "skeleton-witness.txt");
   const releaseReader = await hold(
     page,
     "**/api/v1/cases/*/documents/*/chunks",
   );
-  await page
-    .getByRole("button", { name: /Witness statement/ })
-    .first()
-    .click();
+  await uploaded.click();
   await expect(
     page.getByRole("status", { name: "Loading document passages…" }),
   ).toBeVisible();

@@ -1,14 +1,21 @@
 import { test, expect } from "@playwright/test";
-import { register } from "./helpers";
+import { createCase, register, uploadDocument } from "./helpers";
 test("case assistant and manually configured courtroom practice", async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await register(page);
-  await page.getByRole("button", { name: "Open the demo case" }).click();
+  // Build the case through the UI so the flow does not depend on demo content.
+  await createCase(page, "Assistant practice case");
+  await uploadDocument(
+    page,
+    "witness-statement.txt",
+    "Synthetic witness statement. The witness says she arrived at the warehouse at nine in the morning and saw the receipt on the desk.",
+  );
+  await page.getByRole("tab", { name: "Evidence", exact: true }).click();
   await page
-    .getByRole("button", { name: "Witness statement", exact: false })
+    .getByRole("button", { name: "witness-statement.txt", exact: false })
     .first()
     .click();
   await page.getByRole("button", { name: "Discuss with assistant" }).click();

@@ -504,6 +504,13 @@ test("demo case route, review notes, portable archive remapping and checksum gua
   assert.match(record.reference, /catatan publik/);
   const detail = await a.json(base);
   assert.ok(detail.findings.length > 0);
+  // Some demo findings cite two quotes from one passage; graph ids must stay unique
+  // because the evidence map renders keyed lists.
+  const demoGraph = await a.json(base + "/graph");
+  for (const list of [demoGraph.nodes, demoGraph.edges]) {
+    const ids = list.map((item: { id: string }) => item.id);
+    assert.equal(new Set(ids).size, ids.length);
+  }
   const finding = detail.findings[0];
   await a.json(`${base}/findings/${finding.id}`, "PATCH", {
     reviewed: true,
@@ -1487,16 +1494,4 @@ test("case settings update details and delete the whole case with its stored fil
     "recordings",
   ] as const)
     assert.equal((await rt.db.all(table, "case_id=?", [record.id])).length, 0);
-});
-test("the public demo case opens with a graph whose edge ids are unique", async (t) => {
-  const { a } = await fixture(t);
-  const demo = await a.json("/cases/synthetic", "POST");
-  assert.match(demo.title, /Sambo/);
-  const detail = await a.json(`/cases/${demo.id}`);
-  assert.ok(detail.findings.length > 50);
-  const graph = await a.json(`/cases/${demo.id}/graph`);
-  const ids = graph.edges.map((e: { id: string }) => e.id);
-  assert.equal(new Set(ids).size, ids.length);
-  const nodes = graph.nodes.map((n: { id: string }) => n.id);
-  assert.equal(new Set(nodes).size, nodes.length);
 });
