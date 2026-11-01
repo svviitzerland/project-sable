@@ -93,12 +93,13 @@
   <span class="sr-only">{label}</span>
   <div class="shapes" aria-hidden="true">
     {#if variant === "workspace"}
+      <!-- Mirrors the collapsed rail exactly so the real shell replaces it in place. -->
       <div class="rail">
-        <span class="brand">jude.</span><span class="bone tab"
-        ></span>{@render rows(4)}
+        <span class="brand">j.</span>
+        <span class="bone dot"></span>
+        <span class="bone dot"></span>
       </div>
       <div class="workspace-main">
-        <div class="topbar"><span class="bone line short"></span></div>
         {@render record()}
       </div>
     {:else if variant === "case"}
@@ -337,31 +338,42 @@
     animation: none;
   }
   .rail {
-    --skeleton-fill: #587564;
+    --skeleton-fill: #4a6a57;
     --skeleton-rule: #43614f;
-    flex: 0 0 214px;
-    padding: 28px 20px;
-    background: #183b2d;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 76px;
+    padding: 20px 12px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    border-radius: 0 20px 20px 0;
+    background: linear-gradient(180deg, #1c4433 0%, #163a2b 100%);
+    box-shadow: 4px 0 24px rgb(10 30 20 / 12%);
   }
   .brand {
     display: block;
     font:
-      40px Rufina,
+      40px/1 Rufina,
       Georgia,
       serif;
-    color: #f6f0e4;
-    margin-bottom: 50px;
+    letter-spacing: -2px;
+    color: #e9eee4;
+    min-height: 58px;
+    padding-top: 2px;
+  }
+  .dot {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
   }
   .workspace-main {
     flex: 1;
     min-width: 0;
-    padding: 0 32px;
-  }
-  .topbar {
-    height: 57px;
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid var(--skeleton-rule);
+    padding: 10px 32px 0;
   }
   @keyframes breathe {
     0%,
@@ -372,7 +384,7 @@
       opacity: 1;
     }
   }
-  @media (max-width: 760px) {
+  @media (max-width: 640px) {
     .rail {
       display: none;
     }

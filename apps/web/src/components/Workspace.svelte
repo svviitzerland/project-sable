@@ -164,7 +164,19 @@
   );
 
   // Desktop sidebar: a slim rail that expands on hover or focus, or stays pinned open.
-  let pinned = $state(false);
+  // Read before the first render so a pinned rail never animates open on load.
+  let pinned = $state(
+    (() => {
+      try {
+        return (
+          typeof localStorage !== "undefined" &&
+          localStorage.getItem("jude.sidebar.pinned") === "1"
+        );
+      } catch {
+        return false;
+      }
+    })(),
+  );
   // Transitions and hover expansion switch on after the first paint, so a reload never
   // animates the rail open and closed.
   let shellReady = $state(false);
@@ -172,11 +184,6 @@
     requestAnimationFrame(() =>
       requestAnimationFrame(() => (shellReady = true)),
     );
-    try {
-      pinned = localStorage.getItem("jude.sidebar.pinned") === "1";
-    } catch {
-      /* Private mode: default to the slim rail. */
-    }
   });
   function togglePinned() {
     pinned = !pinned;
