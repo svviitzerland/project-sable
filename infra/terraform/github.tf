@@ -33,7 +33,11 @@ data "aws_iam_policy_document" "github_assume" {
     condition {
       test     = "StringEquals"
       variable = "${local.github_oidc_url}:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/${var.github_branch}"]
+      # Classic owner/repo subject, plus GitHub's immutable owner@id/repo@id subject.
+      values = compact([
+        "repo:${var.github_repository}:ref:refs/heads/${var.github_branch}",
+        var.github_immutable_subject == "" ? "" : "${var.github_immutable_subject}:ref:refs/heads/${var.github_branch}",
+      ])
     }
   }
 }

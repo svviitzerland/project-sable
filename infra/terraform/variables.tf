@@ -34,6 +34,12 @@ variable "github_repository" {
   default     = "svviitzerland/project-sable"
 }
 
+variable "github_immutable_subject" {
+  description = "Repository subject prefix when GitHub issues immutable OIDC subjects (owner@id/repo@id), from: gh api repos/<owner>/<repo>/actions/oidc/customization/sub. Empty if the repository uses the classic owner/repo subject."
+  type        = string
+  default     = "repo:svviitzerland@70313408/project-sable@1441956353"
+}
+
 variable "github_branch" {
   description = "Branch whose workflow runs may assume the deploy role."
   type        = string
