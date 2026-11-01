@@ -495,6 +495,13 @@ test("demo case route, review notes, portable archive remapping and checksum gua
   assert.match(record.reference, /catatan publik/);
   const detail = await a.json(base);
   assert.ok(detail.findings.length > 0);
+  // Some demo findings cite two quotes from one passage; graph ids must stay unique
+  // because the evidence map renders keyed lists.
+  const demoGraph = await a.json(base + "/graph");
+  for (const list of [demoGraph.nodes, demoGraph.edges]) {
+    const ids = list.map((item: { id: string }) => item.id);
+    assert.equal(new Set(ids).size, ids.length);
+  }
   const finding = detail.findings[0];
   await a.json(`${base}/findings/${finding.id}`, "PATCH", {
     reviewed: true,

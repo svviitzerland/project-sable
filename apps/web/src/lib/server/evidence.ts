@@ -83,7 +83,12 @@ export async function graph(rt: Runtime, caseId: string) {
       hearing_id: s.hearing_id,
       finding_id: f.id,
     });
-    for (const c of cited)
+    // A finding may cite two passages of the same chunk; one edge per finding and chunk
+    // keeps edge ids unique for the client's keyed lists.
+    const seen = new Set<string>();
+    for (const c of cited) {
+      if (seen.has(c.chunk_id)) continue;
+      seen.add(c.chunk_id);
       edges.push({
         id: `${f.id}:${c.chunk_id}`,
         source_id: id,
@@ -97,6 +102,7 @@ export async function graph(rt: Runtime, caseId: string) {
         target_quote: c.quote,
         kind: "finding",
       });
+    }
   }
   return {
     nodes,
