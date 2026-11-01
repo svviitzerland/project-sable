@@ -10,7 +10,7 @@ Jude is a SvelteKit + TypeScript courtroom workspace and marketing introduction.
 - `docs/`: `product/` (spec, limitations), `engineering/` (architecture, `.jude` format), `research/` (report, notes, public case sources), `phases/` (dated work records).
 - `infra/`: AWS Terraform (`terraform/`) and the production Compose stack (`docker/`), codename project-sable; see `infra/README.md`. `.github/workflows/deploy.yml` checks, builds and deploys `main` through GitHub OIDC.
 - `examples/`: fictional sample case pack. `compose.yaml`: local Docker service for `apps/voice`.
-- `.agents/skills/`: optional reusable skills. Impeccable is at `.agents/skills/impeccable/SKILL.md` for frontend design/review.
+- `.impeccable/`: shared Impeccable design context (config, design tokens, surfaces, mocks). The Impeccable skill itself is installed per developer (`bunx impeccable install`, gitignored under `.claude/`) for frontend design and review.
 
 ## Commands
 

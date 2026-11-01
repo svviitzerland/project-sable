@@ -70,16 +70,22 @@ variable "enable_demo" {
   default     = true
 }
 
-variable "budget_monthly_usd" {
-  description = "Monthly cost budget; alerts go to budget_email when it is set."
-  type        = number
-  default     = 50
-}
-
 variable "budget_email" {
-  description = "Email for budget alerts. Empty skips the budget."
+  description = "Email that receives cost alerts. Set it in terraform.tfvars (gitignored); empty skips the budget."
   type        = string
   default     = ""
+}
+
+variable "budget_actual_alerts_usd" {
+  description = "Monthly ACTUAL spend (before credits) that triggers an email, in USD."
+  type        = list(number)
+  default     = [10, 30]
+}
+
+variable "budget_forecast_alert_usd" {
+  description = "Monthly FORECASTED spend (before credits) that triggers an email, in USD. Also the budget limit."
+  type        = number
+  default     = 80
 }
 
 variable "snapshot_retention_days" {

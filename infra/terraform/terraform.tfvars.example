@@ -1,0 +1,4 @@
+budget_email = "you@example.com"   # cost alerts (account-wide, before credits)
+# budget_actual_alerts_usd  = [10, 30]
+# budget_forecast_alert_usd = 80
+# domain = "app.example.com"

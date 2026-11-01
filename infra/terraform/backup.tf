@@ -41,17 +41,40 @@ resource "aws_dlm_lifecycle_policy" "daily" {
   }
 }
 
+# Cost alerts on usage BEFORE credits: with credits applied the net bill stays at $0, so a
+# default budget would never fire. Actual alerts at each amount in budget_actual_alerts_usd,
+# plus a forecast alert at budget_forecast_alert_usd (also the monthly limit).
 resource "aws_budgets_budget" "monthly" {
   count        = var.budget_email == "" ? 0 : 1
-  name         = "${var.project}-monthly"
+  name         = "${var.project}-account-spend"
   budget_type  = "COST"
-  limit_amount = tostring(var.budget_monthly_usd)
+  limit_amount = tostring(var.budget_forecast_alert_usd)
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
+
+  cost_types {
+    include_credit   = false
+    include_refund   = false
+    include_discount = true
+    include_tax      = true
+    include_support  = true
+  }
+
+  dynamic "notification" {
+    for_each = var.budget_actual_alerts_usd
+    content {
+      comparison_operator        = "GREATER_THAN"
+      threshold                  = notification.value
+      threshold_type             = "ABSOLUTE_VALUE"
+      notification_type          = "ACTUAL"
+      subscriber_email_addresses = [var.budget_email]
+    }
+  }
+
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                  = 80
-    threshold_type             = "PERCENTAGE"
+    threshold                  = var.budget_forecast_alert_usd
+    threshold_type             = "ABSOLUTE_VALUE"
     notification_type          = "FORECASTED"
     subscriber_email_addresses = [var.budget_email]
   }
