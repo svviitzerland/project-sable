@@ -66,29 +66,29 @@ test("extra hours use the cheapest mix of packs and single hours", () => {
     extra: 0,
     cost: 0,
   });
-  assert.equal(cheapestHours(1).cost, 120_000);
+  assert.equal(cheapestHours(1).cost, 160_000);
   assert.deepEqual(cheapestHours(4), {
     pack20: 0,
     pack5: 0,
     extra: 4,
-    cost: 480_000,
+    cost: 640_000,
   });
-  assert.equal(cheapestHours(5).cost, 550_000);
+  assert.equal(cheapestHours(5).cost, 750_000);
   assert.deepEqual(cheapestHours(12), {
     pack20: 0,
     pack5: 2,
     extra: 2,
-    cost: 1_340_000,
+    cost: 1_820_000,
   });
-  assert.equal(cheapestHours(16).cost, 1_770_000);
+  assert.equal(cheapestHours(16).cost, 2_410_000);
   assert.deepEqual(cheapestHours(18), {
     pack20: 1,
     pack5: 0,
     extra: 0,
-    cost: 2_000_000,
+    cost: 2_700_000,
   });
-  assert.equal(cheapestHours(48).cost, 4_910_000);
-  assert.equal(cheapestHours(540).cost, 27 * 2_000_000);
+  assert.equal(cheapestHours(48).cost, 6_630_000);
+  assert.equal(cheapestHours(540).cost, 27 * 2_700_000);
 });
 
 test("the calculator recommends the cheapest eligible plan for the usage", () => {
@@ -96,15 +96,16 @@ test("the calculator recommends the cheapest eligible plan for the usage", () =>
   assert.equal(one.best.plan, "lite");
   assert.equal(one.best.total, 249_000);
 
-  // Five hours alone: Lite plus a year of packs costs less than Pro...
+  // Five hours: Pro beats Lite plus a year of packs (Rp249.000 + Rp6.630.000 / 12).
   const five = recommend({
     hoursPerAccount: 5,
     accounts: 1,
     billing: "yearly",
   });
-  assert.equal(five.best.plan, "lite");
-  assert.equal(five.best.total, 249_000 + Math.round(4_910_000 / 12));
-  // ...unless voice recognition across hearings is needed.
+  assert.equal(five.best.plan, "advokat");
+  assert.equal(five.best.total, 749_000);
+  assert.ok(249_000 + Math.round(6_630_000 / 12) > 749_000);
+  // Voice recognition across hearings also needs Pro.
   const voice = recommend({
     hoursPerAccount: 5,
     accounts: 1,
@@ -114,7 +115,6 @@ test("the calculator recommends the cheapest eligible plan for the usage", () =>
   assert.equal(voice.best.plan, "advokat");
   assert.equal(voice.best.total, 749_000);
   assert.equal(voice.best.perHour, 149_800);
-  assert.equal(voice.cheapestWithoutNeeds?.plan, "lite");
 
   // A team on shared cases gets Kantor Hukum, with a year of packs for the rest.
   const team = recommend({
@@ -124,10 +124,9 @@ test("the calculator recommends the cheapest eligible plan for the usage", () =>
     needs: { shared: true },
   });
   assert.equal(team.best.plan, "kantor");
-  assert.equal(team.best.total, 3_870_000 + 4_500_000);
-  assert.equal(team.best.perHour, Math.round(8_370_000 / 75));
+  assert.equal(team.best.total, 3_870_000 + 72_900_000 / 12);
+  assert.equal(team.best.perHour, Math.round(9_945_000 / 75));
   assert.equal(team.others.length, 0);
-  assert.equal(team.cheapestWithoutNeeds?.plan, "lite");
 
   const modest = recommend({
     hoursPerAccount: 10,
@@ -138,20 +137,17 @@ test("the calculator recommends the cheapest eligible plan for the usage", () =>
   assert.equal(modest.best.plan, "kantor");
   assert.equal(modest.best.total, 4_647_000);
 
-  // Without shared cases, separate accounts compare individually (hours are not pooled).
+  // Heavy teams get Kantor Hukum on price alone: pooled hours beat per-account packs.
   const separate = recommend({
     hoursPerAccount: 25,
     accounts: 3,
     billing: "yearly",
   });
-  assert.equal(separate.best.plan, "lite");
-  assert.equal(
-    separate.best.total,
-    747_000 + Math.round((3 * 28_910_000) / 12),
-  );
+  assert.equal(separate.best.plan, "kantor");
+  assert.equal(separate.best.total, 9_945_000);
   assert.equal(
     separate.others.find((q) => q.plan === "advokat")?.total,
-    2_247_000 + 6_000_000,
+    2_247_000 + (3 * 32_400_000) / 12,
   );
 
   // Two accounts on shared cases pay for a third Kantor Hukum seat.

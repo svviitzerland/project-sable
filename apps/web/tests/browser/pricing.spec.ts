@@ -44,7 +44,7 @@ test("pricing page renders, toggles billing, recommends a plan and fits a phone"
     page.getByLabel("The team works on the same cases"),
   ).toBeChecked();
   await expect(page.getByTestId("calc-plan")).toHaveText("Law firm");
-  await expect(page.locator(".result-amount")).toHaveText("Rp8,370,000");
+  await expect(page.locator(".result-amount")).toHaveText("Rp9,945,000");
   // One account at one hour: the entry plan.
   await page.getByRole("button", { name: "Fewer accounts" }).click();
   await page.getByRole("button", { name: "Fewer accounts" }).click();

@@ -32,9 +32,9 @@ Per-hour anchors shown under each paid plan (price / included hours, following t
 
 | Add-on | Price | Per hour |
 | --- | --- | --- |
-| 5-hour pack | Rp550.000 | Rp110.000 |
-| 20-hour pack | Rp2.000.000 | Rp100.000 |
-| Extra hour (optional overage, off by default) | Rp120.000 | Rp120.000 |
+| 5-hour pack | Rp750.000 | Rp150.000 |
+| 20-hour pack | Rp2.700.000 | Rp135.000 |
+| Extra hour (optional overage, off by default) | Rp160.000 | Rp160.000 |
 
 ### Billing protections promised on the page
 
@@ -55,9 +55,9 @@ Per-hour anchors shown under each paid plan (price / included hours, following t
 | Kantor Hukum yearly | 10 × 55.000 + 600 × 200 = Rp670.000 | Rp1.290.000 | 48% |
 | Kantor Hukum monthly | Rp670.000 | Rp1.549.000 | 57% |
 | Program Bantuan Hukum | 3 × 55.000 + 150 × 200 = Rp195.000 | Rp449.000 | 57% |
-| 5-hour pack | Rp275.000 | Rp550.000 | 50% |
-| 20-hour pack | Rp1.100.000 | Rp2.000.000 | 45% |
-| Extra hour | Rp55.000 | Rp120.000 | 54% |
+| 5-hour pack | Rp275.000 | Rp750.000 | 63% |
+| 20-hour pack | Rp1.100.000 | Rp2.700.000 | 59% |
+| Extra hour | Rp55.000 | Rp160.000 | 66% |
 
 Kantor Hukum is the lowest worst-case margin because every account would have to use all 10 hours and 600 questions. Pooled allowances are rarely exhausted by every seat, so typical margin is higher (at 60% usage, cost Rp402.000 and margin 69%). Office-wide licences should be quoted so that the worst-case cost stays under half of the licence (Rp30 juta/year allows about Rp1,25 juta of variable cost per month, for example 20 hours and 750 questions).
 
@@ -76,9 +76,9 @@ Fixed infrastructure is about Rp1,07 juta per month. Two Advokat Pro subscribers
 
 Known consequences of the current numbers, worth revisiting:
 
-- Packs at Rp100.000–110.000 per hour are cheaper than any plan's included hour, so a solo user with no voice need is better off on Lite plus packs than on Pro (5 hours: Rp658.167 versus Rp749.000 per month, yearly). The calculator says so honestly. Raising pack prices to about Rp130.000 per hour, or limiting packs to Pro and above, would restore the ladder.
-- On hours alone, separate Lite accounts with packs undercut Kantor Hukum for teams. Kantor Hukum is recommended only because shared cases need it. Three accounts at 25 hours each cost Rp8.370.000 per month on Kantor Hukum yearly.
-- Shared team cases, team roles, priority support and invoicing are plan features on the page that the product does not have yet. They must ship before Kantor Hukum is sold.
+- Packs cost Rp135.000 to Rp160.000 per hour, above every plan's included hour, so the ladder holds: at 5 hours a month Pro (Rp749.000 yearly) beats Lite plus a year of packs (Rp801.500). Below about 4 hours Lite plus packs can still be cheaper, which is intended for light users.
+- Heavy teams now get Kantor Hukum on price alone: three accounts at 25 hours each cost Rp9.945.000 per month on Kantor Hukum yearly versus Rp10.347.000 on three Pro accounts with packs.
+- Shared team cases, team roles, priority support and invoicing are marked "segera hadir" on the page because the product does not have them yet. They must ship before Kantor Hukum is sold for real.
 
 ## Mock billing (simulated, no payment)
 

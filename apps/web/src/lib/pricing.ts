@@ -84,12 +84,12 @@ export const LEMBAGA = {
 } as const;
 
 /** Optional overage, off by default. */
-export const EXTRA_HOUR = 120_000;
+export const EXTRA_HOUR = 160_000;
 
 /** Prepaid hearing-hour packs, valid for 12 months. */
 export const PACKS = [
-  { id: "pack5", hours: 5, price: 550_000 },
-  { id: "pack20", hours: 20, price: 2_000_000 },
+  { id: "pack5", hours: 5, price: 750_000 },
+  { id: "pack20", hours: 20, price: 2_700_000 },
 ] as const;
 export const PACK_VALIDITY_MONTHS = 12;
 
