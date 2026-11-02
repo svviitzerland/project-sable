@@ -19,3 +19,5 @@ Keep plans and results for each project phase here. Suggested file format name: 
 - [Bilingual interface](2026-11-02-bilingual-interface.md): Bahasa Indonesia and English UI, language toggle, server-rendered language.
 
 - [Real public demo case](2026-11-02-public-demo-case.md): Direktori Putusan MA ingestion cleanup, Amazon Transcribe hearing, and the bundled 796/Pid.B/2022/PN Jkt.Sel demo.
+
+- [Bedrock model choice](2026-11-02-model-choice.md): benchmark of cheap Bedrock models on the public demo case, Nova 2 Lite default tier and Claude Sonnet 4.6 review.

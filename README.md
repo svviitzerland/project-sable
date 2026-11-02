@@ -52,7 +52,7 @@ Voice labels (optional): `cp apps/voice/.env.example apps/voice/.env`, set `VOIC
 
 ## Deploy (AWS)
 
-Production runs on AWS under the codename **project-sable**: one EC2 instance with Docker Compose (Caddy HTTPS, web, voice, PostgreSQL + pgvector), case originals in S3, AI through Amazon Bedrock (Nova Lite screening, Claude Haiku independent review), images in ECR, secrets in SSM. Terraform is in [`infra/terraform`](infra/terraform) and the stack in [`infra/docker`](infra/docker). Pushing to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): checks, image build, ECR push, and an SSM-driven deploy through GitHub OIDC (no AWS keys in GitHub). See [infra/README.md](infra/README.md).
+Production runs on AWS under the codename **project-sable**: one EC2 instance with Docker Compose (Caddy HTTPS, web, voice, PostgreSQL + pgvector), case originals in S3, AI through Amazon Bedrock (Nova 2 Lite screening, assistant and practice, Claude Sonnet 4.6 independent review), images in ECR, secrets in SSM. Terraform is in [`infra/terraform`](infra/terraform) and the stack in [`infra/docker`](infra/docker). Pushing to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): checks, image build, ECR push, and an SSM-driven deploy through GitHub OIDC (no AWS keys in GitHub). See [infra/README.md](infra/README.md).
 
 ## Product
 

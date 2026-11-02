@@ -53,15 +53,15 @@ variable "create_github_oidc_provider" {
 }
 
 variable "bedrock_model" {
-  description = "Default-tier model (screening, drafting). The apac profile keeps processing in Asia Pacific regions."
+  description = "Default-tier model (screening, case assistant, practice). Nova 2 Lite is offered only through the global cross-Region profile in ap-southeast-1. See docs/phases/2026-11-02-model-choice.md."
   type        = string
-  default     = "apac.amazon.nova-lite-v1:0"
+  default     = "global.amazon.nova-2-lite-v1:0"
 }
 
 variable "bedrock_review_model" {
   description = "Independent review model, from a different family than the default model."
   type        = string
-  default     = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+  default     = "global.anthropic.claude-sonnet-4-6"
 }
 
 variable "enable_demo" {

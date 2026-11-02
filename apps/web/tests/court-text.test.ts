@@ -154,3 +154,20 @@ test("a real Direktori Putusan MA excerpt extracts clean text and quotes verify"
   );
   assert.ok(chunk.text.includes(conclusion.citations[0].quote));
 });
+
+test("quotes tolerate straight or curly quotation marks but no other changes", () => {
+  const text =
+    "Saksi Kuat Ma’ruf membangunkan Saksi dan berkata “jangan naik”.";
+  // Mapped back to the court's exact characters.
+  assert.equal(
+    exactSourceQuote(text, "Kuat Ma'ruf membangunkan"),
+    "Kuat Ma’ruf membangunkan",
+  );
+  assert.equal(
+    exactSourceQuote(text, 'berkata "jangan naik"'),
+    "berkata “jangan naik”",
+  );
+  // Letters, case and other punctuation still have to match.
+  assert.equal(exactSourceQuote(text, "Kuat Ma'Ruf membangunkan"), undefined);
+  assert.equal(exactSourceQuote(text, "Kuat Maruf membangunkan"), undefined);
+});
