@@ -156,7 +156,7 @@ export function unpack(data: Uint8Array) {
     assert(
       manifest?.format === "jude" && manifest.version === 1,
       422,
-      "Unsupported .jude format/version; expected version 1.",
+      "Unsupported .jude format/version. Expected version 1.",
     );
     delete contents["manifest.json"];
     return { manifest, files: contents };

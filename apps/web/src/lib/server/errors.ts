@@ -46,7 +46,7 @@ export function reportUnexpectedError(error: unknown) {
       code,
       hint:
         diagnosticHints[code] ||
-        "Unexpected server failure; inspect the failing operation.",
+        "Unexpected server failure. Inspect the failing operation.",
     }),
   );
   return reference;

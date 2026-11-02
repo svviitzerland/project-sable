@@ -157,7 +157,7 @@ export async function caseContext(
       })),
       sources,
     },
-    notice: `Based on ${sources.length} source excerpt${sources.length === 1 ? "" : "s"}. Check the original context; this is not a review of the entire case.`,
+    notice: `Based on ${sources.length} source excerpt${sources.length === 1 ? "" : "s"}. Check the original context. This is not a review of the entire case.`,
     mode,
   };
 }

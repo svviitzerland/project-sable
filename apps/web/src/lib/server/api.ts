@@ -240,7 +240,7 @@ export async function handleApi(
             note: aiConfigured(rt.config)
               ? rt.config.aiProvider === "bedrock"
                 ? "Amazon Bedrock configured."
-                : "OpenRouter configured; live provider verification required."
+                : "OpenRouter configured. Live provider verification required."
               : "Set AI_PROVIDER=bedrock (AWS) or OPENROUTER_API_KEY and OPENROUTER_MODEL.",
           },
           speech: {
@@ -252,12 +252,12 @@ export async function handleApi(
           voice: {
             configured: voiceConfigured(rt),
             note: voiceConfigured(rt)
-              ? "Voice service configured; recurring voices keep one label."
+              ? "Voice service configured. Recurring voices keep one label."
               : "Speaker labels last for one recording connection.",
           },
           legal: {
             configured: !!rt.config.pasalKey,
-            note: "Pasal.id discovery metadata and links only; no legal text.",
+            note: "Pasal.id discovery metadata and links only. No legal text.",
           },
           embeddings: {
             configured: embeddingsConfigured(rt.config),
@@ -964,8 +964,7 @@ export async function handleApi(
               {
                 ...detail,
                 sources,
-                notice:
-                  "Decision support only. Verify original sources.",
+                notice: "Decision support only. Verify original sources.",
               },
               null,
               2,

@@ -130,7 +130,8 @@ const id: readonly Example[] = [
     label: "Didukung sumber",
     shortLabel: "Detail yang cocok",
     quote: "Ada petugas keamanan di pintu masuk.",
-    earlier: "Saya ingat melihat seorang petugas keamanan di dekat pintu masuk.",
+    earlier:
+      "Saya ingat melihat seorang petugas keamanan di dekat pintu masuk.",
     time: "00:18:06",
     page: "4",
     finding:

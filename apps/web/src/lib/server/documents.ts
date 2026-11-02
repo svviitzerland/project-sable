@@ -155,7 +155,11 @@ export async function extractPages(
       pages.map(([p, text]) => [p, text.replaceAll("\x00", "")]),
       { tidy: mime === "application/pdf" },
     );
-    assert(pages.reduce((n, p) => n + p[1].length, 0) <= MAX_CHARS, 422, tooLong);
+    assert(
+      pages.reduce((n, p) => n + p[1].length, 0) <= MAX_CHARS,
+      422,
+      tooLong,
+    );
     assert(
       pages.some((p) => p[1].trim()),
       422,

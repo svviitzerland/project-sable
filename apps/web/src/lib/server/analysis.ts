@@ -115,7 +115,7 @@ async function runInvestigation(rt: Runtime, id: string) {
         rt,
         id,
         "unavailable",
-        "Automatic analysis is unavailable. Your transcript is saved; you can still review it alongside your documents.",
+        "Automatic analysis is unavailable. Your transcript is saved. You can still review it alongside your documents.",
       );
       return;
     }
@@ -173,7 +173,7 @@ async function runInvestigation(rt: Runtime, id: string) {
         legal = await legalSearch(rt, conclusion.title.slice(0, 160));
       } catch {
         legalNote =
-          "Legal discovery was unavailable; no legal reference was inferred.";
+          "Legal discovery was unavailable. No legal reference was inferred.";
       }
     review = {
       summary: conclusion.explanation,
@@ -227,7 +227,7 @@ async function runInvestigation(rt: Runtime, id: string) {
       "failed",
       safeError(
         error,
-        "Analysis failed. Your transcript is saved; retry this statement.",
+        "Analysis failed. Your transcript is saved. Retry this statement.",
       ),
     );
   }
@@ -255,7 +255,7 @@ export async function investigate(rt: Runtime, id: string): Promise<void> {
       rt,
       id,
       "interrupted",
-      "Analysis queue is full. Your testimony is saved; retry when the queue clears.",
+      "Analysis queue is full. Your testimony is saved. Retry when the queue clears.",
     );
     return;
   }

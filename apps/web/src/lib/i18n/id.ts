@@ -8,10 +8,10 @@ import type { Messages } from "./en";
  */
 export const id: Messages = {
   // Metadata dokumen
-  "meta.title": "Jude — Kecerdasan ruang sidang berbasis bukti",
+  "meta.title": "Jude: Kecerdasan ruang sidang berbasis bukti",
   "meta.description":
     "Ikuti setiap keterangan. Lihat perkara secara utuh. Kenali Jude, pendamping AI berbasis bukti untuk ruang sidang yang dibangun bagi praktisi hukum Indonesia.",
-  "meta.workspaceTitle": "Ruang kerja perkara — Jude",
+  "meta.workspaceTitle": "Ruang kerja perkara | Jude",
 
   // Pemilih bahasa
   "lang.group": "Bahasa",
@@ -136,7 +136,7 @@ export const id: Messages = {
   "landing.source.lead":
     "Jude menghubungkan keterangan di persidangan dengan berkas perkara, menandai kemungkinan perbedaan, dan menyerahkan penilaian hukum kepada Anda.",
   "landing.source.aside":
-    "Lihat kutipan persisnya, bandingkan secara berdampingan, dan telusuri kembali ke dokumen aslinya—agar Anda dapat mengajukan pertanyaan yang lebih tepat dan menyusun argumen yang lebih kuat.",
+    "Lihat kutipan persisnya, bandingkan secara berdampingan, dan telusuri kembali ke dokumen aslinya, agar Anda dapat mengajukan pertanyaan yang lebih tepat dan menyusun argumen yang lebih kuat.",
   "landing.workflow.title1": "Jaga perhatian Anda",
   "landing.workflow.title2": "pada hal yang penting.",
   "landing.workflow.lead":
@@ -213,7 +213,7 @@ export const id: Messages = {
     "Jude ditujukan untuk evaluasi dengan materi fiktif atau yang sudah mendapat izin. Gunakan untuk menata dokumen, meninjau transkrip dan temuan, serta menyiapkan pertanyaan. Contoh sidang memungkinkan Anda mencoba dengan materi fiktif. Verifikasi sumber dan tinjau hasilnya sebelum mengandalkannya dalam persidangan sungguhan.",
   "landing.faq.q3": "Apakah perbedaan keterangan berarti saksi keliru?",
   "landing.faq.a3":
-    "Tidak. Keterangan yang berbeda dapat mencerminkan peristiwa yang berbeda, pertanyaan yang ambigu, konteks yang tidak lengkap, atau penjelasan lain. Jude dimaksudkan untuk menunjukkan hal yang mungkin perlu diperiksa—bukan menilai kejujuran saksi atau menentukan kesalahan Terdakwa.",
+    "Tidak. Keterangan yang berbeda dapat mencerminkan peristiwa yang berbeda, pertanyaan yang ambigu, konteks yang tidak lengkap, atau penjelasan lain. Jude dimaksudkan untuk menunjukkan hal yang mungkin perlu diperiksa, bukan menilai kejujuran saksi atau menentukan kesalahan Terdakwa.",
   "landing.faq.q4": "Bagaimana rujukan hukum Indonesia digunakan?",
   "landing.faq.a4":
     "Produk ini akan mengambil peraturan perundang-undangan Indonesia yang relevan melalui Pasal.id, sesuai izin yang tersedia. Teks hukum yang terverifikasi harus dibedakan dari metadata dan rujukan yang belum terverifikasi. Demo ini tidak mengambil atau menyajikan nasihat hukum.",
@@ -395,7 +395,7 @@ export const id: Messages = {
   "speakers.save": "Simpan label",
   "speakers.empty": "Pembicara muncul setelah Anda menambahkan transkrip.",
   "speakers.voices":
-    "Suara yang berulang memakai satu label di seluruh rekaman dan sidang dalam perkara ini. Kecocokan suara hanyalah saran; pastikan siapa yang berbicara.",
+    "Suara yang berulang memakai satu label di seluruh rekaman dan sidang dalam perkara ini. Kecocokan suara hanyalah saran. Pastikan siapa yang berbicara.",
   "speakers.forget": "Hapus sidik suara",
   "speakers.skeleton": "Menyimpan label pembicara…",
   "speakers.voice": "Suara {n}",
@@ -490,7 +490,7 @@ export const id: Messages = {
   "audio.unavailable":
     "Transkripsi audio tidak tersedia. Kembali ke Semua sidang untuk mengunggah transkrip.",
   "audio.idle":
-    "Mikrofon mati. Audio langsung dikirim ke Amazon Transcribe; jika perekaman aktif, salinan privat disimpan untuk diputar ulang.",
+    "Mikrofon mati. Audio langsung dikirim ke Amazon Transcribe. Jika perekaman aktif, salinan privat disimpan untuk diputar ulang.",
   "audio.keepRecording": "Simpan rekaman audio sesi ini",
   "audio.recordings": "Rekaman",
   "audio.recordingItem": "Rekaman {when} · {duration}",
@@ -505,7 +505,7 @@ export const id: Messages = {
   "audio.error.fileSize": "Gunakan file audio berukuran di bawah 30 MB.",
   "audio.error.duration": "File audio harus berdurasi kurang dari 30 menit.",
   "audio.error.reconnectSlow":
-    "Penyambungan ulang audio terlalu lama. Rekaman dihentikan; periksa kata-kata terakhir yang tersimpan sebelum memulai lagi.",
+    "Penyambungan ulang audio terlalu lama. Rekaman dihentikan. Periksa kata-kata terakhir yang tersimpan sebelum memulai lagi.",
   "audio.error.backpressure":
     "Unggahan audio tertinggal. Rekaman dihentikan agar keterangan tidak hilang.",
   "audio.error.connectTimeout":
@@ -517,13 +517,13 @@ export const id: Messages = {
   "audio.error.process":
     "Koneksi audio tidak dapat diproses. Silakan sambungkan ulang.",
   "audio.error.failed":
-    "Koneksi audio gagal. Keterangan yang tersimpan tetap tersedia; periksa kata-kata terakhir sebelum memulai lagi.",
+    "Koneksi audio gagal. Keterangan yang tersimpan tetap tersedia. Periksa kata-kata terakhir sebelum memulai lagi.",
   "audio.error.ended":
     "Koneksi audio terputus tiba-tiba. Periksa transkrip tersimpan sebelum memulai lagi.",
   "audio.error.permission":
     "Izin audio ditolak. Izinkan akses mikrofon, lalu coba lagi.",
   "audio.error.saveFinal":
-    "Transkrip final tidak dapat disimpan. Rekaman dihentikan; periksa kata-kata terakhir yang tersimpan sebelum memulai lagi.",
+    "Transkrip final tidak dapat disimpan. Rekaman dihentikan. Periksa kata-kata terakhir yang tersimpan sebelum memulai lagi.",
   "audio.error.finishSave":
     "Sesi audio ini tidak dapat diselesaikan dan disimpan. Periksa kata-kata terakhir yang tersimpan sebelum memulai lagi.",
   "audio.error.limit":
@@ -664,7 +664,7 @@ export const id: Messages = {
   "evidence.noConnectionsText":
     "Cari keterkaitan secara otomatis, atau pilih kutipan untuk membuat tautan sendiri.",
   "evidence.mapLimit":
-    "Peta menampilkan 24 simpul. Seluruh {count} simpul tercantum di bawah; pencarian mencakup seluruh perkara.",
+    "Peta menampilkan 24 simpul. Seluruh {count} simpul tercantum di bawah. Pencarian mencakup seluruh perkara.",
   "evidence.inspector": "Pemeriksa bukti",
   "evidence.back": "Kembali ke bukti",
   "evidence.examine": "Periksa keterkaitan",
@@ -695,7 +695,7 @@ export const id: Messages = {
   // Asisten perkara dan latihan sidang
   "dialogue.default.trialType": "Perkara pidana",
   "dialogue.default.jurisdiction":
-    "Indonesia — pastikan hukum acara yang berlaku",
+    "Indonesia (pastikan hukum acara yang berlaku)",
   "dialogue.default.language": "Bahasa Indonesia",
   "dialogue.default.goals":
     "Melatih pertanyaan yang tepat dan argumen berbasis sumber.",
@@ -794,7 +794,7 @@ export const id: Messages = {
   "dialogue.again": "Latihan lagi",
   "dialogue.reference": "Rujuk materi perkara",
   "dialogue.referenceHelp":
-    "Pilih hingga enam catatan. Hanya cuplikan yang relevan yang dipakai; rujukan tidak melampirkan setiap halaman.",
+    "Pilih hingga enam catatan. Hanya cuplikan yang relevan yang dipakai. Rujukan tidak melampirkan setiap halaman.",
   "dialogue.selectedPassage": "Kutipan bukti yang dipilih",
   "dialogue.caseDocument": "Dokumen perkara",
   "dialogue.noReferences":
@@ -848,7 +848,8 @@ export const id: Messages = {
   "tour.welcome.text":
     "Jude mendengarkan persidangan, membandingkan setiap keterangan dengan berkas perkara, dan menunjukkan bagian yang sesuai atau berbeda dari sumber, lengkap dengan kutipan aslinya. Kesimpulan tetap di tangan Anda.",
   "tour.newCase.title": "1. Buat perkara",
-  "tour.newCase.text": "Mulai perkara kosong, impor arsip .jude dari rekan, atau buka contoh perkara. Setiap perkara menyimpan dokumen, sidang, temuan, dan catatannya sendiri.",
+  "tour.newCase.text":
+    "Mulai perkara kosong, impor arsip .jude dari rekan, atau buka contoh perkara. Setiap perkara menyimpan dokumen, sidang, temuan, dan catatannya sendiri.",
   "tour.import.title": "Atau buka contoh",
   "tour.import.text":
     "Impor arsip perkara .jude, misalnya contoh perkara publik Sambo, untuk langsung melihat perkara yang lengkap.",
@@ -863,7 +864,7 @@ export const id: Messages = {
     "Setiap keterangan dicek terhadap sumber: didukung sumber, berbeda dari sumber, perlu konteks, atau bukti belum cukup. Buka temuan untuk melihat kedua kutipan, lalu tandai sudah ditinjau dengan catatan Anda.",
   "tour.assistant.title": "5. Tanya tentang perkara",
   "tour.assistant.text":
-    "Ajukan pertanyaan dengan bahasa sehari-hari; jawaban mengutip bagian persis dari perkara ini saja.",
+    "Ajukan pertanyaan dengan bahasa sehari-hari. Jawaban mengutip bagian persis dari perkara ini saja.",
   "tour.practice.title": "6. Latihan sidang",
   "tour.practice.text":
     "Berlatih sebagai Penasihat Hukum, Penuntut Umum, atau Hakim dengan kondisi dari perkara. Latihan tidak pernah mengubah catatan bukti.",
@@ -871,11 +872,14 @@ export const id: Messages = {
   "tour.language.text": "Ganti antara Bahasa Indonesia dan English kapan saja.",
   "tour.help.title": "Perlu lagi?",
   "tour.help.text": "Buka panduan ini dari sini kapan pun Anda mau.",
-  "audio.idleShort": "Transkripsi langsung beserta pembicara. Pilih cara memulai.",
+  "audio.idleShort":
+    "Transkripsi langsung beserta pembicara. Pilih cara memulai.",
   "audio.modal.micTitle": "Rekam sidang ini",
   "audio.modal.fileTitle": "Transkripsikan file audio",
-  "audio.modal.micText": "Jude mentranskripsikan mikrofon secara langsung dan mengecek setiap keterangan terhadap berkas perkara.",
-  "audio.modal.fileText": "Gunakan rekaman sidang ini (maksimal 30 menit, 30 MB).",
+  "audio.modal.micText":
+    "Jude mentranskripsikan mikrofon secara langsung dan mengecek setiap keterangan terhadap berkas perkara.",
+  "audio.modal.fileText":
+    "Gunakan rekaman sidang ini (maksimal 30 menit, 30 MB).",
   "audio.modal.chooseFile": "File audio",
   "audio.modal.begin": "Mulai merekam",
   "audio.modal.transcribe": "Mulai transkripsi",
@@ -884,27 +888,35 @@ export const id: Messages = {
   "settings.save": "Simpan detail",
   "settings.saved": "Tersimpan.",
   "settings.speakers": "Label pembicara",
-  "settings.speakersText": "Beri nama setiap suara sekali; label mengikuti suara tersebut di semua rekaman dan sidang dalam perkara ini.",
+  "settings.speakersText":
+    "Beri nama setiap suara sekali. Label mengikuti suara tersebut di semua rekaman dan sidang dalam perkara ini.",
   "settings.export": "Ekspor",
-  "settings.exportText": "Unduh seluruh perkara (dokumen, sidang, temuan, catatan) sebagai arsip .jude.",
+  "settings.exportText":
+    "Unduh seluruh perkara (dokumen, sidang, temuan, catatan) sebagai arsip .jude.",
   "settings.exportButton": "Unduh .jude",
   "settings.danger": "Hapus perkara",
-  "settings.dangerText": "Hapus permanen perkara ini beserta dokumen, sidang, rekaman, temuan, dan percakapannya.",
+  "settings.dangerText":
+    "Hapus permanen perkara ini beserta dokumen, sidang, rekaman, temuan, dan percakapannya.",
   "settings.deleteButton": "Hapus perkara ini",
   "settings.confirmTitle": "Hapus perkara ini?",
-  "settings.confirmText": "Tindakan ini menghapus permanen \"{title}\" dan seluruh isinya. Tidak dapat dibatalkan.",
+  "settings.confirmText":
+    'Tindakan ini menghapus permanen "{title}" dan seluruh isinya. Tidak dapat dibatalkan.',
   "settings.confirmDelete": "Hapus permanen",
   "audio.empty.title": "Mulai catatan sidang",
-  "audio.empty.text": "Jude mentranskripsikan secara langsung, membedakan pembicara, dan mengecek setiap keterangan terhadap berkas perkara selama sidang berjalan.",
-  "audio.empty.alt": "Sudah punya transkrip atau risalah? Impor dari Semua sidang.",
+  "audio.empty.text":
+    "Jude mentranskripsikan secara langsung, membedakan pembicara, dan mengecek setiap keterangan terhadap berkas perkara selama sidang berjalan.",
+  "audio.empty.alt":
+    "Sudah punya transkrip atau risalah? Impor dari Semua sidang.",
   "transcript.renameSpeaker": "Beri nama pembicara",
   "transcript.renameTitle": "Siapa yang berbicara?",
-  "transcript.renameText": "Nama ini berlaku untuk semua keterangan dari suara ini dalam perkara.",
+  "transcript.renameText":
+    "Nama ini berlaku untuk semua keterangan dari suara ini dalam perkara.",
   "transcript.renameLabel": "Nama atau peran",
   "transcript.renamePlaceholder": "mis. Hakim Ketua, Saksi Susi",
   "transcript.renameSave": "Simpan nama",
   "settings.voices": "Privasi suara",
-  "settings.voicesText": "Voiceprint membuat suara yang sama tetap memakai satu label. Ini data biometrik, hanya untuk perkara ini, dan tidak pernah ikut diekspor.",
+  "settings.voicesText":
+    "Voiceprint membuat suara yang sama tetap memakai satu label. Ini data biometrik, hanya untuk perkara ini, dan tidak pernah ikut diekspor.",
   "ws.pinSidebar": "Tahan sidebar terbuka",
   "ws.unpinSidebar": "Ciutkan sidebar",
   "newCase.chooseTitle": "Tambah perkara",
@@ -913,15 +925,18 @@ export const id: Messages = {
   "newCase.import": "Impor arsip .jude",
   "newCase.importText": "Lanjutkan perkara dari rekan atau hasil ekspor Jude.",
   "newCase.demo": "Buka contoh perkara",
-  "newCase.demoText": "Jelajahi perkara publik lengkap berisi dokumen, sidang, dan temuan.",
+  "newCase.demoText":
+    "Jelajahi perkara publik lengkap berisi dokumen, sidang, dan temuan.",
   "newCase.importTitle": "Impor arsip .jude",
   "newCase.importChoose": "Pilih file .jude",
-  "newCase.importHint": "Maksimal 64 MB. Temuan hasil impor perlu ditinjau ulang.",
+  "newCase.importHint":
+    "Maksimal 64 MB. Temuan hasil impor perlu ditinjau ulang.",
   "newCase.back": "Kembali",
   "account.menu": "Akun",
   "account.language": "Bahasa",
   "tour.account.title": "Akun Anda",
-  "tour.account.text": "Ganti bahasa antara Bahasa Indonesia dan English, buka panduan ini lagi, atau keluar dari sini.",
+  "tour.account.text":
+    "Ganti bahasa antara Bahasa Indonesia dan English, buka panduan ini lagi, atau keluar dari sini.",
   // Dialogue redesign
   "dialogue.speaker.assistant": "Asisten perkara",
   "dialogue.speaker.facilitator": "Pemandu latihan",
@@ -930,7 +945,8 @@ export const id: Messages = {
   "dialogue.removeSource": "Lepas sumber: {label}",
   "dialogue.composerPlaceholder": "Tanyakan sesuatu tentang perkara ini…",
   "dialogue.enterHint": "Enter untuk kirim · Shift+Enter untuk baris baru",
-  "dialogue.welcomeShort": "Tanyakan apa saja tentang perkara ini. Jawaban mengutip berkas perkara, jadi setiap poin dapat Anda periksa.",
+  "dialogue.welcomeShort":
+    "Tanyakan apa saja tentang perkara ini. Jawaban mengutip berkas perkara, jadi setiap poin dapat Anda periksa.",
   "dialogue.tryAsking": "Contoh pertanyaan",
   "dialogue.cited": "Sumber yang dikutip",
   "dialogue.step.role": "Pilih peran Anda",
@@ -939,7 +955,8 @@ export const id: Messages = {
   "dialogue.roleHint.opposing": "Buktikan dakwaan dan tanggapi pembelaan.",
   "dialogue.roleHint.judge": "Pimpin sidang dan jaga tertib hukum acara.",
   "dialogue.editConditions": "Ubah kondisi",
-  "dialogue.summaryNote": "Ini asumsi latihan, bukan prediksi jalannya sidang sebenarnya.",
+  "dialogue.summaryNote":
+    "Ini asumsi latihan, bukan prediksi jalannya sidang sebenarnya.",
   "dialogue.modeAi": "Bermain peran dengan AI",
   "dialogue.modeAiHint": "AI memerankan pihak lain di ruang sidang.",
   "dialogue.modeGuided": "Latihan terpandu (tanpa AI)",
@@ -948,13 +965,15 @@ export const id: Messages = {
   "dialogue.finishDebrief": "Selesai & lihat evaluasi",
   "dialogue.history": "Riwayat",
   // Case tabs redesign
-  "tabs.evidence.askHint": "Jawaban mengutip berkas perkara. Buka sumbernya untuk membaca teks lengkap.",
+  "tabs.evidence.askHint":
+    "Jawaban mengutip berkas perkara. Buka sumbernya untuk membaca teks lengkap.",
   "tabs.evidence.loadFailed": "Peta bukti belum dapat dimuat.",
   "tabs.evidence.view": "Tampilan bukti",
   "tabs.evidence.linkHeading": "Tautan Anda sendiri",
   "tabs.library.import": "Impor transkrip",
   "tabs.library.drop": "Letakkan transkrip di sini atau pilih file",
-  "tabs.library.newText": "Beri nama persidangan. Di dalamnya Anda dapat merekam, mentranskrip file audio, atau menambahkan keterangan secara manual.",
+  "tabs.library.newText":
+    "Beri nama persidangan. Di dalamnya Anda dapat merekam, mentranskrip file audio, atau menambahkan keterangan secara manual.",
   "tabs.finding.testimony": "Keterangan",
   "tabs.finding.source": "Sumber",
   "tabs.docs.drop": "Letakkan dokumen di sini atau pilih file",
@@ -963,5 +982,6 @@ export const id: Messages = {
   "tabs.references.count.one": "{count} peraturan",
   "tabs.references.count.other": "{count} peraturan",
   "tabs.settings.lead": "Detail, ekspor, dan penghapusan untuk perkara ini.",
-  "tabs.settings.detailsText": "Judul dan nomor perkara tampil di daftar perkara dan di berkas ekspor.",
+  "tabs.settings.detailsText":
+    "Judul dan nomor perkara tampil di daftar perkara dan di berkas ekspor.",
 };

@@ -6,10 +6,10 @@
  */
 export const en = {
   // Document metadata
-  "meta.title": "Jude — Evidence-grounded courtroom intelligence",
+  "meta.title": "Jude: Evidence-grounded courtroom intelligence",
   "meta.description":
     "Stay with the testimony. See the whole story. Meet Jude, an evidence-grounded AI courtroom copilot being built for Indonesian legal professionals.",
-  "meta.workspaceTitle": "Case workspace — Jude",
+  "meta.workspaceTitle": "Case workspace | Jude",
 
   // Language switcher
   "lang.group": "Language",
@@ -133,7 +133,7 @@ export const en = {
   "landing.source.lead":
     "Jude links testimony to case documents, surfaces possible inconsistencies, and keeps legal judgment with people.",
   "landing.source.aside":
-    "See the exact passages, compare them side by side, and follow the trail back to the original documents—so you can ask better questions and build stronger arguments.",
+    "See the exact passages, compare them side by side, and follow the trail back to the original documents, so you can ask better questions and build stronger arguments.",
   "landing.workflow.title1": "Keep your attention",
   "landing.workflow.title2": "where it matters.",
   "landing.workflow.lead":
@@ -210,7 +210,7 @@ export const en = {
     "Jude is intended for evaluation using fictional or authorized material. Use it to organize documents, review transcripts and findings, and prepare questions. The example hearing lets you explore with fictional material. Verify sources and review the results before relying on them in a real proceeding.",
   "landing.faq.q3": "Does an inconsistency mean a witness is wrong?",
   "landing.faq.a3":
-    "No. Different accounts can reflect different events, ambiguous questions, incomplete context, or other explanations. Jude is intended to identify what may warrant examination—not decide whether a witness is lying or a defendant is guilty.",
+    "No. Different accounts can reflect different events, ambiguous questions, incomplete context, or other explanations. Jude is intended to identify what may warrant examination, not decide whether a witness is lying or a defendant is guilty.",
   "landing.faq.q4": "How will Indonesian legal references be used?",
   "landing.faq.a4":
     "The proposed product will retrieve relevant Indonesian legislation through Pasal.id, subject to available permissions. Verified legal text must be distinguished from metadata and unverified references. This demo does not retrieve or present legal advice.",
@@ -391,7 +391,7 @@ export const en = {
   "speakers.save": "Save label",
   "speakers.empty": "Speakers appear after you add a transcript.",
   "speakers.voices":
-    "Recurring voices keep one label across recordings and hearings in this case. A voice match is a suggestion; confirm who is speaking.",
+    "Recurring voices keep one label across recordings and hearings in this case. A voice match is a suggestion. Confirm who is speaking.",
   "speakers.forget": "Forget voiceprints",
   "speakers.skeleton": "Saving speaker labels…",
   "speakers.voice": "Voice {n}",
@@ -486,7 +486,7 @@ export const en = {
   "audio.unavailable":
     "Audio transcription is unavailable. Return to All hearings to upload a transcript instead.",
   "audio.idle":
-    "Microphone off. Live audio goes to Amazon Transcribe; with recording on, a private copy is kept for replay.",
+    "Microphone off. Live audio goes to Amazon Transcribe. With recording on, a private copy is kept for replay.",
   "audio.keepRecording": "Keep an audio recording of this session",
   "audio.recordings": "Recordings",
   "audio.recordingItem": "Recording {when} · {duration}",
@@ -501,7 +501,7 @@ export const en = {
   "audio.error.fileSize": "Use a prepared audio file smaller than 30 MB.",
   "audio.error.duration": "Prepared audio must be shorter than 30 minutes.",
   "audio.error.reconnectSlow":
-    "Audio reconnection took too long. Recording stopped; check the final saved words before restarting.",
+    "Audio reconnection took too long. Recording stopped. Check the final saved words before restarting.",
   "audio.error.backpressure":
     "Audio upload cannot keep up. Recording stopped to avoid losing testimony.",
   "audio.error.connectTimeout":
@@ -513,13 +513,13 @@ export const en = {
   "audio.error.process":
     "Could not process the audio connection. Please reconnect.",
   "audio.error.failed":
-    "Audio connection failed. Saved testimony remains available; check the final words before restarting.",
+    "Audio connection failed. Saved testimony remains available. Check the final words before restarting.",
   "audio.error.ended":
     "Audio connection ended unexpectedly. Check the saved transcript before restarting.",
   "audio.error.permission":
     "Audio permission was denied. Allow microphone access and try again.",
   "audio.error.saveFinal":
-    "Could not save the final transcript. Recording stopped; check the last saved words before restarting.",
+    "Could not save the final transcript. Recording stopped. Check the last saved words before restarting.",
   "audio.error.finishSave":
     "Could not finish saving this audio session. Check the last saved words before restarting.",
   "audio.error.limit":
@@ -660,7 +660,7 @@ export const en = {
   "evidence.noConnectionsText":
     "Find connections automatically, or select a passage to create your own link.",
   "evidence.mapLimit":
-    "Map shows 24 nodes. All {count} available nodes are listed below; search covers the whole case.",
+    "Map shows 24 nodes. All {count} available nodes are listed below. Search covers the whole case.",
   "evidence.inspector": "Evidence inspector",
   "evidence.back": "Back to evidence",
   "evidence.examine": "Examine the connection",
@@ -690,7 +690,7 @@ export const en = {
 
   // Case assistant and courtroom practice
   "dialogue.default.trialType": "Criminal trial",
-  "dialogue.default.jurisdiction": "Indonesia — confirm applicable procedure",
+  "dialogue.default.jurisdiction": "Indonesia (confirm applicable procedure)",
   "dialogue.default.language": "English",
   "dialogue.default.goals":
     "Practice precise questions and source-based arguments.",
@@ -789,7 +789,7 @@ export const en = {
   "dialogue.again": "Practise again",
   "dialogue.reference": "Reference case material",
   "dialogue.referenceHelp":
-    "Choose up to six records. Relevant excerpts are selected; a reference does not attach every page.",
+    "Choose up to six records. Relevant excerpts are selected. A reference does not attach every page.",
   "dialogue.selectedPassage": "Selected evidence passage",
   "dialogue.caseDocument": "Case document",
   "dialogue.noReferences": "Add documents or a hearing to reference them here.",
@@ -840,7 +840,8 @@ export const en = {
   "tour.welcome.text":
     "Jude listens to the hearing, compares each statement with the case file, and shows where testimony matches or differs from the source, with the exact quote. You stay in charge of every conclusion.",
   "tour.newCase.title": "1. Create a case",
-  "tour.newCase.text": "Start a blank case, import a .jude archive from a colleague, or open the example case. Each case keeps its own documents, hearings, findings and notes.",
+  "tour.newCase.text":
+    "Start a blank case, import a .jude archive from a colleague, or open the example case. Each case keeps its own documents, hearings, findings and notes.",
   "tour.import.title": "Or open an example",
   "tour.import.text":
     "Import a .jude case archive, such as the public Sambo case example, to see a complete case right away.",
@@ -855,7 +856,7 @@ export const en = {
     "Each statement is checked against the sources: supported, differs from the source, needs context, or not enough evidence. Open a finding to see both quotes, then mark it reviewed with your note.",
   "tour.assistant.title": "5. Ask about the case",
   "tour.assistant.text":
-    "Ask questions in plain language; answers cite exact passages from this case only.",
+    "Ask questions in plain language. Answers cite exact passages from this case only.",
   "tour.practice.title": "6. Rehearse",
   "tour.practice.text":
     "Practise as defense counsel, prosecutor or judge with conditions taken from the case. Practice never changes the evidence record.",
@@ -867,8 +868,10 @@ export const en = {
   "audio.idleShort": "Live transcription with speakers. Choose how to start.",
   "audio.modal.micTitle": "Record this hearing",
   "audio.modal.fileTitle": "Transcribe an audio file",
-  "audio.modal.micText": "Jude transcribes the microphone live and checks each statement against the case file.",
-  "audio.modal.fileText": "Use a recording of this hearing (up to 30 minutes, 30 MB).",
+  "audio.modal.micText":
+    "Jude transcribes the microphone live and checks each statement against the case file.",
+  "audio.modal.fileText":
+    "Use a recording of this hearing (up to 30 minutes, 30 MB).",
   "audio.modal.chooseFile": "Audio file",
   "audio.modal.begin": "Start recording",
   "audio.modal.transcribe": "Start transcription",
@@ -877,36 +880,46 @@ export const en = {
   "settings.save": "Save details",
   "settings.saved": "Saved.",
   "settings.speakers": "Speaker labels",
-  "settings.speakersText": "Name each voice once; the label follows that voice across recordings and hearings in this case.",
+  "settings.speakersText":
+    "Name each voice once. The label follows that voice across recordings and hearings in this case.",
   "settings.export": "Export",
-  "settings.exportText": "Download the whole case (documents, hearings, findings, notes) as a portable .jude archive.",
+  "settings.exportText":
+    "Download the whole case (documents, hearings, findings, notes) as a portable .jude archive.",
   "settings.exportButton": "Download .jude",
   "settings.danger": "Delete case",
-  "settings.dangerText": "Permanently delete this case with its documents, hearings, recordings, findings and conversations.",
+  "settings.dangerText":
+    "Permanently delete this case with its documents, hearings, recordings, findings and conversations.",
   "settings.deleteButton": "Delete this case",
   "settings.confirmTitle": "Delete this case?",
-  "settings.confirmText": "This permanently removes \"{title}\" and everything in it. It cannot be undone.",
+  "settings.confirmText":
+    'This permanently removes "{title}" and everything in it. It cannot be undone.',
   "settings.confirmDelete": "Delete permanently",
   "audio.empty.title": "Start the hearing record",
-  "audio.empty.text": "Jude transcribes live, tells speakers apart, and checks each statement against the case file as the hearing goes on.",
-  "audio.empty.alt": "Already have a transcript or risalah? Import it from All hearings.",
+  "audio.empty.text":
+    "Jude transcribes live, tells speakers apart, and checks each statement against the case file as the hearing goes on.",
+  "audio.empty.alt":
+    "Already have a transcript or risalah? Import it from All hearings.",
   "transcript.renameSpeaker": "Name this speaker",
   "transcript.renameTitle": "Who is speaking?",
-  "transcript.renameText": "The name applies to every statement from this voice in the case.",
+  "transcript.renameText":
+    "The name applies to every statement from this voice in the case.",
   "transcript.renameLabel": "Name or role",
   "transcript.renamePlaceholder": "e.g. Hakim Ketua, Saksi Susi",
   "transcript.renameSave": "Save name",
   "settings.voices": "Voice privacy",
-  "settings.voicesText": "Voiceprints let recurring voices keep one label. They are biometric data, stay in this case, and are never exported.",
+  "settings.voicesText":
+    "Voiceprints let recurring voices keep one label. They are biometric data, stay in this case, and are never exported.",
   "ws.pinSidebar": "Keep sidebar open",
   "ws.unpinSidebar": "Collapse sidebar",
   "newCase.chooseTitle": "Add a case",
   "newCase.blank": "Start a blank case",
   "newCase.blankText": "Give it a title, then add the case file and hearings.",
   "newCase.import": "Import a .jude archive",
-  "newCase.importText": "Continue a case shared by a colleague or exported from Jude.",
+  "newCase.importText":
+    "Continue a case shared by a colleague or exported from Jude.",
   "newCase.demo": "Open the example case",
-  "newCase.demoText": "Explore a complete public case with documents, a hearing and findings.",
+  "newCase.demoText":
+    "Explore a complete public case with documents, a hearing and findings.",
   "newCase.importTitle": "Import a .jude archive",
   "newCase.importChoose": "Choose a .jude file",
   "newCase.importHint": "Up to 64 MB. Imported findings start unreviewed.",
@@ -914,7 +927,8 @@ export const en = {
   "account.menu": "Account",
   "account.language": "Language",
   "tour.account.title": "Your account",
-  "tour.account.text": "Switch the language between Bahasa Indonesia and English, replay this guide, or sign out from here.",
+  "tour.account.text":
+    "Switch the language between Bahasa Indonesia and English, replay this guide, or sign out from here.",
   // Dialogue redesign
   "dialogue.speaker.assistant": "Case assistant",
   "dialogue.speaker.facilitator": "Practice facilitator",
@@ -923,16 +937,19 @@ export const en = {
   "dialogue.removeSource": "Remove source: {label}",
   "dialogue.composerPlaceholder": "Ask about this case…",
   "dialogue.enterHint": "Enter to send · Shift+Enter for a new line",
-  "dialogue.welcomeShort": "Ask anything about this case. Answers quote the case file, so every point can be checked.",
+  "dialogue.welcomeShort":
+    "Ask anything about this case. Answers quote the case file, so every point can be checked.",
   "dialogue.tryAsking": "Suggested questions",
   "dialogue.cited": "Sources cited",
   "dialogue.step.role": "Choose your role",
   "dialogue.step.conditions": "Check the conditions",
   "dialogue.roleHint.defense": "Examine witnesses and test the charge.",
-  "dialogue.roleHint.opposing": "Press the other side’s case and test the defense.",
+  "dialogue.roleHint.opposing":
+    "Press the other side’s case and test the defense.",
   "dialogue.roleHint.judge": "Lead the hearing and keep procedure in order.",
   "dialogue.editConditions": "Change conditions",
-  "dialogue.summaryNote": "Practice assumptions, not a prediction of the real hearing.",
+  "dialogue.summaryNote":
+    "Practice assumptions, not a prediction of the real hearing.",
   "dialogue.modeAi": "AI roleplay",
   "dialogue.modeAiHint": "The AI plays the other people in the room.",
   "dialogue.modeGuided": "Guided drill (no AI)",
@@ -941,13 +958,15 @@ export const en = {
   "dialogue.finishDebrief": "Finish & see debrief",
   "dialogue.history": "History",
   // Case tabs redesign
-  "tabs.evidence.askHint": "Answers quote the case file. Open any source to read it in full.",
+  "tabs.evidence.askHint":
+    "Answers quote the case file. Open any source to read it in full.",
   "tabs.evidence.loadFailed": "The evidence map could not be loaded.",
   "tabs.evidence.view": "Evidence view",
   "tabs.evidence.linkHeading": "Your own link",
   "tabs.library.import": "Import transcript",
   "tabs.library.drop": "Drop a transcript here or choose a file",
-  "tabs.library.newText": "Name the session. Inside it you can record, transcribe an audio file or add statements by hand.",
+  "tabs.library.newText":
+    "Name the session. Inside it you can record, transcribe an audio file or add statements by hand.",
   "tabs.finding.testimony": "Testimony",
   "tabs.finding.source": "Source",
   "tabs.docs.drop": "Drop a document here or choose a file",
@@ -956,7 +975,8 @@ export const en = {
   "tabs.references.count.one": "{count} regulation",
   "tabs.references.count.other": "{count} regulations",
   "tabs.settings.lead": "Details, export and deletion for this case.",
-  "tabs.settings.detailsText": "The title and case number appear in your case list and in exports.",
+  "tabs.settings.detailsText":
+    "The title and case number appear in your case list and in exports.",
 } as const;
 
 export type MessageKey = keyof typeof en;

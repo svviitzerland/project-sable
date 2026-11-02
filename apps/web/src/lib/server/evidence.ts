@@ -218,7 +218,7 @@ export async function buildLinks(rt: Runtime, caseId: string) {
       });
     } catch {
       notice +=
-        " AI relationships could not be verified; similarity suggestions are shown.";
+        " AI relationships could not be verified. Similarity suggestions are shown.";
       proposed = [];
     }
   if (!proposed.length)
@@ -227,7 +227,7 @@ export async function buildLinks(rt: Runtime, caseId: string) {
       target_id: b.id,
       relation: "related",
       explanation:
-        "Similar subject matter; inspect the passages to determine their relationship.",
+        "Similar subject matter. Inspect the passages to determine their relationship.",
       source_quote: a.text.slice(0, 300),
       target_quote: b.text.slice(0, 300),
       basis,
@@ -252,7 +252,7 @@ export async function buildLinks(rt: Runtime, caseId: string) {
     added,
     notice: notice.trim() || "Suggested links are ready to inspect.",
     scope:
-      "Up to 300 passages indexed; cross-document suggestions use the first 120 passages. Natural-language search covers all case passages.",
+      "Up to 300 passages indexed. Cross-document suggestions use the first 120 passages. Natural-language search covers all case passages.",
   };
 }
 export async function askEvidence(rt: Runtime, caseId: string, query: string) {

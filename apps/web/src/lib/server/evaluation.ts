@@ -129,8 +129,8 @@ export function score(
     mode,
     notice:
       mode === "fixture"
-        ? "Fixture scoring validates the harness only; it does not measure AI or transcription quality."
-        : "Small synthetic evaluation; not courtroom performance. Unsupported conclusions require independent human annotation.",
+        ? "Fixture scoring validates the harness only. It does not measure AI or transcription quality."
+        : "Small synthetic evaluation. Not courtroom performance. Unsupported conclusions require independent human annotation.",
     examples: rows.length,
     status_accuracy: ratio(rows.filter((r) => r.correct).length, rows.length),
     inconsistency: {

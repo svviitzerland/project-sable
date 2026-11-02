@@ -134,7 +134,7 @@ export async function structured<T extends z.ZodType>(
   const parsed = schema.safeParse(raw);
   if (!parsed.success)
     throw new ProviderError(
-      "The AI response could not be verified. Please try again; nothing was added to the case.",
+      "The AI response could not be verified. Please try again. Nothing was added to the case.",
     );
   return parsed.data;
 }
@@ -182,7 +182,7 @@ async function bedrockStructured(
   }
   if (output === undefined)
     throw new ProviderError(
-      "The AI response could not be verified. Please try again; nothing was added to the case.",
+      "The AI response could not be verified. Please try again. Nothing was added to the case.",
     );
   return output;
 }
@@ -273,7 +273,7 @@ async function openrouterStructured(
     return JSON.parse(data.choices[0].message.content);
   } catch {
     throw new ProviderError(
-      "The AI response could not be verified. Please try again; nothing was added to the case.",
+      "The AI response could not be verified. Please try again. Nothing was added to the case.",
     );
   }
 }

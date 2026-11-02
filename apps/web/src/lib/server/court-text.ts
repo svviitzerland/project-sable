@@ -44,7 +44,7 @@ const LEADING_FRAGMENT = /^(\S{1,6}(?: \S{1,3})?)[ \t]{3,}/;
 const TRAILING_FRAGMENT = /[ \t]{3,}(\S{1,6}(?: \S{1,3})?)[ \t]*$/;
 
 function stripLayoutFragments(line: string) {
-  for (let changed = true; changed; ) {
+  for (let changed = true; changed;) {
     changed = false;
     const lead = LEADING_FRAGMENT.exec(line);
     if (lead && isWatermarkFragment(lead[1])) {
