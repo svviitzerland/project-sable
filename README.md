@@ -68,7 +68,7 @@ By default the app runs as one process on SQLite with files in `apps/web/.data/`
 
 For PostgreSQL, start one with pgvector (for example `docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 pgvector/pgvector:pg17`), run `cd db && npm ci && DATABASE_URL=... npm run migrate`, and set the same `DATABASE_URL`.
 
-Without any provider, documents, search, imported or typed testimony, manual review, the example case with its saved findings, archives and source-only assistant replies all still work. Scanned PDFs need OCR before upload.
+Without any provider, documents, search, imported or typed testimony, manual review, the example case with its saved findings, archives and source-only assistant replies all still work. Courtroom practice needs an AI provider. Scanned PDFs need OCR before upload.
 
 ## Deploy (AWS)
 

@@ -12,6 +12,7 @@
     FileText,
     Gavel,
     History,
+    Lightbulb,
     Plus,
     Scale,
     Shield,
@@ -122,6 +123,49 @@
     return speakerKeys[role] ? t(speakerKeys[role]) : role;
   }
 
+  /** AI characters are saved as "role" or "witness:Name" (a name taken from the case material). */
+  function speakerLabel(speaker: string) {
+    const split = speaker.indexOf(":");
+    if (split < 0) return roleLabel(speaker);
+    const role = speaker.slice(0, split),
+      name = speaker.slice(split + 1).trim();
+    return name ? `${roleLabel(role)} · ${name}` : roleLabel(role);
+  }
+
+  function speakerRole(speaker: string) {
+    return speaker.split(":")[0];
+  }
+
+  const coachKinds = [
+    "leading",
+    "compound",
+    "contradiction",
+    "procedure",
+    "clarity",
+    "strength",
+  ] as const;
+
+  function coachLabel(kind: string) {
+    return (coachKinds as readonly string[]).includes(kind)
+      ? t(`dialogue.coach.${kind as (typeof coachKinds)[number]}`)
+      : t("dialogue.coachNote");
+  }
+
+  const debriefSections = ["strength", "tighten", "revisit"] as const;
+
+  /** The opening scene note, rendered from the saved conditions in the interface language. */
+  function sceneText() {
+    const role = active?.conditions.user_role ?? "defense";
+    const cast = (practiceRoles.map((r) => r.key) as string[]).includes(role)
+      ? (role as (typeof practiceRoles)[number]["key"])
+      : "defense";
+    return t("dialogue.scene", {
+      stage: stageLabel(active?.conditions.stage ?? ""),
+      role: roleLabel(role),
+      cast: t(`dialogue.cast.${cast}`),
+    });
+  }
+
   function stageLabel(stage: string) {
     return (stages as readonly string[]).includes(stage)
       ? t(`stage.${stage as (typeof stages)[number]}`)
@@ -187,9 +231,28 @@
 
   let conditions = $state<Conditions>(untrack(defaultConditions));
 
-  let mode = $state(
-    untrack(() => (caps?.analysis.configured ? "ai" : "guided")),
+  /** Practice is AI roleplay only; without a provider it shows an unavailable state. */
+  let aiReady = $derived(!!caps?.analysis.configured);
+
+  /** Short coaching notes after each turn; a per-viewer preference. */
+  let coaching = $state(
+    untrack(() => {
+      try {
+        return localStorage.getItem("jude.practice.coaching") !== "0";
+      } catch {
+        return true;
+      }
+    }),
   );
+
+  function setCoaching(on: boolean) {
+    coaching = on;
+    try {
+      localStorage.setItem("jude.practice.coaching", on ? "1" : "0");
+    } catch {
+      // Storage can be unavailable; the toggle still applies to this view.
+    }
+  }
 
   let rationale = $state("");
 
@@ -293,7 +356,6 @@
       method: "POST",
       body: JSON.stringify({
         kind,
-        mode: practice ? mode : "ai",
         ...(practice ? { conditions } : {}),
       }),
     });
@@ -318,6 +380,7 @@
           reference_ids: selectedRefs,
           legal_query: law.trim(),
           finish,
+          ...(practice ? { coaching } : {}),
         };
         const fingerprint = JSON.stringify({ session: session.id, ...data });
         if (request.current?.fingerprint !== fingerprint)
@@ -379,9 +442,28 @@
 
   let messages = $derived(active?.messages ?? []);
 
-  let canCompose = $derived(!practice || !!active);
+  /** Legacy scripted-drill sessions stay readable but cannot continue. */
+  let legacy = $derived(practice && active?.mode === "guided");
 
-  let showSources = $derived(!practice || active?.mode === "ai");
+  let canCompose = $derived(
+    !practice || (!!active && aiReady && !legacy),
+  );
+
+  type Block =
+    | { type: "message"; message: Message }
+    | { type: "debrief"; items: Message[] };
+
+  /** Consecutive debrief items render as one debrief section. */
+  let blocks = $derived(
+    messages.reduce<Block[]>((list, message) => {
+      const last = list.at(-1);
+      if (message.role === "debrief") {
+        if (last?.type === "debrief") last.items.push(message);
+        else list.push({ type: "debrief", items: [message] });
+      } else list.push({ type: "message", message });
+      return list;
+    }, []),
+  );
 
   let conditionSummary = $derived(
     [
@@ -394,6 +476,65 @@
       .join(" · "),
   );
 </script>
+
+{#snippet citations(message: Message)}
+{#if !!message.citations.length}<div class={styles.citations}>
+                  <div
+                    class={styles.citationChips}
+                    role="group"
+                    aria-label={t("dialogue.cited")}
+                  >
+                    {#each message.citations as citation, index (index)}<button
+                        type="button"
+                        class={styles.citationChip}
+                        aria-expanded={openCitation[message.id] === index}
+                        aria-controls={`cite-${message.id}-${index}`}
+                        onclick={() =>
+                          (openCitation = {
+                            ...openCitation,
+                            [message.id]:
+                              openCitation[message.id] === index ? -1 : index,
+                          })}
+                      >
+                        <span class={styles.citationNumber}>{index + 1}</span>
+                        <span class={styles.citationTitle}
+                          >{citation.source.title}{citation.source.page
+                            ? t("common.pageSuffix", {
+                                page: citation.source.page,
+                              })
+                            : ""}</span
+                        >
+                      </button>{/each}
+                  </div>
+                  {#each message.citations as citation, index (index)}<div
+                      id={`cite-${message.id}-${index}`}
+                      class={styles.citationPanel}
+                      hidden={openCitation[message.id] !== index}
+                    >
+                      <blockquote>“{citation.quote}”</blockquote>
+                      <p class={styles.sourceText}>{citation.source.text}</p>
+                      <div class={styles.citationLinks}>
+                        {#if citation.source.document_id}<a
+                            href={`/api/v1/cases/${caseId}/documents/${citation.source.document_id}/original`}
+                            target="_blank"
+                            rel="external noreferrer"
+                          >
+                            {t("dialogue.openOriginal")}
+                            <ExternalLink size={13}></ExternalLink>
+                          </a>{/if}
+                        {#if citation.source.hearing_id}<button
+                            class={ui.textButton}
+                            disabled={!!busy}
+                            onclick={() =>
+                              openHearing(citation.source.hearing_id!)}
+                          >
+                            {t("common.openHearing")}
+                            <ArrowRight size={13}></ArrowRight>
+                          </button>{/if}
+                      </div>
+                    </div>{/each}
+                </div>{/if}
+{/snippet}
 
 <div class={styles.screen}>
   <header class={styles.heading}>
@@ -450,11 +591,9 @@
                 {formatDate(session.created_at)} ·&#32;
                 {session.status === "complete"
                   ? t("dialogue.completed")
-                  : session.mode === "guided"
-                    ? t("dialogue.guidedDrill")
-                    : session.kind === "practice"
-                      ? t("dialogue.aiRehearsal")
-                      : t("dialogue.caseConversation")}
+                  : session.kind === "practice"
+                    ? t("dialogue.aiRehearsal")
+                    : t("dialogue.caseConversation")}
               </small>
             </button>
           </li>{/each}
@@ -487,6 +626,18 @@
             ? t("dialogue.openingConversations")
             : t(busy)}
         />
+      </div>{:else if practice && !active && caps && !aiReady}<div
+        class={styles.unavailable}
+        role="status"
+      >
+        <span class={styles.unavailableIcon} aria-hidden="true"
+          ><Gavel size={20}></Gavel></span
+        >
+        <h3>{t("dialogue.unavailableTitle")}</h3>
+        <p>{t("dialogue.unavailableText")}</p>
+        {#if sessions.length}<p class={styles.quiet}>
+            {t("dialogue.unavailableHistory")}
+          </p>{/if}
       </div>{:else if practice && !active}<form
         class={styles.setup}
         onsubmit={(e) => {
@@ -672,44 +823,12 @@
           </div>
         </section>
 
-        <fieldset class={styles.modes}>
-          <legend>{t("dialogue.mode")}</legend>
-          <label class={styles.modeOption}>
-            <input
-              type="radio"
-              name="practice-mode"
-              value="ai"
-              checked={mode === "ai"}
-              disabled={!caps?.analysis.configured}
-              onchange={() => (mode = "ai")}
-            />
-            <span>
-              <strong>{t("dialogue.modeAi")}</strong>
-              <small
-                >{caps?.analysis.configured
-                  ? t("dialogue.modeAiHint")
-                  : t("dialogue.aiUnavailableShort")}</small
-              >
-            </span>
-          </label>
-          <label class={styles.modeOption}>
-            <input
-              type="radio"
-              name="practice-mode"
-              value="guided"
-              checked={mode === "guided"}
-              onchange={() => (mode = "guided")}
-            />
-            <span>
-              <strong>{t("dialogue.modeGuided")}</strong>
-              <small>{t("dialogue.modeGuidedHint")}</small>
-            </span>
-          </label>
-        </fieldset>
-
         <div class={styles.startRow}>
           <p class={styles.quiet}>{t("dialogue.summaryNote")}</p>
-          <button class={`${ui.primary} ${styles.start}`} disabled={!!busy}>
+          <button
+            class={`${ui.primary} ${styles.start}`}
+            disabled={!!busy || !aiReady}
+          >
             <Gavel size={16}></Gavel>
             {t("dialogue.start")}
           </button>
@@ -723,10 +842,7 @@
                 ? t("dialogue.practiceMeta", {
                     role: roleLabel(active.conditions.user_role),
                     stage: stageLabel(active.conditions.stage),
-                    mode:
-                      active.mode === "guided"
-                        ? t("dialogue.modeGuided")
-                        : t("dialogue.aiRoleplay"),
+                    difficulty: difficultyLabel(active.conditions.difficulty),
                   })
                 : t("dialogue.assistantMeta")}
             </p>
@@ -743,7 +859,7 @@
                 ? t("dialogue.exportRehearsal")
                 : t("dialogue.exportConversation")}
             </a>
-            {#if practice && active.status !== "complete"}<button
+            {#if practice && active.status !== "complete" && canCompose}<button
                 class={ui.primary}
                 disabled={!!busy || !messages.some((m) => m.role === "user")}
                 onclick={() => send(true)}
@@ -769,7 +885,6 @@
             disabled={!!busy}
             onclick={() => {
               conditions = active!.conditions;
-              mode = active!.mode === "guided" ? "guided" : mode;
               editOpen = true;
               newSession("trial-type");
             }}
@@ -809,95 +924,86 @@
                   </button>{/each}
               </div>
             </div>{/if}{/if}
-        {#each messages as message (message.id)}<article
-            class={`${styles.message} ${message.role === "user" ? styles.userMessage : ""}`}
-          >
-            <h4>
-              {message.role === "user"
-                ? practice
-                  ? t("dialogue.youRole", {
-                      role: roleLabel(message.speaker),
-                    })
-                  : t("dialogue.you")
-                : roleLabel(message.speaker)}
-            </h4>
-            <div class={styles.body}>
-              <p>{message.text}</p>
-              {#if !!message.citations.length}<div class={styles.citations}>
-                  <div
-                    class={styles.citationChips}
-                    role="group"
-                    aria-label={t("dialogue.cited")}
+        {#each blocks as block, blockIndex (block.type === "message" ? block.message.id : `debrief-${blockIndex}`)}{#if block.type === "debrief"}<section
+              class={styles.debrief}
+              aria-labelledby={`debrief-${block.items[0].id}`}
+            >
+              <h4 id={`debrief-${block.items[0].id}`}>
+                {t("dialogue.debrief.title")}
+              </h4>
+              {#each block.items.filter((item) => item.speaker === "summary") as item (item.id)}<p
+                  class={styles.debriefSummary}
+                >
+                  {item.text}
+                </p>{/each}
+              {#each debriefSections as section (section)}{#if block.items.some((item) => item.speaker === section)}<div
+                    class={styles.debriefSection}
                   >
-                    {#each message.citations as citation, index (index)}<button
-                        type="button"
-                        class={styles.citationChip}
-                        aria-expanded={openCitation[message.id] === index}
-                        aria-controls={`cite-${message.id}-${index}`}
-                        onclick={() =>
-                          (openCitation = {
-                            ...openCitation,
-                            [message.id]:
-                              openCitation[message.id] === index ? -1 : index,
-                          })}
-                      >
-                        <span class={styles.citationNumber}>{index + 1}</span>
-                        <span class={styles.citationTitle}
-                          >{citation.source.title}{citation.source.page
-                            ? t("common.pageSuffix", {
-                                page: citation.source.page,
-                              })
-                            : ""}</span
+                    <h5>{t(`dialogue.debrief.${section}`)}</h5>
+                    <ul>
+                      {#each block.items.filter((item) => item.speaker === section) as item (item.id)}<li
                         >
-                      </button>{/each}
-                  </div>
-                  {#each message.citations as citation, index (index)}<div
-                      id={`cite-${message.id}-${index}`}
-                      class={styles.citationPanel}
-                      hidden={openCitation[message.id] !== index}
-                    >
-                      <blockquote>“{citation.quote}”</blockquote>
-                      <p class={styles.sourceText}>{citation.source.text}</p>
-                      <div class={styles.citationLinks}>
-                        {#if citation.source.document_id}<a
-                            href={`/api/v1/cases/${caseId}/documents/${citation.source.document_id}/original`}
-                            target="_blank"
-                            rel="external noreferrer"
-                          >
-                            {t("dialogue.openOriginal")}
-                            <ExternalLink size={13}></ExternalLink>
-                          </a>{/if}
-                        {#if citation.source.hearing_id}<button
-                            class={ui.textButton}
-                            disabled={!!busy}
-                            onclick={() =>
-                              openHearing(citation.source.hearing_id!)}
-                          >
-                            {t("common.openHearing")}
-                            <ArrowRight size={13}></ArrowRight>
-                          </button>{/if}
-                      </div>
-                    </div>{/each}
-                </div>{/if}
-              {#if !!message.legal.length}<div class={styles.legal}>
-                  <strong>
-                    <BookOpen size={14} aria-hidden="true"></BookOpen>
-                    {t("dialogue.legalDiscovery")}
-                  </strong>
-                  {#each message.legal as reference, index (index)}<a
-                      href={reference.url}
-                      target="_blank"
-                      rel="external noreferrer"
-                    >
-                      {reference.title} · {reference.reference}
-                      <ExternalLink size={13}></ExternalLink>
-                    </a>{/each}
-                </div>{/if}
-              {#if message.notice}<p class={styles.notice}>
-                  {message.notice}
+                          <p>{item.text}</p>
+                          {@render citations(item)}
+                        </li>{/each}
+                    </ul>
+                  </div>{/if}{/each}
+              {#if block.items.at(-1)?.notice}<p class={styles.notice}>
+                  {block.items.at(-1)?.notice}
                 </p>{/if}
-            </div>
-          </article>{/each}
+            </section>{:else if block.message.role === "scene"}<p
+              class={styles.scene}
+            >
+              {sceneText()}
+            </p>{:else if block.message.role === "coach"}<aside
+              class={styles.coach}
+              aria-label={t("dialogue.coachNote")}
+            >
+              <Lightbulb size={14} aria-hidden="true"></Lightbulb>
+              <div>
+                <p>
+                  <strong>{coachLabel(block.message.speaker)}</strong>
+                  {block.message.text}
+                </p>
+                {@render citations(block.message)}
+              </div>
+            </aside>{:else}{@const message = block.message}<article
+              class={`${styles.message} ${message.role === "user" ? styles.userMessage : ""}`}
+              data-speaker={practice && message.role !== "user"
+                ? speakerRole(message.speaker)
+                : undefined}
+            >
+              <h4>
+                {message.role === "user"
+                  ? practice
+                    ? t("dialogue.youRole", {
+                        role: roleLabel(message.speaker),
+                      })
+                    : t("dialogue.you")
+                  : speakerLabel(message.speaker)}
+              </h4>
+              <div class={styles.body}>
+                <p>{message.text}</p>
+                {@render citations(message)}
+                {#if !!message.legal.length}<div class={styles.legal}>
+                    <strong>
+                      <BookOpen size={14} aria-hidden="true"></BookOpen>
+                      {t("dialogue.legalDiscovery")}
+                    </strong>
+                    {#each message.legal as reference, index (index)}<a
+                        href={reference.url}
+                        target="_blank"
+                        rel="external noreferrer"
+                      >
+                        {reference.title} · {reference.reference}
+                        <ExternalLink size={13}></ExternalLink>
+                      </a>{/each}
+                  </div>{/if}
+                {#if message.notice}<p class={styles.notice}>
+                    {message.notice}
+                  </p>{/if}
+              </div>
+            </article>{/if}{/each}
         {#if responding}<div class={styles.replyLoading}>
             <p>{busy ? t(busy) : ""}</p>
             <Skeleton variant="compact" label={busy ? t(busy) : undefined} />
@@ -927,7 +1033,7 @@
               : t("dialogue.askLabel")}
           </label>
           <div class={styles.box}>
-            {#if showSources && selectedRefs.length}<ul
+            {#if selectedRefs.length}<ul
                 class={styles.selected}
               >
                 {#each selectedRefs as id (id)}<li>
@@ -967,7 +1073,8 @@
                 }
               }}></textarea>
             <div class={styles.toolbar}>
-              {#if showSources}<button
+              <div class={styles.tools}>
+                <button
                   type="button"
                   class={styles.sourcesToggle}
                   aria-expanded={sourcesOpen}
@@ -978,7 +1085,18 @@
                   {t("dialogue.sources")}{selectedRefs.length
                     ? ` (${selectedRefs.length})`
                     : ""}
-                </button>{:else}<span></span>{/if}
+                </button>
+                {#if practice}<button
+                    type="button"
+                    class={styles.sourcesToggle}
+                    aria-pressed={coaching}
+                    title={t("dialogue.coachingHint")}
+                    onclick={() => setCoaching(!coaching)}
+                  >
+                    <Lightbulb size={15} aria-hidden="true"></Lightbulb>
+                    {t("dialogue.coaching")}
+                  </button>{/if}
+              </div>
               <button
                 class={`${ui.primary} ${styles.send}`}
                 disabled={!!busy || !text.trim()}
@@ -987,7 +1105,7 @@
                 <ArrowUp size={15} aria-hidden="true"></ArrowUp>
               </button>
             </div>
-            {#if showSources}<div
+            <div
                 id="dialogue-sources"
                 class={styles.sources}
                 hidden={!sourcesOpen}
@@ -1054,7 +1172,7 @@
                         : t("dialogue.legalUnavailable")}
                     </p>
                   </div>{/if}
-              </div>{/if}
+              </div>
           </div>
           <p class={styles.footnote}>
             {practice
@@ -1064,7 +1182,14 @@
                 : t("dialogue.footerNoAi")}
             <span aria-hidden="true"> · {t("dialogue.enterHint")}</span>
           </p>
-        </form>{/if}
+        </form>{:else if practice && active}<div class={styles.complete}>
+          <p>
+            {legacy ? t("dialogue.legacyReadOnly") : t("dialogue.unavailablePaused")}
+          </p>
+          <button class={ui.secondary} onclick={() => newSession()}>
+            {t("dialogue.newRehearsal")}
+          </button>
+        </div>{/if}
     {/if}
   </section>
 </div>

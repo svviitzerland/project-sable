@@ -19,3 +19,5 @@ Keep plans and results for each project phase here. Suggested file format name: 
 - [Bilingual interface](2026-11-02-bilingual-interface.md): Bahasa Indonesia and English UI, language toggle, server-rendered language.
 
 - [Real public demo case](2026-11-02-public-demo-case.md): Direktori Putusan MA ingestion cleanup, Amazon Transcribe hearing, and the bundled 796/Pid.B/2022/PN Jkt.Sel demo.
+
+- [AI-only courtroom practice](2026-11-02-ai-courtroom-practice.md): guided drill removed, grounded AI roleplay with cited speeches, coaching notes and a cited debrief.

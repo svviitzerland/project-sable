@@ -27,6 +27,11 @@ import {
 import { z } from "zod";
 import { ProviderError } from "../src/lib/server/errors";
 import { verifyReply } from "../src/lib/server/dialogues";
+import {
+  debriefSchema,
+  practiceTurnSchema,
+  speakerRole,
+} from "../src/lib/server/practice";
 import type { ContextSource } from "../src/lib/server/contracts";
 import { normalizeTranscript } from "../src/lib/server/audio";
 
@@ -633,25 +638,21 @@ test("assistant selected sources, persistence, idempotence and practice stay out
     (await a.json(`${base}/dialogues/${dialogue.id}`)).messages.length,
     2,
   );
-  const practice = await a.json(base + "/dialogues", "POST", {
-    kind: "practice",
-    mode: "guided",
-    conditions: { user_role: "judge", trial_type: "Civil hearing" },
-  });
-  const debrief = await a.json(
-    `${base}/dialogues/${practice.id}/messages`,
+  // Practice is AI-only: without a provider it is unavailable, never a scripted drill.
+  const unavailable = await a.json(
+    base + "/dialogues",
     "POST",
-    { text: "Finish the exercise.", request_id: randomUUID(), finish: true },
+    { kind: "practice", conditions: { user_role: "judge" } },
+    503,
   );
-  assert.equal(debrief.status, "complete");
-  assert.match(debrief.messages.at(-1).text, /did not assess/);
-  assert.equal((await a.json(base)).segments.length, 0);
+  assert.match(unavailable.detail, /AI rehearsal is unavailable/);
   await a.json(
-    `${base}/dialogues/${practice.id}/messages`,
+    base + "/dialogues",
     "POST",
-    { text: "Another turn.", request_id: randomUUID() },
-    409,
+    { kind: "practice", mode: "guided", conditions: {} },
+    422,
   );
+  assert.equal((await a.json(`${base}/dialogues?kind=practice`)).length, 0);
   const exported = await a.call(`${base}/dialogues/${dialogue.id}/export`);
   assert.equal((await exported.json()).format, "jude-conversation");
 });
@@ -865,25 +866,396 @@ test("AI conversations reject forged citations and speaking for the user, atomic
           speeches: [
             {
               speaker: "defense",
+              name: "",
               text: "I will speak for you.",
               uses_case_facts: false,
               citations: [],
             },
           ],
+          coaching: { kind: "none", note: "", citations: [] },
         });
   const practice = await a.json(base + "/dialogues", "POST", {
     kind: "practice",
     conditions: { user_role: "defense" },
   });
-  await a.json(
+  const failed = await a.json(
     `${base}/dialogues/${practice.id}/messages`,
     "POST",
     { text: "Begin.", request_id: randomUUID() },
     503,
   );
+  assert.match(failed.detail, /spoke for your selected role/);
   assert.equal(
     (await a.json(`${base}/dialogues/${practice.id}`)).messages.length,
     1,
+  );
+});
+
+type PracticePayload = {
+  case_context: { sources: ContextSource[] };
+  rehearsal: {
+    cast: string;
+    stage_guidance: string;
+    pressure_guidance: string;
+    language: string;
+    transcript: { user: boolean; speaker: string }[];
+  };
+  transcript: { user: boolean; speaker: string }[];
+  latest_user_turn: string;
+  coaching_requested: boolean;
+  citation_repair: { reason: string };
+};
+type SavedMessage = {
+  role: string;
+  speaker: string;
+  notice: string;
+  citations: { quote: string; source: ContextSource }[];
+};
+
+test("practice schemas stay fully required for strict providers yet tolerate omitted empty fields", () => {
+  const turn = z.toJSONSchema(practiceTurnSchema) as unknown as {
+    required: string[];
+    properties: {
+      speeches: { items: { required: string[] } };
+      coaching: { required: string[] };
+    };
+  };
+  assert.deepEqual(turn.required, ["speeches", "coaching"]);
+  assert.deepEqual(turn.properties.speeches.items.required.toSorted(), [
+    "citations",
+    "name",
+    "speaker",
+    "text",
+    "uses_case_facts",
+  ]);
+  assert.deepEqual(turn.properties.coaching.required.toSorted(), [
+    "citations",
+    "kind",
+    "note",
+  ]);
+  // Models often drop empty arrays; that must not fail a whole turn.
+  const parsed = practiceTurnSchema.parse({
+    speeches: [
+      { speaker: "witness", text: "Saya tidak ingat.", uses_case_facts: false },
+    ],
+  });
+  assert.deepEqual(parsed.speeches[0].citations, []);
+  assert.equal(parsed.coaching.kind, "none");
+  // The citation requirement cannot be skipped by omitting the case-facts flag.
+  assert.throws(() =>
+    practiceTurnSchema.parse({
+      speeches: [{ speaker: "judge", text: "Lanjutkan." }],
+    }),
+  );
+  assert.deepEqual(debriefSchema.parse({ summary: "Ringkas." }).revisit, []);
+  // Courtroom titles map to roles. Unknown speakers are dropped, not saved.
+  assert.equal(speakerRole("Hakim Ketua"), "judge");
+  assert.equal(speakerRole("JPU"), "opposing");
+  assert.equal(speakerRole("Penasihat Hukum"), "defense");
+  assert.equal(speakerRole("Saksi Susi"), "witness");
+  assert.equal(speakerRole("Narrator"), null);
+});
+
+test("AI rehearsal plays the other roles from the record, coaches subtly, and debriefs with verified citations", async (t) => {
+  const { a, record, rt } = await fixture(t),
+    base = `/cases/${record.id}`;
+  const doc = await a.json(
+    base + "/documents",
+    "POST",
+    upload(
+      "bap-dewi.txt",
+      "BAP Saksi Dewi Lestari. Saya tiba di gudang pukul 22.30 dan melihat terdakwa membawa kardus.",
+    ),
+  );
+  rt.config.openrouterKey = "fake";
+  rt.config.model = "fake";
+  const calls: { system: string; payload: PracticePayload }[] = [];
+  let reply: (payload: PracticePayload, call: number) => unknown = () => ({});
+  rt.fetch = async (url, init) => {
+    if (String(url).includes("/embeddings"))
+      return new Response("", { status: 503 });
+    const messages = JSON.parse(String(init?.body)).messages;
+    const call = {
+      system: messages[0].content,
+      payload: JSON.parse(messages[1].content),
+    };
+    calls.push(call);
+    return structuredResponse(reply(call.payload, calls.length));
+  };
+  const chunk = (payload: PracticePayload) =>
+    payload.case_context.sources.find((s) => s.document_id === doc.id)!
+      .chunk_id;
+  const practice = await a.json(base + "/dialogues", "POST", {
+    kind: "practice",
+    conditions: {
+      user_role: "defense",
+      stage: "Cross-examination",
+      difficulty: "Challenging",
+      language: "Bahasa Indonesia",
+    },
+  });
+  assert.equal(practice.mode, "ai");
+  assert.equal(practice.messages[0].role, "scene");
+  const path = `${base}/dialogues/${practice.id}/messages`;
+
+  // A turn: objection, ruling and a cited witness answer, plus one coaching note.
+  reply = (payload) => ({
+    speeches: [
+      {
+        speaker: "opposing",
+        name: "",
+        text: "Keberatan, Yang Mulia. Pertanyaan menjerat.",
+        uses_case_facts: false,
+        citations: [],
+      },
+      {
+        speaker: "judge",
+        name: "",
+        text: "Keberatan diterima. Saudara Penasihat Hukum, ulangi pertanyaan.",
+        uses_case_facts: false,
+        citations: [],
+      },
+      {
+        speaker: "witness",
+        name: "Dewi Lestari\n",
+        text: "Saya tiba pukul 22.30, Yang Mulia.",
+        uses_case_facts: true,
+        citations: [
+          {
+            chunk_id: chunk(payload),
+            quote: "Saya tiba di gudang pukul 22.30",
+            relation: "supports",
+          },
+        ],
+      },
+    ],
+    coaching: {
+      kind: "leading",
+      note: "Pertanyaan ini mengarahkan jawaban; tanyakan secara terbuka.",
+      citations: [],
+    },
+  });
+  const first = await a.json(path, "POST", {
+    text: "Saudara tiba pukul 22.30, benar?",
+    request_id: randomUUID(),
+  });
+  const prompt = calls.at(-1)!;
+  assert.match(prompt.system, /REHEARSAL/);
+  assert.match(prompt.system, /do not know or do not remember/);
+  assert.match(prompt.system, /Yang Mulia/);
+  assert.match(prompt.system, /never use em dashes/);
+  assert.match(prompt.payload.rehearsal.cast, /Penuntut Umum/);
+  assert.match(prompt.payload.rehearsal.stage_guidance, /BAP/);
+  assert.match(prompt.payload.rehearsal.pressure_guidance, /challenging/);
+  assert.equal(prompt.payload.rehearsal.language, "Bahasa Indonesia");
+  assert.equal(
+    prompt.payload.latest_user_turn,
+    "Saudara tiba pukul 22.30, benar?",
+  );
+  assert.deepEqual(
+    first.messages.slice(1).map((m: SavedMessage) => [m.role, m.speaker]),
+    [
+      ["user", "defense"],
+      ["coach", "leading"],
+      ["assistant", "opposing"],
+      ["assistant", "judge"],
+      ["assistant", "witness:Dewi Lestari"],
+    ],
+  );
+  const witness = first.messages.at(-1);
+  assert.equal(witness.citations[0].source.document_id, doc.id);
+  assert.match(witness.notice, /Hypothetical rehearsal/);
+  assert.equal(first.messages.at(-2).notice, "");
+  assert.equal((await a.json(base)).segments.length, 0);
+
+  // Coaching off: no note is saved even when the model offers one.
+  await a.json(path, "POST", {
+    text: "Apa yang Saudara lihat?",
+    request_id: randomUUID(),
+    coaching: false,
+  });
+  assert.equal(calls.at(-1)!.payload.coaching_requested, false);
+  assert.ok(
+    !calls
+      .at(-1)!
+      .payload.transcript.some((line) => line.speaker === "leading"),
+    "coaching notes stay out of the roleplay transcript",
+  );
+  const saved = (await a.json(`${base}/dialogues/${practice.id}`)).messages;
+  assert.equal(saved.filter((m: SavedMessage) => m.role === "coach").length, 1);
+
+  // A forged witness quote is corrected once; an unverifiable coaching note is dropped.
+  let before = calls.length;
+  reply = (payload, call) => ({
+    speeches: [
+      {
+        speaker: "witness",
+        name: "",
+        text: "Saya melihat terdakwa membawa kardus.",
+        uses_case_facts: true,
+        citations: [
+          {
+            chunk_id: chunk(payload),
+            quote:
+              call === before + 1
+                ? "Saya melihat terdakwa membawa senjata."
+                : "melihat terdakwa membawa kardus",
+            relation: "supports",
+          },
+        ],
+      },
+    ],
+    coaching: {
+      kind: "contradiction",
+      note: "Bandingkan dengan keterangan lain.",
+      citations: [
+        { chunk_id: "invented", quote: "invented", relation: "conflicts" },
+      ],
+    },
+  });
+  const corrected = await a.json(path, "POST", {
+    text: "Apa yang dibawa terdakwa?",
+    request_id: randomUUID(),
+  });
+  assert.equal(calls.length, before + 2);
+  assert.equal(calls.at(-1)!.payload.citation_repair.reason, "quote_mismatch");
+  assert.equal(corrected.messages.at(-1).speaker, "witness");
+  assert.equal(corrected.messages.at(-2).role, "user");
+
+  // After the one correction, a speech that still misquotes is dropped, never saved uncited.
+  before = calls.length;
+  reply = (payload) => ({
+    speeches: [
+      {
+        speaker: "Hakim Ketua",
+        name: "",
+        text: "Saudara Saksi, jawab pertanyaan itu.",
+        uses_case_facts: false,
+        citations: [],
+      },
+      {
+        speaker: "witness",
+        name: "",
+        text: "Saya membawa senjata.",
+        uses_case_facts: true,
+        citations: [
+          {
+            chunk_id: chunk(payload),
+            quote: "Saya membawa senjata.",
+            relation: "supports",
+          },
+        ],
+      },
+    ],
+    coaching: { kind: "none", note: "", citations: [] },
+  });
+  const partial = await a.json(path, "POST", {
+    text: "Apa yang Saudara bawa?",
+    request_id: randomUUID(),
+  });
+  assert.equal(calls.length, before + 2);
+  assert.equal(partial.messages.at(-1).speaker, "judge");
+  assert.equal(partial.messages.at(-2).role, "user");
+  assert.ok(!JSON.stringify(partial.messages).includes("Saya membawa senjata"));
+  // When nothing verifiable remains, the exchange fails and saves nothing.
+  const count = partial.messages.length;
+  reply = (payload) => ({
+    speeches: [
+      {
+        speaker: "witness",
+        name: "",
+        text: "Saya membawa senjata.",
+        uses_case_facts: true,
+        citations: [
+          {
+            chunk_id: chunk(payload),
+            quote: "Saya membawa senjata.",
+            relation: "supports",
+          },
+        ],
+      },
+    ],
+    coaching: { kind: "none", note: "", citations: [] },
+  });
+  await a.json(
+    path,
+    "POST",
+    { text: "Apa lagi?", request_id: randomUUID() },
+    503,
+  );
+  assert.equal(
+    (await a.json(`${base}/dialogues/${practice.id}`)).messages.length,
+    count,
+  );
+
+  // Debrief: one message per item; an unverifiable revisit item is dropped after one correction.
+  before = calls.length;
+  reply = (payload) => ({
+    summary: "Sesi berjalan terarah.",
+    strengths: [{ point: "Pertanyaan kedua terbuka.", citations: [] }],
+    tighten: [
+      {
+        point: "Hindari pertanyaan menjerat; tanyakan 'Pukul berapa?'.",
+        citations: [],
+      },
+    ],
+    revisit: [
+      {
+        point: "Waktu kedatangan saksi.",
+        citations: [
+          {
+            chunk_id: chunk(payload),
+            quote: "pukul 22.30",
+            relation: "context",
+          },
+        ],
+      },
+      { point: "Tanpa sumber.", citations: [] },
+    ],
+  });
+  const debrief = await a.json(path, "POST", {
+    text: "Selesai.",
+    request_id: randomUUID(),
+    finish: true,
+  });
+  assert.equal(calls.length, before + 2);
+  assert.match(calls.at(-1)!.system, /DEBRIEF/);
+  assert.match(calls.at(-1)!.system, /No numeric score/);
+  assert.match(calls.at(-1)!.system, /never use em dashes/);
+  assert.ok(calls.at(-1)!.payload.rehearsal.transcript.some((l) => l.user));
+  assert.equal(debrief.status, "complete");
+  const items = debrief.messages.filter(
+    (m: SavedMessage) => m.role === "debrief",
+  );
+  assert.deepEqual(
+    items.map((m: SavedMessage) => m.speaker),
+    ["summary", "strength", "tighten", "revisit"],
+  );
+  assert.equal(items.at(-1).citations[0].quote, "pukul 22.30");
+  await a.json(path, "POST", { text: "Lagi.", request_id: randomUUID() }, 409);
+  const exported = await (
+    await a.call(`${base}/dialogues/${practice.id}/export`)
+  ).json();
+  assert.ok(
+    exported.conversation.messages.some(
+      (m: SavedMessage) => m.role === "debrief",
+    ),
+  );
+
+  // Sessions saved by the retired scripted drill stay readable but cannot continue.
+  const legacy = await rt.db.insert("dialogues", {
+    case_id: record.id,
+    kind: "practice",
+    title: "Old drill",
+    mode: "guided",
+    conditions: { user_role: "judge" },
+  });
+  await a.json(`${base}/dialogues/${legacy.id}`);
+  await a.json(
+    `${base}/dialogues/${legacy.id}/messages`,
+    "POST",
+    { text: "Continue.", request_id: randomUUID() },
+    409,
   );
 });
 
