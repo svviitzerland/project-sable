@@ -15,8 +15,6 @@
     Plus,
     Search,
     X,
-    ZoomIn,
-    ZoomOut,
   } from "@lucide/svelte";
   import {
     api,
@@ -27,6 +25,7 @@
   import ui from "./workspace.module.css";
   import styles from "./case-tabs.module.css";
   import { untrack } from "svelte";
+  import { arcPath, crossPath, layoutEvidenceMap } from "../lib/evidence-map";
 
   type GraphNode = {
     id: string;
@@ -61,7 +60,14 @@
     shown_passages: number;
     indexed_passages: number;
     notice: string;
+    notice_code?: NoticeCode;
   };
+
+  type NoticeCode =
+    | "similarity_advisory"
+    | "links_ready"
+    | "embeddings_partial"
+    | "ai_unverified";
 
   type Answer = {
     answer: string | null;
@@ -114,7 +120,7 @@
 
   let view = $state<"graph" | "list">("graph");
 
-  let zoom = $state(1);
+  let hovered = $state<string | null>(null);
 
   let linking = $state(false);
 
@@ -196,20 +202,72 @@
 
   let nodeMap = $derived(new Map(graph?.nodes.map((n) => [n.id, n]) ?? []));
 
-  let visible = $derived((graph?.nodes ?? []).slice(0, 24));
+  // Fixed row heights: labels in the structured map cannot collide.
+  const MAP_SIZES = { row: 48, groupHead: 36, groupGap: 16 };
 
-  let positions = $derived(
-    new Map(
-      visible.map((n, index) => {
-        const angle =
-          (index / Math.max(1, visible.length)) * Math.PI * 2 - Math.PI / 2;
-        return [
-          n.id,
-          { x: 400 + Math.cos(angle) * 285, y: 300 + Math.sin(angle) * 215 },
-        ];
-      }),
-    ),
+  let layout = $derived(
+    layoutEvidenceMap(graph?.nodes ?? [], graph?.edges ?? [], MAP_SIZES),
   );
+
+  /** The node being traced: hover first, then the selected node or edge. */
+  let focusIds = $derived.by(() => {
+    const id = hovered ?? selected;
+    if (id && nodeMap.has(id)) {
+      const ids = new Set([
+        id,
+        ...(graph?.edges ?? []).flatMap((e) =>
+          e.source_id === id
+            ? [e.target_id]
+            : e.target_id === id
+              ? [e.source_id]
+              : [],
+        ),
+      ]);
+      return { nodes: ids, edge: null as string | null, node: id };
+    }
+    if (edge) {
+      return {
+        nodes: new Set([edge.source_id, edge.target_id]),
+        edge: edge.id,
+        node: null,
+      };
+    }
+    return null;
+  });
+
+  function edgeActive(e: Edge) {
+    if (!focusIds) return null;
+    return focusIds.edge
+      ? e.id === focusIds.edge
+      : e.source_id === focusIds.node || e.target_id === focusIds.node;
+  }
+
+  function nodePage(n: GraphNode) {
+    const page =
+      /^Page (\d+)$/.exec(n.detail)?.[1] ?? (n.detail ? null : n.page);
+    return page ? String(page) : null;
+  }
+
+  /** Compact row label: "Hal. 5" for a page, otherwise the section name. */
+  function shortLabel(n: GraphNode) {
+    if (n.kind === "statement") return n.label;
+    const page = nodePage(n);
+    return page ? t("evidence.pageShort", { page }) : n.detail;
+  }
+
+  /** Name that tells two passages of one document apart. */
+  function nodeName(n: GraphNode | undefined) {
+    if (!n) return "";
+    return n.kind === "statement" ? n.label : `${n.label} · ${shortLabel(n)}`;
+  }
+
+  function trace(id: string | null) {
+    hovered = id;
+  }
+
+  function noticeText(code: NoticeCode | undefined, fallback: string) {
+    return code ? t(`evidence.notice.${code}` as MessageKey) : fallback;
+  }
 
   const inspectorReturn = {
     current: null as HTMLElement | SVGElement | null,
@@ -234,8 +292,7 @@
   /** Passage pages and statement labels come from the server in English. */
   function nodeDetail(n: GraphNode) {
     if (n.kind === "statement") return t("evidence.hearingStatement");
-    const page =
-      /^Page (\d+)$/.exec(n.detail)?.[1] ?? (n.detail ? null : n.page);
+    const page = nodePage(n);
     return page ? t("common.page", { page }) : n.detail;
   }
 
@@ -272,11 +329,16 @@
         disabled={!!busy}
         onclick={() =>
           run("evidence.finding", async () => {
-            const result = await api<{ notice: string; scope: string }>(
-              `/cases/${caseId}/graph/build`,
-              { method: "POST" },
-            );
-            notice = result.notice;
+            const result = await api<{
+              notice: string;
+              notice_codes?: NoticeCode[];
+              scope: string;
+            }>(`/cases/${caseId}/graph/build`, { method: "POST" });
+            notice = result.notice_codes?.length
+              ? result.notice_codes
+                  .map((code) => noticeText(code, ""))
+                  .join(" ")
+              : result.notice;
             await load();
           })}
       >
@@ -429,116 +491,178 @@
     <div class={styles.evidenceLayout}>
       <section class={styles.canvas} aria-label={t("evidence.relationships")}>
         {#if view === "graph"}
-          {#if visible.length}
-            <div class={styles.zoom}>
-              <button
-                aria-label={t("evidence.zoomIn")}
-                title={t("evidence.zoomIn")}
-                onclick={() => (zoom = Math.min(2, zoom + 0.2))}
-              >
-                <ZoomIn size={16}></ZoomIn>
-              </button>
-              <button
-                aria-label={t("evidence.zoomOut")}
-                title={t("evidence.zoomOut")}
-                onclick={() => (zoom = Math.max(0.6, zoom - 0.2))}
-              >
-                <ZoomOut size={16}></ZoomOut>
-              </button>
-              <button onclick={() => (zoom = 1)}>{t("evidence.reset")}</button>
-            </div>
-            <svg
+          {#if layout.groups.length}
+            {@const hasStatements = layout.statements.length > 0}
+            {@const hasArcs = layout.arcs.length > 0}
+            <div
+              class={styles.map}
+              data-traced={focusIds ? "" : undefined}
               role="group"
               aria-label={t("evidence.graph")}
-              viewBox={`${400 - 400 / zoom} ${300 - 300 / zoom} ${800 / zoom} ${600 / zoom}`}
-              class={styles.graphSvg}
+              style={`--row: ${MAP_SIZES.row}px; --group-head: ${MAP_SIZES.groupHead}px; grid-template-columns: ${hasStatements ? "minmax(0, 1fr) var(--gutter) " : ""}minmax(0, 1.2fr)${hasArcs ? " var(--arc)" : ""};`}
             >
-              {#each graph.edges as e (e.id)}{@const a = positions.get(
-                  e.source_id,
-                )}{@const b = positions.get(e.target_id)}{#if !a || !b}{:else}<g
-                  >
-                    <line
-                      x1={a.x}
-                      y1={a.y}
-                      x2={b.x}
-                      y2={b.y}
+              {#if hasStatements}<div class={styles.mapHead}>
+                  {t("evidence.column.statements")}
+                </div>
+                <div class={styles.mapHead} aria-hidden="true"></div>{/if}
+              <div class={styles.mapHead}>{t("evidence.column.passages")}</div>
+              {#if hasArcs}<div
+                  class={styles.mapHead}
+                  aria-hidden="true"
+                ></div>{/if}
+              {#if hasStatements}
+                <ul
+                  class={styles.mapColumn}
+                  style={`height: ${layout.height}px;`}
+                  aria-label={t("evidence.column.statements")}
+                >
+                  {#each layout.statements as s (s.node.id)}{@const n = s.node}
+                    <li style={`top: ${s.top}px;`}>
+                      <button
+                        data-node
+                        data-on={focusIds?.nodes.has(n.id) ? "" : undefined}
+                        class={`${styles.mapNode} ${styles.mapStatement}`}
+                        aria-pressed={selected === n.id}
+                        aria-label={`${n.label}, ${nodeDetail(n)}`}
+                        title={n.text}
+                        onclick={() => inspect(n.id)}
+                        onpointerenter={() => trace(n.id)}
+                        onpointerleave={() => trace(null)}
+                        onfocus={() => trace(n.id)}
+                        onblur={() => trace(null)}
+                      >
+                        <strong>{n.label}</strong>
+                        <span>{n.text}</span>
+                        <i aria-hidden="true"></i>
+                      </button>
+                    </li>{/each}
+                </ul>
+                <svg
+                  class={styles.mapEdges}
+                  viewBox={`0 0 100 ${layout.height}`}
+                  preserveAspectRatio="none"
+                  style={`height: ${layout.height}px;`}
+                >
+                  {#each layout.cross as e (e.id)}{@const active =
+                      edgeActive(e)}{@const d = crossPath(layout, e)}<path
+                      {d}
+                      class={styles.edgeLine}
+                      data-state={active === null
+                        ? undefined
+                        : active
+                          ? "on"
+                          : "off"}
                       stroke={relationColors[e.relation]}
-                      stroke-width={edgeId === e.id ? 3 : 1.5}
-                      stroke-dasharray={e.confirmed ? "" : "5 5"}
-                      opacity={selected &&
-                      e.source_id !== selected &&
-                      e.target_id !== selected
-                        ? 0.3
-                        : 0.8}
-                    ></line>
-                    <line
+                      stroke-dasharray={e.confirmed ? "" : "4 4"}
+                    ></path>
+                    <path
+                      {d}
+                      class={styles.edgeHit}
                       role="button"
                       tabindex={0}
                       aria-label={t("evidence.edgeLabel", {
                         relation: relationLabel(e.relation),
-                        from: nodeMap.get(e.source_id)?.label ?? "",
-                        to: nodeMap.get(e.target_id)?.label ?? "",
+                        from: nodeName(nodeMap.get(e.source_id)),
+                        to: nodeName(nodeMap.get(e.target_id)),
                       })}
-                      onclick={() => {
-                        inspectEdge(e.id);
-                      }}
+                      onclick={() => inspectEdge(e.id)}
                       onkeydown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
                           inspectEdge(e.id);
                         }
                       }}
-                      x1={a.x}
-                      y1={a.y}
-                      x2={b.x}
-                      y2={b.y}
-                      stroke="transparent"
-                      stroke-width={14}
-                    ></line>
-                  </g>{/if}{/each}
-              {#each visible as n (n.id)}{@const pos = positions.get(n.id)!}<g
-                  transform={`translate(${pos.x},${pos.y})`}
-                  role="button"
-                  tabindex={0}
-                  aria-label={`${n.label}, ${nodeDetail(n)}`}
-                  onclick={() => inspect(n.id)}
-                  onkeydown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      inspect(n.id);
-                    }
-                  }}
-                >
-                  <circle
-                    r={selected === n.id ? 23 : 19}
-                    fill={n.kind === "statement" ? "#ead9b9" : "#fffefa"}
-                    stroke={selected === n.id ? "#a66e27" : "#315541"}
-                    stroke-width={selected === n.id ? 3 : 1.5}
-                  ></circle>
-                  <text
-                    text-anchor="middle"
-                    dominant-baseline="central"
-                    class={styles.nodeNumber}
+                    ></path>{/each}
+                </svg>
+              {/if}
+              <div
+                class={styles.mapColumn}
+                style={`height: ${layout.height}px;`}
+              >
+                {#each layout.groups as g (g.id)}<p
+                    class={styles.mapGroup}
+                    style={`top: ${g.top}px;`}
+                    title={g.name}
                   >
-                    {n.kind === "statement"
-                      ? "H"
-                      : String(
-                          visible
-                            .filter((v) => v.kind === "passage")
-                            .indexOf(n) + 1,
-                        )}
-                  </text>
-                  <text y={35} text-anchor="middle" class={styles.nodeLabel}>
-                    {n.label.length > 23 ? n.label.slice(0, 21) + "…" : n.label}
-                  </text>
-                  <text y={49} text-anchor="middle" class={styles.nodeDetail}>
-                    {nodeDetail(n)}
-                  </text>
-                </g>{/each}
-            </svg>
+                    <FileText size={14}></FileText>
+                    <span>{g.name}</span>
+                  </p>
+                  <ul aria-label={g.name}>
+                    {#each g.rows as r (r.node.id)}{@const n = r.node}
+                      <li style={`top: ${r.top}px;`}>
+                        <button
+                          data-node
+                          data-on={focusIds?.nodes.has(n.id) ? "" : undefined}
+                          class={`${styles.mapNode} ${styles.mapPassage}`}
+                          aria-pressed={selected === n.id}
+                          aria-label={`${n.label}, ${nodeDetail(n)}`}
+                          title={n.text}
+                          onclick={() => inspect(n.id)}
+                          onpointerenter={() => trace(n.id)}
+                          onpointerleave={() => trace(null)}
+                          onfocus={() => trace(n.id)}
+                          onblur={() => trace(null)}
+                        >
+                          {#if layout.ports.cross.has(n.id)}<i
+                              aria-hidden="true"
+                            ></i>{/if}
+                          <strong>{shortLabel(n)}</strong>
+                          <span>{n.text}</span>
+                          {#if layout.ports.arc.has(n.id)}<b aria-hidden="true"
+                            ></b>{/if}
+                        </button>
+                      </li>{/each}
+                  </ul>{/each}
+              </div>
+              {#if hasArcs}<svg
+                  class={styles.mapEdges}
+                  viewBox={`0 0 100 ${layout.height}`}
+                  preserveAspectRatio="none"
+                  style={`height: ${layout.height}px;`}
+                >
+                  {#each layout.arcs as e (e.id)}{@const active =
+                      edgeActive(e)}{@const d = arcPath(layout, e)}<path
+                      {d}
+                      class={styles.edgeLine}
+                      data-state={active === null
+                        ? undefined
+                        : active
+                          ? "on"
+                          : "off"}
+                      stroke={relationColors[e.relation]}
+                      stroke-dasharray={e.confirmed ? "" : "4 4"}
+                    ></path>
+                    <path
+                      {d}
+                      class={styles.edgeHit}
+                      role="button"
+                      tabindex={0}
+                      aria-label={t("evidence.edgeLabel", {
+                        relation: relationLabel(e.relation),
+                        from: nodeName(nodeMap.get(e.source_id)),
+                        to: nodeName(nodeMap.get(e.target_id)),
+                      })}
+                      onclick={() => inspectEdge(e.id)}
+                      onkeydown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          inspectEdge(e.id);
+                        }
+                      }}
+                    ></path>{/each}
+                </svg>{/if}
+            </div>
             <p class={styles.caption}>{t("evidence.mapCaption")}</p>
-            {#if graph.nodes.length > 24}<p class={styles.caption}>
-                {t("evidence.mapLimit", { count: graph.nodes.length })}
+            {#if layout.unlinked}<p class={styles.caption}>
+                {t("evidence.mapUnlinked", { count: layout.unlinked })}
+              </p>{/if}
+            {#if graph.total_passages > graph.shown_passages}<p
+                class={styles.caption}
+              >
+                {t("evidence.mapLimit", {
+                  shown: graph.shown_passages,
+                  total: graph.total_passages,
+                })}
               </p>{/if}
           {:else}<div class={styles.empty}>
               <GitBranch size={30}></GitBranch>
@@ -560,9 +684,9 @@
                     {relationLabel(e.relation)}
                   </span>
                   <strong>
-                    {nodeMap.get(e.source_id)?.label}&#32;
+                    {nodeName(nodeMap.get(e.source_id))}&#32;
                     <ArrowRight size={12}></ArrowRight>&#32;
-                    {nodeMap.get(e.target_id)?.label}
+                    {nodeName(nodeMap.get(e.target_id))}
                   </strong>
                   <span
                     class={`${styles.chip} ${e.confirmed ? styles.chipDone : ""}`}
@@ -613,14 +737,14 @@
           <p class={styles.passage}>{edge.explanation}</p>
           <div class={styles.edgeQuote}>
             <button onclick={() => inspect(edge.source_id)}>
-              {nodeMap.get(edge.source_id)?.label}
+              {nodeName(nodeMap.get(edge.source_id))}
               <ArrowRight size={14}></ArrowRight>
             </button>
             <blockquote>“{edge.source_quote}”</blockquote>
           </div>
           <div class={styles.edgeQuote}>
             <button onclick={() => inspect(edge.target_id)}>
-              {nodeMap.get(edge.target_id)?.label}
+              {nodeName(nodeMap.get(edge.target_id))}
               <ArrowRight size={14}></ArrowRight>
             </button>
             <blockquote>“{edge.target_quote}”</blockquote>
@@ -691,9 +815,11 @@
                   >
                     <span>{relationLabel(e.relation)}</span>
                     <strong
-                      >{nodeMap.get(
-                        e.source_id === node.id ? e.target_id : e.source_id,
-                      )?.label}</strong
+                      >{nodeName(
+                        nodeMap.get(
+                          e.source_id === node.id ? e.target_id : e.source_id,
+                        ),
+                      )}</strong
                     >
                     <ArrowRight size={13}></ArrowRight>
                   </button>{/each}
@@ -780,7 +906,7 @@
     </div>
     {#if graph.notice}<p class={`${styles.note} ${styles.error}`}>
         <Info size={15}></Info>
-        {graph.notice}
+        {noticeText(graph.notice_code, graph.notice)}
       </p>{/if}
     <details class={styles.passages}>
       <summary>
