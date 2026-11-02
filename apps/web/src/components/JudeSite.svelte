@@ -1,5 +1,6 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
+  import { page } from "$app/state";
   import {
     ArrowDown,
     ArrowRight,
@@ -76,6 +77,9 @@
 
   let isReviewed = $derived(reviewed.includes(example.id));
 
+  // From the root layout: signed-in visitors see a way back to their workspace.
+  const signedIn = $derived(Boolean(page.data.signedIn));
+
   function openDemo(selectedSource: SourceKind = "transcript", reset = false) {
     if (reset) exampleIndex = 0;
     source = selectedSource;
@@ -111,10 +115,13 @@
               {t(label)}
             </a>{/each}
           <a href={resolve("/pricing")}>{t("landing.nav.pricing")}</a>
-          <a href={resolve("/workspace")}>{t("common.signIn")}</a>
-          <button class="button button-outline" onclick={() => openDemo()}>
-            {t("landing.exploreDemo")}
-          </button>
+          {#if signedIn}<a
+              class="button button-outline"
+              href={resolve("/workspace")}>{t("landing.openWorkspace")}</a
+            >{:else}<a href={resolve("/workspace")}>{t("common.signIn")}</a>
+            <button class="button button-outline" onclick={() => openDemo()}>
+              {t("landing.exploreDemo")}
+            </button>{/if}
         </nav>
         <LanguageToggle />
         <button
@@ -154,13 +161,13 @@
             <ArrowUpRight size={17}></ArrowUpRight>
           </a>
           <a href={resolve("/workspace")}>
-            {t("common.signIn")}
+            {signedIn ? t("landing.openWorkspace") : t("common.signIn")}
             <ArrowUpRight size={17}></ArrowUpRight>
           </a>
-          <button onclick={() => openDemo()}>
-            {t("landing.exploreDemo")}
-            <ArrowRight size={17}></ArrowRight>
-          </button>
+          {#if !signedIn}<button onclick={() => openDemo()}>
+              {t("landing.exploreDemo")}
+              <ArrowRight size={17}></ArrowRight>
+            </button>{/if}
         </nav>{/if}
     </header>
     <div class="hero-content">
@@ -184,9 +191,9 @@
             {t("landing.exploreDemo")}
           </button>
         </div>
-        <div class="hero-entry-note">
-          {t("landing.hero.entry")}
-        </div>
+        {#if !signedIn}<div class="hero-entry-note">
+            {t("landing.hero.entry")}
+          </div>{/if}
       </div>
       <div class="hero-evidence paper">
         <div class="comparison-toolbar">

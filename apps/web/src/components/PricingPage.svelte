@@ -15,6 +15,7 @@
     X,
   } from "@lucide/svelte";
   import { onMount, untrack } from "svelte";
+  import { page } from "$app/state";
   import { Tween, prefersReducedMotion } from "svelte/motion";
   import { cubicOut } from "svelte/easing";
   import { formatNumber, t, tp } from "../lib/i18n/index.svelte";
@@ -42,6 +43,7 @@
   let billing = $state<Billing>("yearly");
   let menuOpen = $state(false);
   let account = $state<PlanInfo | null>(null);
+  const signedIn = $derived(Boolean(page.data.signedIn));
 
   /** A section of the landing page. */
   const onHome = (hash: string) =>
@@ -249,10 +251,13 @@
           <a href={resolve("/pricing")} aria-current="page"
             >{t("landing.nav.pricing")}</a
           >
-          <a href={resolve("/workspace")}>{t("common.signIn")}</a>
-          <a class="button button-outline" href={onHome("demo")}
-            >{t("landing.exploreDemo")}</a
-          >
+          {#if signedIn}<a
+              class="button button-outline"
+              href={resolve("/workspace")}>{t("landing.openWorkspace")}</a
+            >{:else}<a href={resolve("/workspace")}>{t("common.signIn")}</a>
+            <a class="button button-outline" href={onHome("demo")}
+              >{t("landing.exploreDemo")}</a
+            >{/if}
         </nav>
         <LanguageToggle />
         <button
@@ -287,11 +292,12 @@
             >{t("landing.nav.pricing")} <ArrowUpRight size={17} /></a
           >
           <a href={resolve("/workspace")}
-            >{t("common.signIn")} <ArrowUpRight size={17} /></a
+            >{signedIn ? t("landing.openWorkspace") : t("common.signIn")}
+            <ArrowUpRight size={17} /></a
           >
-          <a href={onHome("demo")}
-            >{t("landing.exploreDemo")} <ArrowRight size={17} /></a
-          >
+          {#if !signedIn}<a href={onHome("demo")}
+              >{t("landing.exploreDemo")} <ArrowRight size={17} /></a
+            >{/if}
         </nav>
       {/if}
     </header>
