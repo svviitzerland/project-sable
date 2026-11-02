@@ -22,6 +22,16 @@
           {r.title}<ExternalLink size={14}></ExternalLink>
         </a>
       </h3>
+      {#if r.best_passage}<p class={styles.lawBest}>
+          <a
+            href={r.best_passage.url}
+            target="_blank"
+            rel="external noreferrer"
+          >
+            {t("legal.bestPassage", { article: r.best_passage.article })}
+            <ExternalLink size={12}></ExternalLink>
+          </a>
+        </p>{/if}
       {#if r.articles.length}<div class={styles.lawArticles}>
           {#each r.articles as a (a.url)}<a
               class={styles.chip}

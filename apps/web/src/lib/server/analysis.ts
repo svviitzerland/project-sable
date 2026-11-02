@@ -234,6 +234,7 @@ async function runInvestigation(rt: Runtime, id: string) {
 }
 
 // One local process: bound provider concurrency and coalesce duplicate retries.
+export const ANALYSIS_CONCURRENCY = 3;
 const localRuns = new WeakMap<
   Runtime,
   {
@@ -261,7 +262,7 @@ export async function investigate(rt: Runtime, id: string): Promise<void> {
   }
   const pool = state;
   const work = (async () => {
-    if (pool.active >= 3)
+    if (pool.active >= ANALYSIS_CONCURRENCY)
       await new Promise<void>((resolve) => pool.waiting.push(resolve));
     else pool.active++;
     try {
@@ -275,4 +276,22 @@ export async function investigate(rt: Runtime, id: string): Promise<void> {
   })();
   pool.pending.set(id, work);
   return work;
+}
+
+/**
+ * Analyze many statements through the shared pool, `ANALYSIS_CONCURRENCY` at a time.
+ * Feeding one id per free slot keeps the pending queue short, so a long hearing never
+ * hits the queue limit. Bedrock throttling is absorbed by the client's adaptive retries.
+ */
+export async function investigateAll(rt: Runtime, ids: string[]) {
+  const queue = [...ids];
+  await Promise.all(
+    Array.from(
+      { length: Math.min(ANALYSIS_CONCURRENCY, queue.length) },
+      async () => {
+        for (let id = queue.shift(); id; id = queue.shift())
+          await investigate(rt, id);
+      },
+    ),
+  );
 }

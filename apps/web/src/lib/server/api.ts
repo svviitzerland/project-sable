@@ -42,7 +42,12 @@ import {
   MAX_ARCHIVE,
 } from "./archive";
 import { ingest, MAX_BYTES } from "./documents";
-import { deleteFile, legalSearch, readFileData } from "./providers";
+import {
+  deleteFile,
+  legalSearch,
+  legalTypeSchema,
+  readFileData,
+} from "./providers";
 import { retrieve } from "./retrieval";
 import { previewHearing, validateReviewed } from "./hearings";
 import {
@@ -70,7 +75,7 @@ import {
   saveRecording,
 } from "./recordings";
 import { enqueue } from "./jobs";
-import { investigate } from "./analysis";
+import { investigateAll } from "./analysis";
 import {
   audioInput,
   audioBatch,
@@ -528,9 +533,12 @@ export async function handleApi(
           .min(2)
           .max(160)
           .parse(url.searchParams.get("q"));
+        const type = legalTypeSchema.parse(
+          url.searchParams.get("type") ?? undefined,
+        );
         await rate(rt, `legal:${user.id}`, 20);
         return send({
-          results: await legalSearch(rt, query),
+          results: await legalSearch(rt, query, type),
           note: "Discovery metadata only. Read and verify the linked legal text and its applicability before relying on it.",
         });
       }
@@ -751,12 +759,7 @@ export async function handleApi(
               );
             return segments.map((s) => s.id);
           });
-          schedule(
-            rt,
-            (async () => {
-              for (const id of ids) await investigate(rt, id);
-            })(),
-          );
+          schedule(rt, investigateAll(rt, ids));
           return send({ queued: ids.length });
         }
       }

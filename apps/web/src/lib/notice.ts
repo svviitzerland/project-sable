@@ -26,6 +26,18 @@ const patterns: [RegExp, (m: RegExpMatchArray, lang: Lang) => string][] = [
     /Hypothetical rehearsal, separate from testimony and findings\./,
     (_, lang) => translate(lang, "notice.scene"),
   ],
+  [
+    /Citations that did not match the case text were removed\./,
+    (_, lang) => translate(lang, "notice.droppedCitations"),
+  ],
+  [
+    /The AI reply could not be matched to the case sources, so it was not saved\. Here are relevant case excerpts to inspect\./,
+    (_, lang) => translate(lang, "notice.sourcesOnly"),
+  ],
+  [
+    /AI replies are unavailable\. Here are relevant case excerpts to inspect\. This is a source search, not an answer or legal interpretation\./,
+    (_, lang) => translate(lang, "notice.aiOff"),
+  ],
 ];
 
 export function localizeNotice(text: string, lang: Lang): string {
@@ -40,4 +52,11 @@ export function localizeNotice(text: string, lang: Lang): string {
   rest = rest.replace(/\s+/g, " ").trim();
   if (rest) parts.push(rest);
   return parts.join(" ");
+}
+
+/** Assistant text: localize only when it is one of the fixed server sentences. */
+export function localizeFixedText(text: string, lang: Lang): string {
+  return patterns.some(([re]) => re.test(text))
+    ? localizeNotice(text, lang)
+    : text;
 }

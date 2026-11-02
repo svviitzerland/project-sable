@@ -97,6 +97,8 @@ export const en = {
   "error.hearingRunning": "A hearing is already running.",
   "error.alreadyLinked":
     "This pair is already linked. Review its existing connection.",
+  "error.tooManyTurns":
+    "This transcript has more than 3,000 statements. Split it into smaller files and import each as its own hearing.",
   "error.reference": "Reference: {reference}",
 
   // Landing page
@@ -259,6 +261,12 @@ export const en = {
     "Hypothetical rehearsal, not testimony or a prediction of a real court.",
   "notice.scene":
     "Hypothetical rehearsal, separate from testimony and findings.",
+  "notice.droppedCitations":
+    "Citations that did not match the case text were removed.",
+  "notice.sourcesOnly":
+    "The AI reply could not be matched to the case sources, so it was not saved. Here are relevant case excerpts to inspect.",
+  "notice.aiOff":
+    "AI replies are unavailable. Here are relevant case excerpts to inspect. This is a source search, not an answer or legal interpretation.",
   "auth.demoCase": "Ferdy Sambo case, a public record",
   "auth.openSynthetic": "Open the demo case",
 
@@ -402,12 +410,23 @@ export const en = {
   "speakers.forget": "Forget voiceprints",
   "speakers.skeleton": "Saving speaker labels…",
   "speakers.voice": "Voice {n}",
+  "speakers.numbered": "Speaker {n}",
 
   // Legal results
   "legal.uncertain": " (uncertain)",
   "legal.openOriginal":
     "Open the original source to read the full legislation.",
   "legal.article": "Article {article}",
+  "legal.bestPassage": "Most relevant: Article {article}",
+  "legal.type.label": "Regulation type",
+  "legal.type.UU": "Laws (UU)",
+  "legal.type.PERPPU": "Perppu",
+  "legal.type.PP": "Government regulations (PP)",
+  "legal.type.PERPRES": "Presidential regulations",
+  "legal.type.PERMEN": "Ministerial regulations",
+  "legal.type.PERMA": "Supreme Court regulations",
+  "legal.type.PUTUSAN_MK": "Constitutional Court decisions",
+  "legal.type.all": "All types",
 
   // Source card
   "source.docxSection": "DOCX text section · pagination unavailable",
@@ -664,6 +683,14 @@ export const en = {
     "Some related passages may be missing. Review these suggestions or try again later.",
   "evidence.notice.ai_unverified":
     "AI relationships could not be verified, so similarity suggestions are shown.",
+  "evidence.answerNotice.no_passages":
+    "No relevant passages found. Try different wording or add evidence.",
+  "evidence.answerNotice.ai_off":
+    "AI answers are unavailable. You can inspect the relevant passages below.",
+  "evidence.answerNotice.answer_unverified":
+    "The AI answer could not be matched to these passages, so it is not shown. Inspect the relevant passages below.",
+  "evidence.answerNotice.ai_failed":
+    "An AI answer could not be completed right now. Inspect the relevant passages below or try again.",
   "evidence.mapCaption":
     "Hover or select a statement or passage to trace its connections, or select a curve to examine it. Dashed curves await review.",
   "evidence.emptyTitle": "Build a picture of the case.",

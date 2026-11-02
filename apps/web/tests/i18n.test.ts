@@ -135,4 +135,21 @@ test("stored English conversation notices render in the interface language", asy
     "Berdasarkan 19 kutipan sumber. Periksa konteks aslinya. Ini bukan tinjauan atas seluruh perkara. Latihan hipotetis, bukan keterangan atau prediksi sidang sebenarnya.",
   );
   assert.equal(localizeNotice("Something new.", "id"), "Something new.");
+  const { localizeFixedText } = await import("../src/lib/notice.ts");
+  assert.equal(
+    localizeFixedText(
+      "The AI reply could not be matched to the case sources, so it was not saved. Here are relevant case excerpts to inspect.",
+      "id",
+    ),
+    id["notice.sourcesOnly"],
+  );
+  assert.equal(
+    localizeNotice(
+      "Citations that did not match the case text were removed.",
+      "id",
+    ),
+    id["notice.droppedCitations"],
+  );
+  // Model replies keep their own line breaks.
+  assert.equal(localizeFixedText("Satu.\n\nDua.", "id"), "Satu.\n\nDua.");
 });

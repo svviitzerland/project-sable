@@ -53,6 +53,7 @@ export type LegalReference = {
   url: string;
   content: string;
   articles: { article: string; url: string }[];
+  best_passage?: { article: string; url: string } | null;
 };
 export type Finding = {
   id: string;
@@ -167,6 +168,8 @@ const serverMessages: Record<string, MessageKey> = {
   "A hearing is already running.": "error.hearingRunning",
   "This pair is already linked. Review its existing connection.":
     "error.alreadyLinked",
+  "This transcript has more than 3,000 statements. Split it into smaller files and import each as its own hearing.":
+    "error.tooManyTurns",
 };
 export function userFacingError(message: string) {
   const known = serverMessages[message.trim()];
@@ -214,11 +217,18 @@ export async function api<T>(
     );
   return data as T;
 }
-/** Display name: the user's label, else "Voice N" for recurring voices, else the raw key. */
+/**
+ * Display name: the user's label, else "Voice N" for recurring voices, else
+ * "Speaker N" for a diarized key such as `74b164dd:spk_0`, else the key itself.
+ */
 export function speakerName(key: string, labels: Record<string, string>) {
   if (labels[key]) return labels[key];
   const voice = /^voice:voice-(\d+)$/.exec(key);
-  return voice ? t("speakers.voice", { n: voice[1] }) : key;
+  if (voice) return t("speakers.voice", { n: voice[1] });
+  const diarized = /(?:^|:)spk_(\d+)$/.exec(key);
+  return diarized
+    ? t("speakers.numbered", { n: Number(diarized[1]) + 1 })
+    : key;
 }
 export function timestamp(value: number) {
   return new Date(value * 1000).toISOString().slice(11, 19);

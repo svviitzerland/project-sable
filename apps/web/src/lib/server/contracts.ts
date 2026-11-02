@@ -58,13 +58,15 @@ export const turnSchema = z.strictObject({
   start: z.number().min(0).max(86400).default(0),
   end: z.number().min(0).max(86400).default(0),
 });
+/** Statements in one imported or exported hearing. */
+export const MAX_HEARING_TURNS = 3000;
 export const hearingFileSchema = z.strictObject({
   format: z.literal("jude").default("jude"),
   version: z.literal(1).default(1),
   kind: z.literal("hearing").default("hearing"),
   title: z.string().trim().min(1).max(160),
   date: z.string().max(40).default(""),
-  segments: z.array(turnSchema).min(1).max(500),
+  segments: z.array(turnSchema).min(1).max(MAX_HEARING_TURNS),
 });
 export type Citation = z.infer<typeof citationSchema>;
 export type Conclusion = z.infer<typeof conclusionSchema>;
@@ -164,6 +166,8 @@ export interface Legal {
   url: string;
   content?: string;
   articles?: { article: string; url: string }[];
+  /** Pasal.id's best-matching article (a link, never legal text). */
+  best_passage?: { article: string; url: string } | null;
 }
 export interface Link {
   id: string;
