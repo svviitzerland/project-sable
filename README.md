@@ -61,10 +61,10 @@ Production runs on AWS under the codename **project-sable**: one EC2 instance wi
 - Live microphone/prepared-audio transcription; finalized testimony persists independently of analysis.
 - Four-step analysis with an independent reviewer and exact-quotation verification; review notes, speaker labels, search, and review queues.
 - Evidence graph, confirmed connections, natural-language search, and optional OpenRouter embeddings (Bedrock deployments use keyword search).
-- Case-wide assistant and separate courtroom practice with editable conditions, role selection, saved exchanges and debriefs.
+- Case-wide assistant and separate AI courtroom practice: the AI plays the bench, the other side and witnesses from the case record with cited replies, optional coaching notes after each turn, and a cited debrief.
 - Portable `.jude` case/hearing archives and separate conversation JSON exports.
 
-Without provider keys, keyword search, manual testimony, source inspection, archive workflows, the bundled public demo case, sources-only assistant replies, and guided practice work locally. Scanned PDFs still require OCR before upload. Provider configuration is not proof of service availability or model quality.
+Without provider keys, keyword search, manual testimony, source inspection, archive workflows, the bundled public demo case, and sources-only assistant replies work locally. Courtroom practice needs an AI provider and shows an unavailable state without one. Scanned PDFs still require OCR before upload. Provider configuration is not proof of service availability or model quality.
 
 ## Sample files
 
