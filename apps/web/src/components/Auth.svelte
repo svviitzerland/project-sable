@@ -48,6 +48,28 @@
 
 <div class={styles.auth}>
   <div class={styles.authStory}>
+    <!-- Quiet contour lines and a curved seam give the panel its shape. -->
+    <svg
+      class={styles.authContours}
+      viewBox="0 0 600 600"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {#each [90, 150, 210, 270, 330, 390, 450] as r (r)}<circle
+          cx="0"
+          cy="600"
+          {r}
+        />{/each}
+    </svg>
+    <svg
+      class={styles.authSeam}
+      viewBox="0 0 60 100"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M0 0 C 70 28, 70 72, 0 100 Z" />
+    </svg>
     <header class={styles.authTop}>
       <a href={resolve("/")} class={styles.brand}> jude. </a>
       <LanguageToggle />
@@ -137,9 +159,9 @@
       {register ? t("auth.haveAccount") : t("auth.newAccount")}
     </button>
     {#if caps?.demo_available}<div class={styles.demoEntry}>
-        <span>{t("auth.exploreFirst")}</span>
+        <span class={styles.authOr}>{t("auth.or")}</span>
         <button
-          class={styles.secondary}
+          class={styles.demoCard}
           disabled={busy}
           onclick={async () => {
             busy = true;
@@ -153,13 +175,13 @@
             }
           }}
         >
-          <Play size={16}></Play>
-          {t("auth.openSynthetic")}
+          <span class={styles.demoPlay}><Play size={15}></Play></span>
+          <span>
+            <strong>{t("auth.openSynthetic")}</strong>
+            <small>{t("auth.demoCase")}</small>
+          </span>
+          <ArrowRight size={16}></ArrowRight>
         </button>
-        <p>{t("auth.demoNote")}</p>
       </div>{/if}
-    <small class={styles.authFootnote}>
-      {t("auth.footnote")}
-    </small>
   </div>
 </div>

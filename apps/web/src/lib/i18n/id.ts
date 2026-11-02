@@ -251,12 +251,9 @@ export const id: Messages = {
   "auth.createAccount": "Buat akun",
   "auth.haveAccount": "Sudah punya akun? Masuk",
   "auth.newAccount": "Baru di Jude? Buat akun",
-  "auth.exploreFirst": "Jelajahi sebelum memulai",
+  "auth.or": "atau",
+  "auth.demoCase": "Perkara Ferdy Sambo, catatan publik",
   "auth.openSynthetic": "Buka perkara demo",
-  "auth.demoNote":
-    "Jelajahi catatan pengadilan publik, perkara Ferdy Sambo (796/Pid.B/2022/PN Jkt.Sel), lengkap dengan transkrip sidang dan temuannya. Tanpa mikrofon.",
-  "auth.footnote":
-    "Gunakan hanya materi perkara yang berwenang Anda bagikan dan proses.",
 
   // Kerangka ruang kerja
   "tab.evidence": "Bukti",

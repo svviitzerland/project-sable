@@ -248,12 +248,9 @@ export const en = {
   "auth.createAccount": "Create account",
   "auth.haveAccount": "Already have an account? Sign in",
   "auth.newAccount": "New to Jude? Create an account",
-  "auth.exploreFirst": "Explore before you start",
+  "auth.or": "or",
+  "auth.demoCase": "Ferdy Sambo case, a public record",
   "auth.openSynthetic": "Open the demo case",
-  "auth.demoNote":
-    "Explore a real public court record, the Ferdy Sambo case (796/Pid.B/2022/PN Jkt.Sel), with its hearing transcript and findings. No microphone needed.",
-  "auth.footnote":
-    "Use only case material you are authorized to share and process.",
 
   // Workspace shell
   "tab.evidence": "Evidence",
