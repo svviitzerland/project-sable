@@ -642,14 +642,23 @@ export const en = {
   "evidence.connections": "Connections",
   "evidence.summary": "{passages} passages · {connections} connections",
   "evidence.relationships": "Evidence relationships",
-  "evidence.zoomIn": "Zoom in",
-  "evidence.zoomOut": "Zoom out",
-  "evidence.reset": "Reset",
   "evidence.graph": "Interactive evidence graph",
   "evidence.edgeLabel": "{relation}: {from} to {to}",
   "evidence.hearingStatement": "Hearing statement",
+  "evidence.column.statements": "Hearing statements",
+  "evidence.column.passages": "Document passages",
+  "evidence.pageShort": "p. {page}",
+  "evidence.mapUnlinked":
+    "{count} passages without connections are not drawn. Every passage is listed below.",
+  "evidence.notice.similarity_advisory":
+    "Similarity suggests a connection, not support or contradiction. Inspect both passages before confirming a link.",
+  "evidence.notice.links_ready": "Suggested links are ready to inspect.",
+  "evidence.notice.embeddings_partial":
+    "Some related passages may be missing. Review these suggestions or try again later.",
+  "evidence.notice.ai_unverified":
+    "AI relationships could not be verified, so similarity suggestions are shown.",
   "evidence.mapCaption":
-    "Select a passage or a connecting line. Dashed connections await review. On a small screen, swipe across the map or use Connections.",
+    "Hover or select a statement or passage to trace its connections, or select a curve to examine it. Dashed curves await review.",
   "evidence.emptyTitle": "Build a picture of the case.",
   "evidence.emptyText":
     "Add case documents or import a .jude case. Their passages will appear here, ready to search and connect.",
@@ -660,7 +669,7 @@ export const en = {
   "evidence.noConnectionsText":
     "Find connections automatically, or select a passage to create your own link.",
   "evidence.mapLimit":
-    "Map shows 24 nodes. All {count} available nodes are listed below. Search covers the whole case.",
+    "{shown} of {total} passages are loaded here. Search covers the whole case.",
   "evidence.inspector": "Evidence inspector",
   "evidence.back": "Back to evidence",
   "evidence.examine": "Examine the connection",

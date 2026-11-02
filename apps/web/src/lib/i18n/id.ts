@@ -646,14 +646,23 @@ export const id: Messages = {
   "evidence.connections": "Keterkaitan",
   "evidence.summary": "{passages} kutipan · {connections} keterkaitan",
   "evidence.relationships": "Hubungan antarbukti",
-  "evidence.zoomIn": "Perbesar",
-  "evidence.zoomOut": "Perkecil",
-  "evidence.reset": "Atur ulang",
   "evidence.graph": "Grafik bukti interaktif",
   "evidence.edgeLabel": "{relation}: {from} ke {to}",
   "evidence.hearingStatement": "Pernyataan di sidang",
+  "evidence.column.statements": "Pernyataan sidang",
+  "evidence.column.passages": "Kutipan berkas",
+  "evidence.pageShort": "Hal. {page}",
+  "evidence.mapUnlinked":
+    "{count} kutipan tanpa keterkaitan tidak digambar. Semua kutipan tercantum di bawah.",
+  "evidence.notice.similarity_advisory":
+    "Kemiripan menandakan adanya hubungan, bukan dukungan atau pertentangan. Periksa kedua kutipan sebelum mengonfirmasi tautan.",
+  "evidence.notice.links_ready": "Saran keterkaitan siap diperiksa.",
+  "evidence.notice.embeddings_partial":
+    "Sebagian kutipan terkait mungkin belum muncul. Tinjau saran ini atau coba lagi nanti.",
+  "evidence.notice.ai_unverified":
+    "Hubungan dari AI tidak dapat diverifikasi, jadi yang ditampilkan adalah saran berdasarkan kemiripan.",
   "evidence.mapCaption":
-    "Pilih kutipan atau garis penghubung. Garis putus-putus menunggu peninjauan. Di layar kecil, geser peta atau gunakan tampilan Keterkaitan.",
+    "Arahkan atau pilih pernyataan maupun kutipan untuk menelusuri keterkaitannya, atau pilih garis untuk memeriksanya. Garis putus-putus menunggu peninjauan.",
   "evidence.emptyTitle": "Bangun gambaran perkara.",
   "evidence.emptyText":
     "Tambahkan berkas perkara atau impor perkara .jude. Kutipannya akan muncul di sini, siap dicari dan dihubungkan.",
@@ -664,7 +673,7 @@ export const id: Messages = {
   "evidence.noConnectionsText":
     "Cari keterkaitan secara otomatis, atau pilih kutipan untuk membuat tautan sendiri.",
   "evidence.mapLimit":
-    "Peta menampilkan 24 simpul. Seluruh {count} simpul tercantum di bawah. Pencarian mencakup seluruh perkara.",
+    "{shown} dari {total} kutipan dimuat di sini. Pencarian mencakup seluruh perkara.",
   "evidence.inspector": "Pemeriksa bukti",
   "evidence.back": "Kembali ke bukti",
   "evidence.examine": "Periksa keterkaitan",

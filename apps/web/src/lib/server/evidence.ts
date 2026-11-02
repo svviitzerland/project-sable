@@ -17,6 +17,14 @@ export const relationSchema = z.enum([
   "context",
   "related",
 ]);
+/** Stable codes for evidence notices so clients can render them in the reader's language. */
+export const evidenceNoticeCodeSchema = z.enum([
+  "similarity_advisory",
+  "links_ready",
+  "embeddings_partial",
+  "ai_unverified",
+]);
+export type EvidenceNoticeCode = z.infer<typeof evidenceNoticeCodeSchema>;
 export async function graph(rt: Runtime, caseId: string) {
   const docs = new Map(
     (
@@ -113,6 +121,8 @@ export async function graph(rt: Runtime, caseId: string) {
     ).length,
     notice:
       "Similarity suggests a connection, not support or contradiction. Inspect both passages before confirming a link.",
+    // Clients localize notices by code; `notice` stays as English fallback text.
+    notice_code: "similarity_advisory" satisfies EvidenceNoticeCode,
   };
 }
 export function candidatePairs(chunks: Chunk[]) {
@@ -140,6 +150,7 @@ export async function buildLinks(rt: Runtime, caseId: string) {
     "ORDER BY id LIMIT 300",
   );
   let notice = "";
+  const noticeCodes: EvidenceNoticeCode[] = [];
   if (embeddingsConfigured(rt.config)) {
     const missing = chunks.filter(
       (c) => !c.embedding || c.embedding_model !== rt.config.embeddingModel,
@@ -166,6 +177,7 @@ export async function buildLinks(rt: Runtime, caseId: string) {
     } catch {
       notice =
         "Some related passages may be missing. Review these suggestions or try again later.";
+      noticeCodes.push("embeddings_partial");
     }
   }
   for (const c of chunks)
@@ -218,7 +230,8 @@ export async function buildLinks(rt: Runtime, caseId: string) {
       });
     } catch {
       notice +=
-        " AI relationships could not be verified. Similarity suggestions are shown.";
+        " AI relationships could not be verified, so similarity suggestions are shown.";
+      noticeCodes.push("ai_unverified");
       proposed = [];
     }
   if (!proposed.length)
@@ -251,6 +264,9 @@ export async function buildLinks(rt: Runtime, caseId: string) {
   return {
     added,
     notice: notice.trim() || "Suggested links are ready to inspect.",
+    notice_codes: noticeCodes.length
+      ? noticeCodes
+      : (["links_ready"] satisfies EvidenceNoticeCode[]),
     scope:
       "Up to 300 passages indexed. Cross-document suggestions use the first 120 passages. Natural-language search covers all case passages.",
   };

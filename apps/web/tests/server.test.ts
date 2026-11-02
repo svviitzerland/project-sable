@@ -569,7 +569,10 @@ test("evidence relationships and retrieval remain case scoped", async (t) => {
     await a.json(base + "/documents", "POST", upload(name, text));
   const built = await a.json(base + "/graph/build", "POST");
   assert.equal(built.added, 1);
+  assert.deepEqual(built.notice_codes, ["links_ready"]);
   const graph = await a.json(base + "/graph");
+  // Notices travel as codes so the browser can show them in Indonesian or English.
+  assert.equal(graph.notice_code, "similarity_advisory");
   assert.equal(graph.edges[0].relation, "related");
   assert.equal(graph.edges[0].confirmed, false);
   await a.json(`${base}/links/${graph.edges[0].id}`, "PATCH", {
