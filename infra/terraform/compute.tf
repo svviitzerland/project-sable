@@ -48,7 +48,12 @@ data "aws_iam_policy_document" "instance" {
   statement {
     sid       = "Secrets"
     actions   = ["ssm:GetParameter", "ssm:GetParameters"]
-    resources = [aws_ssm_parameter.db_password.arn, aws_ssm_parameter.voice_token.arn]
+    resources = [
+      aws_ssm_parameter.db_password.arn,
+      aws_ssm_parameter.voice_token.arn,
+      # Optional Pasal.id key, created outside Terraform so it never enters state.
+      "arn:${data.aws_partition.current.partition}:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/${var.project}/pasal_api_key",
+    ]
   }
   statement {
     sid = "Bedrock"

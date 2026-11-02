@@ -21,6 +21,8 @@ umask 077
   cat instance.env
   echo "DB_PASSWORD=$(secret "$DB_PASSWORD_PARAM")"
   echo "VOICE_TOKEN=$(secret "$VOICE_TOKEN_PARAM")"
+  # Optional: legal search through Pasal.id. Created outside Terraform (see infra/README.md).
+  echo "PASAL_API_KEY=$(secret "${DB_PASSWORD_PARAM%/*}/pasal_api_key" 2>/dev/null || true)"
   echo "JUDE_TAG=$TAG"
   echo "JUDE_VOICE_TAG=$VOICE_TAG"
 } > .env

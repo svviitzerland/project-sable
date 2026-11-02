@@ -36,6 +36,7 @@ services:
       S3_BUCKET: ${S3_BUCKET}
       VOICE_API_URL: http://voice:8000
       VOICE_API_TOKEN: ${VOICE_TOKEN}
+      PASAL_API_KEY: ${PASAL_API_KEY:-}
     volumes:
       - ./certs:/certs:ro
     depends_on:
