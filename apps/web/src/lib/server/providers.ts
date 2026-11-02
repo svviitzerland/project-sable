@@ -235,8 +235,10 @@ async function bedrockStructured(
  * on Bedrock) reject the field with a ValidationException, so it is left out for them.
  */
 export function bedrockInference(modelId: string) {
+  // Reasoning models spend output tokens on thinking before the tool call, so they get
+  // more room; a truncated reply would otherwise miss the tool call entirely.
   return /moonshotai\.|openai\.gpt-(?!oss)/.test(modelId)
-    ? { maxTokens: 4000 }
+    ? { maxTokens: 12000 }
     : { maxTokens: 4000, temperature: 0.1 };
 }
 

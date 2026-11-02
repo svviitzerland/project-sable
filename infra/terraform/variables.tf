@@ -61,7 +61,7 @@ variable "bedrock_model" {
 variable "bedrock_review_model" {
   description = "Independent review model, from a different family than the default model."
   type        = string
-  default     = "global.anthropic.claude-sonnet-4-6"
+  default     = "global.moonshotai.kimi-k3"
 }
 
 variable "enable_demo" {

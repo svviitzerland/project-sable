@@ -29,7 +29,7 @@ export function settings(
     // Benchmark and prices: docs/phases/2026-11-02-model-choice.md.
     bedrockModel: env.BEDROCK_MODEL || "global.amazon.nova-2-lite-v1:0",
     bedrockReviewModel:
-      env.BEDROCK_REVIEW_MODEL || "global.anthropic.claude-sonnet-4-6",
+      env.BEDROCK_REVIEW_MODEL || "global.moonshotai.kimi-k3",
     s3Bucket: env.S3_BUCKET || "",
     openrouterKey: env.OPENROUTER_API_KEY || "",
     model: env.OPENROUTER_MODEL || "",

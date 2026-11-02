@@ -77,7 +77,7 @@ Production runs under the codename **project-sable** in ap-southeast-1:
 - One EC2 instance with Docker Compose: Caddy (HTTPS), the web app, the voice service and a one-shot migration job.
 - Amazon RDS PostgreSQL 17 with verified TLS.
 - S3 for originals and recordings, ECR for images, SSM Parameter Store for secrets.
-- Amazon Bedrock: Nova 2 Lite for screening, the assistant and practice, and Claude Sonnet 4.6 as the independent reviewer (`BEDROCK_MODEL`, `BEDROCK_REVIEW_MODEL`, benchmark in [docs/phases/2026-11-02-model-choice.md](docs/phases/2026-11-02-model-choice.md)). Amazon Transcribe for speech.
+- Amazon Bedrock: Nova 2 Lite for screening, the assistant and practice,  and Moonshot Kimi K3 as the independent reviewer (`BEDROCK_MODEL`, `BEDROCK_REVIEW_MODEL`, benchmark in [docs/phases/2026-11-02-model-choice.md](docs/phases/2026-11-02-model-choice.md)). Amazon Transcribe for speech.
 - AWS Budgets alerts on actual and forecast spend.
 
 Terraform is in [`infra/terraform`](infra/terraform) and the stack in [`infra/docker`](infra/docker). Pushing to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): checks, image build, ECR push and a deploy through SSM, authenticated with GitHub OIDC (no AWS keys in GitHub). Details in [infra/README.md](infra/README.md).

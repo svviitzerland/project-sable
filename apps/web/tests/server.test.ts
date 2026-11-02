@@ -1281,6 +1281,7 @@ test("analysis screens with one cheap call, reviews only inconsistencies indepen
   }[] = [];
   let screenQuote = "";
   let confirmed = false;
+  let reviewerFails = false;
   rt.bedrock = {
     send: (async (command: {
       input: {
@@ -1293,6 +1294,8 @@ test("analysis screens with one cheap call, reviews only inconsistencies indepen
       const role = command.input.system[0].text;
       calls.push({ model: command.input.modelId, role, payload });
       const sourceId = (payload.sources as { id: string }[])[0].id;
+      if (reviewerFails && role.includes("Independent reviewer"))
+        throw new Error("reviewer timed out");
       const input = role.includes("Independent reviewer")
         ? {
             summary:
@@ -1352,6 +1355,19 @@ test("analysis screens with one cheap call, reviews only inconsistencies indepen
   );
   assert.equal(finding.status, "potential_inconsistency");
   assert.equal(finding.review.reviewed_by, "independent");
+  // Without a reviewer answer the statement still completes, never as a conflict.
+  reviewerFails = true;
+  const unreviewed = await say("Saya datang jam sembilan.");
+  await investigate(rt, unreviewed.id);
+  assert.equal(
+    (await rt.db.one("segments", "id=?", [unreviewed.id]))?.analysis_state,
+    "complete",
+  );
+  finding = (await a.json(base)).findings.find(
+    (f: { segment_id: string }) => f.segment_id === unreviewed.id,
+  );
+  assert.equal(finding.status, "context_needed");
+  assert.equal(finding.review.reviewed_by, "review_unavailable");
 });
 
 test("Bedrock structured calls repair stringified arrays and retry one schema failure by field path only", async (t) => {

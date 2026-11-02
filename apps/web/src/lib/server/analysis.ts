@@ -185,13 +185,22 @@ async function runInvestigation(rt: Runtime, id: string) {
     };
     if (conclusion.status === "potential_inconsistency") {
       await analysisState(rt, id, "reviewing");
+      // A potential inconsistency is shown only when the independent reviewer confirms
+      // it. If the reviewer cannot answer, the finding falls back to context needed.
       const reviewer = await structured(
         rt,
         "Independent reviewer. You have not seen any earlier assessment. Decide whether the sources genuinely conflict with the testimony, or whether the difference can be explained by paraphrase, a different event or time, missing context, or a transcription error. List alternative explanations and missing context. Do not judge credibility.",
         packet,
         assessmentSchema.extend({ conflict_confirmed: z.boolean() }),
         { tier: "review" },
-      );
+      ).catch(() => ({
+        conflict_confirmed: false,
+        summary:
+          "The independent review could not be completed, so this difference is not shown as a conflict. Compare both passages yourself.",
+        alternative_explanations: [] as string[],
+        missing_context: [] as string[],
+        unavailable: true,
+      }));
       if (!reviewer.conflict_confirmed)
         conclusion = {
           ...conclusion,
@@ -206,7 +215,8 @@ async function runInvestigation(rt: Runtime, id: string) {
         alternative_explanations: reviewer.alternative_explanations,
         missing_context: reviewer.missing_context,
         screen_summary: conclusion.explanation,
-        reviewed_by: "independent",
+        reviewed_by:
+          "unavailable" in reviewer ? "review_unavailable" : "independent",
         conflict_confirmed: reviewer.conflict_confirmed,
       };
     }
