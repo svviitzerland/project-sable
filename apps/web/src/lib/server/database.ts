@@ -36,7 +36,15 @@ const jsonColumns = new Set([
 ]);
 const boolColumns = new Set(["demo", "synthetic", "reviewed", "confirmed"]);
 const defaults: Record<keyof Tables, () => Record<string, unknown>> = {
-  users: () => ({ id: uid(), demo: false }),
+  users: () => ({
+    id: uid(),
+    demo: false,
+    plan: "trial",
+    plan_billing: "yearly",
+    plan_accounts: 1,
+    plan_started_at: now(),
+    trial_ends_at: new Date(Date.now() + 14 * 86_400_000).toISOString(),
+  }),
   sessions: () => ({}),
   cases: () => ({
     id: uid(),
@@ -336,6 +344,19 @@ export async function connectDatabase(config: Settings) {
       "ALTER TABLE jude_chunks ADD COLUMN embedding_model VARCHAR(200) NOT NULL DEFAULT ''",
     );
   connection.exec(localSchema);
+  // Simulated plans (db/migrations/009_user_plans.sql). SQLite cannot add a column with a
+  // time default, so new users get their timestamps from the insert defaults above.
+  for (const [name, definition] of [
+    ["plan", "VARCHAR(20) NOT NULL DEFAULT 'trial'"],
+    ["plan_billing", "VARCHAR(10) NOT NULL DEFAULT 'yearly'"],
+    ["plan_accounts", "INTEGER NOT NULL DEFAULT 1"],
+    ["plan_started_at", "VARCHAR(40)"],
+    ["trial_ends_at", "VARCHAR(40)"],
+  ] as const)
+    if (!columns("jude_users").includes(name))
+      connection.exec(
+        `ALTER TABLE jude_users ADD COLUMN ${name} ${definition}`,
+      );
   connection.exec(
     `CREATE TABLE IF NOT EXISTS jude_audio_sessions(id VARCHAR(36) PRIMARY KEY, case_id VARCHAR(36) NOT NULL REFERENCES jude_cases(id) ON DELETE CASCADE, hearing_id VARCHAR(36) NOT NULL REFERENCES jude_hearings(id) ON DELETE CASCADE, session_hash VARCHAR(64) NOT NULL REFERENCES jude_sessions(token_hash) ON DELETE CASCADE, offset FLOAT NOT NULL, last_sequence INTEGER NOT NULL, expires FLOAT NOT NULL, status VARCHAR(20) NOT NULL)`,
   );

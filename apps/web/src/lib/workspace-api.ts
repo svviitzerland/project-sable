@@ -1,5 +1,27 @@
 import { t, type MessageKey } from "./i18n/index.svelte";
-export type User = { id: string; name: string; email: string; demo: boolean };
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  demo: boolean;
+  plan?: string;
+};
+/** Simulated plan and this month's metered usage (GET /account/plan). */
+export type PlanInfo = {
+  plan: "trial" | "lite" | "advokat" | "kantor" | "lembaga";
+  billing: "monthly" | "yearly";
+  accounts: number;
+  started_at: string | null;
+  trial_ends_at: string | null;
+  price_per_month: number;
+  simulated: true;
+  usage: {
+    hearing_seconds_this_month: number;
+    ai_questions_this_month: number;
+  };
+  limits: { hearing_seconds: number; ai_questions: number };
+  exceeded: { hearing_seconds: boolean; ai_questions: boolean };
+};
 export type Case = {
   id: string;
   title: string;

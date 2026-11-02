@@ -91,6 +91,7 @@ import {
   voiceConfigured,
 } from "./voice";
 import { seedDemo } from "./synthetic";
+import { planDetail, planInput, switchPlan } from "./plans";
 const json = (data: unknown, status = 200, headers: HeadersInit = {}) =>
   new Response(JSON.stringify(data), {
     status,
@@ -368,6 +369,14 @@ export async function handleApi(
           },
         );
       const user = await authenticate(rt, request);
+      // Simulated billing: no payment, the chosen plan applies immediately.
+      if (parts[0] === "account" && parts[1] === "plan" && parts.length === 2) {
+        if (method === "GET") return json(await planDetail(rt.db, user));
+        if (method === "POST")
+          return json(
+            await switchPlan(rt.db, user, await body(request, planInput)),
+          );
+      }
       assert(parts[0] === "cases", 404, "Not found");
       if (parts.length === 1) {
         if (method === "GET") {

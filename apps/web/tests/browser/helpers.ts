@@ -14,7 +14,9 @@ export async function register(page: Page) {
   await page
     .getByRole("button", { name: "Create account", exact: true })
     .click();
-  await expect(page.getByRole("button", { name: "Account" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Account", exact: true }),
+  ).toBeVisible();
   return email;
 }
 /** Create a blank case through the new-case modal and wait for its workspace. */

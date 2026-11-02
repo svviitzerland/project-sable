@@ -89,7 +89,7 @@ export async function sessionCookie(app: Runtime, user: User) {
 }
 export function publicUser(user: User) {
   const { id, name, email, demo } = user;
-  return { id, name, email, demo };
+  return { id, name, email, demo, plan: user.plan ?? "trial" };
 }
 export async function ownedCase(app: Runtime, id: string, userId: string) {
   const row = await app.db.one("cases", "id=? AND owner_id=?", [id, userId]);

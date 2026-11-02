@@ -2250,3 +2250,123 @@ test("hearings import up to 3000 statements and hearing analysis uses the pool's
   assert.ok(calls >= 9, `expected a call per statement, saw ${calls}`);
   assert.equal(peak, 3);
 });
+
+test("simulated plans switch immediately, validate input and meter this month's usage", async (t) => {
+  const { rt, a, record, client } = await fixture(t);
+  const me = await a.json("/auth/me");
+  assert.equal(me.plan, "trial");
+  const initial = await a.json("/account/plan");
+  assert.equal(initial.plan, "trial");
+  assert.equal(initial.simulated, true);
+  assert.equal(initial.price_per_month, 0);
+  assert.deepEqual(initial.limits, {
+    hearing_seconds: 7200,
+    ai_questions: 30,
+  });
+  assert.deepEqual(initial.usage, {
+    hearing_seconds_this_month: 0,
+    ai_questions_this_month: 0,
+  });
+  assert.ok(Date.parse(initial.trial_ends_at) > Date.now() + 13 * 86_400_000);
+
+  // Validation: unknown plans, bad billing, fractional accounts and a too-small firm.
+  await a.json("/account/plan", "POST", { plan: "enterprise" }, 422);
+  await a.json(
+    "/account/plan",
+    "POST",
+    { plan: "advokat", billing: "weekly" },
+    422,
+  );
+  await a.json(
+    "/account/plan",
+    "POST",
+    { plan: "advokat", accounts: 1.5 },
+    422,
+  );
+  await a.json("/account/plan", "POST", { plan: "kantor", accounts: 2 }, 422);
+  assert.equal((await a.json("/account/plan")).plan, "trial");
+
+  const firm = await a.json("/account/plan", "POST", {
+    plan: "kantor",
+    billing: "yearly",
+    accounts: 3,
+  });
+  assert.equal(firm.plan, "kantor");
+  assert.equal(firm.accounts, 3);
+  assert.equal(firm.price_per_month, 3_870_000);
+  assert.deepEqual(firm.limits, {
+    hearing_seconds: 30 * 3600,
+    ai_questions: 1800,
+  });
+  assert.equal((await a.json("/auth/me")).plan, "kantor");
+  const solo = await a.json("/account/plan", "POST", {
+    plan: "advokat",
+    billing: "monthly",
+  });
+  assert.equal(solo.price_per_month, 899_000);
+  assert.equal(solo.accounts, 1);
+
+  // Usage counts transcribed audio and the user's own questions from this month only.
+  const hearing = await rt.db.insert("hearings", {
+    case_id: record.id,
+    title: "Live",
+  });
+  const lastMonth = new Date(Date.now() - 40 * 86_400_000).toISOString();
+  for (const [origin, start, end, created_at] of [
+    ["transcribe", 0, 1800, undefined],
+    ["transcribe", 1800, 20_000, undefined],
+    ["transcribe", 0, 3600, lastMonth],
+    ["manual", 0, 3600, undefined],
+  ] as const)
+    await rt.db.insert("segments", {
+      case_id: record.id,
+      hearing_id: hearing.id,
+      text: "Statement",
+      origin,
+      start,
+      end,
+      ...(created_at ? { created_at } : {}),
+    });
+  const dialogue = await rt.db.insert("dialogues", {
+    case_id: record.id,
+    kind: "assistant",
+    title: "Questions",
+  });
+  for (const [sequence, role] of ["user", "assistant", "user"].entries())
+    await rt.db.insert("dialogue_messages", {
+      dialogue_id: dialogue.id,
+      sequence,
+      role,
+      speaker: role,
+      text: "Question",
+    });
+  const metered = await a.json("/account/plan");
+  assert.deepEqual(metered.usage, {
+    hearing_seconds_this_month: 20_000,
+    ai_questions_this_month: 2,
+  });
+  assert.deepEqual(metered.exceeded, {
+    hearing_seconds: true,
+    ai_questions: false,
+  });
+
+  // Other users see only their own usage; returning to the trial cannot extend it.
+  const other = client();
+  await other.json("/auth/register", "POST", {
+    email: `${randomUUID()}@example.test`,
+    password: "test-password-123",
+  });
+  assert.equal(
+    (await other.json("/account/plan")).usage.hearing_seconds_this_month,
+    0,
+  );
+  const back = await a.json("/account/plan", "POST", {
+    plan: "trial",
+    accounts: 4,
+  });
+  assert.equal(back.accounts, 1);
+  assert.equal(back.trial_ends_at, initial.trial_ends_at);
+  assert.equal((await client().call("/account/plan")).status, 401);
+  const demo = await client().json("/auth/demo", "POST");
+  assert.equal(demo.plan, "trial");
+});

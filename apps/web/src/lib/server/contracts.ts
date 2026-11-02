@@ -79,6 +79,11 @@ export interface User {
   name: string;
   password_hash: string;
   demo: boolean;
+  plan: string;
+  plan_billing: string;
+  plan_accounts: number;
+  plan_started_at: string | Date | null;
+  trial_ends_at: string | Date | null;
 }
 export interface Case {
   id: string;

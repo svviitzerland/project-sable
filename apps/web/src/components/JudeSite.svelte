@@ -110,6 +110,7 @@
           {#each nav as [label, href] (label)}<a href={`#${href.slice(1)}`}>
               {t(label)}
             </a>{/each}
+          <a href={resolve("/pricing")}>{t("landing.nav.pricing")}</a>
           <a href={resolve("/workspace")}>{t("common.signIn")}</a>
           <button class="button button-outline" onclick={() => openDemo()}>
             {t("landing.exploreDemo")}
@@ -148,6 +149,10 @@
               {t(label)}
               <ArrowUpRight size={17}></ArrowUpRight>
             </a>{/each}
+          <a href={resolve("/pricing")}>
+            {t("landing.nav.pricing")}
+            <ArrowUpRight size={17}></ArrowUpRight>
+          </a>
           <a href={resolve("/workspace")}>
             {t("common.signIn")}
             <ArrowUpRight size={17}></ArrowUpRight>
@@ -580,6 +585,10 @@
           {t("landing.exploreDemo")}
           <ArrowRight size={21}></ArrowRight>
         </button>
+        <a class="closing-pricing" href={resolve("/pricing")}>
+          {t("landing.closing.pricing")}
+          <ArrowUpRight size={15}></ArrowUpRight>
+        </a>
         <span class="closing-note">{t("landing.closing.note")}</span>
       </div>
     </div>
@@ -588,6 +597,9 @@
 <footer class="site-footer wrap">
   <a class="wordmark" href="#top" aria-label={t("landing.home")}> jude. </a>
   <p>{t("landing.footer.tagline")}</p>
+  <a class="footer-pricing" href={resolve("/pricing")}
+    >{t("landing.nav.pricing")}</a
+  >
   <span>{t("landing.footer.concept")}</span>
   <a href="#top">
     {t("landing.footer.top")}

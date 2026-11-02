@@ -156,6 +156,10 @@ mark { background: #f0deb4; color: #34402a; padding-block: 3px; box-decoration-b
 .closing h2 { font-size: clamp(50px, 5.7vw, 84px); line-height: 1.04; letter-spacing: -.025em; }
 .closing p { font-size: 18px; color: #d9e0d3; line-height: 1.65; margin-bottom: 22px; }
 .closing-note { display: block; font-size: 11px; color: #c2cdbb; margin-top: 14px; }
+.closing-pricing { display: flex; width: fit-content; align-items: center; gap: 8px; margin-top: 18px; font-size: 14px; color: #f4eedf; text-decoration: underline; text-underline-offset: 5px; }
+.closing-pricing:hover { color: #e8d6b5; }
+.footer-pricing { text-decoration: underline; text-underline-offset: 4px; }
+.footer-pricing:hover { color: #1f3c2d; }
 .site-footer { display: flex; align-items: center; gap: 30px; padding-block: 32px; color: #69705f; font-size: 11px; }
 .site-footer .wordmark { font-size: 43px; color: #1f3c2d; }
 .site-footer > span { margin-left: auto; }
@@ -199,7 +203,7 @@ mark { background: #f0deb4; color: #34402a; padding-block: 3px; box-decoration-b
   .approach { grid-template-columns: 1fr; gap: 38px; } .approach-lead > p { font-size: 15px; } .principles article { gap: 17px; } .principles h3 { font-size: 28px; } .principles p { font-size: 13px; }
   .questions { grid-template-columns: 1fr; gap: 30px; } .questions h2 { font-size: 41px; } .faq-list summary { font-size: 14px; } .faq-list details p { font-size: 13px; }
   .closing { padding-block: 48px; } .closing > .wrap { flex-direction: column; align-items: flex-start; gap: 30px; } .closing h2 { font-size: 56px; } .closing p { font-size: 16px; }
-  .site-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding-block: 28px; } .site-footer p { grid-column: 1 / -1; grid-row: 2; } .site-footer > span { margin: 0; } .site-footer > a:last-child { justify-self: end; }
+  .site-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding-block: 28px; } .site-footer p { grid-column: 1 / -1; grid-row: 2; } .site-footer > span { margin: 0; } .footer-pricing { justify-self: end; grid-row: 1; grid-column: 2; } .site-footer > a:last-child { justify-self: end; }
 }
 @media(prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
 
