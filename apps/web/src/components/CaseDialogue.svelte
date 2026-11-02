@@ -7,6 +7,7 @@
     type MessageKey,
   } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
+  import Markdown from "./Markdown.svelte";
   import {
     ArrowRight,
     ArrowUp,
@@ -269,6 +270,9 @@
       busy === "dialogue.busy.debrief",
   );
 
+  /** The user's message, shown at once while the reply is on its way. */
+  let pendingText = $state("");
+
   let loading = $state(true);
   let historyOpen = $state(false);
   let sourcesOpen = $state(false);
@@ -379,8 +383,12 @@
           ? "dialogue.busy.responding"
           : "dialogue.busy.reading",
       async () => {
-        const session = active ?? (await create());
         const message = finish ? t("dialogue.finishMessage") : text.trim();
+        if (!finish) {
+          pendingText = message;
+          text = "";
+        }
+        const session = active ?? (await create());
         const data = {
           text: message,
           reference_ids: selectedRefs,
@@ -391,14 +399,23 @@
         const fingerprint = JSON.stringify({ session: session.id, ...data });
         if (request.current?.fingerprint !== fingerprint)
           request.current = { fingerprint, id: crypto.randomUUID() };
-        const result = await api<Dialogue>(
-          `/cases/${caseId}/dialogues/${session.id}/messages`,
-          {
-            method: "POST",
-            body: JSON.stringify({ ...data, request_id: request.current.id }),
-          },
-        );
+        let result: Dialogue;
+        try {
+          result = await api<Dialogue>(
+            `/cases/${caseId}/dialogues/${session.id}/messages`,
+            {
+              method: "POST",
+              body: JSON.stringify({ ...data, request_id: request.current.id }),
+            },
+          );
+        } catch (e) {
+          // Put the message back so it can be retried as-is.
+          if (pendingText) text = pendingText;
+          pendingText = "";
+          throw e;
+        }
         active = result;
+        pendingText = "";
         text = "";
         sourcesOpen = false;
         request.current = null;
@@ -441,6 +458,8 @@
   /** Practice titles are generated as "stage · role" enums; show them translated. */
   function sessionTitle(session: Dialogue) {
     const { stage, user_role } = session.conditions ?? {};
+    if (session.kind === "assistant" && session.title === "Case conversation")
+      return t("dialogue.caseConversation");
     return session.kind === "practice" &&
       session.title === `${stage} · ${user_role}`
       ? `${stageLabel(stage)} · ${roleLabel(user_role)}`
@@ -934,11 +953,11 @@
               <h4 id={`debrief-${block.items[0].id}`}>
                 {t("dialogue.debrief.title")}
               </h4>
-              {#each block.items.filter((item) => item.speaker === "summary") as item (item.id)}<p
+              {#each block.items.filter((item) => item.speaker === "summary") as item (item.id)}<div
                   class={styles.debriefSummary}
                 >
-                  {item.text}
-                </p>{/each}
+                  <Markdown text={item.text} />
+                </div>{/each}
               {#each debriefSections as section (section)}{#if block.items.some((item) => item.speaker === section)}<div
                     class={styles.debriefSection}
                   >
@@ -946,7 +965,7 @@
                     <ul>
                       {#each block.items.filter((item) => item.speaker === section) as item (item.id)}<li
                         >
-                          <p>{item.text}</p>
+                          <Markdown text={item.text} />
                           {@render citations(item)}
                         </li>{/each}
                     </ul>
@@ -987,11 +1006,13 @@
                   : speakerLabel(message.speaker)}
               </h4>
               <div class={styles.body}>
-                <p>
-                  {message.speaker === "Case assistant"
-                    ? localizeFixedText(message.text, i18n.lang)
-                    : message.text}
-                </p>
+                {#if message.role === "user"}<p>
+                    {message.text}
+                  </p>{:else}<Markdown
+                    text={message.speaker === "Case assistant"
+                      ? localizeFixedText(message.text, i18n.lang)
+                      : message.text}
+                  />{/if}
                 {@render citations(message)}
                 {#if !!message.legal.length}<div class={styles.legal}>
                     <strong>
@@ -1012,6 +1033,18 @@
                   </p>{/if}
               </div>
             </article>{/if}{/each}
+        {#if pendingText}<article
+            class={`${styles.message} ${styles.userMessage}`}
+          >
+            <h4>
+              {practice && active
+                ? t("dialogue.youRole", {
+                    role: roleLabel(active.conditions.user_role),
+                  })
+                : t("dialogue.you")}
+            </h4>
+            <div class={styles.body}><p>{pendingText}</p></div>
+          </article>{/if}
         {#if responding}<div class={styles.replyLoading}>
             <p>{busy ? t(busy) : ""}</p>
             <Skeleton variant="compact" label={busy ? t(busy) : undefined} />

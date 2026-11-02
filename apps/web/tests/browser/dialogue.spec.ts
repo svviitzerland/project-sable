@@ -34,7 +34,26 @@ test("case assistant and AI-only courtroom practice with coaching and debrief", 
   await page
     .getByLabel("Ask about this case", { exact: true })
     .fill("What does the statement say about arrival time?");
+  // Hold the reply: the user's own bubble appears first, then the answer.
+  let releaseReply = () => {};
+  const replyHeld = new Promise<void>((resolve) => (releaseReply = resolve));
+  await page.route(
+    "**/dialogues/*/messages",
+    async (route) => {
+      await replyHeld;
+      await route.continue();
+    },
+    { times: 1 },
+  );
   await page.getByRole("button", { name: "Send message" }).click();
+  await expect(
+    page
+      .getByRole("log")
+      .locator("article")
+      .filter({ hasText: "What does the statement say about arrival time?" }),
+  ).toBeVisible();
+  await expect(page.getByRole("log").locator("article")).toHaveCount(1);
+  releaseReply();
   await expect(
     page.getByText("AI replies are unavailable", { exact: false }),
   ).toBeVisible();
