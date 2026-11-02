@@ -227,6 +227,10 @@
         cases = [];
         noteDrafts = {};
         user = null;
+      } else if (e instanceof ApiError && e.status === 404) {
+        // The case was deleted (here or in another tab): leave it quietly.
+        chooseCase(null);
+        await loadCases();
       } else error = e instanceof Error ? e.message : t("error.loadCase");
     } finally {
       if (activeCase.current === id && version === refreshVersion.current)
@@ -1164,8 +1168,7 @@
                     {busy}
                     run={action}
                     onDeleted={async () => {
-                      activeCase.current = null;
-                      tab = "evidence";
+                      chooseCase(null);
                       await loadCases();
                     }}
                   ></SessionSettings>{/key}{/if}

@@ -357,6 +357,13 @@ export async function connectDatabase(config: Settings) {
       connection.exec(
         `ALTER TABLE jude_users ADD COLUMN ${name} ${definition}`,
       );
+  // Demo copies opened before the title change (db/migrations/010_demo_case_title.sql).
+  connection
+    .prepare("UPDATE jude_cases SET title=? WHERE title=?")
+    .run(
+      "Perkara Ferdy Sambo",
+      "Perkara Ferdy Sambo — 796/Pid.B/2022/PN Jkt.Sel (catatan publik)",
+    );
   connection.exec(
     `CREATE TABLE IF NOT EXISTS jude_audio_sessions(id VARCHAR(36) PRIMARY KEY, case_id VARCHAR(36) NOT NULL REFERENCES jude_cases(id) ON DELETE CASCADE, hearing_id VARCHAR(36) NOT NULL REFERENCES jude_hearings(id) ON DELETE CASCADE, session_hash VARCHAR(64) NOT NULL REFERENCES jude_sessions(token_hash) ON DELETE CASCADE, offset FLOAT NOT NULL, last_sequence INTEGER NOT NULL, expires FLOAT NOT NULL, status VARCHAR(20) NOT NULL)`,
   );
