@@ -892,7 +892,8 @@
   display: none;
 }
 @media (min-width: 641px) {
-  .app {
+  /* Room for the fixed rail only where the rail exists (not on the sign-in screen). */
+  .app:has(.sidebar, [data-skeleton="workspace"]) {
     padding-left: 76px;
   }
   .app:has(.sidebarPinned) {
