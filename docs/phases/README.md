@@ -21,3 +21,4 @@ Keep plans and results for each project phase here. Suggested file format name: 
 - [Real public demo case](2026-11-02-public-demo-case.md): Direktori Putusan MA ingestion cleanup, Amazon Transcribe hearing, and the bundled 796/Pid.B/2022/PN Jkt.Sel demo.
 
 - [AI-only courtroom practice](2026-11-02-ai-courtroom-practice.md): guided drill removed, grounded AI roleplay with cited speeches, coaching notes and a cited debrief.
+- [Bedrock model choice](2026-11-02-model-choice.md): benchmark of cheap Bedrock models on the public demo case, Nova 2 Lite default tier and Claude Sonnet 4.6 review.

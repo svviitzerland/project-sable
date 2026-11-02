@@ -24,11 +24,12 @@ export function settings(
           ? "openrouter"
           : "")) as "bedrock" | "openrouter" | "",
     awsRegion: env.AWS_REGION || "ap-southeast-1",
-    // Screening and drafting: cheap model kept in APAC regions. Review: a different family.
-    bedrockModel: env.BEDROCK_MODEL || "apac.amazon.nova-lite-v1:0",
+    // Screening, assistant and practice: Nova 2 Lite (global profile, the only one in
+    // ap-southeast-1). Review of potential inconsistencies: a different, stronger family.
+    // Benchmark and prices: docs/phases/2026-11-02-model-choice.md.
+    bedrockModel: env.BEDROCK_MODEL || "global.amazon.nova-2-lite-v1:0",
     bedrockReviewModel:
-      env.BEDROCK_REVIEW_MODEL ||
-      "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+      env.BEDROCK_REVIEW_MODEL || "global.anthropic.claude-sonnet-4-6",
     s3Bucket: env.S3_BUCKET || "",
     openrouterKey: env.OPENROUTER_API_KEY || "",
     model: env.OPENROUTER_MODEL || "",

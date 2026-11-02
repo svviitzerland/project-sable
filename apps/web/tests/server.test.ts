@@ -21,6 +21,8 @@ import {
   embed,
   safePasalUrl,
   structured,
+  bedrockInference,
+  bedrockClientConfig,
   requestJson,
   saveFile,
 } from "../src/lib/server/providers";
@@ -1353,6 +1355,66 @@ test("analysis screens with one cheap call, reviews only inconsistencies indepen
   );
   assert.equal(finding.status, "potential_inconsistency");
   assert.equal(finding.review.reviewed_by, "independent");
+});
+
+test("Bedrock structured calls repair stringified arrays and retry one schema failure by field path only", async (t) => {
+  const { rt } = await fixture(t);
+  rt.config.aiProvider = "bedrock";
+  const schema = z.strictObject({
+    status: z.enum(["supported", "context_needed"]),
+    citations: z.array(z.strictObject({ quote: z.string() })),
+  });
+  const replies: unknown[] = [];
+  const roles: string[] = [];
+  rt.bedrock = {
+    send: (async (command: { input: { system: { text: string }[] } }) => {
+      roles.push(command.input.system[0].text);
+      const input = replies.shift();
+      return {
+        output: {
+          message: {
+            content: input === undefined ? [] : [{ toolUse: { input } }],
+          },
+        },
+      };
+    }) as never,
+  };
+  // A JSON-string array (a known Claude tool-use quirk) is parsed without another call.
+  replies.push({ status: "supported", citations: '[{"quote":"pukul 22.30"}]' });
+  assert.deepEqual(await structured(rt, "screen", {}, schema), {
+    status: "supported",
+    citations: [{ quote: "pukul 22.30" }],
+  });
+  assert.equal(roles.length, 1);
+  // A missing field gets one retry that names the path, never the rejected content.
+  replies.push(
+    { citations: [{ quote: "rahasia saksi" }] },
+    { status: "context_needed", citations: [] },
+  );
+  assert.equal(
+    (await structured(rt, "screen", {}, schema)).status,
+    "context_needed",
+  );
+  assert.equal(roles.length, 3);
+  assert.match(roles[2], /failed schema validation at: status\./);
+  assert.equal(roles[2].includes("rahasia saksi"), false);
+  // A missing tool call counts as a failure; two failures stop without a third call.
+  replies.push(undefined, { status: "unknown", citations: [] });
+  await assert.rejects(
+    structured(rt, "screen", {}, schema),
+    /could not be verified/,
+  );
+  assert.equal(roles.length, 5);
+  // Reasoning models reject temperature; Nova and Claude keep a low one.
+  assert.equal(
+    "temperature" in bedrockInference("global.moonshotai.kimi-k3"),
+    false,
+  );
+  assert.equal(
+    bedrockInference("global.amazon.nova-2-lite-v1:0").temperature,
+    0.1,
+  );
+  assert.equal(bedrockClientConfig("ap-southeast-1").retryMode, "adaptive");
 });
 
 test("embedding contract validates complete finite vectors; legal URLs stay on Pasal", async (t) => {
