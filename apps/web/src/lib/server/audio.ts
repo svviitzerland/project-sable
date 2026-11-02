@@ -160,7 +160,7 @@ export async function beginAudio(
         "audio_sessions",
         "case_id=? AND status=? AND expires>?",
         [record.id, "active", seconds()],
-      )) && !rt.simulations.has(record.id),
+      )),
       409,
       "Another audio connection or hearing is active. Stop it before reconnecting.",
     );

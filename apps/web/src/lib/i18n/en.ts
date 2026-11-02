@@ -13,8 +13,6 @@ export const en = {
 
   // Language switcher
   "lang.group": "Language",
-  "lang.id": "Bahasa Indonesia",
-  "lang.en": "English",
 
   // Shared words
   "common.page": "Page {page}",
@@ -156,31 +154,31 @@ export const en = {
   "landing.demo.title1": "Look closer.",
   "landing.demo.title2": "Follow the source.",
   "landing.demo.disclosure1":
-    "An interactive illustration using synthetic case material.",
+    "Real excerpts from the public Ferdy Sambo record, the same case Jude opens as its demo.",
   "landing.demo.disclosure2":
-    "No audio is recorded and no AI analysis runs in this demo.",
+    "No audio is recorded and no AI analysis runs on this page.",
   "landing.demo.lead":
     "A difference is a starting point for a question. Explore how the available evidence changes the finding.",
   "landing.demo.choose": "Choose an evidence example",
-  "landing.demo.caseLabel": "Synthetic case / 001",
+  "landing.demo.caseLabel": "Public record / 796/Pid.B/2022/PN Jkt.Sel",
   "landing.demo.inHearing": "In the hearing",
-  "landing.demo.inCaseFile": "In the case file",
+  "landing.demo.inCaseFile": "In the court decision",
   "landing.demo.transcriptAt": "Transcript · {time}",
-  "landing.demo.statementPage": "Witness statement · Page {page}",
+  "landing.demo.statementPage": "Putusan excerpt · Page {page}",
   "landing.demo.marked": "Marked as reviewed",
   "landing.demo.mark": "Mark as reviewed",
   "landing.demo.visitOnly": "For this visit only",
   "landing.demo.excerpts": "Original source excerpts",
-  "landing.demo.synthetic": "Synthetic",
+  "landing.demo.publicRecord": "Public record",
   "landing.demo.sourceDocument": "Source document",
-  "landing.demo.witnessStatement": "Witness statement",
-  "landing.demo.recordCaps": "HEARING RECORD",
-  "landing.demo.statementCaps": "WITNESS STATEMENT",
+  "landing.demo.witnessStatement": "Court decision",
+  "landing.demo.recordCaps": "AUTOMATIC TRANSCRIPT",
+  "landing.demo.statementCaps": "PUTUSAN 796/PID.B/2022",
   "landing.demo.pageCaps": "PAGE {page}",
-  "landing.demo.examination": "Examination of the witness",
-  "landing.demo.earlierAccount": "Earlier account of events",
+  "landing.demo.examination": "Hearing of 8 November 2022",
+  "landing.demo.earlierAccount": "Summary of witness testimony",
   "landing.demo.footnote":
-    "Prepared example for demonstration. Not a real case record or legal reference.",
+    "Public record. Hearing lines come from an automatic Amazon Transcribe transcript of the KOMPASTV broadcast, so wording and speaker labels may be imperfect. The original BAP is not public, so the comparison is the putusan’s summary of testimony.",
   "landing.demo.copyUnavailable":
     "Copy unavailable. Select the question above to copy it manually.",
   "landing.demo.copiedStatus": "Question copied to clipboard.",
@@ -287,7 +285,6 @@ export const en = {
   "ws.signOut": "Sign out",
   "ws.cases": "Cases",
   "ws.workspace": "Workspace",
-  "ws.about": "About Jude",
   "ws.dismissError": "Dismiss error",
   "ws.welcomeTitle": "A place for the whole case.",
   "ws.welcomeText":
@@ -299,8 +296,6 @@ export const en = {
   "ws.syntheticMaterial": "Synthetic material",
   "ws.privateCase": "Private case",
   "ws.publicRecord": "Public record",
-  "ws.defaultDescription": "Bring testimony and source material together.",
-  "ws.exportJude": "Export .jude",
   "ws.caseSections": "Case sections",
   "ws.start.title": "Start with your case material.",
   "ws.start.text":
@@ -315,11 +310,7 @@ export const en = {
   // Hearing detail
   "hearing.all": "All hearings",
   "hearing.export": "Export hearing",
-  "hearing.simComplete": "Simulation complete",
-  "hearing.pause": "Pause hearing",
-  "hearing.startSim": "Start simulated hearing",
   "hearing.analyze": "Analyze hearing",
-  "hearing.state.simulation": "Simulated hearing running",
   "hearing.state.live": "Live audio session",
   "hearing.state.complete": "Hearing complete",
   "hearing.state.ready": "Ready for testimony",
@@ -329,9 +320,6 @@ export const en = {
   "hearing.upToDate": "All saved testimony is up to date",
   "hearing.analysisUnavailable":
     "Automatic analysis is unavailable. You can still read the transcript and compare it with your documents.",
-  "hearing.simNotice":
-    "This example uses fictional testimony and prepared findings. Start the hearing to explore the review process.",
-  "hearing.audioTools": "Record or upload audio",
   "hearing.transcript": "Transcript",
   "hearing.findings": "Findings",
   "hearing.toReview": "{count} to review",
@@ -341,31 +329,25 @@ export const en = {
   "hearing.allFindings": "All findings",
   "hearing.needsReview": "Needs your review",
   "hearing.examining": "Examining testimony for findings…",
-  "hearing.mode.simulation": "Scripted example",
   "hearing.mode.imported": "Imported finding · verify sources",
   "hearing.mode.ai": "AI · source-validated",
   "hearing.emptyTitle": "Follow the evidence.",
   "hearing.emptyFilterTitle": "No findings in this view.",
   "hearing.emptyText":
-    "Findings appear here as finalized statements are examined. Start the simulation or add a transcript statement.",
+    "Findings appear here as finalized statements are examined. Record audio or add a transcript statement.",
   "hearing.emptyFilterText":
     "Choose another filter to see the rest of the record.",
   "hearing.inspector": "Finding and source inspector",
   "hearing.backToFindings": "Back to findings",
-  "hearing.inspectorEmptyTitle": "Every finding, inspectable.",
-  "hearing.inspectorEmptyText":
-    "Select a finding to compare its testimony with original passages, alternative explanations, and a verification step.",
   "hearing.bottomNote":
     "Findings describe evidence relationships. They do not determine credibility, guilt, or legal outcomes.",
   "hearingStatus.ready": "ready",
   "hearingStatus.live": "live",
-  "hearingStatus.simulation": "running",
   "hearingStatus.paused": "paused",
   "hearingStatus.complete": "complete",
 
   // New case form
   "newCase.title": "Create a case",
-  "newCase.cancel": "Cancel new case",
   "newCase.caseTitle": "Case title",
   "newCase.titlePlaceholder": "e.g. Warehouse inquiry",
   "newCase.reference": "Reference (optional)",
@@ -374,11 +356,9 @@ export const en = {
   "newCase.descriptionPlaceholder": "Context for this case and its material",
   "newCase.creating": "Creating…",
   "newCase.create": "Create case",
-  "newCase.skeleton": "Creating case…",
 
   // .jude archive import
   "archive.importing": "Importing case…",
-  "archive.import": "Import .jude",
   "archive.tooLarge": "Use a .jude case archive up to 64 MB.",
 
   // Manual transcript entry
@@ -418,20 +398,17 @@ export const en = {
   "docs.title": "The case file.",
   "docs.lead":
     "Original documents, preserved passages, and a trail back to the source.",
-  "docs.addTitle": "Add authorized case documents",
   "docs.formats":
     "PDF, DOCX, TXT, or Markdown · up to 25 MB · text-based PDFs only",
   "docs.note":
     "Keep the original files and search their text. AI features may process excerpts to help find related material.",
   "docs.processing": "Processing…",
-  "docs.choose": "Choose a file",
   "docs.searchLabel": "Search case evidence",
   "docs.searchPlaceholder": "Search only this case’s evidence…",
   "docs.search": "Search",
   "docs.clear": "Clear search results",
   "docs.processingDoc": "Processing document…",
   "docs.textSection": "Text section",
-  "docs.ready": "Ready to search",
   "docs.emptyTitle": "Start with a source.",
   "docs.emptyText":
     "Upload your first case document to make its passages available for search and comparison.",
@@ -442,24 +419,18 @@ export const en = {
   "docs.noMatchText":
     "Try different words or add the document containing this detail.",
   "docs.extracted": "Extracted passages",
-  "docs.openTitle": "Open the record.",
-  "docs.openText":
-    "Choose a document to read its extracted passages, or search for a detail across this case.",
 
   // Finding inspector
-  "finding.title": "Examine the finding",
   "finding.hearingAt": "Hearing · {time}",
   "finding.sourceTab": "Source {n} · {relation}",
   "finding.loadingPassage": "Loading original passage…",
   "finding.noCitation": "No source citation supports this finding.",
   "finding.uncertainty": "Uncertainty",
-  "finding.aboutScripted": "About this scripted finding",
   "finding.importedReview": "Imported review · not re-run",
   "finding.independentReview": "Independent review",
   "finding.alternative": "Alternative: {text}",
   "finding.missingContext": "Missing context: {text}",
   "finding.analyst": "Analyst: {text}",
-  "finding.prepared": "Prepared example · not an AI evaluation",
   "finding.importedVerify":
     "Imported finding · verify against the original sources",
   "finding.quoteMatches":
@@ -478,8 +449,6 @@ export const en = {
 
   // Hearing audio capture
   "audio.title": "Capture this hearing",
-  "audio.text":
-    "Transcribe your microphone or an audio file. The transcript stays with this hearing.",
   "audio.recognitionLanguage": "Recognition language",
   "audio.permission":
     "The presiding judge allowed recording, and I may send this audio for transcription.",
@@ -488,12 +457,8 @@ export const en = {
   "audio.cancel": "Cancel connection",
   "audio.finishing": "Finishing transcript…",
   "audio.stop": "Stop recording",
-  "audio.connectingAudio": "Connecting audio…",
-  "audio.savingFinal": "Saving final transcript…",
   "audio.unavailable":
     "Audio transcription is unavailable. Return to All hearings to upload a transcript instead.",
-  "audio.idle":
-    "Microphone off. Live audio goes to Amazon Transcribe. With recording on, a private copy is kept for replay.",
   "audio.keepRecording": "Keep an audio recording of this session",
   "audio.recordings": "Recordings",
   "audio.recordingItem": "Recording {when} · {duration}",
@@ -557,7 +522,6 @@ export const en = {
   "transcript.followPaused": "Following paused while filtering",
   "transcript.follow": "Follow new testimony",
   "transcript.noTime": "Time not supplied",
-  "transcript.scripted": "Scripted",
   "transcript.manual": "Manually entered",
   "transcript.noConfidence": "Confidence unavailable",
   "transcript.confidence": "{value}% word confidence",
@@ -568,8 +532,7 @@ export const en = {
   "transcript.readyTitle": "Ready when you are.",
   "transcript.noMatchText":
     "Try another phrase or clear the speaker filter. Filters do not change the hearing record.",
-  "transcript.readyText":
-    "Start a simulated hearing, capture audio below, or add a statement below.",
+  "transcript.readyText": "Capture audio below or add a statement below.",
   "transcript.listening": "Listening · provisional",
 
   // Hearing library
@@ -582,8 +545,6 @@ export const en = {
     "A complete record for every examination. Bring in a transcript, then follow its evidence.",
   "library.new": "New hearing",
   "library.importTitle": "Bring the whole hearing.",
-  "library.importText":
-    "Upload a transcript instead of entering each statement. Review it here before adding it to your case.",
   "library.formats":
     ".jude, JSON, CSV, TXT, SRT, VTT, PDF or DOCX · up to 6 MB",
   "library.upload": "Upload transcript",
@@ -683,7 +644,6 @@ export const en = {
   "evidence.basis.ai": "AI-proposed relationship",
   "evidence.basis.semantic": "Similar meaning",
   "evidence.basis.keywords": "Shared terms",
-  "evidence.basis.simulation": "Authored synthetic example",
   "evidence.basis.imported": "Imported relationship",
   "evidence.basis.recorded": "Recorded relationship",
   "evidence.similarity": "Similarity {value}%; not a probability of truth.",
@@ -742,8 +702,6 @@ export const en = {
   "dialogue.newConversation": "New conversation",
   "dialogue.savedRehearsals": "Saved rehearsals",
   "dialogue.savedConversations": "Saved conversations",
-  "dialogue.yourRehearsals": "Your rehearsals",
-  "dialogue.conversations": "Conversations",
   "dialogue.exportRehearsal": "Export rehearsal",
   "dialogue.exportConversation": "Export conversation",
   "dialogue.loadingSaved": "Loading saved conversations…",
@@ -759,7 +717,6 @@ export const en = {
   "dialogue.mainPractice": "Courtroom practice",
   "dialogue.mainAssistant": "Case assistant conversation",
   "dialogue.openingConversations": "Opening this case’s conversations…",
-  "dialogue.setTitle": "Set the scene.",
   "dialogue.setText":
     "Review these assumptions before starting. They describe a practice scenario, not a prediction.",
   "dialogue.suggest": "Suggest from case",
@@ -777,14 +734,11 @@ export const en = {
   "dialogue.practiceMeta": "You: {role} · {stage} · {difficulty}",
   "dialogue.assistantMeta":
     "Answers use relevant case excerpts. Open each citation to check the original context.",
-  "dialogue.finish": "Finish & debrief",
   "dialogue.conditions": "Trial conditions",
   "dialogue.editSetup": "Edit setup for a new rehearsal",
   "dialogue.logPractice": "Practice dialogue",
   "dialogue.logAssistant": "Case conversation",
   "dialogue.welcomeTitle": "Start with what you need to understand.",
-  "dialogue.welcomeText":
-    "Compare accounts, identify missing context, or prepare questions. Select material below to give a source extra attention.",
   "dialogue.suggestion1": "Summarize the case and what is still uncertain.",
   "dialogue.suggestion2": "Where do the witness accounts differ?",
   "dialogue.suggestion3":
@@ -851,9 +805,6 @@ export const en = {
   "tour.newCase.title": "1. Create a case",
   "tour.newCase.text":
     "Start a blank case, import a .jude archive from a colleague, or open the example case. Each case keeps its own documents, hearings, findings and notes.",
-  "tour.import.title": "Or open an example",
-  "tour.import.text":
-    "Import a .jude case archive, such as the public Sambo case example, to see a complete case right away.",
   "tour.documents.title": "2. Upload the case file",
   "tour.documents.text":
     "Add the BAP, investigation reports, decisions (putusan) and other PDF, DOCX or text files. Originals are kept privately with page references.",
@@ -869,11 +820,6 @@ export const en = {
   "tour.practice.title": "6. Rehearse",
   "tour.practice.text":
     "Practise as defense counsel, prosecutor or judge with conditions taken from the case. Practice never changes the evidence record.",
-  "tour.language.title": "Language",
-  "tour.language.text":
-    "Switch between Bahasa Indonesia and English at any time.",
-  "tour.help.title": "Need this again?",
-  "tour.help.text": "Open the guided tour from here whenever you like.",
   "audio.idleShort": "Live transcription with speakers. Choose how to start.",
   "audio.modal.micTitle": "Record this hearing",
   "audio.modal.fileTitle": "Transcribe an audio file",
@@ -888,9 +834,6 @@ export const en = {
   "settings.details": "Case details",
   "settings.save": "Save details",
   "settings.saved": "Saved.",
-  "settings.speakers": "Speaker labels",
-  "settings.speakersText":
-    "Name each voice once. The label follows that voice across recordings and hearings in this case.",
   "settings.export": "Export",
   "settings.exportText":
     "Download the whole case (documents, hearings, findings, notes) as a portable .jude archive.",

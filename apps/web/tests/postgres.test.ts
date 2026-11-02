@@ -39,10 +39,7 @@ test(
         for (const migration of migrations)
           await client.query(
             await readFile(
-              new URL(
-                `../../../db/migrations/${migration}`,
-                import.meta.url,
-              ),
+              new URL(`../../../db/migrations/${migration}`, import.meta.url),
               "utf8",
             ),
           );
@@ -89,7 +86,6 @@ test(
         db: await connectDatabase(config),
         fetch: fetcher,
         tasks: new Set(),
-        simulations: new Map(),
       };
       second = { ...first, db: await connectDatabase(config) };
       const user = await first.db.insert("users", {

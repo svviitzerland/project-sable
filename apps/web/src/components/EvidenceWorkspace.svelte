@@ -300,7 +300,6 @@
     ai: "evidence.basis.ai",
     semantic: "evidence.basis.semantic",
     keywords: "evidence.basis.keywords",
-    simulation: "evidence.basis.simulation",
     imported: "evidence.basis.imported",
   };
 

@@ -22,7 +22,6 @@ test("large direct uploads and speech rotation save finalized testimony", async 
       throw new Error("Unmocked provider");
     },
     tasks: new Set(),
-    simulations: new Map(),
   };
   config.transcribe = true;
   rt.awsCredentials = {

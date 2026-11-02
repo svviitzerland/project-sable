@@ -63,6 +63,7 @@ svg { flex-shrink: 0; }
 .status-inconsistency { background: #e9bf7c; color: #422d10; }
 .status-supported { background: #deeadc; color: #245037; }
 .status-context { background: #e4e5ed; color: #484763; }
+.status-insufficient { background: #e9e8e0; color: #666151; }
 .comparison-finding .status { font-family: var(--serif); font-size: clamp(16px, 1.45vw, 23px); white-space: nowrap; padding: 8px 21px; }
 .evidence-thread { display: flex; justify-content: space-between; align-items: center; height: 1px; width: 100%; background: #948c7d; margin: 26px 0 23px; }
 .evidence-thread span { height: 6px; width: 6px; border-radius: 50%; background: #81796c; }
@@ -93,6 +94,7 @@ svg { flex-shrink: 0; }
 .dot-inconsistency { background: #ba8137; }
 .dot-supported { background: #709679; }
 .dot-context { background: #848198; }
+.dot-insufficient { background: #9a9483; }
 .demo-workspace { display: grid; grid-template-columns: 1.14fr 1fr; border: 1px solid #d1d5c7; background: #faf9f3; border-radius: 9px; overflow: hidden; }
 .finding-pane { padding: 34px; }
 .finding-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }

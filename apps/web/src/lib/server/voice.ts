@@ -8,9 +8,9 @@ import { requestJson } from "./providers";
 /**
  * Stable speaker keys from the optional Python voice service.
  *
- * Speechmatics labels (S1, S2) only last for one connection, so saved turns use
+ * Transcribe speaker labels (spk_0, spk_1) only last for one connection, so saved turns use
  * `<session>:<label>`. When a finalized turn's audio is identified, every turn from that
- * provider label is re-keyed to `voice:<label>`, which persists across rotations and
+ * provider label is re-keyed to `voice:<label>`, which persists across connections and
  * hearings. A match means "probably the same voice"; names stay user-assigned.
  */
 export const VOICE_PREFIX = "voice:";

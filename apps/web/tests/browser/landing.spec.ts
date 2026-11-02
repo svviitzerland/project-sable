@@ -66,11 +66,11 @@ test("original landing, smooth finite motion, keyboard access and no-JavaScript 
   await page.locator(".hero .source-link").nth(1).click();
   await expect(page.locator("#demo-title")).toBeFocused();
   await expect(
-    page.getByRole("heading", { name: "Earlier account of events" }),
+    page.getByRole("heading", { name: "Summary of witness testimony" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "A matching detail" }).click();
   await expect(
-    page.getByRole("heading", { name: "Both accounts place a guard" }),
+    page.getByRole("heading", { name: "Both accounts say Ricky and Joshua" }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Mark as reviewed", exact: false })
@@ -79,10 +79,10 @@ test("original landing, smooth finite motion, keyboard access and no-JavaScript 
     page.getByRole("button", { name: "Marked as reviewed", exact: false }),
   ).toHaveAttribute("aria-pressed", "true");
   await page
-    .getByRole("button", { name: "Witness statement", exact: true })
+    .getByRole("button", { name: "Court decision", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Earlier account of events" }),
+    page.getByRole("heading", { name: "Summary of witness testimony" }),
   ).toBeVisible();
   await page
     .getByText("Can I upload case documents here?", { exact: true })

@@ -19,7 +19,6 @@ function getRuntime() {
       db,
       fetch,
       tasks: new Set(),
-      simulations: new Map(),
     };
   })().catch((error) => {
     runtime = undefined;

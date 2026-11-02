@@ -15,8 +15,6 @@ export const id: Messages = {
 
   // Pemilih bahasa
   "lang.group": "Bahasa",
-  "lang.id": "Bahasa Indonesia",
-  "lang.en": "English",
 
   // Kata umum
   "common.page": "Halaman {page}",
@@ -159,31 +157,31 @@ export const id: Messages = {
   "landing.demo.title1": "Lihat lebih dekat.",
   "landing.demo.title2": "Telusuri sumbernya.",
   "landing.demo.disclosure1":
-    "Ilustrasi interaktif dengan materi perkara sintetis.",
+    "Kutipan nyata dari catatan publik perkara Ferdy Sambo, perkara yang sama dengan demo di Jude.",
   "landing.demo.disclosure2":
-    "Demo ini tidak merekam audio dan tidak menjalankan analisis AI.",
+    "Halaman ini tidak merekam audio dan tidak menjalankan analisis AI.",
   "landing.demo.lead":
     "Perbedaan adalah titik awal sebuah pertanyaan. Lihat bagaimana bukti yang tersedia mengubah temuan.",
   "landing.demo.choose": "Pilih contoh bukti",
-  "landing.demo.caseLabel": "Perkara sintetis / 001",
+  "landing.demo.caseLabel": "Catatan publik / 796/Pid.B/2022/PN Jkt.Sel",
   "landing.demo.inHearing": "Di persidangan",
-  "landing.demo.inCaseFile": "Dalam berkas perkara",
+  "landing.demo.inCaseFile": "Dalam putusan",
   "landing.demo.transcriptAt": "Transkrip · {time}",
-  "landing.demo.statementPage": "BAP saksi · Halaman {page}",
+  "landing.demo.statementPage": "Kutipan putusan · Halaman {page}",
   "landing.demo.marked": "Sudah ditinjau",
   "landing.demo.mark": "Tandai sudah ditinjau",
   "landing.demo.visitOnly": "Hanya untuk kunjungan ini",
   "landing.demo.excerpts": "Kutipan sumber asli",
-  "landing.demo.synthetic": "Sintetis",
+  "landing.demo.publicRecord": "Catatan publik",
   "landing.demo.sourceDocument": "Dokumen sumber",
-  "landing.demo.witnessStatement": "BAP saksi",
-  "landing.demo.recordCaps": "BERITA ACARA SIDANG",
-  "landing.demo.statementCaps": "BAP SAKSI",
+  "landing.demo.witnessStatement": "Putusan",
+  "landing.demo.recordCaps": "TRANSKRIP OTOMATIS",
+  "landing.demo.statementCaps": "PUTUSAN 796/PID.B/2022",
   "landing.demo.pageCaps": "HALAMAN {page}",
-  "landing.demo.examination": "Pemeriksaan saksi",
-  "landing.demo.earlierAccount": "Keterangan awal tentang peristiwa",
+  "landing.demo.examination": "Sidang 8 November 2022",
+  "landing.demo.earlierAccount": "Ringkasan keterangan saksi",
   "landing.demo.footnote":
-    "Contoh yang disiapkan untuk demonstrasi. Bukan catatan perkara nyata atau rujukan hukum.",
+    "Catatan publik. Baris persidangan berasal dari transkrip otomatis Amazon Transcribe atas siaran KOMPASTV, sehingga kata dan label pembicara bisa kurang tepat. BAP asli tidak publik, jadi pembandingnya adalah ringkasan keterangan dalam putusan.",
   "landing.demo.copyUnavailable":
     "Tidak dapat menyalin. Pilih pertanyaan di atas untuk menyalinnya secara manual.",
   "landing.demo.copiedStatus": "Pertanyaan disalin ke papan klip.",
@@ -289,7 +287,6 @@ export const id: Messages = {
   "ws.signOut": "Keluar",
   "ws.cases": "Perkara",
   "ws.workspace": "Ruang kerja",
-  "ws.about": "Tentang Jude",
   "ws.dismissError": "Tutup pesan kesalahan",
   "ws.welcomeTitle": "Satu tempat untuk seluruh perkara.",
   "ws.welcomeText":
@@ -301,8 +298,6 @@ export const id: Messages = {
   "ws.syntheticMaterial": "Materi sintetis",
   "ws.privateCase": "Perkara privat",
   "ws.publicRecord": "Catatan publik",
-  "ws.defaultDescription": "Satukan keterangan dan materi sumber.",
-  "ws.exportJude": "Ekspor .jude",
   "ws.caseSections": "Bagian perkara",
   "ws.start.title": "Mulai dari materi perkara Anda.",
   "ws.start.text":
@@ -318,11 +313,7 @@ export const id: Messages = {
   // Detail sidang
   "hearing.all": "Semua sidang",
   "hearing.export": "Ekspor sidang",
-  "hearing.simComplete": "Simulasi selesai",
-  "hearing.pause": "Jeda sidang",
-  "hearing.startSim": "Mulai sidang simulasi",
   "hearing.analyze": "Analisis sidang",
-  "hearing.state.simulation": "Sidang simulasi berjalan",
   "hearing.state.live": "Sesi audio langsung",
   "hearing.state.complete": "Sidang selesai",
   "hearing.state.ready": "Siap menerima keterangan",
@@ -332,9 +323,6 @@ export const id: Messages = {
   "hearing.upToDate": "Semua keterangan tersimpan sudah diperiksa",
   "hearing.analysisUnavailable":
     "Analisis otomatis tidak tersedia. Anda tetap dapat membaca transkrip dan membandingkannya dengan dokumen Anda.",
-  "hearing.simNotice":
-    "Contoh ini memakai keterangan fiktif dan temuan yang sudah disiapkan. Mulai sidang untuk mencoba proses peninjauan.",
-  "hearing.audioTools": "Rekam atau unggah audio",
   "hearing.transcript": "Transkrip",
   "hearing.findings": "Temuan",
   "hearing.toReview": "{count} perlu ditinjau",
@@ -344,31 +332,25 @@ export const id: Messages = {
   "hearing.allFindings": "Semua temuan",
   "hearing.needsReview": "Perlu Anda tinjau",
   "hearing.examining": "Memeriksa keterangan untuk mencari temuan…",
-  "hearing.mode.simulation": "Contoh berskrip",
   "hearing.mode.imported": "Temuan impor · verifikasi sumber",
   "hearing.mode.ai": "AI · divalidasi dengan sumber",
   "hearing.emptyTitle": "Telusuri buktinya.",
   "hearing.emptyFilterTitle": "Tidak ada temuan di tampilan ini.",
   "hearing.emptyText":
-    "Temuan muncul di sini saat pernyataan final diperiksa. Mulai simulasi atau tambahkan pernyataan transkrip.",
+    "Temuan muncul di sini saat pernyataan final diperiksa. Rekam audio atau tambahkan pernyataan transkrip.",
   "hearing.emptyFilterText":
     "Pilih saringan lain untuk melihat bagian catatan lainnya.",
   "hearing.inspector": "Pemeriksa temuan dan sumber",
   "hearing.backToFindings": "Kembali ke temuan",
-  "hearing.inspectorEmptyTitle": "Setiap temuan dapat diperiksa.",
-  "hearing.inspectorEmptyText":
-    "Pilih temuan untuk membandingkan keterangannya dengan kutipan asli, penjelasan alternatif, dan langkah verifikasi.",
   "hearing.bottomNote":
     "Temuan menggambarkan hubungan antarbukti. Temuan tidak menentukan kredibilitas, kesalahan, atau putusan hukum.",
   "hearingStatus.ready": "siap",
   "hearingStatus.live": "langsung",
-  "hearingStatus.simulation": "berjalan",
   "hearingStatus.paused": "dijeda",
   "hearingStatus.complete": "selesai",
 
   // Formulir perkara baru
   "newCase.title": "Buat perkara",
-  "newCase.cancel": "Batalkan perkara baru",
   "newCase.caseTitle": "Judul perkara",
   "newCase.titlePlaceholder": "mis. Perkara penggelapan gudang",
   "newCase.reference": "Nomor perkara (opsional)",
@@ -377,11 +359,9 @@ export const id: Messages = {
   "newCase.descriptionPlaceholder": "Konteks perkara ini dan materinya",
   "newCase.creating": "Membuat…",
   "newCase.create": "Buat perkara",
-  "newCase.skeleton": "Membuat perkara…",
 
   // Impor arsip .jude
   "archive.importing": "Mengimpor perkara…",
-  "archive.import": "Impor .jude",
   "archive.tooLarge": "Gunakan arsip perkara .jude berukuran maksimal 64 MB.",
 
   // Input transkrip manual
@@ -421,20 +401,17 @@ export const id: Messages = {
   "docs.title": "Berkas perkara.",
   "docs.lead":
     "Dokumen asli, kutipan yang terjaga, dan jejak kembali ke sumbernya.",
-  "docs.addTitle": "Tambahkan dokumen perkara yang sudah diizinkan",
   "docs.formats":
     "PDF, DOCX, TXT, atau Markdown · maks. 25 MB · hanya PDF berbasis teks",
   "docs.note":
     "File asli tetap tersimpan dan teksnya dapat dicari. Fitur AI dapat memproses cuplikan untuk membantu menemukan materi terkait.",
   "docs.processing": "Memproses…",
-  "docs.choose": "Pilih file",
   "docs.searchLabel": "Cari bukti perkara",
   "docs.searchPlaceholder": "Cari hanya di bukti perkara ini…",
   "docs.search": "Cari",
   "docs.clear": "Hapus hasil pencarian",
   "docs.processingDoc": "Memproses dokumen…",
   "docs.textSection": "Bagian teks",
-  "docs.ready": "Siap dicari",
   "docs.emptyTitle": "Mulai dari sumber.",
   "docs.emptyText":
     "Unggah dokumen perkara pertama Anda agar kutipannya dapat dicari dan dibandingkan.",
@@ -445,24 +422,18 @@ export const id: Messages = {
   "docs.noMatchText":
     "Coba kata lain atau tambahkan dokumen yang memuat detail ini.",
   "docs.extracted": "Kutipan hasil ekstraksi",
-  "docs.openTitle": "Buka berkasnya.",
-  "docs.openText":
-    "Pilih dokumen untuk membaca kutipannya, atau cari detail di seluruh perkara ini.",
 
   // Pemeriksa temuan
-  "finding.title": "Periksa temuan",
   "finding.hearingAt": "Sidang · {time}",
   "finding.sourceTab": "Sumber {n} · {relation}",
   "finding.loadingPassage": "Memuat kutipan asli…",
   "finding.noCitation": "Tidak ada kutipan sumber yang mendukung temuan ini.",
   "finding.uncertainty": "Ketidakpastian",
-  "finding.aboutScripted": "Tentang temuan berskrip ini",
   "finding.importedReview": "Tinjauan impor · tidak dijalankan ulang",
   "finding.independentReview": "Tinjauan independen",
   "finding.alternative": "Alternatif: {text}",
   "finding.missingContext": "Konteks yang kurang: {text}",
   "finding.analyst": "Analis: {text}",
-  "finding.prepared": "Contoh yang disiapkan · bukan evaluasi AI",
   "finding.importedVerify": "Temuan impor · verifikasi dengan sumber aslinya",
   "finding.quoteMatches":
     "Teks kutipan cocok dengan sumber. Tinjau sendiri penafsirannya.",
@@ -481,8 +452,6 @@ export const id: Messages = {
 
   // Perekaman audio sidang
   "audio.title": "Rekam sidang ini",
-  "audio.text":
-    "Transkripsikan dari mikrofon atau file audio. Transkrip tersimpan bersama sidang ini.",
   "audio.recognitionLanguage": "Bahasa pengenalan suara",
   "audio.permission":
     "Majelis Hakim telah mengizinkan perekaman, dan saya berwenang mengirim audio ini untuk ditranskripsikan.",
@@ -491,12 +460,8 @@ export const id: Messages = {
   "audio.cancel": "Batalkan koneksi",
   "audio.finishing": "Menyelesaikan transkrip…",
   "audio.stop": "Hentikan rekaman",
-  "audio.connectingAudio": "Menghubungkan audio…",
-  "audio.savingFinal": "Menyimpan transkrip final…",
   "audio.unavailable":
     "Transkripsi audio tidak tersedia. Kembali ke Semua sidang untuk mengunggah transkrip.",
-  "audio.idle":
-    "Mikrofon mati. Audio langsung dikirim ke Amazon Transcribe. Jika perekaman aktif, salinan privat disimpan untuk diputar ulang.",
   "audio.keepRecording": "Simpan rekaman audio sesi ini",
   "audio.recordings": "Rekaman",
   "audio.recordingItem": "Rekaman {when} · {duration}",
@@ -560,7 +525,6 @@ export const id: Messages = {
   "transcript.followPaused": "Ikuti otomatis dijeda selama penyaringan",
   "transcript.follow": "Ikuti keterangan terbaru",
   "transcript.noTime": "Waktu tidak tersedia",
-  "transcript.scripted": "Berskrip",
   "transcript.manual": "Dimasukkan manual",
   "transcript.noConfidence": "Tingkat keyakinan tidak tersedia",
   "transcript.confidence": "Keyakinan kata {value}%",
@@ -571,8 +535,7 @@ export const id: Messages = {
   "transcript.readyTitle": "Siap dimulai.",
   "transcript.noMatchText":
     "Coba frasa lain atau hapus saringan pembicara. Saringan tidak mengubah catatan sidang.",
-  "transcript.readyText":
-    "Mulai sidang simulasi, rekam audio, atau tambahkan pernyataan di bawah.",
+  "transcript.readyText": "Rekam audio atau tambahkan pernyataan di bawah.",
   "transcript.listening": "Mendengarkan · sementara",
 
   // Daftar sidang
@@ -585,8 +548,6 @@ export const id: Messages = {
     "Catatan lengkap untuk setiap pemeriksaan. Tambahkan transkrip, lalu telusuri buktinya.",
   "library.new": "Sidang baru",
   "library.importTitle": "Masukkan seluruh sidang sekaligus.",
-  "library.importText":
-    "Unggah transkrip alih-alih memasukkan setiap pernyataan. Tinjau di sini sebelum menambahkannya ke perkara Anda.",
   "library.formats":
     ".jude, JSON, CSV, TXT, SRT, VTT, PDF, atau DOCX · maks. 6 MB",
   "library.upload": "Unggah transkrip",
@@ -686,7 +647,6 @@ export const id: Messages = {
   "evidence.basis.ai": "Hubungan yang diusulkan AI",
   "evidence.basis.semantic": "Makna serupa",
   "evidence.basis.keywords": "Istilah yang sama",
-  "evidence.basis.simulation": "Contoh sintetis yang disusun",
   "evidence.basis.imported": "Hubungan impor",
   "evidence.basis.recorded": "Hubungan tercatat",
   "evidence.similarity": "Kemiripan {value}%; bukan peluang kebenaran.",
@@ -746,8 +706,6 @@ export const id: Messages = {
   "dialogue.newConversation": "Percakapan baru",
   "dialogue.savedRehearsals": "Latihan tersimpan",
   "dialogue.savedConversations": "Percakapan tersimpan",
-  "dialogue.yourRehearsals": "Latihan Anda",
-  "dialogue.conversations": "Percakapan",
   "dialogue.exportRehearsal": "Ekspor latihan",
   "dialogue.exportConversation": "Ekspor percakapan",
   "dialogue.loadingSaved": "Memuat percakapan tersimpan…",
@@ -763,7 +721,6 @@ export const id: Messages = {
   "dialogue.mainPractice": "Latihan sidang",
   "dialogue.mainAssistant": "Percakapan asisten perkara",
   "dialogue.openingConversations": "Membuka percakapan perkara ini…",
-  "dialogue.setTitle": "Atur skenarionya.",
   "dialogue.setText":
     "Tinjau asumsi ini sebelum memulai. Ini adalah skenario latihan, bukan prediksi.",
   "dialogue.suggest": "Usulkan dari perkara",
@@ -781,14 +738,11 @@ export const id: Messages = {
   "dialogue.practiceMeta": "Anda: {role} · {stage} · {difficulty}",
   "dialogue.assistantMeta":
     "Jawaban memakai cuplikan perkara yang relevan. Buka setiap kutipan untuk memeriksa konteks aslinya.",
-  "dialogue.finish": "Selesai & evaluasi",
   "dialogue.conditions": "Kondisi sidang",
   "dialogue.editSetup": "Ubah pengaturan untuk latihan baru",
   "dialogue.logPractice": "Dialog latihan",
   "dialogue.logAssistant": "Percakapan perkara",
   "dialogue.welcomeTitle": "Mulai dari hal yang perlu Anda pahami.",
-  "dialogue.welcomeText":
-    "Bandingkan keterangan, temukan konteks yang kurang, atau siapkan pertanyaan. Pilih materi di bawah agar suatu sumber mendapat perhatian lebih.",
   "dialogue.suggestion1": "Ringkas perkara ini dan hal yang masih belum pasti.",
   "dialogue.suggestion2": "Di bagian mana keterangan para saksi berbeda?",
   "dialogue.suggestion3":
@@ -858,9 +812,6 @@ export const id: Messages = {
   "tour.newCase.title": "1. Buat perkara",
   "tour.newCase.text":
     "Mulai perkara kosong, impor arsip .jude dari rekan, atau buka contoh perkara. Setiap perkara menyimpan dokumen, sidang, temuan, dan catatannya sendiri.",
-  "tour.import.title": "Atau buka contoh",
-  "tour.import.text":
-    "Impor arsip perkara .jude, misalnya contoh perkara publik Sambo, untuk langsung melihat perkara yang lengkap.",
   "tour.documents.title": "2. Unggah berkas perkara",
   "tour.documents.text":
     "Tambahkan BAP, laporan penyidikan, putusan, dan berkas PDF, DOCX, atau teks lainnya. Dokumen asli disimpan secara privat beserta rujukan halamannya.",
@@ -876,10 +827,6 @@ export const id: Messages = {
   "tour.practice.title": "6. Latihan sidang",
   "tour.practice.text":
     "Berlatih sebagai Penasihat Hukum, Penuntut Umum, atau Hakim dengan kondisi dari perkara. Latihan tidak pernah mengubah catatan bukti.",
-  "tour.language.title": "Bahasa",
-  "tour.language.text": "Ganti antara Bahasa Indonesia dan English kapan saja.",
-  "tour.help.title": "Perlu lagi?",
-  "tour.help.text": "Buka panduan ini dari sini kapan pun Anda mau.",
   "audio.idleShort":
     "Transkripsi langsung beserta pembicara. Pilih cara memulai.",
   "audio.modal.micTitle": "Rekam sidang ini",
@@ -895,9 +842,6 @@ export const id: Messages = {
   "settings.details": "Detail perkara",
   "settings.save": "Simpan detail",
   "settings.saved": "Tersimpan.",
-  "settings.speakers": "Label pembicara",
-  "settings.speakersText":
-    "Beri nama setiap suara sekali. Label mengikuti suara tersebut di semua rekaman dan sidang dalam perkara ini.",
   "settings.export": "Ekspor",
   "settings.exportText":
     "Unduh seluruh perkara (dokumen, sidang, temuan, catatan) sebagai arsip .jude.",

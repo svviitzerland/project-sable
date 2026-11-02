@@ -39,7 +39,7 @@ import { normalizeTranscript } from "../src/lib/server/audio";
 
 async function fixture(t: TestContext) {
   const dir = await mkdtemp(join(tmpdir(), "jude-ts-"));
-  const config = settings({ JUDE_DATA_DIR: dir, JUDE_SIMULATION_DELAY: "0" });
+  const config = settings({ JUDE_DATA_DIR: dir });
   const rt: Runtime = {
     config,
     db: await connectDatabase(config),
@@ -47,10 +47,8 @@ async function fixture(t: TestContext) {
       throw new Error("Unexpected network call");
     },
     tasks: new Set(),
-    simulations: new Map(),
   };
   t.after(async () => {
-    for (const controller of rt.simulations.values()) controller.abort();
     await Promise.allSettled([...rt.tasks]);
     await rt.db.close();
     await rm(dir, { recursive: true, force: true });
@@ -194,8 +192,8 @@ test("provider failures keep operator diagnostics in logs and show actionable us
   }
   rt.fetch = async () => new Response(upstreamSecret, { status: 200 });
   await assert.rejects(
-    requestJson(rt, "https://private-host", {}, "Speechmatics"),
-    /Audio transcription could not start/,
+    requestJson(rt, "https://private-host", {}, "Voice API"),
+    /Voice recognition could not be completed/,
   );
   assert.equal(JSON.parse(logs.at(-1)!).kind, "invalid_json");
   rt.fetch = async () => {
@@ -462,10 +460,7 @@ test("demo sign-in imports the bundled public record as the default case", async
   const cases = await demo.json("/cases");
   assert.equal(cases.length, 1);
   const [record] = cases;
-  assert.match(
-    record.title,
-    /^Perkara Ferdy Sambo$/,
-  );
+  assert.match(record.title, /^Perkara Ferdy Sambo$/);
   assert.match(record.reference, /catatan publik/);
   assert.equal(record.synthetic, false);
   const detail = await demo.json(`/cases/${record.id}`);

@@ -143,11 +143,9 @@
   </div>
   <details class={styles.reviewDetails}>
     <summary>
-      {finding.mode === "simulation"
-        ? t("finding.aboutScripted")
-        : finding.mode === "imported"
-          ? t("finding.importedReview")
-          : t("finding.independentReview")}
+      {finding.mode === "imported"
+        ? t("finding.importedReview")
+        : t("finding.independentReview")}
       <ChevronDown size={15}></ChevronDown>
     </summary>
     <div>
@@ -163,11 +161,9 @@
         </p>{/if}
       {#if finding.review.legal_note}<p>{finding.review.legal_note}</p>{/if}
       <small>
-        {finding.mode === "simulation"
-          ? t("finding.prepared")
-          : finding.mode === "imported"
-            ? t("finding.importedVerify")
-            : t("finding.quoteMatches")}
+        {finding.mode === "imported"
+          ? t("finding.importedVerify")
+          : t("finding.quoteMatches")}
       </small>
     </div>
   </details>

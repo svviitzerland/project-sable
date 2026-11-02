@@ -21,7 +21,6 @@ type ProviderName =
   | "OpenRouter chat"
   | "OpenRouter embeddings"
   | "Pasal.id"
-  | "Speechmatics"
   | "Voice API"
   | "External service";
 
@@ -65,7 +64,7 @@ function providerFailure(
     }),
   );
   return new ProviderError(
-    `${provider === "Speechmatics" ? "Audio transcription could not start." : provider === "Pasal.id" ? "Legal search could not be completed." : provider === "Voice API" ? "Voice recognition could not be completed." : "This AI request could not be completed."} ${status === 429 ? "Please wait a moment and try again." : "Please try again later."} Reference: ${reference}`,
+    `${provider === "Pasal.id" ? "Legal search could not be completed." : provider === "Voice API" ? "Voice recognition could not be completed." : "This AI request could not be completed."} ${status === 429 ? "Please wait a moment and try again." : "Please try again later."} Reference: ${reference}`,
   );
 }
 

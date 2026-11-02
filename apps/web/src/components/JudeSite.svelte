@@ -417,7 +417,7 @@
           <div class="source-pane-title">
             <FileText size={18}></FileText>
             <h3>{t("common.atSource")}</h3>
-            <span>{t("landing.demo.synthetic")}</span>
+            <span>{t("landing.demo.publicRecord")}</span>
           </div>
           <div
             class="source-tabs"

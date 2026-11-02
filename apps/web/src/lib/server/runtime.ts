@@ -15,7 +15,6 @@ export interface Runtime {
   db: Database;
   fetch: typeof fetch;
   tasks: Set<Promise<unknown>>;
-  simulations: Map<string, AbortController>;
   /** Test seam: replaces the Bedrock client. */
   bedrock?: { send: BedrockRuntimeClient["send"] };
   /** Test seam: fixed AWS credentials for presigning. */

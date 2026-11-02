@@ -5,7 +5,6 @@ export const variables = defineEnvVars({
   JUDE_DEMO: privateValue,
   JUDE_APP_URL: privateValue,
   JUDE_DATA_DIR: privateValue,
-  JUDE_SIMULATION_DELAY: privateValue,
   DATABASE_URL: privateValue,
   ALLOWED_ORIGINS: privateValue,
   AI_PROVIDER: privateValue,

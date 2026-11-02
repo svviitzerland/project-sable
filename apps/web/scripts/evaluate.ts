@@ -49,7 +49,6 @@ if (values.live) {
     db: await connectDatabase(config),
     fetch,
     tasks: new Set(),
-    simulations: new Map(),
   };
   try {
     const user = await rt.db.insert("users", {

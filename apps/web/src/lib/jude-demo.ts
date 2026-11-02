@@ -2,7 +2,7 @@ import type { Lang } from "./i18n/core";
 
 export type SourceKind = "transcript" | "statement";
 export type Example = {
-  id: "inconsistency" | "supported" | "context";
+  id: "supported" | "context" | "insufficient";
   label: string;
   shortLabel: string;
   quote: string;
@@ -17,170 +17,178 @@ export type Example = {
   transcript: readonly string[];
   statement: readonly string[];
 };
-const en: readonly Example[] = [
-  {
-    id: "inconsistency",
-    label: "Potential inconsistency",
-    shortLabel: "A different account",
-    quote: "I arrived at 9:30 PM.",
-    earlier: "I arrived shortly after 8:00 PM.",
-    time: "00:14:32",
-    page: "4",
-    finding: "The accounts describe different arrival times.",
-    explanation:
-      "The hearing testimony and the earlier statement differ by approximately 90 minutes. That difference may be relevant, but these excerpts alone do not establish why it occurred.",
-    verify: "Check whether both statements refer to the same event.",
-    question:
-      "When you say you arrived at 9:30 PM, which location and date are you referring to?",
-    transcript: [
-      "Counsel: What time did you arrive at the warehouse?",
-      "Witness: I arrived at 9:30 PM.",
-      "Counsel: We will return to the sequence of events in a moment.",
-    ],
-    statement: [
-      "Investigator: Describe your arrival that evening.",
-      "Witness: I arrived shortly after 8:00 PM.",
-      "Investigator: Was anyone else present?",
-      "Witness: I remember seeing a security guard near the entrance.",
-    ],
-  },
+
+/**
+ * Verbatim excerpts from the public demo case (`static/demo/sambo-796-public.jude`):
+ * hearing lines are the automatic Amazon Transcribe transcript of the 8 November 2022
+ * KOMPASTV broadcast, statement lines are the putusan's summary of witness testimony
+ * (excerpt PDF page numbers). Quotes stay in Indonesian in both UI languages. Finding
+ * text is condensed from the stored findings for each segment.
+ */
+type Source = Pick<
+  Example,
+  "id" | "quote" | "earlier" | "page" | "transcript" | "statement"
+> & { part: 1 | 2; at: string };
+const sources: readonly Source[] = [
   {
     id: "supported",
-    label: "Supported",
-    shortLabel: "A matching detail",
-    quote: "A security guard was at the entrance.",
-    earlier: "I remember seeing a security guard near the entrance.",
-    time: "00:18:06",
+    part: 1,
+    at: "00:15:38",
     page: "4",
-    finding: "Both accounts place a guard near the entrance.",
-    explanation:
-      "The statements are consistent on this specific detail. Agreement between two accounts does not independently establish that the event occurred or verify the rest of the testimony.",
-    verify:
-      "Confirm the guard’s identity and whether independent records are available.",
-    question: "Can you describe the guard and explain how you recognized them?",
-    transcript: [
-      "Counsel: Who did you see when you arrived?",
-      "Witness: A security guard was at the entrance.",
-      "Counsel: Do you remember their name?",
-      "Witness: No, I do not.",
-    ],
-    statement: [
-      "Investigator: Was anyone else present?",
-      "Witness: I remember seeing a security guard near the entrance.",
-      "Investigator: Did you speak with that person?",
-      "Witness: I cannot remember.",
-    ],
-  },
-  {
-    id: "context",
-    label: "Context needed",
-    shortLabel: "An unresolved question",
-    quote: "He handed me the envelope outside.",
-    earlier: "We discussed the documents inside the office.",
-    time: "00:22:10",
-    page: "6",
-    finding: "These statements may describe different moments.",
-    explanation:
-      "An exchange outside and a discussion inside could both have occurred. The excerpts do not identify the other person or establish the sequence, so an inconsistency cannot be inferred.",
-    verify: "Clarify who was present and the order of the two events.",
-    question:
-      "Who handed you the envelope, and was that before or after the discussion in the office?",
-    transcript: [
-      "Counsel: What happened with the envelope?",
-      "Witness: He handed me the envelope outside.",
-      "Counsel: Please explain who you mean by ‘he’.",
-    ],
-    statement: [
-      "Investigator: Where did the discussion take place?",
-      "Witness: We discussed the documents inside the office.",
-      "Investigator: What happened next?",
-      "Witness: I do not recall the exact sequence.",
-    ],
-  },
-];
-const id: readonly Example[] = [
-  {
-    id: "inconsistency",
-    label: "Berbeda dari sumber",
-    shortLabel: "Keterangan yang berbeda",
-    quote: "Saya tiba pukul 21.30.",
-    earlier: "Saya tiba tak lama setelah pukul 20.00.",
-    time: "00:14:32",
-    page: "4",
-    finding: "Kedua keterangan menyebut waktu kedatangan yang berbeda.",
-    explanation:
-      "Keterangan di persidangan dan keterangan sebelumnya berselisih sekitar 90 menit. Perbedaan itu mungkin relevan, tetapi kutipan ini saja belum menjelaskan mengapa perbedaan itu terjadi.",
-    verify: "Periksa apakah kedua keterangan merujuk pada peristiwa yang sama.",
-    question:
-      "Saat Saudara mengatakan tiba pukul 21.30, lokasi dan tanggal mana yang Saudara maksud?",
-    transcript: [
-      "Penasihat Hukum: Pukul berapa Saudara tiba di gudang?",
-      "Saksi: Saya tiba pukul 21.30.",
-      "Penasihat Hukum: Kita akan kembali ke urutan peristiwanya sebentar lagi.",
-    ],
-    statement: [
-      "Penyidik: Jelaskan kedatangan Saudara pada malam itu.",
-      "Saksi: Saya tiba tak lama setelah pukul 20.00.",
-      "Penyidik: Apakah ada orang lain di sana?",
-      "Saksi: Saya ingat melihat seorang petugas keamanan di dekat pintu masuk.",
-    ],
-  },
-  {
-    id: "supported",
-    label: "Didukung sumber",
-    shortLabel: "Detail yang cocok",
-    quote: "Ada petugas keamanan di pintu masuk.",
+    quote: "Kemudian om Ricky sama om Joshua lewat di depan kamar saya.",
     earlier:
-      "Saya ingat melihat seorang petugas keamanan di dekat pintu masuk.",
-    time: "00:18:06",
-    page: "4",
-    finding:
-      "Kedua keterangan menyebut ada petugas keamanan di dekat pintu masuk.",
-    explanation:
-      "Kedua keterangan konsisten pada detail ini. Kesesuaian dua keterangan tidak dengan sendirinya membuktikan peristiwa itu terjadi atau membenarkan keterangan selebihnya.",
-    verify:
-      "Pastikan identitas petugas keamanan tersebut dan apakah ada catatan independen.",
-    question:
-      "Dapatkah Saudara menggambarkan petugas keamanan itu dan menjelaskan bagaimana Saudara mengenalinya?",
+      "Bahwa kemudian Saksi Ricky Rizal Wibowo dan Korban Nofriansyah Yosua Hutabarat (almarhum) lewat di depan kamar Saksi, namun tidak tahu kemana arahnya",
     transcript: [
-      "Penasihat Hukum: Siapa yang Saudara lihat saat tiba?",
-      "Saksi: Ada petugas keamanan di pintu masuk.",
-      "Penasihat Hukum: Apakah Saudara ingat namanya?",
-      "Saksi: Tidak, saya tidak ingat.",
+      "Hakim Ketua: Tidak tahu. Kemudian.",
+      "Saksi Susi: Kemudian om Ricky sama om Joshua lewat di depan kamar saya.",
+      "Hakim Ketua: Kemudian,",
+      "Saksi Susi: saya enggak tahu kemana arahnya.",
     ],
     statement: [
-      "Penyidik: Apakah ada orang lain di sana?",
-      "Saksi: Saya ingat melihat seorang petugas keamanan di dekat pintu masuk.",
-      "Penyidik: Apakah Saudara berbicara dengan orang itu?",
-      "Saksi: Saya tidak ingat.",
+      "… kemudian Saksi Ricky Rizal Wibowo keluar dan Saksi tidak tahu keluar kemana;",
+      "Bahwa kemudian Saksi Ricky Rizal Wibowo dan Korban Nofriansyah Yosua Hutabarat (almarhum) lewat di depan kamar Saksi, namun tidak tahu kemana arahnya",
+      "Bahwa Saksi tidak tahu tapi Saksi tidur di atas, Saksi Kuat Ma’ruf membangunkan Saksi untuk pindah ke atas menemani Saksi Putri Candrawathi …",
     ],
   },
   {
     id: "context",
-    label: "Perlu konteks",
-    shortLabel: "Pertanyaan yang belum terjawab",
-    quote: "Dia menyerahkan amplop itu kepada saya di luar.",
-    earlier: "Kami membahas dokumen-dokumen itu di dalam kantor.",
-    time: "00:22:10",
-    page: "6",
-    finding: "Kedua keterangan ini mungkin menggambarkan momen yang berbeda.",
-    explanation:
-      "Penyerahan di luar dan pembahasan di dalam bisa saja sama-sama terjadi. Kutipan ini tidak menyebut siapa orang lain itu atau urutan kejadiannya, sehingga perbedaan keterangan tidak dapat disimpulkan.",
-    verify: "Perjelas siapa yang hadir dan urutan kedua peristiwa itu.",
-    question:
-      "Siapa yang menyerahkan amplop itu kepada Saudara, dan apakah itu terjadi sebelum atau sesudah pembahasan di kantor?",
+    part: 2,
+    at: "01:00:58",
+    page: "63",
+    quote:
+      "Kalau Om Ricky masuk ke dalam kamar, kalau Om Richard setahu saya di tangga masih.",
+    earlier:
+      "Saksi Richard Eliezer Pudihang Lumiu yang masuk ke dalam. Setelah itu Saksi turun lewat tangga, jalan ke lantai 2, tapi Saksi nggak langsung turun, Saksi ke dapur.",
     transcript: [
-      "Penasihat Hukum: Apa yang terjadi dengan amplop itu?",
-      "Saksi: Dia menyerahkan amplop itu kepada saya di luar.",
-      "Penasihat Hukum: Mohon jelaskan siapa yang Saudara maksud dengan ‘dia’.",
+      "Penasihat Hukum: Tapi ke lantai dua, langsung ke lantai dua. Melihat ibu atau tidak?",
+      "Saksi Susi: Kalau Om Ricky masuk ke dalam kamar, kalau Om Richard setahu saya di tangga masih.",
+      "Penasihat Hukum: Oh, cuman sampai tangga.",
+      "spk_3: Saya tidak melihat kondisi Ibu. Tidak.",
     ],
     statement: [
-      "Penyidik: Di mana pembahasan itu berlangsung?",
-      "Saksi: Kami membahas dokumen-dokumen itu di dalam kantor.",
-      "Penyidik: Apa yang terjadi selanjutnya?",
-      "Saksi: Saya tidak ingat urutan pastinya.",
+      "… Saksi Putri Candrawathi bilang taruh kamar saja, jadi Saksi sampai depan kamar,",
+      "Saksi Richard Eliezer Pudihang Lumiu yang masuk ke dalam. Setelah itu Saksi turun lewat tangga, jalan ke lantai 2, tapi Saksi nggak langsung turun, Saksi ke dapur.",
+      "Setelah ke dapur karena Saksi belum makan, menanyakan ke bibi, “ada makanan apa, saya belum makan”?, adanya ayam, akhirnya Saksi tidak jadi makan. …",
+    ],
+  },
+  {
+    id: "insufficient",
+    part: 1,
+    at: "00:18:46",
+    page: "60",
+    quote:
+      "Setahu saya, cuma saya sama ibu, selainnya saya tidak tahu. Soalnya saya udah masuk duluan ke kamar, terus mandi.",
+    earlier:
+      "Bahwa pada tanggal 7 siang Saksi di rumah saja. Jam 12.00 Saksi masih di rumah, dan waktu itu ada Saksi Richard Eliezer Pudihang Lumiu, Yoshua, Saksi Susi dan ibu.",
+    transcript: [
+      "spk_1: … Setelah lanjut ke Jakarta, saudara sempat PCR. Siapa saja yang PCR begitu sampai di Saguling.",
+      "Saksi Susi: Setahu saya, cuma saya sama ibu, selainnya saya tidak tahu. Soalnya saya udah masuk duluan ke kamar, terus mandi.",
+      "Saksi Susi: Siap, terus saya istirahat, ketiduran, …",
+    ],
+    statement: [
+      "Bahwa pada tanggal 7 dini hari ada perayaan ulang tahun perkawainan TERDAKWA dan SAKSI PUTRI CANDRAWATHI dan Saksi disuapin oleh TERDAKWA dan SAKSI PUTRI CANDRAWATHI;",
+      "Bahwa pada tanggal 7 siang Saksi di rumah saja. Jam 12.00 Saksi masih di rumah, dan waktu itu ada Saksi Richard Eliezer Pudihang Lumiu, Yoshua, Saksi Susi dan ibu.",
+      "Kira-kira sore Saksi diajak Saksi Ricky Rizal Wibowo untuk mencarikan kipas angin untuk mengantar ke Taruna Nusantara. …",
     ],
   },
 ];
-/** Synthetic landing-page examples in each UI language (same ids and order). */
-export const examples: Record<Lang, readonly Example[]> = { id, en };
+
+type Copy = Pick<
+  Example,
+  "label" | "shortLabel" | "finding" | "explanation" | "verify" | "question"
+>;
+const copy: Record<Lang, { part: string; items: readonly Copy[] }> = {
+  en: {
+    part: "Part",
+    items: [
+      {
+        label: "Supported",
+        shortLabel: "A matching detail",
+        finding:
+          "Both accounts say Ricky and Joshua passed in front of her room.",
+        explanation:
+          "The hearing answer matches the putusan’s summary of Saksi Susi’s own testimony on this detail. Agreement between two accounts from the same witness does not independently establish the event, and neither excerpt gives the time.",
+        verify:
+          "Compare with Ricky Rizal Wibowo’s testimony and other witnesses who were in the house at the time.",
+        question:
+          "About what time did Ricky and Joshua pass in front of your room?",
+      },
+      {
+        label: "Context needed",
+        shortLabel: "An unresolved question",
+        finding: "These passages may describe different moments.",
+        explanation:
+          "Saksi Susi places Ricky inside the room and Richard still on the stairs. The putusan passage is Kuat Ma’ruf’s account of Richard going into a room. The excerpts do not show that both witnesses describe the same moment, so no inconsistency can be inferred.",
+        verify:
+          "Establish which room and which moment each witness is describing.",
+        question:
+          "Which room did Ricky enter, and what was happening in the house at that moment?",
+      },
+      {
+        label: "Insufficient evidence",
+        shortLabel: "Not clearly the same moment",
+        finding:
+          "The accounts list different people, but may not refer to the same time.",
+        explanation:
+          "Saksi Susi answers a question about who took a PCR test on arrival at Saguling. The putusan line is Kuat Ma’ruf’s account of who was at home at noon on 7 July. The available sources are not enough to compare the two.",
+        verify:
+          "Confirm the question Saksi Susi was answering and the time each account refers to.",
+        question:
+          "When you went to your room and showered, who had you already seen at the house?",
+      },
+    ],
+  },
+  id: {
+    part: "Bagian",
+    items: [
+      {
+        label: "Didukung sumber",
+        shortLabel: "Detail yang cocok",
+        finding:
+          "Kedua keterangan menyebut Ricky dan Joshua lewat di depan kamarnya.",
+        explanation:
+          "Jawaban di persidangan sesuai dengan ringkasan keterangan Saksi Susi sendiri dalam putusan untuk detail ini. Kesesuaian dua keterangan dari saksi yang sama tidak dengan sendirinya membuktikan peristiwa itu, dan kedua kutipan tidak menyebut waktunya.",
+        verify:
+          "Bandingkan dengan keterangan Ricky Rizal Wibowo dan saksi lain yang berada di rumah pada waktu itu.",
+        question:
+          "Kira-kira pukul berapa Ricky dan Joshua lewat di depan kamar Saudara?",
+      },
+      {
+        label: "Perlu konteks",
+        shortLabel: "Pertanyaan yang belum terjawab",
+        finding: "Kedua kutipan ini mungkin menggambarkan momen yang berbeda.",
+        explanation:
+          "Saksi Susi menyebut Ricky masuk ke kamar dan Richard masih di tangga. Kutipan putusan adalah keterangan Kuat Ma’ruf tentang Richard yang masuk ke sebuah kamar. Kutipan ini tidak menunjukkan bahwa kedua saksi menggambarkan momen yang sama, sehingga perbedaan keterangan tidak dapat disimpulkan.",
+        verify:
+          "Pastikan kamar mana dan momen mana yang dimaksud masing-masing saksi.",
+        question:
+          "Kamar mana yang dimasuki Ricky, dan apa yang sedang terjadi di rumah saat itu?",
+      },
+      {
+        label: "Bukti belum cukup",
+        shortLabel: "Belum tentu momen yang sama",
+        finding:
+          "Kedua keterangan menyebut orang yang berbeda, tetapi belum tentu pada waktu yang sama.",
+        explanation:
+          "Saksi Susi menjawab pertanyaan tentang siapa saja yang PCR begitu sampai di Saguling. Kutipan putusan adalah keterangan Kuat Ma’ruf tentang siapa yang ada di rumah pada 7 Juli pukul 12.00. Sumber yang tersedia belum cukup untuk membandingkan keduanya.",
+        verify:
+          "Pastikan pertanyaan yang dijawab Saksi Susi dan waktu yang dimaksud setiap keterangan.",
+        question:
+          "Saat Saudara masuk ke kamar dan mandi, siapa saja yang sudah Saudara lihat di rumah?",
+      },
+    ],
+  },
+};
+
+const build = (lang: Lang): readonly Example[] =>
+  sources.map(({ part, at, ...source }, index) => ({
+    ...source,
+    ...copy[lang].items[index],
+    time: `${copy[lang].part} ${part} · ${at}`,
+  }));
+
+/** Landing-page examples from the public demo case in each UI language (same ids and order). */
+export const examples: Record<Lang, readonly Example[]> = {
+  id: build("id"),
+  en: build("en"),
+};

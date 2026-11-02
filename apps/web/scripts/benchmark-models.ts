@@ -165,7 +165,6 @@ async function runtime(model: string, reviewModel: string, calls: Call[]) {
     db: await connectDatabase(config),
     fetch,
     tasks: new Set(),
-    simulations: new Map(),
     bedrock: recordingClient(calls),
   };
   return { rt, dir };

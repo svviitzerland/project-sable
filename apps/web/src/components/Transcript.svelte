@@ -175,17 +175,15 @@
         </p>
         <div class={styles.segmentFoot}>
           <span>
-            {s.origin === "simulation"
-              ? t("transcript.scripted")
-              : s.origin === "manual"
-                ? t("transcript.manual")
-                : s.origin === "imported"
-                  ? t("common.importedTranscript")
-                  : s.confidence === null
-                    ? t("transcript.noConfidence")
-                    : t("transcript.confidence", {
-                        value: Math.round(s.confidence * 100),
-                      })}
+            {s.origin === "manual"
+              ? t("transcript.manual")
+              : s.origin === "imported"
+                ? t("common.importedTranscript")
+                : s.confidence === null
+                  ? t("transcript.noConfidence")
+                  : t("transcript.confidence", {
+                      value: Math.round(s.confidence * 100),
+                    })}
             {!speakers[s.speaker] &&
             ["transcribe", "speechmatics"].includes(s.origin)
               ? t("transcript.roleUnconfirmed")

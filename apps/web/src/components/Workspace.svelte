@@ -16,8 +16,6 @@
     Menu,
     MessageSquare,
     Gavel,
-    Pause,
-    Play,
     Plus,
     Settings,
     ShieldCheck,
@@ -814,56 +812,34 @@
                         <Download size={15}></Download>
                         {t("hearing.export")}
                       </a>
-                      {#if hearing.kind === "simulation"}<button
-                          class={styles.primary}
-                          disabled={busy ||
-                            hearing.status === "complete" ||
-                            audio.status !== "idle"}
-                          onclick={() =>
-                            action(() =>
-                              api(
-                                `/cases/${caseId}/${hearing.status === "simulation" ? "pause" : "simulation"}?hearing_id=${hearing.id}`,
-                                { method: "POST" },
-                              ),
-                            )}
-                        >
-                          {#if hearing.status === "simulation"}<Pause size={16}
-                            ></Pause>{:else}<Play size={16}></Play>{/if}&#32;
-                          {hearing.status === "complete"
-                            ? t("hearing.simComplete")
-                            : hearing.status === "simulation"
-                              ? t("hearing.pause")
-                              : t("hearing.startSim")}
-                        </button>{:else}<button
-                          class={styles.primary}
-                          disabled={busy ||
-                            pending > 0 ||
-                            !hearingSegments.length ||
-                            !caps?.analysis.configured}
-                          onclick={() =>
-                            action(() =>
-                              api(
-                                `/cases/${caseId}/hearings/${hearing.id}/analyze`,
-                                { method: "POST" },
-                              ),
-                            )}
-                        >
-                          <ShieldCheck size={16}></ShieldCheck>
-                          {t("hearing.analyze")}
-                        </button>{/if}
+                      <button
+                        class={styles.primary}
+                        disabled={busy ||
+                          pending > 0 ||
+                          !hearingSegments.length ||
+                          !caps?.analysis.configured}
+                        onclick={() =>
+                          action(() =>
+                            api(
+                              `/cases/${caseId}/hearings/${hearing.id}/analyze`,
+                              { method: "POST" },
+                            ),
+                          )}
+                      >
+                        <ShieldCheck size={16}></ShieldCheck>
+                        {t("hearing.analyze")}
+                      </button>
                     </div>
                   </header>
                   <p class={tabs.statusLine}>
                     <i class={tabs.dot} data-on={connected} aria-hidden="true"
                     ></i>
                     <strong>
-                      {hearing.status === "simulation"
-                        ? t("hearing.state.simulation")
-                        : hearing.status === "live"
-                          ? t("hearing.state.live")
-                          : hearing.status === "complete"
-                            ? t("hearing.state.complete")
-                            : t("hearing.state.ready")}
+                      {hearing.status === "live"
+                        ? t("hearing.state.live")
+                        : hearing.status === "complete"
+                          ? t("hearing.state.complete")
+                          : t("hearing.state.ready")}
                     </strong>
                     <span class={tabs.sep} aria-hidden="true">·</span>
                     <span
@@ -882,24 +858,20 @@
                           : t("hearing.upToDate")}
                     </span>
                   </p>
-                  {#if hearing.kind === "simulation" || !caps?.analysis.configured}<p
-                      class={tabs.note}
-                    >
+                  {#if !caps?.analysis.configured}<p class={tabs.note}>
                       <CircleHelp size={14}></CircleHelp>
-                      {hearing.kind === "simulation"
-                        ? t("hearing.simNotice")
-                        : t("hearing.analysisUnavailable")}
+                      {t("hearing.analysisUnavailable")}
                     </p>{/if}
-                  {#if hearing.kind !== "simulation"}{#key hearing.id}<HearingAudio
-                        {audio}
-                        configured={!!caps?.speech.configured}
-                        caseId={detail.case.id}
-                        recordings={detail.recordings.filter(
-                          (r) => r.hearing_id === hearing.id,
-                        )}
-                        onChanged={() => void refresh()}
-                        empty={hearingSegments.length === 0}
-                      />{/key}{/if}
+                  {#key hearing.id}<HearingAudio
+                      {audio}
+                      configured={!!caps?.speech.configured}
+                      caseId={detail.case.id}
+                      recordings={detail.recordings.filter(
+                        (r) => r.hearing_id === hearing.id,
+                      )}
+                      onChanged={() => void refresh()}
+                      empty={hearingSegments.length === 0}
+                    />{/key}
                   <div class={tabs.hearingGrid}>
                     <section
                       class={`${tabs.column} ${tabs.transcriptColumn}`}
@@ -1055,11 +1027,9 @@
                                 </span>
                                 <h3>{f.title}</h3>
                                 <small class={tabs.cardMode}>
-                                  {f.mode === "simulation"
-                                    ? t("hearing.mode.simulation")
-                                    : f.mode === "imported"
-                                      ? t("hearing.mode.imported")
-                                      : t("hearing.mode.ai")}
+                                  {f.mode === "imported"
+                                    ? t("hearing.mode.imported")
+                                    : t("hearing.mode.ai")}
                                 </small>
                               </button>
                               {#if open}<div class={tabs.cardDetail}>

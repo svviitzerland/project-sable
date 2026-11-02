@@ -37,7 +37,7 @@ KUHAP 1981 (UU 8/1981) sudah dicabut dan diganti KUHAP baru (UU 20/2025), yang b
 | C1 | Identitas anak (pelaku, korban, saksi) wajib dirahasiakan; pelanggaran diancam pidana penjara hingga 5 tahun | UU 11/2012 Pasal 19 dan 97 | [Hukumonline Klinik](https://www.hukumonline.com/klinik/a/identitas-anak-korban-tindak-pidana-wajib-dirahasiakan-ini-sanksi-jika-dilanggar-lt61640c948790b) | ✓ |
 | C2 | Saksi/korban yang dilindungi LPSK berhak atas kerahasiaan identitas | UU 31/2014 Pasal 5 | [BPK](https://peraturan.bpk.go.id/Details/38716/uu-no-31-tahun-2014) | ⚠ |
 | C3 | Catatan kejahatan dan data anak termasuk **data pribadi spesifik**; UU PDP berlaku penuh sejak 17 Okt 2024 | UU 27/2022 Pasal 4 ayat (2) | [BPK](https://peraturan.bpk.go.id/Details/229798/uu-no-27-tahun-2022) | ⚠ |
-| C4 | Audio ke Speechmatics dan dokumen ke OpenRouter = **transfer data ke luar negeri**, perlu dasar hukum (kesetaraan perlindungan, perjanjian mengikat, atau persetujuan) | UU 27/2022 Pasal 56; PP 33/2026 berlaku 16 Jan 2027 | [Kompas.id](https://www.kompas.id/artikel/peraturan-pelaksana-uu-pdp-akhirnya-terbit-lembaga-pengawas-masih-dinanti), [SIP Law Firm](https://siplawfirm.id/id/publikasi/pp-33-2026-pelindungan-data-pribadi) | ⚠ |
+| C4 | Audio ke Amazon Transcribe dan dokumen ke Amazon Bedrock (profil inferensi global lintas Region) = **transfer data ke luar negeri**, perlu dasar hukum (kesetaraan perlindungan, perjanjian mengikat, atau persetujuan) | UU 27/2022 Pasal 56; PP 33/2026 berlaku 16 Jan 2027 | [Kompas.id](https://www.kompas.id/artikel/peraturan-pelaksana-uu-pdp-akhirnya-terbit-lembaga-pengawas-masih-dinanti), [SIP Law Firm](https://siplawfirm.id/id/publikasi/pp-33-2026-pelindungan-data-pribadi) | ⚠ |
 | C5 | Advokat wajib menjaga rahasia klien | UU 18/2003 Pasal 19; Kode Etik Advokat Pasal 4 huruf h | [Hukumonline](https://www.hukumonline.com/berita/a/hubungan-kerahasiaan-advokat-dan-klien-lt63b7e90220e9b/?page=all) | ✓ |
 | C6 | Peradi (6 Agu 2026) mengingatkan risiko mengunggah data klien ke layanan AI publik | Pedoman AI bagi Advokat (tidak mengikat) | [Hukumonline](https://www.hukumonline.com/berita/a/peradi-luncurkan-pedoman-ai-bagi-advokat--ingatkan-etika-dan-perlindungan-data-klien-lt6a748379a7427/) | ✓ (isi lengkap pedoman belum ditemukan) |
 
@@ -59,11 +59,11 @@ Kode dalam kurung merujuk ke masalah di atas.
 
 | # | Keterbatasan | Solusi sederhana | Status |
 |---|---|---|---|
-| 1 | UI berbahasa Inggris, padahal pengguna advokat Indonesia | Terjemahkan UI dengan istilah KUHAP (Keterangan Saksi, BAP, Penuntut Umum, Penasihat Hukum) | Belum |
+| 1 | UI berbahasa Inggris, padahal pengguna advokat Indonesia | Terjemahkan UI dengan istilah KUHAP (Keterangan Saksi, BAP, Penuntut Umum, Penasihat Hukum) | Selesai (Bahasa Indonesia utama, tombol ID/EN) |
 | 2 | (A1–A3) Temuan belum menyandingkan keterangan sidang dan BAP secara langsung | Kartu "Berbeda dari BAP": kutipan sidang di kiri, kutipan BAP + halaman di kanan | Sebagian |
 | 3 | (D3, D4) Transkripsi bisa salah (ASR, aksen, suara tumpang tindih) | Tombol putar audio ±5 detik per temuan; segmen dengan confidence rendah ditandai "dengarkan dulu" dan tidak bisa menjadi satu-satunya dasar temuan | Sebagian (confidence sudah tampil) |
-| 4 | Label pembicara dari Speechmatics hanya berlaku per koneksi (berganti tiap 210 detik dan tiap sidang), jadi advokat harus memberi nama berulang kali | Layanan suara Python (`apps/voice/`, pyannote open source): suara yang sama otomatis mendapat label tetap ("Voice 1") lintas koneksi dan sidang; nama cukup diisi sekali | Sebagian (berjalan lokal; belum diuji dengan rekaman sidang asli) |
-| 5 | (B1, B7) Merekam sidang butuh izin hakim ketua (Perma 5/2020) | Centang "Majelis telah mengizinkan perekaman" sebelum audio dimulai | Belum |
+| 4 | Label pembicara dari Amazon Transcribe hanya berlaku per koneksi (berganti tiap koneksi baru dan tiap sidang), jadi advokat harus memberi nama berulang kali | Layanan suara Python (`apps/voice/`, pyannote open source): suara yang sama otomatis mendapat label tetap ("Voice 1") lintas koneksi dan sidang; nama cukup diisi sekali | Sebagian (berjalan lokal; belum diuji dengan rekaman sidang asli) |
+| 5 | (B1, B7) Merekam sidang butuh izin hakim ketua (Perma 5/2020) | Centang "Majelis telah mengizinkan perekaman" sebelum audio dimulai | Selesai (wajib dicentang sebelum mikrofon atau berkas audio dimulai) |
 | 6 | Tanpa izin rekam, fitur live tidak bisa dipakai | Mode catatan ketik: advokat mengetik poin keterangan, Jude tetap membandingkan dengan BAP | Sebagian (input manual sudah ada) |
 | 7 | (B2–B5) Sidang tertutup (anak/SPPA, kekerasan seksual/TPKS) melarang rekaman | Sakelar "Sidang tertutup": audio mati, ekspor dikunci | Belum |
 | 8 | (C1–C6) Data pribadi dikirim ke penyedia AI di luar negeri (UU PDP) | Samarkan nama saksi/korban ("Saksi A") sebelum dikirim ke AI dan saat ekspor | Belum |
@@ -71,13 +71,13 @@ Kode dalam kurung merujuk ke masalah di atas.
 | 10 | (D5) Inkonsistensi bukan bukti saksi berbohong | Bahasa netral "Berbeda dari BAP"; tanpa skor kredibilitas atau kesalahan | Terpenuhi |
 | 11 | (D1, D2) AI bisa berhalusinasi kutipan | Kutipan wajib persis sama dengan sumber; tanpa kutipan, tanpa temuan | Terpenuhi |
 | 12 | (A2, A3) Hasil kerja belum berbentuk dokumen yang langsung dipakai | Ekspor "Daftar Perbedaan Keterangan Saksi vs BAP" (kutipan, waktu, halaman BAP) untuk pertanyaan lanjutan, permohonan pencatatan di berita acara, dan pledoi | Belum |
-| 13 | Penyedia (Speechmatics, Bedrock/OpenRouter, Pasal.id, S3) belum diuji dengan akun asli | Uji end-to-end dengan kunci asli sebelum demo; simulasi sintetis sebagai cadangan | Belum |
+| 13 | Penyedia belum semuanya diuji dengan akun asli | Amazon Transcribe streaming dan Bedrock sudah diuji di produksi (2 Nov 2026). Pasal.id, S3 produksi, dan layanan suara masih perlu uji end-to-end dengan akun asli. Cadangan demo: perkara publik Ferdy Sambo | Sebagian |
 
 ## Urutan pengerjaan
 
-1. UI Bahasa Indonesia (#1)
+1. UI Bahasa Indonesia (#1), selesai
 2. Kartu "Berbeda dari BAP" + putar audio + Ditanyakan/Abaikan (#2, #3, #9)
-3. Izin rekam, mode ketik, sidang tertutup (#5, #6, #7)
+3. Izin rekam (selesai), mode ketik, sidang tertutup (#5, #6, #7)
 4. Ekspor Daftar Perbedaan (#12)
 5. Penyamaran nama dan label pembicara (#8, #4)
 

@@ -239,9 +239,9 @@ export async function handleApi(
             configured: aiConfigured(rt.config),
             note: aiConfigured(rt.config)
               ? rt.config.aiProvider === "bedrock"
-                ? "Amazon Bedrock configured."
-                : "OpenRouter configured. Live provider verification required."
-              : "Set AI_PROVIDER=bedrock (AWS) or OPENROUTER_API_KEY and OPENROUTER_MODEL.",
+                ? "AI provider configured (Amazon Bedrock)."
+                : "AI provider configured (local development provider)."
+              : "Connect an AI provider (AI_PROVIDER=bedrock) to enable analysis.",
           },
           speech: {
             configured: rt.config.transcribe,
@@ -429,7 +429,7 @@ export async function handleApi(
           !(await rt.db.one("audio_sessions", "case_id=? AND status=?", [
             caseId,
             "active",
-          ])) && !rt.simulations.has(caseId),
+          ])),
           409,
           "Stop the live hearing before deleting this case.",
         );
@@ -613,7 +613,7 @@ export async function handleApi(
           assert(
             aiConfigured(rt.config),
             503,
-            "Connect OpenRouter before retrying analysis.",
+            "Connect an AI provider before retrying analysis.",
           );
           await rt.db.update("segments", { analysis_state: "queued" }, "id=?", [
             segment.id,
@@ -734,7 +734,7 @@ export async function handleApi(
           assert(
             aiConfigured(rt.config),
             503,
-            "Connect an OpenRouter analysis model to examine this hearing. Your transcript is saved.",
+            "Connect an AI provider to examine this hearing. Your transcript is saved.",
           );
           const ids = await rt.db.transaction(async (db) => {
             const segments = await db.all(

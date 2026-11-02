@@ -134,13 +134,7 @@
     }
   }
 
-  const hearingStatuses = [
-    "ready",
-    "live",
-    "simulation",
-    "paused",
-    "complete",
-  ] as const;
+  const hearingStatuses = ["ready", "live", "paused", "complete"] as const;
 
   function hearingStatusLabel(status: string) {
     return (hearingStatuses as readonly string[]).includes(status)
@@ -436,11 +430,9 @@
                   ? formatDate(hearing.date)
                   : t("library.dateNotSet")}
                 ·&#32;
-                {hearing.kind === "simulation"
-                  ? t("common.syntheticExercise")
-                  : hearing.kind === "imported"
-                    ? t("common.importedTranscript")
-                    : t("library.record")}
+                {hearing.kind === "imported"
+                  ? t("common.importedTranscript")
+                  : t("library.record")}
                 ·&#32;
                 {tp("count.statements", segments.length)}
               </small>
@@ -457,7 +449,7 @@
                   >{tp("count.findings", findings.length)}</span
                 >{/if}
               <span
-                class={`${styles.chip} ${hearing.status === "live" || hearing.status === "simulation" ? styles.chipLive : ""}`}
+                class={`${styles.chip} ${hearing.status === "live" ? styles.chipLive : ""}`}
                 >{hearingStatusLabel(hearing.status)}</span
               >
             </span>

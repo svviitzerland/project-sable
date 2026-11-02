@@ -172,7 +172,7 @@ export function userFacingError(message: string) {
   const known = serverMessages[message.trim()];
   if (known) return t(known);
   if (
-    !/OPENROUTER_|PASAL_API_KEY|SPEECHMATICS_API_KEY|Configure OpenRouter|configured providers|deployment|backend|HTTP \d{3}|could not be completed/i.test(
+    !/OPENROUTER_|PASAL_API_KEY|OpenRouter|Bedrock|configured providers|deployment|backend|HTTP \d{3}|could not be completed/i.test(
       message,
     )
   )

@@ -48,7 +48,6 @@ for (const model of values.models.split(",").filter(Boolean)) {
     db: await connectDatabase(config),
     fetch,
     tasks: new Set(),
-    simulations: new Map(),
   };
   if (values.debug) {
     // Print each raw tool call (case data stays on this machine's console).

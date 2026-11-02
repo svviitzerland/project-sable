@@ -22,3 +22,4 @@ Keep plans and results for each project phase here. Suggested file format name: 
 
 - [AI-only courtroom practice](2026-11-02-ai-courtroom-practice.md): guided drill removed, grounded AI roleplay with cited speeches, coaching notes and a cited debrief.
 - [Bedrock model choice](2026-11-02-model-choice.md): benchmark of cheap Bedrock models on the public demo case, Nova 2 Lite default tier and Claude Sonnet 4.6 review.
+- [Cleanup](2026-11-02-cleanup.md): simulation and Speechmatics leftovers removed, provider-neutral errors, real demo excerpts on the landing page, unused copy removed, docs aligned with Transcribe.
