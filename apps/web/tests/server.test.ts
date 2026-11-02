@@ -457,7 +457,7 @@ test("demo sign-in imports the bundled public record as the default case", async
   const [record] = cases;
   assert.match(
     record.title,
-    /796\/Pid\.B\/2022\/PN Jkt\.Sel \(catatan publik\)/,
+    /^Perkara Ferdy Sambo$/,
   );
   assert.match(record.reference, /catatan publik/);
   assert.equal(record.synthetic, false);
