@@ -17,6 +17,20 @@
 
   let query = $state("");
 
+  // Statutes first: without a filter, circulars and regional rules crowd results.
+  const types = [
+    "UU",
+    "PERPPU",
+    "PP",
+    "PERPRES",
+    "PERMEN",
+    "PERMA",
+    "PUTUSAN_MK",
+    "all",
+  ] as const;
+
+  let type = $state<(typeof types)[number]>("UU");
+
   let results = $state<LegalReference[] | null>(null);
 
   let error = $state("");
@@ -37,7 +51,7 @@
       error = "";
       try {
         const result = await api<{ results: LegalReference[] }>(
-          `/cases/${caseId}/legal?q=${encodeURIComponent(query)}`,
+          `/cases/${caseId}/legal?${new URLSearchParams({ q: query, type })}`,
         );
         results = result.results;
       } catch (e) {
@@ -61,6 +75,18 @@
       disabled={!configured}
       required
     />
+    <label class={ui.srOnly} for="legal-type">{t("legal.type.label")}</label>
+    <select
+      id="legal-type"
+      class={styles.lawType}
+      value={type}
+      onchange={(e) => (type = e.currentTarget.value as (typeof types)[number])}
+      disabled={!configured}
+    >
+      {#each types as option (option)}<option value={option}>
+          {t(`legal.type.${option}`)}
+        </option>{/each}
+    </select>
     <button class={ui.primary} disabled={!configured || busy}>
       {busy ? t("common.searching") : t("references.search")}
     </button>

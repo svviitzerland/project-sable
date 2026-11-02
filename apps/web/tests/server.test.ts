@@ -772,7 +772,7 @@ test("assistant repairs citations once before atomic save and preserves idempote
   assert.equal(calls, 2);
 });
 
-test("failed citation repair stays bounded, cannot drop required citations, and saves nothing", async (t) => {
+test("failed citation repair stays bounded, cannot drop required citations, and falls back to source excerpts", async (t) => {
   const { a, record, rt } = await fixture(t),
     base = `/cases/${record.id}`;
   await a.json(
@@ -799,16 +799,18 @@ test("failed citation repair stays bounded, cannot drop required citations, and 
     kind: "assistant",
   });
   const path = `${base}/dialogues/${dialogue.id}/messages`;
-  await a.json(
-    path,
-    "POST",
-    { text: "What happened?", request_id: randomUUID() },
-    503,
-  );
+  const fallback = await a.json(path, "POST", {
+    text: "What happened?",
+    request_id: randomUUID(),
+  });
   assert.equal(calls, 2);
+  // The unverified draft is never saved. The reply shows source excerpts instead.
+  assert.equal(fallback.messages.length, 2);
+  assert.ok(!JSON.stringify(fallback).includes("Unverified claim"));
+  assert.match(fallback.messages[1].text, /could not be matched/);
   assert.equal(
-    (await a.json(`${base}/dialogues/${dialogue.id}`)).messages.length,
-    0,
+    fallback.messages[1].citations[0].quote,
+    "The witness did not remove tablets.",
   );
   calls = 0;
   rt.fetch = async (url) => {
@@ -1926,4 +1928,309 @@ test("case settings update details and delete the whole case with its stored fil
     "recordings",
   ] as const)
     assert.equal((await rt.db.all(table, "case_id=?", [record.id])).length, 0);
+});
+
+const noEmbeddings = (url: unknown) =>
+  String(url).includes("/embeddings")
+    ? new Response("", { status: 503 })
+    : null;
+const modelPacket = (init?: RequestInit) =>
+  JSON.parse(JSON.parse(String(init?.body)).messages[1].content);
+
+test("ask evidence tolerates quote typography, repairs one failed citation, and falls back to passages", async (t) => {
+  const { a, record, rt } = await fixture(t),
+    base = `/cases/${record.id}`;
+  await a.json(
+    base + "/documents",
+    "POST",
+    upload(
+      "bap.txt",
+      "Saksi Kuat Ma’ruf tiba di rumah\nDuren Tiga pukul 17.00.",
+    ),
+  );
+  rt.config.openrouterKey = "fake";
+  rt.config.model = "fake";
+  const [{ id }] = await rt.db.all("chunks", "case_id=?", [record.id]);
+  let calls = 0;
+  const answer = (quotes: string[]) => {
+    rt.fetch = async (url) => {
+      const off = noEmbeddings(url);
+      if (off) return off;
+      const quote = quotes[Math.min(calls, quotes.length - 1)];
+      calls++;
+      return structuredResponse({
+        answer: quote === "never said" ? "Invented." : "Pukul 17.00.",
+        citations: [{ chunk_id: id, quote, relation: "supports" }],
+      });
+    };
+  };
+  const ask = () =>
+    a.json(base + "/ask", "POST", { query: "Kapan Kuat Ma'ruf tiba?" });
+  // A straight quote and a plain space still match the stored passage on the first call.
+  answer(["Kuat Ma'ruf tiba di rumah Duren Tiga"]);
+  let result = await ask();
+  assert.equal(calls, 1);
+  assert.equal(result.answer, "Pukul 17.00.");
+  assert.equal(
+    result.citations[0].quote,
+    "Kuat Ma’ruf tiba di rumah\nDuren Tiga",
+  );
+  // A failed citation gets one correction that names it.
+  calls = 0;
+  answer(["pukul 18.00", "pukul 17.00"]);
+  const packets: { citation_repair?: { failed: unknown } }[] = [];
+  const inner = rt.fetch;
+  rt.fetch = async (url, init) => {
+    if (!String(url).includes("/embeddings")) packets.push(modelPacket(init));
+    return inner(url, init);
+  };
+  result = await ask();
+  assert.equal(calls, 2);
+  assert.deepEqual(packets[1].citation_repair?.failed, [
+    { chunk_id: id, quote: "pukul 18.00" },
+  ]);
+  assert.equal(result.answer, "Pukul 17.00.");
+  // Two failures return the passages with a localizable notice, not a 503.
+  calls = 0;
+  answer(["never said"]);
+  result = await ask();
+  assert.equal(calls, 2);
+  assert.equal(result.answer, null);
+  assert.equal(result.notice_code, "answer_unverified");
+  assert.equal(result.sources.length, 1);
+  assert.ok(!JSON.stringify(result).includes("Invented"));
+  // A provider failure also leaves the passages visible.
+  rt.fetch = async (url) =>
+    noEmbeddings(url) ?? new Response("", { status: 429 });
+  result = await ask();
+  assert.equal(result.notice_code, "ai_failed");
+  assert.equal(result.sources.length, 1);
+});
+
+test("evidence links verify quotes tolerantly, store the source text, and repair failed links once", async (t) => {
+  const { a, record, rt } = await fixture(t),
+    base = `/cases/${record.id}`;
+  for (const [name, text] of [
+    ["one.txt", "Witness arrived at the warehouse at eight."],
+    ["two.txt", "A guard saw the witness at the warehouse\nentrance."],
+  ])
+    await a.json(base + "/documents", "POST", upload(name, text));
+  rt.config.openrouterKey = "fake";
+  rt.config.model = "fake";
+  let calls = 0;
+  let repair: { failed: { quote: string }[] } | null = null;
+  rt.fetch = async (url, init) => {
+    const off = noEmbeddings(url);
+    if (off) return off;
+    calls++;
+    const packet = modelPacket(init);
+    if (calls === 2) repair = packet.citation_repair;
+    const [pair] = packet.candidate_pairs;
+    const one = pair.source_text.startsWith("Witness");
+    const quotes = [
+      calls === 1 ? "arrived at the depot" : "arrived at the warehouse",
+      "at the warehouse entrance",
+    ];
+    return structuredResponse({
+      links: [
+        {
+          source_id: pair.source_id,
+          target_id: pair.target_id,
+          relation: "supports",
+          explanation: "Both place the witness at the warehouse.",
+          source_quote: one ? quotes[0] : quotes[1],
+          target_quote: one ? quotes[1] : quotes[0],
+        },
+      ],
+    });
+  };
+  const built = await a.json(base + "/graph/build", "POST");
+  assert.equal(calls, 2);
+  assert.equal(repair!.failed[0].quote, "arrived at the depot");
+  assert.equal(built.added, 1);
+  assert.ok(!built.notice_codes.includes("ai_unverified"));
+  const [link] = await rt.db.all("evidence_links", "case_id=?", [record.id]);
+  assert.equal(link.basis, "ai");
+  assert.equal(link.relation, "supports");
+  assert.ok(
+    [link.source_quote, link.target_quote].includes(
+      "at the warehouse\nentrance",
+    ),
+  );
+});
+
+test("assistant drops only failing citations, keeps the reply, and says so", async (t) => {
+  const { a, record, rt } = await fixture(t),
+    base = `/cases/${record.id}`;
+  await a.json(
+    base + "/documents",
+    "POST",
+    upload("source.txt", "Susi mulai bekerja untuk keluarga itu pada 2021."),
+  );
+  rt.config.openrouterKey = "fake";
+  rt.config.model = "fake";
+  let calls = 0;
+  rt.fetch = async (url, init) => {
+    const off = noEmbeddings(url);
+    if (off) return off;
+    calls++;
+    const id = modelPacket(init).case_context.sources[0].chunk_id;
+    return structuredResponse({
+      // Nova sometimes double-escapes line breaks in tool output.
+      answer: "Susi mulai bekerja pada 2021.\\nItu tercatat.",
+      uses_case_facts: true,
+      citations: [
+        { chunk_id: id, quote: "mulai bekerja", relation: "supports" },
+        { chunk_id: id, quote: "pada 2019", relation: "supports" },
+        { chunk_id: "made-up", quote: "pada 2021", relation: "supports" },
+      ],
+    });
+  };
+  const dialogue = await a.json(base + "/dialogues", "POST", {
+    kind: "assistant",
+  });
+  const result = await a.json(
+    `${base}/dialogues/${dialogue.id}/messages`,
+    "POST",
+    { text: "Kapan Susi mulai bekerja?", request_id: randomUUID() },
+  );
+  assert.equal(calls, 1);
+  const reply = result.messages[1];
+  assert.equal(reply.text, "Susi mulai bekerja pada 2021.\nItu tercatat.");
+  assert.deepEqual(
+    reply.citations.map((c: { quote: string }) => c.quote),
+    ["mulai bekerja"],
+  );
+  assert.match(reply.notice, /did not match the case text were removed/);
+});
+
+test("legal search defaults to statutes, validates the type, and keeps best passages as safe links", async (t) => {
+  const { a, record, rt } = await fixture(t),
+    base = `/cases/${record.id}`;
+  rt.config.pasalKey = "test-key";
+  const seen: URL[] = [];
+  rt.fetch = async (url) => {
+    seen.push(new URL(String(url)));
+    return Response.json({
+      results: [
+        {
+          work_id: 776,
+          work: {
+            title: "Undang-Undang Nomor 1 Tahun 2023 <b>KUHP</b>",
+            type: "UU",
+            number: "1",
+            year: 2023,
+            status: "diubah",
+          },
+          url: "https://pasal.id/peraturan/uu/uu-no-1-tahun-2023",
+          matching_pasals: [
+            { pasal: "459", url: "https://pasal.id/peraturan/uu/x#pasal-459" },
+            { pasal: "1", url: "javascript:alert(1)" },
+          ],
+          best_passage: {
+            pasal: "459<script>",
+            url: "https://pasal.id/peraturan/uu/x/pasal-459",
+          },
+        },
+        {
+          work_id: 2,
+          work: {},
+          url: "https://evil.test/law",
+          best_passage: null,
+        },
+        {
+          work_id: 3,
+          work: "broken",
+          url: "https://pasal.id/b",
+          best_passage: 7,
+        },
+      ],
+    });
+  };
+  const result = await a.json(`${base}/legal?q=pembunuhan`);
+  assert.equal(seen[0].searchParams.get("type"), "UU");
+  assert.equal(seen[0].searchParams.get("q"), "pembunuhan");
+  assert.equal(result.results.length, 2);
+  const [first, second] = result.results;
+  assert.equal(first.title, "Undang-Undang Nomor 1 Tahun 2023 KUHP");
+  assert.equal(first.reference, "UU 1/2023");
+  assert.deepEqual(first.articles, [
+    { article: "459", url: "https://pasal.id/peraturan/uu/x#pasal-459" },
+  ]);
+  assert.deepEqual(first.best_passage, {
+    article: "459",
+    url: "https://pasal.id/peraturan/uu/x/pasal-459",
+  });
+  assert.equal(second.best_passage, null);
+  await a.json(`${base}/legal?q=pembunuhan&type=PP`);
+  assert.equal(seen[1].searchParams.get("type"), "PP");
+  await a.json(`${base}/legal?q=pembunuhan&type=all`);
+  assert.equal(seen[2].searchParams.has("type"), false);
+  await a.json(`${base}/legal?q=pembunuhan&type=KUHP`, "GET", undefined, 422);
+  assert.equal(seen.length, 3);
+});
+
+test("hearings import up to 3000 statements and hearing analysis uses the pool's concurrency", async (t) => {
+  const { a, record, rt } = await fixture(t),
+    base = `/cases/${record.id}`;
+  const turns = Array.from({ length: 3000 }, (_, i) => ({
+    speaker: i % 2 ? "Saksi" : "Hakim",
+    text: `Pernyataan nomor ${i + 1}.`,
+  }));
+  const file = turns.map((s) => `${s.speaker}: ${s.text}`).join("\n");
+  const preview = await a.json(
+    base + "/hearings/preview",
+    "POST",
+    upload("long.txt", file),
+  );
+  assert.equal(preview.hearing.segments.length, 3000);
+  const hearing = await a.json(
+    base + "/hearings/import",
+    "POST",
+    upload("long.txt", file, { transcript: JSON.stringify(preview.hearing) }),
+  );
+  const exported = await a.call(`${base}/hearings/${hearing.id}/export.jude`);
+  assert.equal(exported.status, 200);
+  assert.equal((await a.call(`${base}/export.jude`)).status, 200);
+  const tooLong = await a.call(
+    base + "/hearings/preview",
+    "POST",
+    upload("too-long.txt", `${file}\nSaksi: Satu lagi.`),
+  );
+  assert.equal(tooLong.status, 422);
+  assert.match((await tooLong.json()).detail, /more than 3,000 statements/);
+  // Analysis: a separate hearing whose statements have a related passage.
+  await a.json(
+    base + "/documents",
+    "POST",
+    upload("bap.txt", "Saksi tiba di gudang pukul delapan pagi."),
+  );
+  const live = await a.json(base + "/hearings", "POST", { title: "Sidang" });
+  for (let i = 0; i < 9; i++)
+    await rt.db.insert("segments", {
+      case_id: record.id,
+      hearing_id: live.id,
+      text: `Saksi tiba di gudang pukul delapan pagi, kali ${i}.`,
+      analysis_state: "pending",
+    });
+  rt.config.openrouterKey = "fake";
+  rt.config.model = "fake";
+  let inFlight = 0,
+    peak = 0,
+    calls = 0;
+  rt.fetch = async (url) => {
+    const off = noEmbeddings(url);
+    if (off) return off;
+    calls++;
+    inFlight++;
+    peak = Math.max(peak, inFlight);
+    await new Promise((resolve) => setTimeout(resolve, 15));
+    inFlight--;
+    return new Response("", { status: 500 });
+  };
+  const queued = await a.json(`${base}/hearings/${live.id}/analyze`, "POST");
+  assert.equal(queued.queued, 9);
+  await Promise.allSettled([...rt.tasks]);
+  assert.ok(calls >= 9, `expected a call per statement, saw ${calls}`);
+  assert.equal(peak, 3);
 });

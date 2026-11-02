@@ -19,6 +19,7 @@
   import {
     api,
     relationLabel,
+    speakerName,
     type Source,
     type Citation,
   } from "../lib/workspace-api";
@@ -75,6 +76,7 @@
     sources: Source[];
     method: string;
     notice: string;
+    notice_code?: "no_passages" | "ai_off" | "answer_unverified" | "ai_failed";
   };
 
   const relationColors: Record<string, string> = {
@@ -130,10 +132,17 @@
 
   let explanation = $state("");
 
+  /** Unnamed recorded speakers read "Speaker 1" rather than their raw key. */
+  function named(data: Graph): Graph {
+    for (const n of data.nodes)
+      if (n.kind === "statement") n.label = speakerName(n.label, {});
+    return data;
+  }
+
   async function load() {
     graphLoading = !graph;
     try {
-      graph = await api<Graph>(`/cases/${caseId}/graph`);
+      graph = named(await api<Graph>(`/cases/${caseId}/graph`));
     } finally {
       graphLoading = false;
     }
@@ -145,7 +154,7 @@
       let alive = true;
       api<Graph>(`/cases/${caseId}/graph`)
         .then((data) => {
-          if (alive) graph = data;
+          if (alive) graph = named(data);
         })
         .catch((e) => {
           if (alive) error = e.message;
@@ -415,7 +424,9 @@
       </div>
       {#if answer.answer}<p class={styles.answerText}>{answer.answer}</p>{/if}
       {#if answer.notice}<p class={`${styles.quiet} ${styles.error}`}>
-          {answer.notice}
+          {answer.notice_code
+            ? t(`evidence.answerNotice.${answer.notice_code}`)
+            : answer.notice}
         </p>{/if}
       <ol class={styles.sources}>
         {#each answer.sources as source, index (index)}<li>

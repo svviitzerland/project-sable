@@ -2,7 +2,11 @@ import { extname, basename } from "node:path";
 import { parseSpeakerTurns } from "./transcript-formats";
 import { parse } from "csv-parse/sync";
 import { z } from "zod";
-import { hearingFileSchema, type HearingFile } from "./contracts";
+import {
+  hearingFileSchema,
+  MAX_HEARING_TURNS,
+  type HearingFile,
+} from "./contracts";
 import { assert, HttpError, ProviderError } from "./errors";
 import { decode, extractPages } from "./documents";
 import { unpack } from "./archive";
@@ -49,6 +53,19 @@ export async function originalText(name: string, data: Uint8Array) {
   );
   return { raw, mime: "text/plain" };
 }
+/** Over the per-hearing limit: say so instead of "no speaker turns were found". */
+export const TOO_MANY_TURNS = `This transcript has more than ${MAX_HEARING_TURNS.toLocaleString("en-US")} statements. Split it into smaller files and import each as its own hearing.`;
+class TooManyTurns extends HttpError {
+  constructor() {
+    super(422, TOO_MANY_TURNS);
+  }
+}
+const countTurns = (value: unknown) => {
+  const segments = (value as { segments?: unknown })?.segments;
+  if (Array.isArray(segments) && segments.length > MAX_HEARING_TURNS)
+    throw new TooManyTurns();
+  return value;
+};
 export async function parseTranscript(
   name: string,
   data: Uint8Array,
@@ -60,8 +77,9 @@ export async function parseTranscript(
       "Imported hearing";
   try {
     if (suffix === ".jude")
-      return hearingFileSchema.parse(unpack(data).manifest);
-    if (suffix === ".json") return hearingFileSchema.parse(JSON.parse(raw));
+      return hearingFileSchema.parse(countTurns(unpack(data).manifest));
+    if (suffix === ".json")
+      return hearingFileSchema.parse(countTurns(JSON.parse(raw)));
     let segments: unknown[] = [];
     if (suffix === ".csv") {
       const rows = parse(raw, {
@@ -99,14 +117,15 @@ export async function parseTranscript(
       segments = parseSpeakerTurns(raw);
       if (!segments.length) throw new Error();
     } else throw new Error();
-    const result = hearingFileSchema.parse({ title, segments });
+    const result = hearingFileSchema.parse(countTurns({ title, segments }));
     assert(
       result.segments.every((s) => !s.end || s.end >= s.start),
       422,
       "Transcript timestamps are reversed.",
     );
     return result;
-  } catch {
+  } catch (error) {
+    if (error instanceof TooManyTurns) throw error;
     throw new HttpError(
       422,
       'No speaker turns were found. Use Convert with AI, or upload a transcript where each turn starts with a speaker label (for example a risalah, "HAKIM KETUA: ..." or "Saksi: ..."), CSV, SRT, or VTT.',
@@ -127,7 +146,8 @@ export async function previewHearing(
       notice: "Review the speaker labels and statements before importing.",
     };
   } catch (error) {
-    if (!(error instanceof HttpError)) throw error;
+    if (!(error instanceof HttpError) || error instanceof TooManyTurns)
+      throw error;
     if (!convert)
       return {
         hearing: null,
@@ -154,7 +174,7 @@ export async function previewHearing(
           }),
         )
         .min(1)
-        .max(500),
+        .max(MAX_HEARING_TURNS),
     }),
   );
   const segments = converted.segments.map((turn) => {

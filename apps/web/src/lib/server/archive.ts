@@ -101,8 +101,8 @@ const archiveSchema = z.strictObject({
     .max(40),
   sources: z.array(sourceOutput).max(14000),
   hearings: z.array(hearingOutput.strip()).max(100),
-  segments: z.array(segmentOutput.strip()).max(2000),
-  findings: z.array(findingOutput.strip()).max(2000),
+  segments: z.array(segmentOutput.strip()).max(20000),
+  findings: z.array(findingOutput.strip()).max(20000),
   links: z.array(linkOutput).max(1000),
 });
 export function pack(

@@ -309,14 +309,34 @@
       let disposed = false;
       const socket = new EventSource(`/api/v1/cases/${caseId}/events`);
       let debounce: ReturnType<typeof setTimeout>;
+      // SSE is advisory and polling stays authoritative. Poll every 5 s while the
+      // stream is down, every 30 s while it delivers heartbeats (every 10 s), and
+      // not at all while the tab is hidden.
+      let heard = 0;
+      let poll: ReturnType<typeof setTimeout> | undefined;
+      const healthy = () => connected && Date.now() - heard < 25_000;
+      const schedule = () => {
+        clearTimeout(poll);
+        if (disposed || document.hidden) return;
+        poll = setTimeout(
+          () => {
+            void refresh();
+            schedule();
+          },
+          healthy() ? 30_000 : 5_000,
+        );
+      };
       socket.onopen = () => {
         if (!disposed) {
           connected = true;
+          heard = Date.now();
           void refresh();
+          schedule();
         }
       };
       socket.onmessage = (event) => {
         if (disposed) return;
+        heard = Date.now();
         const message = JSON.parse(event.data);
         if (message.type !== "heartbeat") {
           clearTimeout(debounce);
@@ -324,13 +344,22 @@
         }
       };
       socket.onerror = () => {
-        if (!disposed) connected = false;
+        if (disposed) return;
+        connected = false;
+        schedule();
       };
-      const poll = setInterval(() => void refresh(), 5000);
+      const visibility = () => {
+        if (disposed) return;
+        if (!document.hidden) void refresh();
+        schedule();
+      };
+      document.addEventListener("visibilitychange", visibility);
+      schedule();
       return () => {
         disposed = true;
         clearTimeout(debounce);
-        clearInterval(poll);
+        clearTimeout(poll);
+        document.removeEventListener("visibilitychange", visibility);
         socket?.close();
       };
     });
@@ -388,11 +417,10 @@
     detail?.segments.filter((s) => s.hearing_id === hearingId) ?? [],
   );
 
-  let hearingFindings = $derived(
-    detail?.findings.filter((f) =>
-      hearingSegments.some((s) => s.id === f.segment_id),
-    ) ?? [],
-  );
+  let hearingFindings = $derived.by(() => {
+    const ids = new Set(hearingSegments.map((s) => s.id));
+    return detail?.findings.filter((f) => ids.has(f.segment_id)) ?? [];
+  });
 
   let visibleFindings = $derived(
     hearingFindings

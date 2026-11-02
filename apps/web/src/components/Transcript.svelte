@@ -71,6 +71,11 @@
     ),
   );
 
+  // Long hearings hold thousands of statements: look findings up once, not per row.
+  let findingBySegment = $derived(
+    new Map(findings.map((f) => [f.segment_id, f])),
+  );
+
   let speakerIds = $derived(
     Array.from(new Set(segments.map((s) => s.speaker))),
   );
@@ -153,7 +158,7 @@
 </div>
 <div bind:this={scroller.current} class={styles.scroll}>
   {#if visibleSegments.length}{#each visibleSegments as s (s.id)}{@const finding =
-        findings.find((f) => f.segment_id === s.id)}
+        findingBySegment.get(s.id)}
       <article class={styles.segment}>
         <div class={styles.segmentHead}>
           {#if onRename}<button

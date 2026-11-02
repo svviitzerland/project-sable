@@ -1090,6 +1090,8 @@ a.chip:hover {
   gap: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 84px;
 }
 .previewFoot {
   display: flex;
@@ -1360,6 +1362,9 @@ a.chip:hover {
 .segment {
   padding: 16px 4px;
   border-bottom: 1px solid #e7e8df;
+  /* Long hearings: skip layout and paint for statements outside the viewport. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 132px;
 }
 .segment:last-child {
   border-bottom: 0;
@@ -1709,6 +1714,40 @@ a.chip:hover {
 .lawNote {
   margin-top: 12px !important;
 }
+/* Regulation type filter, inside the search box between field and button */
+.screen .lawType {
+  flex-shrink: 0;
+  max-width: 220px;
+  min-height: 36px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  padding: 0 8px 0 12px;
+  background-color: transparent;
+  color: var(--ink);
+  font-size: 14px;
+}
+.screen .lawType:focus-visible {
+  outline: 2px solid #a66e27;
+  outline-offset: 2px;
+}
+.lawBest {
+  margin: 0;
+  font-size: 14px;
+}
+.lawBest a {
+  color: var(--forest);
+  font-weight: 600;
+  text-decoration: none;
+}
+.lawBest a:hover {
+  text-decoration: underline;
+}
+.lawBest svg {
+  display: inline;
+  margin-left: 4px;
+  vertical-align: -1px;
+}
 
 /* ---------- Settings ---------- */
 .settings {
@@ -1876,6 +1915,13 @@ a.chip:hover {
   }
   .ask > button {
     width: 100%;
+  }
+  .screen .ask > .lawType {
+    flex: 1 1 100%;
+    max-width: none;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding-left: 4px;
   }
   .dropzone {
     align-items: flex-start;

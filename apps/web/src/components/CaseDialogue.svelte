@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { localizeNotice } from "../lib/notice";
+  import { localizeFixedText, localizeNotice } from "../lib/notice";
   import {
     formatDate,
     i18n,
@@ -987,7 +987,11 @@
                   : speakerLabel(message.speaker)}
               </h4>
               <div class={styles.body}>
-                <p>{message.text}</p>
+                <p>
+                  {message.speaker === "Case assistant"
+                    ? localizeFixedText(message.text, i18n.lang)
+                    : message.text}
+                </p>
                 {@render citations(message)}
                 {#if !!message.legal.length}<div class={styles.legal}>
                     <strong>

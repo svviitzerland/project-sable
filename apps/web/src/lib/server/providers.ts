@@ -399,43 +399,104 @@ export function safePasalUrl(value: unknown): string | null {
     return null;
   }
 }
+/** Pasal.id regulation type filters offered in the interface. `all` sends no filter. */
+export const legalTypeSchema = z
+  .enum([
+    "UU",
+    "PERPPU",
+    "PP",
+    "PERPRES",
+    "PERMEN",
+    "PERMA",
+    "PUTUSAN_MK",
+    "all",
+  ])
+  .default("UU");
+export type LegalType = z.output<typeof legalTypeSchema>;
+
+/** Short plain text from untrusted metadata: no markup, control characters or long runs. */
+const plain = (value: unknown, max: number) =>
+  typeof value === "string" || typeof value === "number"
+    ? String(value)
+        .replace(/<[^>]*>/g, " ")
+        .replace(/[\x00-\x1f\x7f]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, max)
+    : "";
+
+const pasalLink = z.object({ pasal: z.unknown(), url: z.unknown() });
+const pasalResults = z.object({
+  results: z
+    .array(
+      z.object({
+        work_id: z.unknown().optional(),
+        url: z.unknown(),
+        status_uncertain: z.boolean().optional(),
+        work: z
+          .object({
+            title: z.unknown().optional(),
+            type: z.unknown().optional(),
+            number: z.unknown().optional(),
+            year: z.unknown().optional(),
+            status: z.unknown().optional(),
+            status_uncertain: z.boolean().optional(),
+          })
+          .catch({}),
+        matching_pasals: z.array(pasalLink).catch([]),
+        best_passage: pasalLink.nullable().catch(null),
+      }),
+    )
+    .catch([]),
+});
+
+const article = (p: { pasal: unknown; url: unknown } | null | undefined) => {
+  const url = p && safePasalUrl(p.url),
+    name = p && plain(p.pasal, 24);
+  return url && name ? { article: name, url } : null;
+};
+
+/**
+ * Pasal.id search returns discovery metadata only (no legal text). Without a type filter,
+ * circulars and regional rules crowd out statutes, so results default to UU.
+ */
 export async function legalSearch(
   rt: Runtime,
   query: string,
+  type: LegalType = "UU",
 ): Promise<Legal[]> {
   if (!rt.config.pasalKey)
     throw new ProviderError(
       "Legal search is unavailable. You can still reference uploaded legislation.",
     );
-  const data = await requestJson(
-    rt,
-    `https://pasal.id/api/v1/search?${new URLSearchParams({ q: query, limit: "6" })}`,
-    { headers: { Authorization: `Bearer ${rt.config.pasalKey}` } },
-    "Pasal.id",
+  const params = new URLSearchParams({ q: query, limit: "6" });
+  if (type !== "all") params.set("type", type);
+  const data = pasalResults.safeParse(
+    await requestJson(
+      rt,
+      `https://pasal.id/api/v1/search?${params}`,
+      { headers: { Authorization: `Bearer ${rt.config.pasalKey}` } },
+      "Pasal.id",
+    ),
   );
   const results: Legal[] = [];
-  for (const item of (Array.isArray(data.results) ? data.results : []).slice(
-    0,
-    6,
-  )) {
+  for (const item of (data.success ? data.data.results : []).slice(0, 6)) {
     const url = safePasalUrl(item.url);
     if (!url) continue;
-    const work = item.work || {};
+    const work = item.work;
     results.push({
-      id: String(item.work_id || ""),
-      title: String(work.title || "Untitled regulation"),
-      reference: `${work.type || ""} ${work.number || ""}/${work.year || ""}`,
-      status: String(work.status || "unknown"),
+      id: plain(item.work_id, 40),
+      title: plain(work.title, 300) || "Untitled regulation",
+      reference: `${plain(work.type, 20)} ${plain(work.number, 20)}/${plain(work.year, 8)}`,
+      status: plain(work.status, 40) || "unknown",
       status_uncertain: item.status_uncertain ?? work.status_uncertain ?? true,
       url,
       content: "metadata_only",
-      articles: (Array.isArray(item.matching_pasals)
-        ? item.matching_pasals
-        : []
-      ).flatMap((p: { url?: unknown; pasal?: unknown }) => {
-        const url = safePasalUrl(p.url);
-        return url ? [{ article: String(p.pasal || ""), url }] : [];
+      articles: item.matching_pasals.flatMap((p) => {
+        const link = article(p);
+        return link ? [link] : [];
       }),
+      best_passage: article(item.best_passage),
     });
   }
   return results;

@@ -98,6 +98,8 @@ export const id: Messages = {
   "error.hearingRunning": "Sebuah sidang sedang berjalan.",
   "error.alreadyLinked":
     "Pasangan ini sudah ditautkan. Tinjau keterkaitan yang sudah ada.",
+  "error.tooManyTurns":
+    "Transkrip ini berisi lebih dari 3.000 pernyataan. Pecah menjadi beberapa berkas dan impor masing-masing sebagai sidang tersendiri.",
   "error.reference": "Referensi: {reference}",
 
   // Halaman pengantar
@@ -259,6 +261,12 @@ export const id: Messages = {
   "notice.rehearsal":
     "Latihan hipotetis, bukan keterangan atau prediksi sidang sebenarnya.",
   "notice.scene": "Latihan hipotetis, terpisah dari keterangan dan temuan.",
+  "notice.droppedCitations":
+    "Kutipan yang tidak cocok dengan teks perkara telah dihapus.",
+  "notice.sourcesOnly":
+    "Balasan AI tidak dapat dicocokkan dengan sumber perkara, jadi tidak disimpan. Berikut kutipan perkara yang relevan untuk diperiksa.",
+  "notice.aiOff":
+    "Balasan AI tidak tersedia. Berikut kutipan perkara yang relevan untuk diperiksa. Ini pencarian sumber, bukan jawaban atau tafsiran hukum.",
   "auth.demoCase": "Perkara Ferdy Sambo, catatan publik",
   "auth.openSynthetic": "Buka perkara demo",
 
@@ -385,12 +393,23 @@ export const id: Messages = {
   "speakers.forget": "Hapus sidik suara",
   "speakers.skeleton": "Menyimpan label pembicara…",
   "speakers.voice": "Suara {n}",
+  "speakers.numbered": "Pembicara {n}",
 
   // Hasil rujukan hukum
   "legal.uncertain": " (belum pasti)",
   "legal.openOriginal":
     "Buka sumber aslinya untuk membaca peraturan secara lengkap.",
   "legal.article": "Pasal {article}",
+  "legal.bestPassage": "Paling relevan: Pasal {article}",
+  "legal.type.label": "Jenis peraturan",
+  "legal.type.UU": "Undang-Undang (UU)",
+  "legal.type.PERPPU": "Perppu",
+  "legal.type.PP": "Peraturan Pemerintah (PP)",
+  "legal.type.PERPRES": "Peraturan Presiden",
+  "legal.type.PERMEN": "Peraturan Menteri",
+  "legal.type.PERMA": "Peraturan Mahkamah Agung",
+  "legal.type.PUTUSAN_MK": "Putusan Mahkamah Konstitusi",
+  "legal.type.all": "Semua jenis",
 
   // Kartu sumber
   "source.docxSection": "Bagian teks DOCX · tanpa nomor halaman",
@@ -628,6 +647,14 @@ export const id: Messages = {
     "Sebagian kutipan terkait mungkin belum muncul. Tinjau saran ini atau coba lagi nanti.",
   "evidence.notice.ai_unverified":
     "Hubungan dari AI tidak dapat diverifikasi, jadi yang ditampilkan adalah saran berdasarkan kemiripan.",
+  "evidence.answerNotice.no_passages":
+    "Tidak ada bagian yang relevan. Coba kata lain atau tambahkan bukti.",
+  "evidence.answerNotice.ai_off":
+    "Jawaban AI tidak tersedia. Anda dapat memeriksa bagian yang relevan di bawah.",
+  "evidence.answerNotice.answer_unverified":
+    "Jawaban AI tidak dapat dicocokkan dengan bagian ini, jadi tidak ditampilkan. Periksa bagian yang relevan di bawah.",
+  "evidence.answerNotice.ai_failed":
+    "Jawaban AI belum dapat diselesaikan saat ini. Periksa bagian yang relevan di bawah atau coba lagi.",
   "evidence.mapCaption":
     "Arahkan atau pilih pernyataan maupun kutipan untuk menelusuri keterkaitannya, atau pilih garis untuk memeriksanya. Garis putus-putus menunggu peninjauan.",
   "evidence.emptyTitle": "Bangun gambaran perkara.",
