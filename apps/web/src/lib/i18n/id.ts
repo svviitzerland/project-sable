@@ -252,6 +252,15 @@ export const id: Messages = {
   "auth.haveAccount": "Sudah punya akun? Masuk",
   "auth.newAccount": "Baru di Jude? Buat akun",
   "auth.or": "atau",
+  "notice.sources":
+    "Berdasarkan {count} kutipan sumber. Periksa konteks aslinya. Ini bukan tinjauan atas seluruh perkara.",
+  "notice.legal":
+    "Hasil hukum adalah metadata penelusuran. Periksa teks hukum aslinya.",
+  "notice.legalOff":
+    "Pencarian hukum tidak tersedia. Tidak ada teks hukum yang diambil.",
+  "notice.rehearsal":
+    "Latihan hipotetis, bukan keterangan atau prediksi sidang sebenarnya.",
+  "notice.scene": "Latihan hipotetis, terpisah dari keterangan dan temuan.",
   "auth.demoCase": "Perkara Ferdy Sambo, catatan publik",
   "auth.openSynthetic": "Buka perkara demo",
 
@@ -729,7 +738,8 @@ export const id: Messages = {
     "Akhiri latihan ini dan berikan evaluasi latihan untuk saya.",
   "dialogue.practiceTitle": "Bersiap memasuki ruang sidang.",
   "dialogue.assistantTitle": "Telaah perkara secara menyeluruh.",
-  "dialogue.practiceLead": "Berlatih dengan AI yang memerankan pihak lain di ruang sidang: majelis hakim, pihak lawan, dan saksi dari berkas perkara ini. Jawaban mengutip berkas, sehingga setiap fakta dapat diperiksa.",
+  "dialogue.practiceLead":
+    "Berlatih dengan AI yang memerankan pihak lain di ruang sidang: majelis hakim, pihak lawan, dan saksi dari berkas perkara ini. Jawaban mengutip berkas, sehingga setiap fakta dapat diperiksa.",
   "dialogue.assistantLead":
     "Ajukan pertanyaan lanjutan tentang dokumen, sidang, temuan, dan keterkaitan bukti yang sudah dikonfirmasi. Setiap kutipan perkara tetap dapat diperiksa.",
   "dialogue.newRehearsal": "Latihan baru",
@@ -949,18 +959,27 @@ export const id: Messages = {
   "dialogue.cited": "Sumber yang dikutip",
   "dialogue.step.role": "Pilih peran Anda",
   "dialogue.step.conditions": "Periksa kondisi sidang",
-  "dialogue.roleHint.defense": "Periksa saksi dan uji dakwaan. AI memerankan majelis hakim, Penuntut Umum, dan saksi.",
-  "dialogue.roleHint.opposing": "Buktikan dakwaan dan tanggapi pembelaan. AI memerankan majelis hakim, Penasihat Hukum, dan saksi.",
-  "dialogue.roleHint.judge": "Pimpin sidang dan putuskan keberatan. AI memerankan Penuntut Umum, Penasihat Hukum, dan saksi.",
+  "dialogue.roleHint.defense":
+    "Periksa saksi dan uji dakwaan. AI memerankan majelis hakim, Penuntut Umum, dan saksi.",
+  "dialogue.roleHint.opposing":
+    "Buktikan dakwaan dan tanggapi pembelaan. AI memerankan majelis hakim, Penasihat Hukum, dan saksi.",
+  "dialogue.roleHint.judge":
+    "Pimpin sidang dan putuskan keberatan. AI memerankan Penuntut Umum, Penasihat Hukum, dan saksi.",
   "dialogue.editConditions": "Ubah kondisi",
-  "dialogue.summaryNote": "Ini asumsi latihan, bukan prediksi jalannya sidang sebenarnya.",
+  "dialogue.summaryNote":
+    "Ini asumsi latihan, bukan prediksi jalannya sidang sebenarnya.",
   "dialogue.finishDebrief": "Selesai & lihat evaluasi",
   "dialogue.unavailableTitle": "Latihan sidang memerlukan AI.",
-  "dialogue.unavailableText": "Dalam latihan, AI memerankan hakim, Penuntut Umum atau Penasihat Hukum, dan saksi berdasarkan dokumen dan sidang perkara ini. AI belum tersedia di workspace ini, sehingga latihan belum dapat dimulai. Asisten perkara tetap dapat menampilkan sumber yang relevan.",
-  "dialogue.unavailableHistory": "Latihan yang tersimpan tetap dapat dibuka di Riwayat.",
-  "dialogue.unavailablePaused": "AI belum tersedia, sehingga latihan ini belum dapat dilanjutkan. Latihan tetap tersimpan.",
-  "dialogue.legacyReadOnly": "Latihan berskrip lama ini hanya dapat dibaca. Mulai latihan baru untuk berlatih dengan AI.",
-  "dialogue.scene": "{stage} · Anda berperan sebagai {role}. {cast} diperankan AI berdasarkan berkas perkara ini. Mulailah dengan pertanyaan, argumen, atau arahan pertama Anda.",
+  "dialogue.unavailableText":
+    "Dalam latihan, AI memerankan hakim, Penuntut Umum atau Penasihat Hukum, dan saksi berdasarkan dokumen dan sidang perkara ini. AI belum tersedia di workspace ini, sehingga latihan belum dapat dimulai. Asisten perkara tetap dapat menampilkan sumber yang relevan.",
+  "dialogue.unavailableHistory":
+    "Latihan yang tersimpan tetap dapat dibuka di Riwayat.",
+  "dialogue.unavailablePaused":
+    "AI belum tersedia, sehingga latihan ini belum dapat dilanjutkan. Latihan tetap tersimpan.",
+  "dialogue.legacyReadOnly":
+    "Latihan berskrip lama ini hanya dapat dibaca. Mulai latihan baru untuk berlatih dengan AI.",
+  "dialogue.scene":
+    "{stage} · Anda berperan sebagai {role}. {cast} diperankan AI berdasarkan berkas perkara ini. Mulailah dengan pertanyaan, argumen, atau arahan pertama Anda.",
   "dialogue.cast.defense": "Hakim Ketua, Penuntut Umum, dan saksi",
   "dialogue.cast.opposing": "Hakim Ketua, Penasihat Hukum, dan saksi",
   "dialogue.cast.judge": "Penuntut Umum, Penasihat Hukum, dan saksi",
@@ -972,7 +991,8 @@ export const id: Messages = {
   "dialogue.coach.clarity": "Kejelasan.",
   "dialogue.coach.strength": "Sudah tepat.",
   "dialogue.coaching": "Catatan pelatih",
-  "dialogue.coachingHint": "Tampilkan catatan singkat dari pelatih setelah setiap giliran Anda",
+  "dialogue.coachingHint":
+    "Tampilkan catatan singkat dari pelatih setelah setiap giliran Anda",
   "dialogue.debrief.title": "Evaluasi latihan",
   "dialogue.debrief.strength": "Yang sudah kuat",
   "dialogue.debrief.tighten": "Yang perlu dipertajam",

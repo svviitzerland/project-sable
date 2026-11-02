@@ -125,3 +125,14 @@ test("dates use id-ID and en-US formats without shifting plain dates", () => {
   assert.match(formatDate("id", "2026-11-02"), /^2 Nov 2026$/);
   assert.equal(formatDate("en", "not a date"), "not a date");
 });
+
+test("stored English conversation notices render in the interface language", async () => {
+  const { localizeNotice } = await import("../src/lib/notice.ts");
+  const stored =
+    "Based on 19 source excerpts. Check the original context; this is not a review of the entire case. Hypothetical rehearsal, not testimony or a prediction of a real court.";
+  assert.equal(
+    localizeNotice(stored, "id"),
+    "Berdasarkan 19 kutipan sumber. Periksa konteks aslinya. Ini bukan tinjauan atas seluruh perkara. Latihan hipotetis, bukan keterangan atau prediksi sidang sebenarnya.",
+  );
+  assert.equal(localizeNotice("Something new.", "id"), "Something new.");
+});

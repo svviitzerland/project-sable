@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { formatDate, t, type MessageKey } from "../lib/i18n/index.svelte";
+  import { localizeNotice } from "../lib/notice";
+  import {
+    formatDate,
+    i18n,
+    t,
+    type MessageKey,
+  } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
   import {
     ArrowRight,
@@ -435,7 +441,8 @@
   /** Practice titles are generated as "stage · role" enums; show them translated. */
   function sessionTitle(session: Dialogue) {
     const { stage, user_role } = session.conditions ?? {};
-    return session.kind === "practice" && session.title === `${stage} · ${user_role}`
+    return session.kind === "practice" &&
+      session.title === `${stage} · ${user_role}`
       ? `${stageLabel(stage)} · ${roleLabel(user_role)}`
       : session.title;
   }
@@ -445,9 +452,7 @@
   /** Legacy scripted-drill sessions stay readable but cannot continue. */
   let legacy = $derived(practice && active?.mode === "guided");
 
-  let canCompose = $derived(
-    !practice || (!!active && aiReady && !legacy),
-  );
+  let canCompose = $derived(!practice || (!!active && aiReady && !legacy));
 
   type Block =
     | { type: "message"; message: Message }
@@ -478,62 +483,60 @@
 </script>
 
 {#snippet citations(message: Message)}
-{#if !!message.citations.length}<div class={styles.citations}>
-                  <div
-                    class={styles.citationChips}
-                    role="group"
-                    aria-label={t("dialogue.cited")}
-                  >
-                    {#each message.citations as citation, index (index)}<button
-                        type="button"
-                        class={styles.citationChip}
-                        aria-expanded={openCitation[message.id] === index}
-                        aria-controls={`cite-${message.id}-${index}`}
-                        onclick={() =>
-                          (openCitation = {
-                            ...openCitation,
-                            [message.id]:
-                              openCitation[message.id] === index ? -1 : index,
-                          })}
-                      >
-                        <span class={styles.citationNumber}>{index + 1}</span>
-                        <span class={styles.citationTitle}
-                          >{citation.source.title}{citation.source.page
-                            ? t("common.pageSuffix", {
-                                page: citation.source.page,
-                              })
-                            : ""}</span
-                        >
-                      </button>{/each}
-                  </div>
-                  {#each message.citations as citation, index (index)}<div
-                      id={`cite-${message.id}-${index}`}
-                      class={styles.citationPanel}
-                      hidden={openCitation[message.id] !== index}
-                    >
-                      <blockquote>“{citation.quote}”</blockquote>
-                      <p class={styles.sourceText}>{citation.source.text}</p>
-                      <div class={styles.citationLinks}>
-                        {#if citation.source.document_id}<a
-                            href={`/api/v1/cases/${caseId}/documents/${citation.source.document_id}/original`}
-                            target="_blank"
-                            rel="external noreferrer"
-                          >
-                            {t("dialogue.openOriginal")}
-                            <ExternalLink size={13}></ExternalLink>
-                          </a>{/if}
-                        {#if citation.source.hearing_id}<button
-                            class={ui.textButton}
-                            disabled={!!busy}
-                            onclick={() =>
-                              openHearing(citation.source.hearing_id!)}
-                          >
-                            {t("common.openHearing")}
-                            <ArrowRight size={13}></ArrowRight>
-                          </button>{/if}
-                      </div>
-                    </div>{/each}
-                </div>{/if}
+  {#if !!message.citations.length}<div class={styles.citations}>
+      <div
+        class={styles.citationChips}
+        role="group"
+        aria-label={t("dialogue.cited")}
+      >
+        {#each message.citations as citation, index (index)}<button
+            type="button"
+            class={styles.citationChip}
+            aria-expanded={openCitation[message.id] === index}
+            aria-controls={`cite-${message.id}-${index}`}
+            onclick={() =>
+              (openCitation = {
+                ...openCitation,
+                [message.id]: openCitation[message.id] === index ? -1 : index,
+              })}
+          >
+            <span class={styles.citationNumber}>{index + 1}</span>
+            <span class={styles.citationTitle}
+              >{citation.source.title}{citation.source.page
+                ? t("common.pageSuffix", {
+                    page: citation.source.page,
+                  })
+                : ""}</span
+            >
+          </button>{/each}
+      </div>
+      {#each message.citations as citation, index (index)}<div
+          id={`cite-${message.id}-${index}`}
+          class={styles.citationPanel}
+          hidden={openCitation[message.id] !== index}
+        >
+          <blockquote>“{citation.quote}”</blockquote>
+          <p class={styles.sourceText}>{citation.source.text}</p>
+          <div class={styles.citationLinks}>
+            {#if citation.source.document_id}<a
+                href={`/api/v1/cases/${caseId}/documents/${citation.source.document_id}/original`}
+                target="_blank"
+                rel="external noreferrer"
+              >
+                {t("dialogue.openOriginal")}
+                <ExternalLink size={13}></ExternalLink>
+              </a>{/if}
+            {#if citation.source.hearing_id}<button
+                class={ui.textButton}
+                disabled={!!busy}
+                onclick={() => openHearing(citation.source.hearing_id!)}
+              >
+                {t("common.openHearing")}
+                <ArrowRight size={13}></ArrowRight>
+              </button>{/if}
+          </div>
+        </div>{/each}
+    </div>{/if}
 {/snippet}
 
 <div class={styles.screen}>
@@ -949,7 +952,7 @@
                     </ul>
                   </div>{/if}{/each}
               {#if block.items.at(-1)?.notice}<p class={styles.notice}>
-                  {block.items.at(-1)?.notice}
+                  {localizeNotice(block.items.at(-1)?.notice ?? "", i18n.lang)}
                 </p>{/if}
             </section>{:else if block.message.role === "scene"}<p
               class={styles.scene}
@@ -967,7 +970,8 @@
                 </p>
                 {@render citations(block.message)}
               </div>
-            </aside>{:else}{@const message = block.message}<article
+            </aside>{:else}{@const message = block.message}
+            <article
               class={`${styles.message} ${message.role === "user" ? styles.userMessage : ""}`}
               data-speaker={practice && message.role !== "user"
                 ? speakerRole(message.speaker)
@@ -1000,7 +1004,7 @@
                       </a>{/each}
                   </div>{/if}
                 {#if message.notice}<p class={styles.notice}>
-                    {message.notice}
+                    {localizeNotice(message.notice, i18n.lang)}
                   </p>{/if}
               </div>
             </article>{/if}{/each}
@@ -1033,9 +1037,7 @@
               : t("dialogue.askLabel")}
           </label>
           <div class={styles.box}>
-            {#if selectedRefs.length}<ul
-                class={styles.selected}
-              >
+            {#if selectedRefs.length}<ul class={styles.selected}>
                 {#each selectedRefs as id (id)}<li>
                     <FileText size={13} aria-hidden="true"></FileText>
                     <span>{refLabel(id)}</span>
@@ -1106,73 +1108,73 @@
               </button>
             </div>
             <div
-                id="dialogue-sources"
-                class={styles.sources}
-                hidden={!sourcesOpen}
-              >
-                <fieldset>
-                  <legend>
-                    <FileText size={14} aria-hidden="true"></FileText>
-                    {t("dialogue.reference")}
-                  </legend>
-                  <p class={styles.quiet}>{t("dialogue.referenceHelp")}</p>
-                  <div class={styles.refList}>
-                    {#if initialReference && !references.some((r) => r.id === initialReference)}<label
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedRefs.includes(initialReference)}
-                          oninput={(e) =>
-                            toggleRef(initialReference, e.currentTarget.checked)}
-                        />
-                        <span>{t("dialogue.selectedPassage")}</span>
-                      </label>{/if}
-                    {#each references as reference (reference.id)}<label>
-                        <input
-                          type="checkbox"
-                          checked={selectedRefs.includes(reference.id)}
-                          disabled={!selectedRefs.includes(reference.id) &&
-                            selectedRefs.length >= 6}
-                          oninput={(e) =>
-                            toggleRef(reference.id, e.currentTarget.checked)}
-                        />
-                        <span>
-                          {reference.label}
-                          <small>
-                            {reference.kind === "hearing"
-                              ? t("common.hearingTranscript")
-                              : t("dialogue.caseDocument")}
-                          </small>
-                        </span>
-                      </label>{/each}
-                    {#if !references.length && !initialReference}<p
-                        class={styles.quiet}
-                      >
-                        {t("dialogue.noReferences")}
-                      </p>{/if}
-                  </div>
-                </fieldset>
-                {#if !practice}<div class={styles.legalField}>
-                    <label>
-                      <span class={styles.legend}>
-                        <BookOpen size={14} aria-hidden="true"></BookOpen>
-                        {t("dialogue.legalTerms")}
-                      </span>
+              id="dialogue-sources"
+              class={styles.sources}
+              hidden={!sourcesOpen}
+            >
+              <fieldset>
+                <legend>
+                  <FileText size={14} aria-hidden="true"></FileText>
+                  {t("dialogue.reference")}
+                </legend>
+                <p class={styles.quiet}>{t("dialogue.referenceHelp")}</p>
+                <div class={styles.refList}>
+                  {#if initialReference && !references.some((r) => r.id === initialReference)}<label
+                    >
                       <input
-                        value={law}
-                        maxlength={300}
-                        disabled={!caps?.legal.configured}
-                        oninput={(e) => (law = e.currentTarget.value)}
-                        placeholder={t("dialogue.legalPlaceholder")}
+                        type="checkbox"
+                        checked={selectedRefs.includes(initialReference)}
+                        oninput={(e) =>
+                          toggleRef(initialReference, e.currentTarget.checked)}
                       />
-                    </label>
-                    <p class={styles.quiet}>
-                      {caps?.legal.configured
-                        ? t("dialogue.legalHelp")
-                        : t("dialogue.legalUnavailable")}
-                    </p>
-                  </div>{/if}
-              </div>
+                      <span>{t("dialogue.selectedPassage")}</span>
+                    </label>{/if}
+                  {#each references as reference (reference.id)}<label>
+                      <input
+                        type="checkbox"
+                        checked={selectedRefs.includes(reference.id)}
+                        disabled={!selectedRefs.includes(reference.id) &&
+                          selectedRefs.length >= 6}
+                        oninput={(e) =>
+                          toggleRef(reference.id, e.currentTarget.checked)}
+                      />
+                      <span>
+                        {reference.label}
+                        <small>
+                          {reference.kind === "hearing"
+                            ? t("common.hearingTranscript")
+                            : t("dialogue.caseDocument")}
+                        </small>
+                      </span>
+                    </label>{/each}
+                  {#if !references.length && !initialReference}<p
+                      class={styles.quiet}
+                    >
+                      {t("dialogue.noReferences")}
+                    </p>{/if}
+                </div>
+              </fieldset>
+              {#if !practice}<div class={styles.legalField}>
+                  <label>
+                    <span class={styles.legend}>
+                      <BookOpen size={14} aria-hidden="true"></BookOpen>
+                      {t("dialogue.legalTerms")}
+                    </span>
+                    <input
+                      value={law}
+                      maxlength={300}
+                      disabled={!caps?.legal.configured}
+                      oninput={(e) => (law = e.currentTarget.value)}
+                      placeholder={t("dialogue.legalPlaceholder")}
+                    />
+                  </label>
+                  <p class={styles.quiet}>
+                    {caps?.legal.configured
+                      ? t("dialogue.legalHelp")
+                      : t("dialogue.legalUnavailable")}
+                  </p>
+                </div>{/if}
+            </div>
           </div>
           <p class={styles.footnote}>
             {practice
@@ -1184,7 +1186,9 @@
           </p>
         </form>{:else if practice && active}<div class={styles.complete}>
           <p>
-            {legacy ? t("dialogue.legacyReadOnly") : t("dialogue.unavailablePaused")}
+            {legacy
+              ? t("dialogue.legacyReadOnly")
+              : t("dialogue.unavailablePaused")}
           </p>
           <button class={ui.secondary} onclick={() => newSession()}>
             {t("dialogue.newRehearsal")}

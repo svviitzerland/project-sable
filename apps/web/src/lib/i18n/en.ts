@@ -249,6 +249,16 @@ export const en = {
   "auth.haveAccount": "Already have an account? Sign in",
   "auth.newAccount": "New to Jude? Create an account",
   "auth.or": "or",
+  "notice.sources":
+    "Based on {count} source excerpts. Check the original context. This is not a review of the entire case.",
+  "notice.legal":
+    "Legal results are discovery metadata. Verify the original legal text.",
+  "notice.legalOff":
+    "Legal search is unavailable. No legal text was retrieved.",
+  "notice.rehearsal":
+    "Hypothetical rehearsal, not testimony or a prediction of a real court.",
+  "notice.scene":
+    "Hypothetical rehearsal, separate from testimony and findings.",
   "auth.demoCase": "Ferdy Sambo case, a public record",
   "auth.openSynthetic": "Open the demo case",
 
@@ -724,7 +734,8 @@ export const en = {
     "End this rehearsal and give me a practice debrief.",
   "dialogue.practiceTitle": "Prepare for the room.",
   "dialogue.assistantTitle": "Think through the whole case.",
-  "dialogue.practiceLead": "Rehearse with AI playing the other people in the room: the bench, the other side and witnesses drawn from this case file. Replies quote the record, so every fact can be checked.",
+  "dialogue.practiceLead":
+    "Rehearse with AI playing the other people in the room: the bench, the other side and witnesses drawn from this case file. Replies quote the record, so every fact can be checked.",
   "dialogue.assistantLead":
     "Ask follow-up questions across documents, hearings, findings, and confirmed evidence connections. Every case quotation stays inspectable.",
   "dialogue.newRehearsal": "New rehearsal",
@@ -941,20 +952,31 @@ export const en = {
   "dialogue.cited": "Sources cited",
   "dialogue.step.role": "Choose your role",
   "dialogue.step.conditions": "Check the conditions",
-  "dialogue.roleHint.defense": "Examine witnesses and test the charge. AI plays the bench, the prosecutor and the witness.",
-  "dialogue.roleHint.opposing": "Prove the charge and answer the defense. AI plays the bench, defense counsel and the witness.",
-  "dialogue.roleHint.judge": "Lead the hearing and rule on objections. AI plays the prosecutor, defense counsel and the witness.",
+  "dialogue.roleHint.defense":
+    "Examine witnesses and test the charge. AI plays the bench, the prosecutor and the witness.",
+  "dialogue.roleHint.opposing":
+    "Prove the charge and answer the defense. AI plays the bench, defense counsel and the witness.",
+  "dialogue.roleHint.judge":
+    "Lead the hearing and rule on objections. AI plays the prosecutor, defense counsel and the witness.",
   "dialogue.editConditions": "Change conditions",
-  "dialogue.summaryNote": "Practice assumptions, not a prediction of the real hearing.",
+  "dialogue.summaryNote":
+    "Practice assumptions, not a prediction of the real hearing.",
   "dialogue.finishDebrief": "Finish & see debrief",
   "dialogue.unavailableTitle": "Courtroom practice needs AI.",
-  "dialogue.unavailableText": "In practice, AI plays the judge, the prosecutor or defense counsel, and witnesses using this case's documents and hearings. AI is not available in this workspace right now, so a rehearsal cannot start. The case assistant can still show relevant sources.",
-  "dialogue.unavailableHistory": "Saved rehearsals remain available under History.",
-  "dialogue.unavailablePaused": "AI is not available right now, so this rehearsal cannot continue. It stays saved.",
-  "dialogue.legacyReadOnly": "This older scripted drill is read-only. Start a new rehearsal to practise with AI.",
-  "dialogue.scene": "{stage} · You are practising as {role}. {cast} are played by AI from this case's material. Begin with your first question, argument or direction.",
-  "dialogue.cast.defense": "The presiding judge, the prosecutor and the witness",
-  "dialogue.cast.opposing": "The presiding judge, defense counsel and the witness",
+  "dialogue.unavailableText":
+    "In practice, AI plays the judge, the prosecutor or defense counsel, and witnesses using this case's documents and hearings. AI is not available in this workspace right now, so a rehearsal cannot start. The case assistant can still show relevant sources.",
+  "dialogue.unavailableHistory":
+    "Saved rehearsals remain available under History.",
+  "dialogue.unavailablePaused":
+    "AI is not available right now, so this rehearsal cannot continue. It stays saved.",
+  "dialogue.legacyReadOnly":
+    "This older scripted drill is read-only. Start a new rehearsal to practise with AI.",
+  "dialogue.scene":
+    "{stage} · You are practising as {role}. {cast} are played by AI from this case's material. Begin with your first question, argument or direction.",
+  "dialogue.cast.defense":
+    "The presiding judge, the prosecutor and the witness",
+  "dialogue.cast.opposing":
+    "The presiding judge, defense counsel and the witness",
   "dialogue.cast.judge": "The prosecutor, defense counsel and the witness",
   "dialogue.coachNote": "Coaching note",
   "dialogue.coach.leading": "Leading question.",
@@ -964,7 +986,8 @@ export const en = {
   "dialogue.coach.clarity": "Clarity.",
   "dialogue.coach.strength": "Worked well.",
   "dialogue.coaching": "Coaching",
-  "dialogue.coachingHint": "Show a short coaching note after each of your turns",
+  "dialogue.coachingHint":
+    "Show a short coaching note after each of your turns",
   "dialogue.debrief.title": "Debrief",
   "dialogue.debrief.strength": "What worked",
   "dialogue.debrief.tighten": "What to tighten",
