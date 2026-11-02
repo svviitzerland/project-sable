@@ -1,4 +1,4 @@
-import { aiConfigured, embeddingsConfigured } from "./config";
+import { aiConfigured } from "./config";
 import { z } from "zod";
 import {
   citationSchema,
@@ -9,9 +9,9 @@ import {
 } from "./contracts";
 import type { Runtime } from "./runtime";
 import { assert, ProviderError } from "./errors";
-import { embed, structured } from "./providers";
+import { structured } from "./providers";
 import { exactSourceQuote } from "./quotes";
-import { tokens, cosine, retrieve } from "./retrieval";
+import { tokens, retrieve } from "./retrieval";
 export const relationSchema = z.enum([
   "supports",
   "conflicts",
@@ -22,7 +22,6 @@ export const relationSchema = z.enum([
 export const evidenceNoticeCodeSchema = z.enum([
   "similarity_advisory",
   "links_ready",
-  "embeddings_partial",
   "ai_unverified",
 ]);
 export type EvidenceNoticeCode = z.infer<typeof evidenceNoticeCodeSchema>;
@@ -189,9 +188,6 @@ export async function graph(rt: Runtime, caseId: string) {
     edges,
     total_passages: chunks.length,
     shown_passages: selected.length,
-    indexed_passages: chunks.filter(
-      (c) => c.embedding && c.embedding_model === rt.config.embeddingModel,
-    ).length,
     notice:
       "Similarity suggests a connection, not support or contradiction. Inspect both passages before confirming a link.",
     // Clients localize notices by code; `notice` stays as English fallback text.
@@ -203,15 +199,12 @@ export function candidatePairs(chunks: Chunk[]) {
   for (const [i, a] of chunks.entries())
     for (const b of chunks.slice(i + 1)) {
       if (a.document_id === b.document_id) continue;
-      const semantic = !!a.embedding && !!b.embedding,
-        at = tokens(a.text),
+      const at = tokens(a.text),
         bt = tokens(b.text),
-        score = semantic
-          ? cosine(a.embedding!, b.embedding!)
-          : [...at].filter((t) => bt.has(t)).length /
-            Math.max(1, new Set([...at, ...bt]).size);
-      if (score >= (semantic ? 0.68 : 0.12))
-        pairs.push({ score, a, b, basis: semantic ? "semantic" : "keywords" });
+        score =
+          [...at].filter((t) => bt.has(t)).length /
+          Math.max(1, new Set([...at, ...bt]).size);
+      if (score >= 0.12) pairs.push({ score, a, b, basis: "keywords" });
     }
   return pairs.sort((a, b) => b.score - a.score).slice(0, 12);
 }
@@ -224,37 +217,6 @@ export async function buildLinks(rt: Runtime, caseId: string) {
   );
   let notice = "";
   const noticeCodes: EvidenceNoticeCode[] = [];
-  if (embeddingsConfigured(rt.config)) {
-    const missing = chunks.filter(
-      (c) => !c.embedding || c.embedding_model !== rt.config.embeddingModel,
-    );
-    try {
-      for (let i = 0; i < missing.length; i += 24) {
-        const batch = missing.slice(i, i + 24),
-          vectors = await embed(
-            rt,
-            batch.map((c) => c.text),
-          );
-        if (!vectors) break;
-        for (const [j, c] of batch.entries()) {
-          c.embedding = vectors[j];
-          c.embedding_model = rt.config.embeddingModel;
-          await rt.db.update(
-            "chunks",
-            { embedding: c.embedding, embedding_model: c.embedding_model },
-            "id=?",
-            [c.id],
-          );
-        }
-      }
-    } catch {
-      notice =
-        "Some related passages may be missing. Review these suggestions or try again later.";
-      noticeCodes.push("embeddings_partial");
-    }
-  }
-  for (const c of chunks)
-    if (c.embedding_model !== rt.config.embeddingModel) c.embedding = null;
   const pairs = candidatePairs(chunks.slice(0, 120));
   let proposed: Partial<Link>[] = [];
   if (pairs.length && aiConfigured(rt.config))

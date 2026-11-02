@@ -59,7 +59,6 @@
     edges: Edge[];
     total_passages: number;
     shown_passages: number;
-    indexed_passages: number;
     notice: string;
     notice_code?: NoticeCode;
   };
@@ -67,7 +66,6 @@
   type NoticeCode =
     | "similarity_advisory"
     | "links_ready"
-    | "embeddings_partial"
     | "ai_unverified";
 
   type Answer = {

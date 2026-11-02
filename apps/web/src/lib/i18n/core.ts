@@ -9,7 +9,6 @@ export type { MessageKey, Messages } from "./en";
 export type Lang = "id" | "en";
 export type Params = Record<string, string | number>;
 
-export const LANGS: readonly Lang[] = ["id", "en"];
 export const LANG_COOKIE = "lang";
 export const LANG_STORAGE_KEY = "jude.lang";
 /** Indonesian lawyers are the primary audience, so no signal at all means Indonesian. */

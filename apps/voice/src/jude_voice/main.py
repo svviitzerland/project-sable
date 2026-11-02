@@ -49,18 +49,18 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
         if not authorization or not hmac.compare_digest(authorization, expected):
             raise HTTPException(status_code=401, detail="Invalid voice API token.")
 
-    def read_clip(file: UploadFile, settings: Settings, maximum: float) -> tuple[np.ndarray, int]:
+    def read_clip(file: UploadFile, settings: Settings) -> tuple[np.ndarray, int]:
         data = file.file.read(settings.max_upload_bytes + 1)
         if len(data) > settings.max_upload_bytes:
             raise HTTPException(status_code=413, detail="Audio is too large.")
         samples, rate = decode(data)
-        length = duration(samples, rate)
-        if length > maximum:
+        maximum = settings.max_clip_seconds
+        if duration(samples, rate) > maximum:
             raise HTTPException(status_code=413, detail=f"Audio must be at most {maximum:g} s.")
         return samples, rate
 
     def embed_clip(file: UploadFile, settings: Settings, engine: Engine):
-        samples, rate = read_clip(file, settings, settings.max_clip_seconds)
+        samples, rate = read_clip(file, settings)
         length = duration(samples, rate)
         if length < settings.min_clip_seconds:
             raise HTTPException(
@@ -80,7 +80,6 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
             "engine": engine.name,
             "model": engine.model,
             "dim": engine.dim,
-            "diarization": engine.diarization_available,
         }
 
     @app.post("/v1/embeddings", dependencies=[Auth])
@@ -131,30 +130,6 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
             "embedding": [round(float(x), 6) for x in vector],
             "match": {"id": match.id, "score": match.score} if match else None,
             "scores": [{"id": s.id, "score": s.score} for s in scores[:10]],
-        }
-
-    @app.post("/v1/diarize", dependencies=[Auth])
-    def diarize(
-        request: Request,
-        file: Annotated[UploadFile, File()],
-        num_speakers: Annotated[int | None, Form(ge=1, le=20)] = None,
-        min_speakers: Annotated[int | None, Form(ge=1, le=20)] = None,
-        max_speakers: Annotated[int | None, Form(ge=1, le=20)] = None,
-    ):
-        settings, engine = config(request), current_engine(request)
-        samples, rate = read_clip(file, settings, settings.max_recording_seconds)
-        result = engine.diarize(samples, rate, num_speakers, min_speakers, max_speakers)
-        return {
-            "model": engine.model,
-            "duration": round(duration(samples, rate), 3),
-            "segments": [
-                {"speaker": t.speaker, "start": round(t.start, 3), "end": round(t.end, 3)}
-                for t in result.turns
-            ],
-            "speakers": [
-                {"speaker": label, "embedding": [round(float(x), 6) for x in vector]}
-                for label, vector in result.embeddings.items()
-            ],
         }
 
     return app

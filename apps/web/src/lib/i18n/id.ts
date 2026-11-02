@@ -382,16 +382,7 @@ export const id: Messages = {
   "manual.skeleton": "Menyimpan keterangan…",
 
   // Label pembicara
-  "speakers.title": "Label pembicara",
-  "speakers.text":
-    "Beri setiap pembicara nama atau peran di persidangan, misalnya Hakim Ketua, Penuntut Umum, Penasihat Hukum, Saksi, atau Terdakwa. Pastikan siapa yang berbicara sebelum mengubah label.",
-  "speakers.placeholder": "Nama atau peran yang sudah diverifikasi",
-  "speakers.save": "Simpan label",
-  "speakers.empty": "Pembicara muncul setelah Anda menambahkan transkrip.",
-  "speakers.voices":
-    "Suara yang berulang memakai satu label di seluruh rekaman dan sidang dalam perkara ini. Kecocokan suara hanyalah saran. Pastikan siapa yang berbicara.",
   "speakers.forget": "Hapus sidik suara",
-  "speakers.skeleton": "Menyimpan label pembicara…",
   "speakers.voice": "Suara {n}",
   "speakers.numbered": "Pembicara {n}",
 
@@ -643,8 +634,6 @@ export const id: Messages = {
   "evidence.notice.similarity_advisory":
     "Kemiripan menandakan adanya hubungan, bukan dukungan atau pertentangan. Periksa kedua kutipan sebelum mengonfirmasi tautan.",
   "evidence.notice.links_ready": "Saran keterkaitan siap diperiksa.",
-  "evidence.notice.embeddings_partial":
-    "Sebagian kutipan terkait mungkin belum muncul. Tinjau saran ini atau coba lagi nanti.",
   "evidence.notice.ai_unverified":
     "Hubungan dari AI tidak dapat diverifikasi, jadi yang ditampilkan adalah saran berdasarkan kemiripan.",
   "evidence.answerNotice.no_passages":
@@ -761,7 +750,6 @@ export const id: Messages = {
   "dialogue.field.goals": "Tujuan latihan",
   "dialogue.field.assumptions": "Asumsi skenario dan aturan dasar",
   "dialogue.start": "Mulai latihan",
-  "dialogue.assistantEmptyTitle": "Pertanyaan, dengan perkara di baliknya.",
   "dialogue.practiceMeta": "Anda: {role} · {stage} · {difficulty}",
   "dialogue.assistantMeta":
     "Jawaban memakai cuplikan perkara yang relevan. Buka setiap kutipan untuk memeriksa konteks aslinya.",
@@ -788,7 +776,6 @@ export const id: Messages = {
   "dialogue.caseDocument": "Dokumen perkara",
   "dialogue.noReferences":
     "Tambahkan dokumen atau sidang agar dapat dirujuk di sini.",
-  "dialogue.legalLookup": "Sertakan pencarian hukum",
   "dialogue.legalTerms": "Kata kunci hukum",
   "dialogue.legalPlaceholder": "mis. keterangan saksi, beban pembuktian",
   "dialogue.legalHelp":
@@ -799,8 +786,6 @@ export const id: Messages = {
   "dialogue.askLabel": "Tanya tentang perkara ini",
   "dialogue.practicePlaceholder":
     "Sampaikan argumen, ajukan pertanyaan, atau pimpin sidang…",
-  "dialogue.assistantPlaceholder":
-    "Ajukan pertanyaan atau lanjutkan dari jawaban sebelumnya…",
   "dialogue.footerPractice":
     "Latihan hipotetis · tidak pernah ditambahkan ke bukti",
   "dialogue.footerAi":
@@ -1035,7 +1020,6 @@ export const id: Messages = {
   "pricing.trial.f3": "2 jam sidang transkripsi dan analisis langsung",
   "pricing.trial.f4": "30 pertanyaan AI",
   "pricing.trial.f5": "Ekspor perkara ke berkas .jude",
-  "pricing.lite.name": "Advokat Lite",
   "pricing.lite.for": "Untuk advokat yang sesekali menghadiri sidang.",
   "pricing.lite.f2": "150 pertanyaan AI per bulan",
   "pricing.lite.f3": "Perkara tanpa batas",
@@ -1044,14 +1028,12 @@ export const id: Messages = {
   "pricing.lite.f6":
     "Peta bukti, asisten perkara, dan latihan sidang dengan AI",
   "pricing.lite.f7": "Rujukan hukum dari Pasal.id dan ekspor .jude",
-  "pricing.pro.name": "Advokat Pro",
   "pricing.pro.for": "Untuk advokat yang bersidang setiap pekan.",
   "pricing.pro.includes": "Semua fitur Lite, ditambah:",
   "pricing.pro.f2": "300 pertanyaan AI per bulan (pemakaian wajar)",
   "pricing.pro.f3":
     "Pengenalan suara lintas sidang, suara yang sama tetap dengan namanya",
   "pricing.pro.f4": "Jam tambahan {price}/jam, hanya jika Anda aktifkan",
-  "pricing.kantor.name": "Kantor Hukum",
   "pricing.kantor.badge": "Direkomendasikan untuk tim",
   "pricing.kantor.for":
     "Untuk tim yang menangani perkara bersama. Minimal 3 akun.",
@@ -1197,7 +1179,6 @@ export const id: Messages = {
   "pricing.closing.lead":
     "14 hari gratis, tanpa kartu kredit. Batal kapan saja.",
   "pricing.footer.home": "Beranda",
-  "pricing.footer.pricing": "Harga",
   "pricing.modal.title": "Aktifkan {plan}",
   "pricing.modal.demo":
     "Mode demo: tidak ada pembayaran, paket langsung aktif.",

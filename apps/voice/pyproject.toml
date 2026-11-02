@@ -1,7 +1,7 @@
 [project]
 name = "jude-voice"
 version = "0.1.0"
-description = "Voice API for Jude: speaker voiceprints, identification and offline diarization."
+description = "Voice API for Jude: speaker voiceprints and identification."
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "fastapi>=0.115",

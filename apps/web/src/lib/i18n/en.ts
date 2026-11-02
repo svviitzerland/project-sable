@@ -379,16 +379,7 @@ export const en = {
   "manual.skeleton": "Saving testimony…",
 
   // Speaker labels
-  "speakers.title": "Speaker labels",
-  "speakers.text":
-    "Give each speaker a name or courtroom role. Confirm who is speaking before changing a label.",
-  "speakers.placeholder": "Verified name or role",
-  "speakers.save": "Save label",
-  "speakers.empty": "Speakers appear after you add a transcript.",
-  "speakers.voices":
-    "Recurring voices keep one label across recordings and hearings in this case. A voice match is a suggestion. Confirm who is speaking.",
   "speakers.forget": "Forget voiceprints",
-  "speakers.skeleton": "Saving speaker labels…",
   "speakers.voice": "Voice {n}",
   "speakers.numbered": "Speaker {n}",
 
@@ -640,8 +631,6 @@ export const en = {
   "evidence.notice.similarity_advisory":
     "Similarity suggests a connection, not support or contradiction. Inspect both passages before confirming a link.",
   "evidence.notice.links_ready": "Suggested links are ready to inspect.",
-  "evidence.notice.embeddings_partial":
-    "Some related passages may be missing. Review these suggestions or try again later.",
   "evidence.notice.ai_unverified":
     "AI relationships could not be verified, so similarity suggestions are shown.",
   "evidence.answerNotice.no_passages":
@@ -757,7 +746,6 @@ export const en = {
   "dialogue.field.goals": "Practice goals",
   "dialogue.field.assumptions": "Scenario assumptions and ground rules",
   "dialogue.start": "Start rehearsal",
-  "dialogue.assistantEmptyTitle": "A question, with the case behind it.",
   "dialogue.practiceMeta": "You: {role} · {stage} · {difficulty}",
   "dialogue.assistantMeta":
     "Answers use relevant case excerpts. Open each citation to check the original context.",
@@ -783,7 +771,6 @@ export const en = {
   "dialogue.selectedPassage": "Selected evidence passage",
   "dialogue.caseDocument": "Case document",
   "dialogue.noReferences": "Add documents or a hearing to reference them here.",
-  "dialogue.legalLookup": "Include legal lookup",
   "dialogue.legalTerms": "Legal search terms",
   "dialogue.legalPlaceholder": "e.g. witness testimony, burden of proof",
   "dialogue.legalHelp":
@@ -794,8 +781,6 @@ export const en = {
   "dialogue.askLabel": "Ask about this case",
   "dialogue.practicePlaceholder":
     "Make your argument, ask a question, or direct the hearing…",
-  "dialogue.assistantPlaceholder":
-    "Ask a question or follow up on an earlier answer…",
   "dialogue.footerPractice": "Hypothetical practice · never added to evidence",
   "dialogue.footerAi": "Citations verify quoted text, not legal correctness.",
   "dialogue.footerNoAi": "Source search only · AI replies are unavailable",
@@ -1029,7 +1014,6 @@ export const en = {
   "pricing.trial.f3": "2 hearing hours of live transcription and analysis",
   "pricing.trial.f4": "30 AI questions",
   "pricing.trial.f5": "Case export to .jude files",
-  "pricing.lite.name": "Advokat Lite",
   "pricing.lite.for": "For advocates who attend an occasional hearing.",
   "pricing.lite.f2": "150 AI questions per month",
   "pricing.lite.f3": "Unlimited cases",
@@ -1037,14 +1021,12 @@ export const en = {
   "pricing.lite.f5": "Findings against the case file with exact citations",
   "pricing.lite.f6": "Evidence map, case assistant and AI courtroom practice",
   "pricing.lite.f7": "Legal references from Pasal.id and .jude export",
-  "pricing.pro.name": "Advokat Pro",
   "pricing.pro.for": "For advocates in court every week.",
   "pricing.pro.includes": "Everything in Lite, plus:",
   "pricing.pro.f2": "300 AI questions per month (fair use)",
   "pricing.pro.f3":
     "Voice recognition across hearings, so the same voice keeps its name",
   "pricing.pro.f4": "Extra hours {price}/hour, only if you turn them on",
-  "pricing.kantor.name": "Law firm",
   "pricing.kantor.badge": "Recommended for teams",
   "pricing.kantor.for": "For teams working cases together. Minimum 3 accounts.",
   "pricing.kantor.includes": "Everything in Pro, plus:",
@@ -1186,7 +1168,6 @@ export const en = {
   "pricing.closing.title2": "with the sources beside you.",
   "pricing.closing.lead": "14 days free, no credit card. Cancel anytime.",
   "pricing.footer.home": "Home",
-  "pricing.footer.pricing": "Pricing",
   "pricing.modal.title": "Activate {plan}",
   "pricing.modal.demo":
     "Demo mode: no payment is taken and the plan applies immediately.",

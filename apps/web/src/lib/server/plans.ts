@@ -49,7 +49,6 @@ export const planOutput = z.object({
     ai_questions: z.boolean(),
   }),
 });
-export type PlanOutput = z.infer<typeof planOutput>;
 
 const iso = (value: string | Date | null | undefined) =>
   value ? new Date(value).toISOString() : null;

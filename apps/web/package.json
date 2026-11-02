@@ -11,8 +11,7 @@
     "lint": "eslint .",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "node --import tsx --test tests/*.test.ts tests/*.test.mjs",
-    "test:e2e": "playwright test",
-    "evaluate": "tsx scripts/evaluate.ts"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@aws-crypto/sha256-js": "^5.2.0",

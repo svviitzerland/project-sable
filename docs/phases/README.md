@@ -24,3 +24,4 @@ Keep plans and results for each project phase here. Suggested file format name: 
 - [Bedrock model choice](2026-11-02-model-choice.md): benchmark of cheap Bedrock models on the public demo case, Nova 2 Lite default tier and Claude Sonnet 4.6 review.
 - [Cleanup](2026-11-02-cleanup.md): simulation and Speechmatics leftovers removed, provider-neutral errors, real demo excerpts on the landing page, unused copy removed, docs aligned with Transcribe.
 - [Pricing and simulated plans](2026-11-02-pricing.md): public `/pricing` page, plan calculator, simulated plan switch with usage metering, unit economics.
+- [Trim](2026-11-02-trim.md): OpenRouter, embeddings, the synthetic evaluation harness, the Cendana pack and voice diarization removed; minimal `.env.example` files.

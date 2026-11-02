@@ -28,7 +28,7 @@ def wav(samples: np.ndarray, rate: int = RATE) -> bytes:
 
 @pytest.fixture
 def client():
-    settings = Settings(token=TOKEN, engine="fake", max_recording_seconds=120)
+    settings = Settings(token=TOKEN, engine="fake")
     with TestClient(create_app(settings, FakeEngine())) as client:
         yield client
 
@@ -89,15 +89,6 @@ def test_identify_validates_candidates(client):
     assert response.status_code == 422
     assert post(client, "/v1/identify", tone(200, 2), candidates="{").status_code == 422
     assert post(client, "/v1/identify", tone(200, 2), threshold="1.5").status_code == 422
-
-
-def test_diarize_separates_two_synthetic_voices(client):
-    audio = np.concatenate([tone(180, 4.5), tone(2400, 4.5), tone(180, 3)])
-    body = post(client, "/v1/diarize", audio).json()
-    speakers = [s["speaker"] for s in body["segments"]]
-    assert speakers == ["SPEAKER_00", "SPEAKER_01", "SPEAKER_00"]
-    assert body["segments"][1]["start"] == pytest.approx(4.5)
-    assert {s["speaker"] for s in body["speakers"]} == {"SPEAKER_00", "SPEAKER_01"}
 
 
 def test_settings_require_a_real_token(monkeypatch):

@@ -8,7 +8,7 @@ Lawyers in Indonesian criminal proceedings must follow testimony while comparing
 
 The marketing introduction remains at `/`, with a prominent Open workspace action and Sign in links in desktop/mobile navigation. `/workspace` provides account registration/sign-in, isolated cases, document ingestion/search/original download, transcript capture, progressive source-linked findings, independent-review details, review notes, speaker labels, legal discovery, provider status, portable `.jude` export/import, a separate hearing library, and an evidence graph with natural-language search.
 
-Local SQLite and private files work without external accounts. Optional PostgreSQL/pgvector and private S3 storage paths are supplied. Amazon Transcribe streaming, Amazon Bedrock, S3, Pasal.id and the optional voice service are implemented with protocol/contract tests, and OpenRouter remains an optional local AI provider. Real provider validation was done in production on 2026-11-02: live microphone transcription through Amazon Transcribe streaming and Bedrock screening, review, assistant and practice calls (on the public demo case) were verified. Pasal.id, production S3 and the voice service have not yet had an authorized live acceptance run. Pasal.id responses remain discovery metadata, separate from case evidence.
+Local SQLite and private files work without external accounts. Optional PostgreSQL/pgvector and private S3 storage paths are supplied. Amazon Transcribe streaming, Amazon Bedrock, S3, Pasal.id and the optional voice service are implemented with protocol/contract tests. Bedrock is the only AI provider; with `AI_PROVIDER` empty, AI features stay off. Real provider validation was done in production on 2026-11-02: live microphone transcription through Amazon Transcribe streaming and Bedrock screening, review, assistant and practice calls (on the public demo case) were verified. Pasal.id, production S3 and the voice service have not yet had an authorized live acceptance run. Pasal.id responses remain discovery metadata, separate from case evidence.
 
 ## Pricing
 
@@ -22,7 +22,7 @@ The scripted synthetic hearing (warehouse fixture and simulation endpoints) was 
 
 ## Public demo case
 
-Demo sign-in (`/auth/demo`) and `POST /cases/synthetic` (development or `JUDE_DEMO=1`) both import the same single demonstration case, a real public record labeled "Public record" in the workspace: "Perkara Ferdy Sambo" (reference 796/Pid.B/2022/PN Jkt.Sel). It comes from the bundled archive `apps/web/static/demo/sambo-796-public.jude` (also downloadable at `/demo/sambo-796-public.jude`; sources and limits in [`examples/sambo-796-public/README.md`](../../examples/sambo-796-public/README.md)). It contains a 68-page excerpt of the Direktori Putusan MA PDF (the court's summaries of the testimony of Susi, Diryanto alias Kodir, Damson, Alfonsius Dua Luren, Abdul Somad, Marjuki, Richard Eliezer, Ricky Rizal and Kuat Ma'ruf), the full Amazon Transcribe transcript of the publicly broadcast 8 November 2022 session with role-labeled speakers (two hearings, because the archive was built when a hearing held at most 500 turns, while the limit is now 3,000), and findings saved by Jude's Bedrock analysis of the witness turns. The original BAP is not public, so the comparison source is the decision's summary of testimony. Findings remain document comparisons for human verification. No audio is shipped. The fictional Cendana warehouse pack remains under `examples/` for upload practice only.
+Demo sign-in (`/auth/demo`) and `POST /cases/synthetic` (development or `JUDE_DEMO=1`) both import the same single demonstration case, a real public record labeled "Public record" in the workspace: "Perkara Ferdy Sambo" (reference 796/Pid.B/2022/PN Jkt.Sel). It comes from the bundled archive `apps/web/static/demo/sambo-796-public.jude` (also downloadable at `/demo/sambo-796-public.jude`; sources and limits in [`examples/sambo-796-public/README.md`](../../examples/sambo-796-public/README.md)). It contains a 68-page excerpt of the Direktori Putusan MA PDF (the court's summaries of the testimony of Susi, Diryanto alias Kodir, Damson, Alfonsius Dua Luren, Abdul Somad, Marjuki, Richard Eliezer, Ricky Rizal and Kuat Ma'ruf), the full Amazon Transcribe transcript of the publicly broadcast 8 November 2022 session with role-labeled speakers (two hearings, because the archive was built when a hearing held at most 500 turns, while the limit is now 3,000), and findings saved by Jude's Bedrock analysis of the witness turns. The original BAP is not public, so the comparison source is the decision's summary of testimony. Findings remain document comparisons for human verification. No audio is shipped.
 
 ## Court decisions from the Direktori Putusan MA
 
@@ -32,14 +32,14 @@ Documents may be up to 25 MB, 1,500 PDF pages and 3,000,000 extracted characters
 
 - [x] Registration, sign-in/out, persistent account sessions and isolated cases.
 - [x] Upload authorized text-based PDF/DOCX/TXT/Markdown, preserve originals and provenance; clean Direktori Putusan MA watermark and footer noise.
-- [x] Case-filtered keyword retrieval; optional embeddings and pgvector, with fallback.
+- [x] Case-filtered keyword retrieval (no embeddings; the unused pgvector column stays in the schema).
 - [x] Continuous transcript capture independent of bounded four-call analysis.
 - [x] Independent reviewer receives original assertion/evidence without the analyst response.
 - [x] Reject invalid citations and unsupported source relationships before publishing.
 - [x] Review all four statuses, exact quotations, uncertainties, alternatives, verification steps, and suggested questions.
 - [x] Persist notes/review state, label known speakers, export a portable case record.
 - [x] Show missing-provider states without invented analysis or law.
-- [x] Reproducible evaluation with precision/recall, citation checks, failures, latency, optional WER and human unsupported-conclusion annotations.
+- [x] Live Bedrock model benchmarks on the public demo case (`apps/web/scripts/benchmark-*.ts`) and voice-matching evaluation on a public hearing (`apps/voice/evaluation`). The synthetic evaluation harness was removed on 2026-11-02.
 - [x] Desktop/mobile keyboard and workflow verification.
 - [x] Real provider validation in production: Amazon Transcribe streaming and Bedrock (2026-11-02).
 - [ ] Authorized live acceptance of Pasal.id, production S3 and the voice service.
@@ -87,7 +87,7 @@ Original brief: “Jude - Evidence-Grounded AI for Courtroom Intelligence.” Th
 
 ## Deployment behavior
 
-The native Svelte 5 frontend and TypeScript backend run as one SvelteKit 3 Node server (`@sveltejs/adapter-node`) built from `apps/web`. Production runs it in Docker on one AWS EC2 instance with PostgreSQL + pgvector, case originals in a private S3 bucket (`S3_BUCKET`) and AI through Amazon Bedrock (`AI_PROVIDER=bedrock`); see [`infra/README.md`](../../infra/README.md). OpenRouter remains an optional alternative AI provider.
+The native Svelte 5 frontend and TypeScript backend run as one SvelteKit 3 Node server (`@sveltejs/adapter-node`) built from `apps/web`. Production runs it in Docker on one AWS EC2 instance with PostgreSQL, case originals in a private S3 bucket (`S3_BUCKET`) and AI through Amazon Bedrock (`AI_PROVIDER=bedrock`); see [`infra/README.md`](../../infra/README.md).
 
 Saved testimony is committed before its analysis is queued in the same process. At most three statements analyze at once and duplicate retries coalesce; a full queue or provider failure leaves the statement saved and retryable. Expired audio sessions and temporary coordination rows are cleaned opportunistically when cases load. Cookie-authenticated SSE supplies database-backed update notifications while the UI polls authoritative records.
 

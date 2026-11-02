@@ -15,13 +15,10 @@ def _float(name: str, default: float) -> float:
 class Settings:
     token: str
     engine: str = "pyannote"
-    hf_token: str = ""
     embedding_model: str = "pyannote/wespeaker-voxceleb-resnet34-LM"
-    diarization_model: str = "pyannote/speaker-diarization-community-1"
     match_threshold: float = 0.55
     min_clip_seconds: float = 1.5
     max_clip_seconds: float = 30.0
-    max_recording_seconds: float = 3 * 60 * 60
     max_upload_bytes: int = 64 * 1024 * 1024
     max_candidates: int = 200
 
@@ -33,14 +30,10 @@ class Settings:
         return cls(
             token=token,
             engine=os.environ.get("VOICE_ENGINE", "pyannote").strip() or "pyannote",
-            hf_token=os.environ.get("HF_TOKEN", "").strip(),
             embedding_model=os.environ.get("VOICE_EMBEDDING_MODEL", "").strip()
             or cls.embedding_model,
-            diarization_model=os.environ.get("VOICE_DIARIZATION_MODEL", "").strip()
-            or cls.diarization_model,
             match_threshold=_float("VOICE_MATCH_THRESHOLD", cls.match_threshold),
             min_clip_seconds=_float("VOICE_MIN_CLIP_SECONDS", cls.min_clip_seconds),
             max_clip_seconds=_float("VOICE_MAX_CLIP_SECONDS", cls.max_clip_seconds),
-            max_recording_seconds=_float("VOICE_MAX_RECORDING_SECONDS", cls.max_recording_seconds),
             max_upload_bytes=int(_float("VOICE_MAX_UPLOAD_MB", 64) * 1024 * 1024),
         )

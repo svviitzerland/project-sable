@@ -1,4 +1,4 @@
-import { aiConfigured, embeddingsConfigured } from "./config";
+import { aiConfigured } from "./config";
 import { z } from "zod";
 import { setTimeout as delay } from "node:timers/promises";
 import type { Runtime } from "./runtime";
@@ -244,9 +244,7 @@ export async function handleApi(
           analysis: {
             configured: aiConfigured(rt.config),
             note: aiConfigured(rt.config)
-              ? rt.config.aiProvider === "bedrock"
-                ? "AI provider configured (Amazon Bedrock)."
-                : "AI provider configured (local development provider)."
+              ? "AI provider configured (Amazon Bedrock)."
               : "Connect an AI provider (AI_PROVIDER=bedrock) to enable analysis.",
           },
           speech: {
@@ -264,10 +262,6 @@ export async function handleApi(
           legal: {
             configured: !!rt.config.pasalKey,
             note: "Pasal.id discovery metadata and links only. No legal text.",
-          },
-          embeddings: {
-            configured: embeddingsConfigured(rt.config),
-            note: "Semantic + keyword retrieval when embeddings are available. Keyword search otherwise.",
           },
         });
       if (parts[0] === "auth") {

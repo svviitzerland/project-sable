@@ -1,15 +1,13 @@
 # Jude voice API
 
-Optional Python service that gives recurring voices a stable label. Speechmatics labels speakers (S1, S2) only for one connection, and Jude rotates connections every 210 seconds, so without this service the same judge appears under a new label after every rotation and every hearing. This service turns a short clip of a finalized statement into a voiceprint and compares it with the voiceprints Jude already holds for that case.
+Optional Python service that gives recurring voices a stable label. Amazon Transcribe labels speakers (`spk_0`, `spk_1`) only within one streaming connection, and Jude reconnects before the stream limit, so without this service the same judge appears under a new label after every reconnect and every hearing. This service turns a short clip of a finalized statement into a voiceprint and compares it with the voiceprints Jude already holds for that case.
 
 The service is **stateless**. It computes and compares voiceprints; Jude stores them per case, never exports them in `.jude` archives, and can delete them ("Forget voiceprints"). Audio is decoded in memory and never written to disk. A match means "probably the same voice", never an identity: names and roles stay user-assigned.
 
 ## Stack
 
 - FastAPI + Uvicorn, Python 3.12, managed with [uv](https://docs.astral.sh/uv/).
-- Open-source [pyannote.audio](https://github.com/pyannote/pyannote-audio) 4:
-  - voiceprints: `pyannote/wespeaker-voxceleb-resnet34-LM` (256 dimensions, downloads without a Hugging Face token);
-  - offline diarization: `pyannote/speaker-diarization-community-1` (needs `HF_TOKEN` with the model's conditions accepted).
+- Open-source [pyannote.audio](https://github.com/pyannote/pyannote-audio) 4 with `pyannote/wespeaker-voxceleb-resnet34-LM` voiceprints (256 dimensions, downloads without a Hugging Face token).
 - `VOICE_ENGINE=fake`: a deterministic spectral engine for tests and development without model downloads. It separates synthetic tones, not people; never use it to claim speaker recognition.
 
 ## API
@@ -18,12 +16,11 @@ All `/v1` routes require `Authorization: Bearer $VOICE_API_TOKEN`. Only Jude's s
 
 | Route | Input (multipart) | Output |
 |---|---|---|
-| `GET /health` | — | engine, model, dimension, diarization availability |
+| `GET /health` | — | engine, model, dimension |
 | `POST /v1/embeddings` | `file` (WAV/FLAC/OGG, 1.5–30 s) | normalized `embedding` |
 | `POST /v1/identify` | `file`, `candidates` JSON `[{id, embedding}]`, optional `threshold` | `embedding`, best `match` `{id, score}` or `null`, top `scores` |
-| `POST /v1/diarize` | `file` (up to 3 h, 64 MB), optional `num_speakers`/`min_speakers`/`max_speakers` | `segments` `[{speaker, start, end}]`, per-speaker `embedding` |
 
-`/v1/diarize` is for post-hearing reprocessing of an authorized recording; Jude's live workflow uses `/v1/identify` only.
+Jude calls `GET /health` and `POST /v1/identify`; `/v1/embeddings` is for calibration and tests.
 
 ## Run
 

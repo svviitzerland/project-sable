@@ -145,7 +145,6 @@ export type Capabilities = {
   analysis: Connection;
   speech: Connection;
   legal: Connection;
-  embeddings: Connection;
 };
 export const statuses: Status[] = [
   "supported",
@@ -197,7 +196,7 @@ export function userFacingError(message: string) {
   const known = serverMessages[message.trim()];
   if (known) return t(known);
   if (
-    !/OPENROUTER_|PASAL_API_KEY|OpenRouter|Bedrock|configured providers|deployment|backend|HTTP \d{3}|could not be completed/i.test(
+    !/PASAL_API_KEY|Bedrock|configured providers|deployment|backend|HTTP \d{3}|could not be completed/i.test(
       message,
     )
   )

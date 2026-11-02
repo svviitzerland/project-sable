@@ -1,4 +1,4 @@
-import { aiConfigured, embeddingsConfigured } from "./config";
+import { aiConfigured } from "./config";
 import { z } from "zod";
 import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -17,12 +17,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 
-type ProviderName =
-  | "OpenRouter chat"
-  | "OpenRouter embeddings"
-  | "Pasal.id"
-  | "Voice API"
-  | "External service";
+type ProviderName = "Pasal.id" | "Voice API" | "External service";
 
 function providerFailure(
   provider: ProviderName,
@@ -43,15 +38,9 @@ function providerFailure(
               ? "Check the key permissions and provider access restrictions."
               : status === 429
                 ? "The provider rate or quota limit was reached. Check limits and retry later."
-                : (status === 400 || status === 404 || status === 422) &&
-                    provider === "OpenRouter chat"
-                  ? "Check OPENROUTER_MODEL: use an exact model ID with strict JSON-schema support and an available provider route."
-                  : (status === 400 || status === 404 || status === 422) &&
-                      provider === "OpenRouter embeddings"
-                    ? "Check OPENROUTER_EMBEDDING_MODEL and support for 1536-dimensional output."
-                    : status !== null && status >= 500
-                      ? "The provider returned a server error. Check its service status and retry."
-                      : "Check the provider configuration and request compatibility.";
+                : status !== null && status >= 500
+                  ? "The provider returned a server error. Check its service status and retry."
+                  : "Check the provider configuration and request compatibility.";
   // Never log provider bodies, URLs, headers, prompts, or raw errors: these can contain secrets/case data.
   console.error(
     JSON.stringify({
@@ -126,13 +115,6 @@ export async function structured<T extends z.ZodType>(
     throw new ProviderError(
       "AI analysis is unavailable. Please try again later.",
     );
-  if (rt.config.aiProvider !== "bedrock") {
-    const parsed = schema.safeParse(
-      await openrouterStructured(rt, role, payload, schema),
-    );
-    if (!parsed.success) throw unverifiable();
-    return parsed.data;
-  }
   // Forced tool use is not strict decoding: a model can omit a required field or send a
   // nested array as a JSON string. Repair the string case locally, then allow one retry
   // that names only the failing field paths (never their contents).
@@ -277,8 +259,8 @@ function bedrockFailure(error: unknown) {
 }
 
 /**
- * On-demand quotas are per account and model (20 requests/minute for Nova, 10 for Claude
- * by default), so a burst of hearing turns throttles. Adaptive retries back off and pace
+ * On-demand quotas are per account and model (20 requests/minute for Nova by default),
+ * so a burst of hearing turns throttles. Adaptive retries back off and pace
  * the client instead of failing the statement.
  */
 export const bedrockClientConfig = (region: string) => ({
@@ -297,96 +279,6 @@ function bedrock(rt: Runtime) {
   return client;
 }
 
-async function openrouterStructured(
-  rt: Runtime,
-  role: string,
-  payload: unknown,
-  schema: z.ZodType,
-) {
-  const data = await requestJson(
-    rt,
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${rt.config.openrouterKey}`,
-        "Content-Type": "application/json",
-        "X-Title": "Jude courtroom workspace",
-      },
-      body: JSON.stringify({
-        model: rt.config.model,
-        temperature: 0.1,
-        max_tokens: 4000,
-        provider: { require_parameters: true },
-        messages: [
-          { role: "system", content: SYSTEM + role },
-          { role: "user", content: JSON.stringify(payload) },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "response",
-            strict: true,
-            schema: z.toJSONSchema(schema),
-          },
-        },
-      }),
-    },
-    "OpenRouter chat",
-  );
-  try {
-    return JSON.parse(data.choices[0].message.content);
-  } catch {
-    throw new ProviderError(
-      "The AI response could not be verified. Please try again. Nothing was added to the case.",
-    );
-  }
-}
-export async function embed(
-  rt: Runtime,
-  texts: string[],
-): Promise<number[][] | null> {
-  if (!embeddingsConfigured(rt.config)) return null;
-  const data = await requestJson(
-    rt,
-    "https://openrouter.ai/api/v1/embeddings",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${rt.config.openrouterKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: rt.config.embeddingModel,
-        input: texts,
-        dimensions: 1536,
-      }),
-    },
-    "OpenRouter embeddings",
-  );
-  const parsed = z
-    .object({
-      data: z
-        .array(
-          z.object({
-            index: z.number().int(),
-            embedding: z.array(z.number().finite()).length(1536),
-          }),
-        )
-        .length(texts.length),
-    })
-    .safeParse(data);
-  if (!parsed.success)
-    throw new ProviderError(
-      "Related evidence could not be processed. Please try again.",
-    );
-  const sorted = parsed.data.data.sort((a, b) => a.index - b.index);
-  if (sorted.some((row, i) => row.index !== i))
-    throw new ProviderError(
-      "Related evidence could not be processed. Please try again.",
-    );
-  return sorted.map((row) => row.embedding);
-}
 export function safePasalUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
   try {

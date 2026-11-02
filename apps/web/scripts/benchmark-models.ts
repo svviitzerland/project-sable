@@ -5,8 +5,8 @@
  * sample of hearing turns in a throwaway SQLite runtime, then each review model answers the
  * independent-review prompt for every potential inconsistency the screens produced.
  *
- *   pnpm tsx scripts/benchmark-models.ts --models apac.amazon.nova-lite-v1:0,... \
- *     --review-models global.anthropic.claude-sonnet-4-6 --output bench.json
+ *   pnpm tsx scripts/benchmark-models.ts --models global.amazon.nova-2-lite-v1:0,... \
+ *     --review-models global.moonshotai.kimi-k3 --output bench.json
  *
  * The saved findings of the archive are a reference (another model's output), not ground
  * truth: read the per-turn outputs before trusting agreement numbers.
@@ -40,7 +40,7 @@ const { values } = parseArgs({
     "review-models": { type: "string", default: "" },
     "review-default": {
       type: "string",
-      default: "global.anthropic.claude-sonnet-4-6",
+      default: "global.moonshotai.kimi-k3",
     },
     sample: { type: "string", default: "40" },
     output: { type: "string" },
@@ -54,11 +54,6 @@ const PRICES: Record<string, [number, number]> = {
   "amazon.nova-lite": [0.081, 0.324],
   "amazon.nova-pro": [1.08, 4.32],
   "amazon.nova-2-lite": [0.41, 3.39],
-  "claude-haiku-4-5": [1, 5],
-  "claude-sonnet-4-5": [3, 15],
-  "claude-sonnet-4-6": [3, 15],
-  "claude-opus-4-5": [5, 25],
-  "claude-opus-4-6": [5, 25],
   "kimi-k3": [3, 15],
 };
 const price = (model: string) =>

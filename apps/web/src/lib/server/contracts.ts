@@ -45,13 +45,6 @@ export const assessmentSchema = z.strictObject({
   alternative_explanations: z.array(z.string()).max(5),
   missing_context: z.array(z.string()).max(5),
 });
-export const claimSchema = z.strictObject({
-  checkable: z.boolean(),
-  assertion: z.string().max(1500),
-  search_query: z.string().max(600),
-  legal_query: z.string().max(160),
-  reason: z.string().max(600),
-});
 export const turnSchema = z.strictObject({
   speaker: z.string().trim().min(1).max(80).default("Unknown"),
   text: z.string().trim().min(1).max(6000),
@@ -114,8 +107,6 @@ export interface Chunk {
   page: number;
   section: string;
   text: string;
-  embedding: number[] | null;
-  embedding_model: string;
 }
 export interface Source {
   id: string;

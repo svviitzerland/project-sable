@@ -17,7 +17,7 @@ import { ingest } from "../src/lib/server/documents";
 import { retrieve } from "../src/lib/server/retrieval";
 
 test(
-  "PostgreSQL migrations, RLS, vector sync, shared locks, rates and persistence",
+  "PostgreSQL migrations, RLS, keyword retrieval, shared locks, rates and persistence",
   { skip: !process.env.JUDE_TEST_DATABASE_URL },
   async () => {
     const url = process.env.JUDE_TEST_DATABASE_URL!;
@@ -67,24 +67,13 @@ test(
           );
         await client.query("RESET ROLE");
       }
-      const config = settings({
-          DATABASE_URL: url,
-          JUDE_DATA_DIR: dir,
-          OPENROUTER_API_KEY: "fake",
-        }),
-        fetcher: typeof fetch = async (_input, init) => {
-          const payload = JSON.parse(String(init?.body));
-          return Response.json({
-            data: payload.input.map((_: string, index: number) => ({
-              index,
-              embedding: [1, ...Array(1535).fill(0)],
-            })),
-          });
-        };
+      const config = settings({ DATABASE_URL: url, JUDE_DATA_DIR: dir });
       first = {
         config,
         db: await connectDatabase(config),
-        fetch: fetcher,
+        fetch: async () => {
+          throw new Error("Unexpected network call");
+        },
         tasks: new Set(),
       };
       second = { ...first, db: await connectDatabase(config) };
@@ -114,18 +103,9 @@ test(
         new TextEncoder().encode("An unrelated guard arrived at ten."),
       );
       const results = await retrieve(second, record.id, "guard");
-      assert.equal(results.mode, "hybrid");
+      assert.equal(results.mode, "keyword");
       assert.equal(results.results.length, 1);
       assert.match(results.results[0].text, /eight/);
-      assert.equal(
-        (
-          await client.query(
-            "SELECT extensions.vector_dims(embedding_vector) AS dims FROM jude_chunks WHERE case_id=$1",
-            [record.id],
-          )
-        ).rows[0].dims,
-        1536,
-      );
       const release = await acquire(first, `test:${record.id}`);
       await assert.rejects(
         acquire(second, `test:${record.id}`),

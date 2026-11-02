@@ -48,7 +48,7 @@ test("case setup, case search and mobile conversations keep the next action clea
   ).toHaveValue("");
   await page.getByRole("tab", { name: "Settings", exact: true }).click();
   await expect(page.getByRole("tabpanel")).not.toContainText(
-    /Supabase|OpenRouter|backend|configured|deployment|Connections/,
+    /Bedrock|backend|configured|deployment|Connections/,
   );
   await page.getByRole("tab", { name: "Case assistant", exact: true }).click();
   await page
@@ -57,7 +57,7 @@ test("case setup, case search and mobile conversations keep the next action clea
   await page.getByRole("button", { name: "Send message" }).click();
   await expect(page.getByRole("log").locator("article")).toHaveCount(2);
   await expect(page.getByRole("tabpanel")).not.toContainText(
-    /OpenRouter|backend|configured|deployment/,
+    /Bedrock|backend|configured|deployment/,
   );
   await page.route(
     "**/api/v1/cases/*/dialogues/*/messages",
@@ -66,7 +66,7 @@ test("case setup, case search and mobile conversations keep the next action clea
         status: 503,
         json: {
           detail:
-            "OpenRouter chat request failed (HTTP 401). Check the server API key. Reference: support-example",
+            "Amazon Bedrock request failed (HTTP 403). Check the instance role. Reference: support-example",
         },
       }),
     { times: 1 },
@@ -79,7 +79,7 @@ test("case setup, case search and mobile conversations keep the next action clea
     "Reference: support-example",
   );
   await expect(page.getByRole("alert")).not.toContainText(
-    /OpenRouter|HTTP|API key/,
+    /Bedrock|HTTP|instance role/,
   );
   await expect(
     page.getByLabel("Ask about this case", { exact: true }),

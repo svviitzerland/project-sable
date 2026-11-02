@@ -28,13 +28,13 @@ apps/
     src/lib/           browser helpers (audio capture, Transcribe stream, API client, i18n)
     src/lib/server/    backend: API, analysis, documents, storage, providers
     tests/             Node and Playwright tests
-    evaluation/        synthetic analysis evaluation
+    scripts/           live Bedrock benchmarks (spend real money)
   voice/               optional Python voice service (FastAPI, pyannote, Docker)
 db/                    PostgreSQL schema shared by every service
   migrations/          ordered SQL migrations
   migrate.mjs          migration runner (own Docker image, runs before the web app)
 docs/                  product spec and limitations, engineering, research, dated phase records
-examples/              public-record demo pack and a fictional upload-practice pack
+examples/              public-record demo pack
 infra/
   terraform/           AWS: VPC, EC2, RDS PostgreSQL, S3, ECR, IAM (GitHub OIDC), SSM, backups, budgets
   docker/              production Compose stack, Caddyfile, deploy script
@@ -59,12 +59,12 @@ By default the app runs as one process on SQLite with files in `apps/web/.data/`
 
 | Setting | Enables |
 | --- | --- |
-| `AI_PROVIDER=bedrock`, `AWS_REGION=ap-southeast-1` | Analysis, assistant and practice through Amazon Bedrock (AWS credential chain) |
-| `TRANSCRIBE=1` | Live and prepared-audio transcription through Amazon Transcribe |
+| `AI_PROVIDER=bedrock`, `AWS_REGION` | Analysis, assistant and practice through Amazon Bedrock (AWS credential chain); `BEDROCK_MODEL` and `BEDROCK_REVIEW_MODEL` default to Nova 2 Lite and Kimi K3 |
+| `TRANSCRIBE` | Live and prepared-audio transcription through Amazon Transcribe: on with Bedrock, `1` enables it without Bedrock, `0` turns it off |
 | `S3_BUCKET` | Originals and recordings in S3 instead of local files |
 | `PASAL_API_KEY` | Legal references through Pasal.id |
 | `VOICE_API_URL`, `VOICE_API_TOKEN` | Voice labels across recordings (see [apps/voice/README.md](apps/voice/README.md)) |
-| `DATABASE_URL` | PostgreSQL with pgvector instead of SQLite |
+| `DATABASE_URL` | PostgreSQL instead of SQLite |
 
 For PostgreSQL, start one with pgvector (for example `docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 pgvector/pgvector:pg17`), run `cd db && npm ci && DATABASE_URL=... npm run migrate`, and set the same `DATABASE_URL`.
 
@@ -77,7 +77,7 @@ Production runs under the codename **project-sable** in ap-southeast-1:
 - One EC2 instance with Docker Compose: Caddy (HTTPS), the web app, the voice service and a one-shot migration job.
 - Amazon RDS PostgreSQL 17 with verified TLS.
 - S3 for originals and recordings, ECR for images, SSM Parameter Store for secrets.
-- Amazon Bedrock: Nova 2 Lite for screening, the assistant and practice,  and Moonshot Kimi K3 as the independent reviewer (`BEDROCK_MODEL`, `BEDROCK_REVIEW_MODEL`, benchmark in [docs/phases/2026-11-02-model-choice.md](docs/phases/2026-11-02-model-choice.md)). Amazon Transcribe for speech.
+- Amazon Bedrock: Nova 2 Lite for screening, the assistant and practice, and Moonshot Kimi K3 as the independent reviewer (`BEDROCK_MODEL`, `BEDROCK_REVIEW_MODEL`, benchmark in [docs/phases/2026-11-02-model-choice.md](docs/phases/2026-11-02-model-choice.md)). Amazon Transcribe for speech.
 - AWS Budgets alerts on actual and forecast spend.
 
 Terraform is in [`infra/terraform`](infra/terraform) and the stack in [`infra/docker`](infra/docker). Pushing to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): checks, image build, ECR push and a deploy through SSM, authenticated with GitHub OIDC (no AWS keys in GitHub). Details in [infra/README.md](infra/README.md).
@@ -102,10 +102,8 @@ Voice service:
 
 ```bash
 cd apps/voice
-uv sync && uv run pytest && uv run ruff check .
+uv sync && uv run pytest && uv run ruff check . && uv run ruff format --check .
 ```
-
-Synthetic evaluation: `pnpm evaluate --predictions evaluation/predictions.fixture.json --fixture --output /tmp/jude-evaluation.json`. Read the [evaluation guidance](apps/web/evaluation/README.md) before interpreting metrics.
 
 ## Boundaries
 

@@ -1,4 +1,3 @@
-import { embeddingsConfigured } from "./config";
 import { basename, extname } from "node:path";
 import { unzipSync } from "fflate";
 import { XMLParser } from "fast-xml-parser";
@@ -7,7 +6,7 @@ import { hash, locked } from "./runtime";
 import { uid } from "./database";
 import type { Case } from "./contracts";
 import { assert, HttpError } from "./errors";
-import { embed, saveFile, deleteFile } from "./providers";
+import { saveFile, deleteFile } from "./providers";
 import { cleanCourtPages, joinTextItems } from "./court-text";
 // A full Direktori Putusan MA decision runs to several hundred pages (the 696-page
 // 796/Pid.B/2022/PN Jkt.Sel is 4.2 MB and ~2.4 million characters).
@@ -213,21 +212,6 @@ export async function ingest(
     );
     const { pages, mime } = extracted || (await extractPages(name, data)),
       slices = chunkPages(pages);
-    let vectors: number[][] | null = null;
-    if (embeddingsConfigured(rt.config)) {
-      try {
-        vectors = [];
-        for (let i = 0; i < slices.length; i += 24)
-          vectors.push(
-            ...((await embed(
-              rt,
-              slices.slice(i, i + 24).map((p) => p[1]),
-            )) || []),
-          );
-      } catch {
-        vectors = null;
-      }
-    }
     const id = uid(),
       key = `${record.owner_id}/${record.id}/${id}${extname(name).toLowerCase()}`,
       storage = await saveFile(rt, key, data, mime);
@@ -243,7 +227,7 @@ export async function ingest(
           digest,
           pages: pages.length,
         });
-        for (const [index, [page, text]] of slices.entries())
+        for (const [page, text] of slices)
           await db.insert("chunks", {
             case_id: record.id,
             document_id: id,
@@ -251,8 +235,6 @@ export async function ingest(
             text,
             section:
               extname(name).toLowerCase() === ".docx" ? "Text section" : "",
-            embedding: vectors?.[index] || null,
-            embedding_model: vectors ? rt.config.embeddingModel : "",
           });
         return doc;
       });

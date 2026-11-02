@@ -8,7 +8,7 @@ The typed SQL layer uses `node:sqlite` locally and `pg` for PostgreSQL. Existing
 
 ## Evidence and analysis
 
-Document ingestion preserves page boundaries and originals, limits files/text/pages, serializes duplicate/quota checks through commit, and removes uncommitted originals after database failure. PDF.js handles text PDFs; `fflate` and a bounded XML parser handle DOCX. Scans require prior OCR. Embedding failure retains labeled keyword search. Retrieval filters case and embedding model, combines term overlap and cosine scores, and supports the existing pgvector schema/index.
+Document ingestion preserves page boundaries and originals, limits files/text/pages, serializes duplicate/quota checks through commit, and removes uncommitted originals after database failure. PDF.js handles text PDFs; `fflate` and a bounded XML parser handle DOCX. Scans require prior OCR. Retrieval is case-filtered keyword search (term overlap); no embeddings are generated, and the `embedding` columns of migrations 001–002 stay unused.
 
 Each analysis extracts a checkable claim, retrieves evidence, asks an analyst, asks an independent reviewer without the analyst's answer, then synthesizes a qualified finding. Exact quotes and required citation relationships are checked before persistence. Imported hearing originals are excluded from their own analysis. Citation checks establish provenance, not semantic correctness or truth.
 

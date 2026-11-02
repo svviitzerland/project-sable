@@ -18,7 +18,6 @@ import { extractPages } from "../src/lib/server/documents";
 import { previewHearing } from "../src/lib/server/hearings";
 import { investigate } from "../src/lib/server/analysis";
 import {
-  embed,
   safePasalUrl,
   structured,
   bedrockInference,
@@ -157,13 +156,13 @@ test("sign-in database failures log safe diagnostics with a matching reference",
 
 test("provider failures keep operator diagnostics in logs and show actionable user errors", async (t) => {
   const { rt } = await fixture(t);
-  rt.config.openrouterKey = "private-provider-key";
-  rt.config.model = "fixture/model";
   const logs: string[] = [];
   t.mock.method(console, "error", (entry: string) => logs.push(entry));
   const upstreamSecret = "private-provider-key private-document-content";
-  for (const status of [400, 401, 402, 403, 404, 422, 429, 503]) {
-    rt.fetch = async () => new Response(upstreamSecret, { status });
+  for (const status of [400, 403, 429, 503]) {
+    fakeModel(rt, () => {
+      throw modelError(status);
+    });
     await assert.rejects(
       structured(
         rt,
@@ -177,13 +176,13 @@ test("provider failures keep operator diagnostics in logs and show actionable us
         assert.match(error.message, /This AI request could not be completed/);
         assert.doesNotMatch(
           error.message,
-          /OpenRouter|HTTP|API.key|quota|billing|model ID/i,
+          /Bedrock|HTTP|API.key|quota|billing|model ID/i,
         );
         if (status === 429) assert.match(error.message, /wait a moment/);
         const log = JSON.parse(logs.at(-1)!);
         assert.equal(log.event, "jude_provider_failed");
         assert.equal(log.status, status);
-        assert.equal(log.provider, "OpenRouter chat");
+        assert.equal(log.provider, "Amazon Bedrock");
         assert.ok(error.message.includes(log.reference));
         assert.ok(!error.message.includes("private-"));
         return true;
@@ -218,15 +217,8 @@ test("provider failures keep operator diagnostics in logs and show actionable us
   );
   assert.equal(JSON.parse(logs.at(-1)!).status, 403);
   rt.config.s3Bucket = "";
-  rt.fetch = async () => new Response(upstreamSecret, { status: 400 });
-  await assert.rejects(
-    embed(rt, ["private-document-content"]),
-    /This AI request could not be completed/,
-  );
-  assert.match(JSON.parse(logs.at(-1)!).hint, /1536/);
   for (const log of logs) assert.ok(!log.includes("private-"));
-  rt.fetch = async () =>
-    Response.json({ choices: [{ message: { content: '{"answer":"ok"}' } }] });
+  fakeModel(rt, () => ({ answer: "ok" }));
   assert.deepEqual(
     await structured(rt, "test", {}, z.object({ answer: z.string() })),
     { answer: "ok" },
@@ -248,8 +240,44 @@ function upload(
 }
 const encoded = (value: unknown) =>
   new TextEncoder().encode(JSON.stringify(value));
-const structuredResponse = (value: unknown) =>
-  Response.json({ choices: [{ message: { content: JSON.stringify(value) } }] });
+type ModelCall = {
+  model: string;
+  system: string;
+  payload: ReturnType<typeof JSON.parse>;
+};
+/** Fakes Bedrock: `reply` returns the tool input for each structured call, or throws. */
+function fakeModel(rt: Runtime, reply: (call: ModelCall) => unknown) {
+  rt.config.aiProvider = "bedrock";
+  rt.bedrock = {
+    send: (async (command: {
+      input: {
+        modelId: string;
+        system: { text: string }[];
+        messages: { content: { text: string }[] }[];
+      };
+    }) => {
+      const input = await reply({
+        model: command.input.modelId,
+        system: command.input.system[0].text,
+        payload: JSON.parse(command.input.messages[0].content[0].text),
+      });
+      return { output: { message: { content: [{ toolUse: { input } }] } } };
+    }) as never,
+  };
+}
+/** A Bedrock service error with the given HTTP status. */
+const modelError = (status: number) =>
+  Object.assign(new Error("private-provider-key private-document-content"), {
+    name:
+      (
+        {
+          400: "ValidationException",
+          403: "AccessDeniedException",
+          429: "ThrottlingException",
+        } as Record<number, string>
+      )[status] ?? "ServiceUnavailableException",
+    $metadata: { httpStatusCode: status },
+  });
 
 test("accounts, old scrypt password compatibility, session revocation and case isolation", async (t) => {
   const { rt, a, record, client } = await fixture(t);
@@ -401,15 +429,11 @@ test("hearing parsers, reviewed words and original document exclusion", async (t
     upload("unknown.txt", "An unfamiliar transcript."),
   );
   assert.equal(unstructured.method, "conversion_required");
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
   let calls = 0;
-  rt.fetch = async (input) => {
-    if (String(input).includes("/embeddings"))
-      return new Response("", { status: 503 });
+  fakeModel(rt, () => {
     calls++;
-    return new Response("", { status: 500 });
-  };
+    throw modelError(500);
+  });
   // The hearing's own uploaded original is excluded, so nothing can corroborate it and
   // no model call is spent.
   await investigate(rt, detail.segments[0].id);
@@ -422,12 +446,9 @@ test("hearing parsers, reviewed words and original document exclusion", async (t
 
 test("LLM hearing conversion rejects invented words and inferred speakers", async (t) => {
   const { rt } = await fixture(t);
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
-  rt.fetch = async () =>
-    structuredResponse({
-      segments: [{ speaker: "Invented witness", text: "I arrived at eight." }],
-    });
+  fakeModel(rt, () => ({
+    segments: [{ speaker: "Invented witness", text: "I arrived at eight." }],
+  }));
   const result = await previewHearing(
     rt,
     "file.txt",
@@ -436,10 +457,9 @@ test("LLM hearing conversion rejects invented words and inferred speakers", asyn
   );
   assert.equal(result.hearing?.segments[0].speaker, "Unknown");
   assert.equal(result.hearing?.segments[0].start, 0);
-  rt.fetch = async () =>
-    structuredResponse({
-      segments: [{ speaker: "Witness", text: "I arrived at nine." }],
-    });
+  fakeModel(rt, () => ({
+    segments: [{ speaker: "Witness", text: "I arrived at nine." }],
+  }));
   await assert.rejects(
     previewHearing(
       rt,
@@ -709,20 +729,11 @@ test("assistant repairs citations once before atomic save and preserves idempote
     "POST",
     upload("source.txt", "The witness arrived\nat eight."),
   );
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
   let calls = 0;
-  rt.fetch = async (url, init) => {
-    if (String(url).includes("/embeddings"))
-      return Response.json({
-        data: [{ index: 0, embedding: Array(1536).fill(0) }],
-      });
+  fakeModel(rt, ({ payload: packet }) => {
     calls++;
-    const packet = JSON.parse(
-      JSON.parse(String(init?.body)).messages[1].content,
-    );
     if (calls === 1)
-      return structuredResponse({
+      return {
         answer: "Unsupported draft.",
         uses_case_facts: true,
         citations: [
@@ -732,11 +743,11 @@ test("assistant repairs citations once before atomic save and preserves idempote
             relation: "supports",
           },
         ],
-      });
+      };
     assert.equal(calls, 2);
     assert.equal(packet.citation_repair.reason, "unknown_source");
     assert.equal(packet.citation_repair.must_cite, true);
-    return structuredResponse({
+    return {
       answer: "The witness reports arriving at eight.",
       uses_case_facts: true,
       citations: [
@@ -746,8 +757,8 @@ test("assistant repairs citations once before atomic save and preserves idempote
           relation: "supports",
         },
       ],
-    });
-  };
+    };
+  });
   const dialogue = await a.json(base + "/dialogues", "POST", {
     kind: "assistant",
   });
@@ -780,21 +791,15 @@ test("failed citation repair stays bounded, cannot drop required citations, and 
     "POST",
     upload("source.txt", "The witness did not remove tablets."),
   );
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
   let calls = 0;
-  rt.fetch = async (url) => {
-    if (String(url).includes("/embeddings"))
-      return Response.json({
-        data: [{ index: 0, embedding: Array(1536).fill(0) }],
-      });
+  fakeModel(rt, () => {
     calls++;
-    return structuredResponse({
+    return {
       answer: "Unverified claim.",
       uses_case_facts: calls === 1,
       citations: [],
-    });
-  };
+    };
+  });
   const dialogue = await a.json(base + "/dialogues", "POST", {
     kind: "assistant",
   });
@@ -813,14 +818,10 @@ test("failed citation repair stays bounded, cannot drop required citations, and 
     "The witness did not remove tablets.",
   );
   calls = 0;
-  rt.fetch = async (url) => {
-    if (String(url).includes("/embeddings"))
-      return Response.json({
-        data: [{ index: 0, embedding: Array(1536).fill(0) }],
-      });
+  fakeModel(rt, () => {
     calls++;
-    return new Response("", { status: 402 });
-  };
+    throw modelError(403);
+  });
   await a.json(
     path,
     "POST",
@@ -833,18 +834,13 @@ test("failed citation repair stays bounded, cannot drop required citations, and 
 test("AI conversations reject forged citations and speaking for the user, atomically", async (t) => {
   const { a, record, rt } = await fixture(t),
     base = `/cases/${record.id}`;
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
-  rt.fetch = async (input) =>
-    String(input).includes("/embeddings")
-      ? new Response("", { status: 503 })
-      : structuredResponse({
-          answer: "A case claim.",
-          uses_case_facts: true,
-          citations: [
-            { chunk_id: "foreign", quote: "invented", relation: "supports" },
-          ],
-        });
+  fakeModel(rt, () => ({
+    answer: "A case claim.",
+    uses_case_facts: true,
+    citations: [
+      { chunk_id: "foreign", quote: "invented", relation: "supports" },
+    ],
+  }));
   const dialogue = await a.json(base + "/dialogues", "POST", {
     kind: "assistant",
   });
@@ -858,21 +854,18 @@ test("AI conversations reject forged citations and speaking for the user, atomic
     (await a.json(`${base}/dialogues/${dialogue.id}`)).messages.length,
     0,
   );
-  rt.fetch = async (input) =>
-    String(input).includes("/embeddings")
-      ? new Response("", { status: 503 })
-      : structuredResponse({
-          speeches: [
-            {
-              speaker: "defense",
-              name: "",
-              text: "I will speak for you.",
-              uses_case_facts: false,
-              citations: [],
-            },
-          ],
-          coaching: { kind: "none", note: "", citations: [] },
-        });
+  fakeModel(rt, () => ({
+    speeches: [
+      {
+        speaker: "defense",
+        name: "",
+        text: "I will speak for you.",
+        uses_case_facts: false,
+        citations: [],
+      },
+    ],
+    coaching: { kind: "none", note: "", citations: [] },
+  }));
   const practice = await a.json(base + "/dialogues", "POST", {
     kind: "practice",
     conditions: { user_role: "defense" },
@@ -966,21 +959,12 @@ test("AI rehearsal plays the other roles from the record, coaches subtly, and de
       "BAP Saksi Dewi Lestari. Saya tiba di gudang pukul 22.30 dan melihat terdakwa membawa kardus.",
     ),
   );
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
   const calls: { system: string; payload: PracticePayload }[] = [];
   let reply: (payload: PracticePayload, call: number) => unknown = () => ({});
-  rt.fetch = async (url, init) => {
-    if (String(url).includes("/embeddings"))
-      return new Response("", { status: 503 });
-    const messages = JSON.parse(String(init?.body)).messages;
-    const call = {
-      system: messages[0].content,
-      payload: JSON.parse(messages[1].content),
-    };
-    calls.push(call);
-    return structuredResponse(reply(call.payload, calls.length));
-  };
+  fakeModel(rt, ({ system, payload }) => {
+    calls.push({ system, payload });
+    return reply(payload, calls.length);
+  });
   const chunk = (payload: PracticePayload) =>
     payload.case_context.sources.find((s) => s.document_id === doc.id)!
       .chunk_id;
@@ -1392,7 +1376,7 @@ test("Bedrock structured calls repair stringified arrays and retry one schema fa
       };
     }) as never,
   };
-  // A JSON-string array (a known Claude tool-use quirk) is parsed without another call.
+  // A JSON-string array (a known tool-use quirk) is parsed without another call.
   replies.push({ status: "supported", citations: '[{"quote":"pukul 22.30"}]' });
   assert.deepEqual(await structured(rt, "screen", {}, schema), {
     status: "supported",
@@ -1418,7 +1402,7 @@ test("Bedrock structured calls repair stringified arrays and retry one schema fa
     /could not be verified/,
   );
   assert.equal(roles.length, 5);
-  // Reasoning models reject temperature; Nova and Claude keep a low one.
+  // Reasoning models reject temperature; Nova keeps a low one.
   assert.equal(
     "temperature" in bedrockInference("global.moonshotai.kimi-k3"),
     false,
@@ -1430,18 +1414,7 @@ test("Bedrock structured calls repair stringified arrays and retry one schema fa
   assert.equal(bedrockClientConfig("ap-southeast-1").retryMode, "adaptive");
 });
 
-test("embedding contract validates complete finite vectors; legal URLs stay on Pasal", async (t) => {
-  const { rt } = await fixture(t);
-  rt.config.openrouterKey = "fake";
-  rt.fetch = async () =>
-    Response.json({ data: [{ index: 0, embedding: Array(1536).fill(0.1) }] });
-  assert.equal((await embed(rt, ["test"]))?.[0].length, 1536);
-  rt.fetch = async () =>
-    Response.json({ data: [{ index: 1, embedding: Array(1536).fill(0) }] });
-  await assert.rejects(
-    embed(rt, ["test"]),
-    /Related evidence could not be processed/,
-  );
+test("legal URLs stay on Pasal", () => {
   assert.equal(safePasalUrl("https://evil.test/law"), null);
   assert.equal(safePasalUrl("javascript:alert(1)"), null);
   assert.equal(safePasalUrl("https://pasal.id/uu/1"), "https://pasal.id/uu/1");
@@ -1653,32 +1626,26 @@ test("S3 storage keeps originals private and downloads return the bytes directly
 test("practice proposals preserve the selected role/language and duplicate manual testimony queues once", async (t) => {
   const { rt, a, record } = await fixture(t),
     base = `/cases/${record.id}`;
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
-  rt.fetch = async (input) =>
-    String(input).includes("/embeddings")
-      ? new Response("", { status: 503 })
-      : structuredResponse({
-          conditions: {
-            trial_type: "Criminal trial",
-            jurisdiction: "Practice assumption",
-            stage: "Cross-examination",
-            user_role: "defense",
-            difficulty: "Challenging",
-            language: "English",
-            goals: "Use evidence",
-            assumptions: "Review every assumption.",
-          },
-          rationale: "A proposed practice setup.",
-        });
+  fakeModel(rt, () => ({
+    conditions: {
+      trial_type: "Criminal trial",
+      jurisdiction: "Practice assumption",
+      stage: "Cross-examination",
+      user_role: "defense",
+      difficulty: "Challenging",
+      language: "English",
+      goals: "Use evidence",
+      assumptions: "Review every assumption.",
+    },
+    rationale: "A proposed practice setup.",
+  }));
   const proposal = await a.json(base + "/practice/propose", "POST", {
     user_role: "judge",
     language: "Bahasa Indonesia",
   });
   assert.equal(proposal.conditions.user_role, "judge");
   assert.equal(proposal.conditions.language, "Bahasa Indonesia");
-  rt.config.openrouterKey = "";
-  rt.config.model = "";
+  rt.config.aiProvider = "";
   const hearing = await a.json(base + "/hearings", "POST", {
       title: "Idempotent hearing",
     }),
@@ -1946,13 +1913,6 @@ test("case settings update details and delete the whole case with its stored fil
     assert.equal((await rt.db.all(table, "case_id=?", [record.id])).length, 0);
 });
 
-const noEmbeddings = (url: unknown) =>
-  String(url).includes("/embeddings")
-    ? new Response("", { status: 503 })
-    : null;
-const modelPacket = (init?: RequestInit) =>
-  JSON.parse(JSON.parse(String(init?.body)).messages[1].content);
-
 test("ask evidence tolerates quote typography, repairs one failed citation, and falls back to passages", async (t) => {
   const { a, record, rt } = await fixture(t),
     base = `/cases/${record.id}`;
@@ -1964,22 +1924,19 @@ test("ask evidence tolerates quote typography, repairs one failed citation, and 
       "Saksi Kuat Ma’ruf tiba di rumah\nDuren Tiga pukul 17.00.",
     ),
   );
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
   const [{ id }] = await rt.db.all("chunks", "case_id=?", [record.id]);
   let calls = 0;
-  const answer = (quotes: string[]) => {
-    rt.fetch = async (url) => {
-      const off = noEmbeddings(url);
-      if (off) return off;
+  const packets: { citation_repair?: { failed: unknown } }[] = [];
+  const answer = (quotes: string[]) =>
+    fakeModel(rt, ({ payload }) => {
+      packets.push(payload);
       const quote = quotes[Math.min(calls, quotes.length - 1)];
       calls++;
-      return structuredResponse({
+      return {
         answer: quote === "never said" ? "Invented." : "Pukul 17.00.",
         citations: [{ chunk_id: id, quote, relation: "supports" }],
-      });
-    };
-  };
+      };
+    });
   const ask = () =>
     a.json(base + "/ask", "POST", { query: "Kapan Kuat Ma'ruf tiba?" });
   // A straight quote and a plain space still match the stored passage on the first call.
@@ -1993,13 +1950,8 @@ test("ask evidence tolerates quote typography, repairs one failed citation, and 
   );
   // A failed citation gets one correction that names it.
   calls = 0;
+  packets.length = 0;
   answer(["pukul 18.00", "pukul 17.00"]);
-  const packets: { citation_repair?: { failed: unknown } }[] = [];
-  const inner = rt.fetch;
-  rt.fetch = async (url, init) => {
-    if (!String(url).includes("/embeddings")) packets.push(modelPacket(init));
-    return inner(url, init);
-  };
   result = await ask();
   assert.equal(calls, 2);
   assert.deepEqual(packets[1].citation_repair?.failed, [
@@ -2016,8 +1968,9 @@ test("ask evidence tolerates quote typography, repairs one failed citation, and 
   assert.equal(result.sources.length, 1);
   assert.ok(!JSON.stringify(result).includes("Invented"));
   // A provider failure also leaves the passages visible.
-  rt.fetch = async (url) =>
-    noEmbeddings(url) ?? new Response("", { status: 429 });
+  fakeModel(rt, () => {
+    throw modelError(429);
+  });
   result = await ask();
   assert.equal(result.notice_code, "ai_failed");
   assert.equal(result.sources.length, 1);
@@ -2031,15 +1984,10 @@ test("evidence links verify quotes tolerantly, store the source text, and repair
     ["two.txt", "A guard saw the witness at the warehouse\nentrance."],
   ])
     await a.json(base + "/documents", "POST", upload(name, text));
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
   let calls = 0;
   let repair: { failed: { quote: string }[] } | null = null;
-  rt.fetch = async (url, init) => {
-    const off = noEmbeddings(url);
-    if (off) return off;
+  fakeModel(rt, ({ payload: packet }) => {
     calls++;
-    const packet = modelPacket(init);
     if (calls === 2) repair = packet.citation_repair;
     const [pair] = packet.candidate_pairs;
     const one = pair.source_text.startsWith("Witness");
@@ -2047,7 +1995,7 @@ test("evidence links verify quotes tolerantly, store the source text, and repair
       calls === 1 ? "arrived at the depot" : "arrived at the warehouse",
       "at the warehouse entrance",
     ];
-    return structuredResponse({
+    return {
       links: [
         {
           source_id: pair.source_id,
@@ -2058,8 +2006,8 @@ test("evidence links verify quotes tolerantly, store the source text, and repair
           target_quote: one ? quotes[1] : quotes[0],
         },
       ],
-    });
-  };
+    };
+  });
   const built = await a.json(base + "/graph/build", "POST");
   assert.equal(calls, 2);
   assert.equal(repair!.failed[0].quote, "arrived at the depot");
@@ -2083,15 +2031,11 @@ test("assistant drops only failing citations, keeps the reply, and says so", asy
     "POST",
     upload("source.txt", "Susi mulai bekerja untuk keluarga itu pada 2021."),
   );
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
   let calls = 0;
-  rt.fetch = async (url, init) => {
-    const off = noEmbeddings(url);
-    if (off) return off;
+  fakeModel(rt, ({ payload }) => {
     calls++;
-    const id = modelPacket(init).case_context.sources[0].chunk_id;
-    return structuredResponse({
+    const id = payload.case_context.sources[0].chunk_id;
+    return {
       // Nova sometimes double-escapes line breaks in tool output.
       answer: "Susi mulai bekerja pada 2021.\\nItu tercatat.",
       uses_case_facts: true,
@@ -2100,8 +2044,8 @@ test("assistant drops only failing citations, keeps the reply, and says so", asy
         { chunk_id: id, quote: "pada 2019", relation: "supports" },
         { chunk_id: "made-up", quote: "pada 2021", relation: "supports" },
       ],
-    });
-  };
+    };
+  });
   const dialogue = await a.json(base + "/dialogues", "POST", {
     kind: "assistant",
   });
@@ -2229,21 +2173,17 @@ test("hearings import up to 3000 statements and hearing analysis uses the pool's
       text: `Saksi tiba di gudang pukul delapan pagi, kali ${i}.`,
       analysis_state: "pending",
     });
-  rt.config.openrouterKey = "fake";
-  rt.config.model = "fake";
   let inFlight = 0,
     peak = 0,
     calls = 0;
-  rt.fetch = async (url) => {
-    const off = noEmbeddings(url);
-    if (off) return off;
+  fakeModel(rt, async () => {
     calls++;
     inFlight++;
     peak = Math.max(peak, inFlight);
     await new Promise((resolve) => setTimeout(resolve, 15));
     inFlight--;
-    return new Response("", { status: 500 });
-  };
+    throw modelError(500);
+  });
   const queued = await a.json(`${base}/hearings/${live.id}/analyze`, "POST");
   assert.equal(queued.queued, 9);
   await Promise.allSettled([...rt.tasks]);

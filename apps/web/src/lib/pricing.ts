@@ -91,7 +91,6 @@ export const PACKS = [
   { id: "pack5", hours: 5, price: 750_000 },
   { id: "pack20", hours: 20, price: 2_700_000 },
 ] as const;
-export const PACK_VALIDITY_MONTHS = 12;
 
 /** A typical criminal hearing session lasts about 1 to 1.5 hours. */
 export const HEARING_HOURS = { min: 1, max: 1.5 } as const;
