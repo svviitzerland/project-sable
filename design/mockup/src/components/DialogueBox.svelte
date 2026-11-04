@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Mark from "./Mark.svelte";
   import { fmtClock, t } from "../lib/i18n";
   import { roleTone } from "../lib/people";
   import { speaker, speakerName, ui } from "../lib/store.svelte";
@@ -52,7 +53,7 @@
     </p>
   </div>
   {#if alert && onalert}
-    <button class="flag" onclick={onalert} aria-label={t("attn.title")}>!</button>
+    <button class="flag" onclick={onalert} aria-label={t("attn.title")}><Mark size={14} /></button>
   {/if}
 </div>
 
@@ -65,8 +66,7 @@
     padding: 18px 20px 20px;
     border-radius: var(--radius-surface);
     background: var(--surface);
-    border: 1px solid var(--line);
-    border-left: 4px solid var(--tone);
+    border: 1px solid color-mix(in srgb, var(--tone) 28%, var(--line));
     min-height: 120px;
   }
   .compact {
@@ -75,8 +75,7 @@
     min-height: 0;
   }
   .alert {
-    border-color: color-mix(in srgb, var(--alert) 55%, var(--line));
-    border-left-color: var(--alert);
+    border-color: color-mix(in srgb, var(--alert) 50%, var(--line));
   }
   .body {
     display: grid;

@@ -121,7 +121,7 @@
     background: var(--surface);
     color: var(--ink);
     border: 1px solid var(--line);
-    border-top: 3px solid #6f5fb5;
+    border-top: 1px solid #6f5fb5;
     border-radius: var(--radius-surface);
     box-shadow: var(--shadow-overlay);
     padding: 14px;

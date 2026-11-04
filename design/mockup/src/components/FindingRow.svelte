@@ -39,7 +39,7 @@
     padding: var(--row-pad) 14px;
     text-align: left;
     border-bottom: 1px solid var(--line);
-    border-left: 3px solid transparent;
+    border-radius: var(--radius-control);
     background: transparent;
   }
   .frow:hover {
@@ -47,7 +47,6 @@
   }
   .frow.selected {
     background: var(--selected);
-    border-left-color: var(--ink-strong);
   }
   .frow.fresh:not(.selected) {
     background: color-mix(in srgb, var(--st-inconsistency-bg) 35%, transparent);

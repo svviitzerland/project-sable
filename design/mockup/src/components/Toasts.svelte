@@ -57,8 +57,7 @@
   .toast.finding {
     background: var(--surface);
     color: var(--ink-strong);
-    border: 1px solid var(--line-strong);
-    border-left: 4px solid var(--st-inconsistency-dot);
+    border: 1px solid color-mix(in srgb, var(--alert) 45%, var(--line-strong));
   }
   .text {
     flex: 1;

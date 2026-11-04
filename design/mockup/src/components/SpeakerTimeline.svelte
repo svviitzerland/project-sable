@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Mark from "./Mark.svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import { roleTone, roleOrder, shortName } from "../lib/people";
   import { speaker, speakerName, statement, statementsOf } from "../lib/store.svelte";
@@ -91,7 +92,7 @@
             style:left={pct(s.t)}
             title={`${fmtClock(s.t)} · ${l(f.title)}`}
             aria-label={`${t(`status.${f.status}`)} · ${fmtClock(s.t)}`}
-            onclick={() => onmarker(f)}>{f.reviewed ? "✓" : "!"}</button
+            onclick={() => onmarker(f)}><span class="pin-mark"><Mark kind={f.reviewed ? "done" : "look"} size={10} /></span></button
           >
         {/if}
       {/each}
@@ -165,6 +166,9 @@
     color: #fff;
     font-size: 10px;
     font-weight: 800;
+  }
+  .pin-mark {
+    rotate: 45deg;
   }
   .pin.loud {
     background: var(--alert);

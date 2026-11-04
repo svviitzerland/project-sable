@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Mark from "../components/Mark.svelte";
   import { ChevronLeft, ChevronRight, Download, Ellipsis, FileText, MessageSquare, Pause, Play, RotateCcw, RotateCw, Search } from "@lucide/svelte";
   import { tick, untrack } from "svelte";
   import AlertCard from "../components/AlertCard.svelte";
@@ -198,7 +199,7 @@
         </div>
         {#if attention.length}
           <div class="jump" role="group" aria-label={t("attn.title")}>
-            <span class="jump-label"><span class="bang" aria-hidden="true">!</span>{t("attn.count", { n: attention.length })}</span>
+            <span class="jump-label"><span class="bang" aria-hidden="true"><Mark size={11} /></span>{t("attn.count", { n: attention.length })}</span>
             <button class="btn btn-ghost btn-icon btn-sm" aria-label={t("attn.prev")} onclick={() => step(-1)}><ChevronLeft size={16} /></button>
             {#if position >= 0}<span class="tabular small muted">{t("attn.position", { i: position + 1, n: attention.length })}</span>{/if}
             <button class="btn btn-ghost btn-icon btn-sm" aria-label={t("attn.next")} onclick={() => step(1)}><ChevronRight size={16} /></button>

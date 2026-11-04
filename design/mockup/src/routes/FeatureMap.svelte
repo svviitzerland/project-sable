@@ -67,7 +67,8 @@
       ],
       proposed: [
         L("Bilah sidang langsung yang menetap di semua layar", "A persistent live bar on every screen"),
-        L("Tata letak Terbagi (transkrip + temuan) atau Fokus (teks besar + baki temuan)", "Split (transcript + findings) or Focus (large captions + findings tray)"),
+        L("Urutan menurut relevansi: temuan yang paling perlu dicek di atas, lalu siapa yang sedang berbicara, lalu baris terakhir", "Ordered by relevance: the finding most worth a look on top, then who is speaking now, then the last lines"),
+        L("Potret pembicara dengan cincin suara, tanpa denah tempat duduk; suara baru diberi nama dari kotak dialog", "Speaker portrait with a voice ring, no seating chart; new voices are named from the dialogue box"),
         L("Mode ruang sidang: tema gelap rendah silau dan ukuran teks", "Courtroom mode: low-glare dark theme and text size"),
         L("Ikuti otomatis berhenti saat Anda menggulir; tombol pernyataan baru", "Auto-follow pauses when you scroll; a new-statements button"),
         L("Tandai pernyataan; pasal yang disebut menjadi tautan", "Flag statements; mentioned articles become links"),
@@ -82,7 +83,7 @@
         L("Transkrip impor tanpa audio", "Imported transcripts without audio"),
       ],
       proposed: [
-        L("Pemutar dengan bentuk gelombang dan penanda temuan", "Player with a waveform and finding markers"),
+        L("Pemutar dengan linimasa siapa berbicara kapan dan penanda temuan", "Player with a who-spoke-when timeline and finding markers"),
         L("Klik waktu pernyataan untuk memutar; ikuti pemutaran", "Click a statement's time to play it; follow playback"),
         L("Tiga panel di layar lebar, tab di ponsel", "Three panes on wide screens, tabs on phones"),
         L("Pintasan J/K/R/C dan spasi", "J/K/R/C and space shortcuts"),
@@ -151,6 +152,7 @@
         L("Saring per status, sidang, dan perlu ditinjau", "Filter by status, hearing and needs-review"),
         L("Keterangan dan sumber berdampingan di layar lebar", "Testimony and source side by side on wide screens"),
         L("Berikutnya/sebelumnya di lembar penuh pada ponsel", "Next/previous in a full sheet on phones"),
+        L("Papan temuan: papan yang diarahkan pengacara untuk temuan dan sumber di baliknya", "Findings board: a lawyer-driven board of findings and the sources behind them"),
       ],
       open: () => go("/case/c1/findings"),
     },
@@ -163,9 +165,9 @@
         L("Pertanyaan bahasa alami dengan jawaban berkutipan", "Natural-language questions with cited answers"),
       ],
       proposed: [
-        L("Dokumen, Peta, dan Keterkaitan sebagai tiga tampilan", "Documents, Map and Connections as three views"),
+        L("Dokumen dan Keterkaitan sebagai dua tampilan", "Documents and Connections as two views"),
         L("Pembaca dokumen dengan indeks halaman dan kutipan yang dirujuk", "Document reader with a page index and cited passages"),
-        L("Daftar keterkaitan untuk konfirmasi cepat", "Connection list for quick confirmation"),
+        L("Keterkaitan: pilih satu hal, lihat apa yang terkait, yang terkuat di atas, dengan jejak untuk kembali", "Connections: pick one thing, see what relates to it, strongest first, with a trail back"),
         L("Pertanyaan diteruskan ke asisten", "Questions hand off to the assistant"),
       ],
       open: () => go("/case/c1/evidence?view=connections&of=statement:s208"),
@@ -203,7 +205,7 @@
     {
       id: "statement", label: L("Pernyataan sidang", "Hearing statement"), kind: "object", x: 520, y: 600, w: 170,
       today: [L("Pembicara, waktu, teks, fase analisis", "Speaker, time, text, analysis phase")],
-      proposed: [L("Baris yang sama di mode langsung, tinjau, dan peta", "The same row in live, review and map views")],
+      proposed: [L("Baris yang sama di mode langsung, tinjau, dan keterkaitan", "The same row in live, review and connections views")],
       open: () => go("/case/c1/hearings/h2"),
     },
     {

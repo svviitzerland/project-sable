@@ -726,3 +726,36 @@ export const legal: LegalRef[] = [
     keywords: ["rekam", "rekaman", "audio", "perma", "recording", "izin", "permission"],
   },
 ];
+
+/**
+ * One page of a witness examination record (BAP), typeset on the landing page. Synthetic, like
+ * every record in this mockup; it mirrors passage d1 p. 4 so the demo stays consistent.
+ */
+export const samplePage = {
+  heading: ["PRO JUSTITIA", "BERITA ACARA PEMERIKSAAN SAKSI"],
+  labels: { q: "Pertanyaan", a: "Jawaban" },
+  intro:
+    "Pada hari ini, Selasa tanggal 17 Maret 2026, sekitar pukul 10.00 WIB, kami penyidik pada Kepolisian Sektor Contoh telah memeriksa seorang perempuan yang mengaku bernama RINA HARTATI, satpam pada PT Contoh Logistik, sebagai saksi dalam perkara dugaan penggelapan dalam jabatan.",
+  items: [
+    {
+      n: 3,
+      q: "Apa tugas Saudari di Gudang B?",
+      a: "Saya bertugas sebagai satpam shift malam, menjaga gerbang timur dan berkeliling gudang setiap dua jam.",
+      mark: "",
+    },
+    {
+      n: 4,
+      q: "Kapan Saudari tiba di Gudang B pada hari Sabtu, 14 Maret 2026?",
+      a: "Saya tiba di gudang tak lama setelah pukul 20.00 WIB untuk menggantikan rekan saya, Sdr. Yusuf, yang berjaga sore.",
+      mark: "tak lama setelah pukul 20.00 WIB",
+    },
+    {
+      n: 5,
+      q: "Apakah Saudari melihat kendaraan keluar dari gerbang timur malam itu?",
+      a: "Ada truk boks putih keluar lewat gerbang timur menjelang tengah malam. Saya tidak melihat siapa yang mengemudikannya.",
+      mark: "",
+    },
+  ],
+  folio: "4 / 6",
+};
+

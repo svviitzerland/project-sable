@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Mark from "../components/Mark.svelte";
   import { LayoutDashboard, List, ListChecks, Search } from "@lucide/svelte";
   import { untrack } from "svelte";
   import AlertCard from "../components/AlertCard.svelte";
@@ -100,7 +101,7 @@
 
   <div class="filters">
     <div class="seg" role="tablist" aria-label={t("fd.title")}>
-      <button role="tab" aria-selected={tab === "attention"} onclick={() => (tab = "attention")}><span class="bang" aria-hidden="true">!</span>{t("attn.title")} <span class="badge" class:badge-amber={groups.attention.length > 0}>{groups.attention.length}</span></button>
+      <button role="tab" aria-selected={tab === "attention"} onclick={() => (tab = "attention")}><span class="bang" aria-hidden="true"><Mark size={10} /></span>{t("attn.title")} <span class="badge" class:badge-amber={groups.attention.length > 0}>{groups.attention.length}</span></button>
       <button role="tab" aria-selected={tab === "checked"} onclick={() => (tab = "checked")}>{t("attn.done")} <span class="badge">{groups.checked.length}</span></button>
       <button role="tab" aria-selected={tab === "others"} onclick={() => (tab = "others")}>{t("attn.others")} <span class="badge">{groups.others.length}</span></button>
     </div>

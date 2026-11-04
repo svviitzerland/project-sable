@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Mark from "./Mark.svelte";
   import { Check, ChevronRight, Copy, RotateCcw } from "@lucide/svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import { doc, passage, setReviewed, statement, toastT } from "../lib/store.svelte";
@@ -48,7 +49,7 @@
 
 {#if mode === "compact"}
   <button class="compact" class:loud class:done={f.reviewed} onclick={onopen}>
-    <span class="mark" aria-hidden="true">{f.reviewed ? "✓" : "!"}</span>
+    <span class="mark" aria-hidden="true"><Mark kind={f.reviewed ? "done" : "look"} size={12} /></span>
     <span class="compact-body">
       <span class="compact-title clamp-2">{l(f.title)}</span>
       <span class="xsmall muted">{t(`status.${f.status}`)}{st ? ` · ${fmtClock(st.t)}` : ""}</span>
@@ -111,12 +112,11 @@
     border-radius: var(--radius-surface);
     background: var(--surface);
     border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
-    border-top: 4px solid var(--accent);
     min-width: 0;
   }
   .alert.loud {
     --accent: var(--alert);
-    background: linear-gradient(180deg, color-mix(in srgb, var(--alert-soft) 70%, var(--surface)) 0%, var(--surface) 55%);
+    background: color-mix(in srgb, var(--alert-soft) 45%, var(--surface));
   }
   .alert.done {
     --accent: var(--line-strong);
@@ -128,7 +128,6 @@
   }
   .inline {
     padding: 14px;
-    border-top-width: 3px;
   }
   .head {
     display: flex;

@@ -2,7 +2,6 @@ import { altScript } from "./data";
 import { prefs } from "./prefs.svelte";
 import {
   db,
-  docsOf,
   finding,
   hearingsOf,
   passage,
@@ -10,7 +9,7 @@ import {
   statement,
   type AssistantContext,
 } from "./store.svelte";
-import type { Citation, Connection, L10n } from "./types";
+import type { Citation, L10n } from "./types";
 
 /**
  * Mock services. Each one waits a realistic amount of time and returns canned or searched
@@ -313,26 +312,6 @@ export function importTranscript(caseId: string, title: string, date: string, tu
   return id;
 }
 
-/** "Find connections": proposes links that are not on the map yet. */
-export async function findConnections(caseId: string): Promise<number> {
-  await sleep(1600);
-  if (caseId !== "c1") return 0;
-  const candidates: Omit<Connection, "id">[] = [
-    { from: { kind: "statement", id: "s227" }, to: { kind: "passage", id: "d3p2" }, relation: "supports", reviewed: false, basis: "ai", why: { id: "Saksi sudah tap kartu sebelum mampir ke warung.", en: "She tapped her card before stopping at the stall." } },
-    { from: { kind: "statement", id: "s206" }, to: { kind: "passage", id: "d1p2" }, relation: "supports", reviewed: false, basis: "semantic", why: { id: "Jadwal jaga malam 20.00–08.00.", en: "Night shift 20:00–08:00." } },
-    { from: { kind: "statement", id: "s210" }, to: { kind: "passage", id: "d3p2" }, relation: "context", reviewed: false, basis: "ai", why: { id: "Mampir dulu: bisa menjelaskan selisih jam.", en: "Stopping on the way may explain the time gap." } },
-  ];
-  let added = 0;
-  for (const c of candidates) {
-    const exists = db.connections.some((x) => x.from.id === c.from.id && x.to.id === c.to.id);
-    if (!exists) {
-      db.connections.push({ ...c, id: `cx${Date.now()}${added}` });
-      added += 1;
-    }
-  }
-  return added;
-}
-
 /** Document ingestion: a short wait, then passages appear. */
 export async function uploadDocument(caseId: string, name: string) {
   await sleep(1500);
@@ -353,7 +332,3 @@ export async function uploadDocument(caseId: string, name: string) {
   );
   return id;
 }
-
-export const caseHasMaterial = (caseId: string) => docsOf(caseId).length > 0 || hearingsOf(caseId).length > 0;
-export const citedStatement = (id: string) => statement(id);
-export const citedPassage = (id: string) => passage(id);

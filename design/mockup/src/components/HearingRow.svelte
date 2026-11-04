@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Mark from "./Mark.svelte";
   import { ArrowRight, AudioLines, CalendarClock, FileText, Mic } from "@lucide/svelte";
   import { fmtClock, fmtDate, fmtDuration, l, t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
@@ -45,7 +46,7 @@
     {:else if isLiveNow}
       <a class="btn btn-sm btn-live" href={href(`/case/${h.caseId}/hearings/${h.id}`)}>{t("hearings.returnLive")}<ArrowRight size={14} /></a>
     {:else if open}
-      <span class="attn"><span class="bang" aria-hidden="true">!</span>{t("attn.count", { n: open })}</span>
+      <span class="attn"><span class="bang" aria-hidden="true"><Mark size={10} /></span>{t("attn.count", { n: open })}</span>
     {/if}
     {#if cast.length && !compact}
       <span class="cast" aria-hidden="true">{#each cast as sp (sp.id)}<Avatar id={sp.id} size="xs" />{/each}</span>

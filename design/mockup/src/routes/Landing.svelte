@@ -1,1510 +1,1688 @@
 <script lang="ts">
-  import { ArrowRight, Pause, Play } from "@lucide/svelte";
-  import { onMount } from "svelte";
-  import Avatar from "../components/Avatar.svelte";
-  import { t } from "../lib/i18n";
+  import { ArrowRight, Check, FileText, Menu as MenuIcon, RotateCcw, Scale, X } from "@lucide/svelte";
+  import { onMount, tick } from "svelte";
+  import caseFiles from "../../../../apps/web/static/images/jude-case-files.webp";
+  import ivoryPaper from "../../../../apps/web/static/images/ivory-paper.webp";
+  import { samplePage } from "../lib/data";
+  import { t, type Key } from "../lib/i18n";
   import { prefs } from "../lib/prefs.svelte";
-  import { go } from "../lib/router.svelte";
+  import { go, href } from "../lib/router.svelte";
 
   /**
-   * A livelier landing page proposal: the hero headline rises word by word over a moving
-   * forest light, a small live demo plays the product's core moment on loop, and "how it
-   * works" plays out as you scroll. Everything is transform/opacity motion, pauses offscreen,
-   * has a pause control, and settles into a complete static page with reduced motion.
+   * The front door, in the Editorial Case File world: the forest case-file cover frames the
+   * opening, ivory source paper carries every demonstration, and the page reads like a well-made
+   * brief, one idea per spread. Motion is finite: the comparison plays once (with a replay), the
+   * sources gather once. Reduced motion, or no script, shows the finished state.
    */
-  const reduced = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let paused = $state(reduced);
-  let scrolled = $state(false);
-  let hero: HTMLElement | undefined = $state();
-  let device: HTMLElement | undefined = $state();
-  let visible = $state(true);
-  let activeStep = $state(0);
-  let width = $state(1200);
+  const motionOk = typeof matchMedia === "function" && !matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // Hero demo: a question, an answer, then the finding that matters arrives with both quotes.
-  const lines = [
-    { who: "pu", text: "Pada 14 Maret, jam berapa Saudara tiba di gudang?" },
-    { who: "rina", text: "Saya sampai di gudang jam setengah sepuluh malam, Pak." },
-  ];
-  let demo = $state({ who: "pu", typed: "", card: false, drawn: false, done: false });
-  let token = 0;
+  let menuOpen = $state(false);
+  let menuButton: HTMLButtonElement | undefined = $state();
+  let sheet: HTMLElement | undefined = $state();
+  let desk: HTMLElement | undefined = $state();
+  let playing = $state(false);
+  let offscreen = $state(false);
+  let hidden = $state(false);
+  let gathered = $state(true);
 
-  async function runDemo() {
-    const mine = ++token;
-    const wait = async (ms: number) => {
-      let left = ms;
-      while (left > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        if (mine !== token) throw new Error("stopped");
-        if (!paused && visible && !document.hidden) left -= 100;
-      }
-    };
-    try {
-      for (;;) {
-        demo.card = false;
-        demo.drawn = false;
-        demo.done = false;
-        for (const line of lines) {
-          demo.who = line.who;
-          demo.typed = "";
-          const words = line.text.split(" ");
-          for (let i = 1; i <= words.length; i++) {
-            demo.typed = words.slice(0, i).join(" ");
-            await wait(150);
-          }
-          await wait(800);
-        }
-        demo.card = true;
-        await wait(650);
-        demo.drawn = true;
-        await wait(2600);
-        demo.done = true;
-        await wait(2400);
-      }
-    } catch {
-      /* Stopped: the component is gone or the loop restarted. */
-    }
+  async function replay() {
+    if (!motionOk || !sheet) return;
+    playing = false;
+    await tick();
+    void sheet.offsetWidth;
+    playing = true;
+  }
+
+  function scrollToId(id: string) {
+    menuOpen = false;
+    const el = document.getElementById(id);
+    el?.scrollIntoView({ behavior: motionOk ? "smooth" : "auto", block: "start" });
+    el?.focus({ preventScroll: true });
+  }
+
+  function closeMenu() {
+    menuOpen = false;
+    menuButton?.focus();
   }
 
   onMount(() => {
-    const onScroll = () => (scrolled = window.scrollY > 40);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    if (reduced) {
-      Object.assign(demo, { who: "rina", typed: lines[1].text, card: true, drawn: true, done: false });
-    } else {
-      void runDemo();
+    if (!motionOk) return;
+    const watchers: IntersectionObserver[] = [];
+    // The comparison plays when it is first seen and pauses whenever it is not.
+    if (sheet) {
+      const io = new IntersectionObserver(([entry]) => {
+        offscreen = !entry.isIntersecting;
+        if (entry.isIntersecting && !playing) playing = true;
+      });
+      io.observe(sheet);
+      watchers.push(io);
     }
-    const io = new IntersectionObserver(([entry]) => (visible = entry.isIntersecting), { threshold: 0.1 });
-    if (device) io.observe(device);
+    // The sources gather once, the first time the desk comes into view on a wide screen.
+    if (desk && matchMedia("(min-width: 900px)").matches && desk.getBoundingClientRect().top > innerHeight) {
+      gathered = false;
+      const io = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.intersectionRatio >= 0.35) {
+            gathered = true;
+            io.disconnect();
+          }
+        },
+        { threshold: [0, 0.35] },
+      );
+      io.observe(desk);
+      watchers.push(io);
+    }
+    const onVisibility = () => (hidden = document.hidden);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      token += 1;
-      io.disconnect();
-      window.removeEventListener("scroll", onScroll);
+      watchers.forEach((w) => w.disconnect());
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   });
 
-  const speakingNow = $derived(!demo.card && demo.typed.length > 0 && demo.typed !== lines.find((x) => x.who === demo.who)?.text);
-
-  function spotlight(event: PointerEvent) {
-    if (!hero || reduced) return;
-    const box = hero.getBoundingClientRect();
-    hero.style.setProperty("--mx", `${event.clientX - box.left}px`);
-    hero.style.setProperty("--my", `${event.clientY - box.top}px`);
+  /** Splits a sentence around the phrase a source is about. */
+  function around(text: string, mark: string) {
+    const i = mark ? text.indexOf(mark) : -1;
+    return i < 0 ? [text, "", ""] : [text.slice(0, i), mark, text.slice(i + mark.length)];
   }
 
-  /** Fades and lifts an element in once it scrolls into view. */
-  function reveal(node: HTMLElement, delay = 0) {
-    node.style.setProperty("--delay", `${delay}ms`);
-    node.classList.add("lp-reveal");
-    if (reduced) {
-      node.classList.add("in");
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          node.classList.add("in");
-          io.disconnect();
-        }
-      },
-      { threshold: 0.18 },
-    );
-    io.observe(node);
-    return { destroy: () => io.disconnect() };
-  }
-
-  /** Buttons lean gently toward the pointer. */
-  function magnetic(node: HTMLElement) {
-    if (reduced) return;
-    const move = (event: PointerEvent) => {
-      const box = node.getBoundingClientRect();
-      const x = event.clientX - box.left - box.width / 2;
-      const y = event.clientY - box.top - box.height / 2;
-      node.style.transform = `translate(${x * 0.16}px, ${y * 0.22}px)`;
-    };
-    const leave = () => (node.style.transform = "");
-    node.addEventListener("pointermove", move);
-    node.addEventListener("pointerleave", leave);
-    return {
-      destroy() {
-        node.removeEventListener("pointermove", move);
-        node.removeEventListener("pointerleave", leave);
-      },
-    };
-  }
-
-  /** Cards tilt toward the pointer like a physical object. */
-  function tilt(node: HTMLElement) {
-    if (reduced) return;
-    const move = (event: PointerEvent) => {
-      const box = node.getBoundingClientRect();
-      const x = (event.clientX - box.left) / box.width - 0.5;
-      const y = (event.clientY - box.top) / box.height - 0.5;
-      node.style.transform = `perspective(900px) rotateX(${-y * 6}deg) rotateY(${x * 8}deg) translateY(-4px)`;
-      node.style.setProperty("--gx", `${(x + 0.5) * 100}%`);
-      node.style.setProperty("--gy", `${(y + 0.5) * 100}%`);
-    };
-    const leave = () => (node.style.transform = "");
-    node.addEventListener("pointermove", move);
-    node.addEventListener("pointerleave", leave);
-    return {
-      destroy() {
-        node.removeEventListener("pointermove", move);
-        node.removeEventListener("pointerleave", leave);
-      },
-    };
-  }
-
-  /** Marks the "how it works" step that sits in the middle of the screen. */
-  function step(node: HTMLElement, index: number) {
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) activeStep = index;
-      },
-      { rootMargin: "-45% 0px -45% 0px" },
-    );
-    io.observe(node);
-    return { destroy: () => io.disconnect() };
-  }
-
-  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth" });
-  const words = (text: string) => text.split(" ");
-
-  const marquee = $derived([t("lp.m1"), t("lp.m2"), t("lp.m3"), t("lp.m4"), t("lp.m5"), t("lp.m6"), t("lp.m7")]);
-  const steps = $derived([
-    { n: "01", title: t("lp.s1.title"), text: t("lp.s1.text") },
-    { n: "02", title: t("lp.s2.title"), text: t("lp.s2.text") },
-    { n: "03", title: t("lp.s3.title"), text: t("lp.s3.text") },
-  ]);
-  const quiet = [
-    "Saya satpam di Gudang B, sejak awal tahun 2024.",
-    "Pak Yusuf, satpam shift sore. Dia pulang setelah saya datang.",
-    "Ada truk boks putih keluar lewat gerbang timur, menjelang tengah malam.",
-    "Saya tidak melihat siapa yang mengemudikan, lampunya mati.",
-    "Tidak, Pak. Saya tidak melihat Pak Budi malam itu.",
+  // Most of a hearing stays quiet; one line comes forward with its source.
+  const quietLines: { who: Key; text: Key; matches: boolean }[] = [
+    { who: "role.judge", text: "lp.t1", matches: true },
+    { who: "role.witness", text: "lp.t2", matches: true },
+    { who: "role.prosecutor", text: "lp.t3", matches: false },
   ];
+  let raised = $derived(around(t("lp.t4"), t("lp.t4Mark")));
+
+  const slips = [
+    { id: "bap", meta: "lp.g.bapMeta", text: "lp.g.bap", mark: "lp.g.bapMark", rel: "conflicts", reviewed: true },
+    { id: "log", meta: "lp.g.logMeta", text: "lp.g.log", mark: "lp.g.logMark", rel: "conflicts", reviewed: true },
+    { id: "shift", meta: "lp.g.shiftMeta", text: "lp.g.shift", mark: "", rel: "context", reviewed: false },
+    { id: "law", meta: "lp.g.lawMeta", text: "lp.g.law", mark: "", rel: "related", reviewed: false },
+  ] as const;
+  // Wire geometry in the desk's 1200 × 560 drawing space.
+  const wires: Record<string, { d: string; x: number; y: number }> = {
+    bap: { d: "M360,105 C405,105 392,255 430,255", x: 33.2, y: 31.5 },
+    log: { d: "M380,455 C414,455 398,305 430,305", x: 33.8, y: 68 },
+    shift: { d: "M840,115 C796,115 808,255 770,255", x: 66.8, y: 32.5 },
+    law: { d: "M820,445 C788,445 802,305 770,305", x: 66.2, y: 67.5 },
+  };
 </script>
 
-<svelte:window bind:innerWidth={width} />
+<svelte:window onkeydown={(e) => e.key === "Escape" && menuOpen && closeMenu()} />
 
-{#snippet scene(kind: number, active: boolean)}
-  <div class="scene" class:active aria-hidden="true">
-    {#if kind === 0}
-      <div class="scene-stage">
-        {#each ["hk", "pu", "rina", "ph"] as id, i (id)}
-          <span class="cycler" style:--i={i}><Avatar {id} size="md" /></span>
-        {/each}
-      </div>
-      <div class="scene-lines">
-        <p style:--i="0"><b>Penuntut Umum</b> Saudara saksi bekerja di mana dan sejak kapan?</p>
-        <p style:--i="1"><b>Saksi Rina Hartati</b> Saya satpam di Gudang B, sejak awal tahun 2024.</p>
-        <p style:--i="2"><b>Hakim Ketua</b> Lanjutkan, Saudara Penuntut Umum.</p>
-      </div>
-    {:else if kind === 1}
-      <div class="connect">
-        <div class="c-card said"><span class="c-label">Sidang 2 · 00:14:32</span>“Saya sampai di gudang <mark>jam setengah sepuluh malam</mark>, Pak.”</div>
-        <svg class="c-wires" viewBox="0 0 120 200" preserveAspectRatio="none">
-          <path d="M0,100 C60,100 60,40 120,40" />
-          <path d="M0,100 C60,100 60,160 120,160" />
-        </svg>
-        <div class="c-right">
-          <div class="c-card src"><span class="c-label">BAP Saksi Rina · hal. 4</span>“…tiba di gudang <mark>sedikit setelah pukul 20.00 WIB</mark>…”</div>
-          <div class="c-card src"><span class="c-label">Log akses · hal. 7</span>“…tercatat masuk <mark>pukul 20:07:41</mark>.”</div>
+<div class="lp" style:--lp-case-files="url({caseFiles})" style:--lp-ivory="url({ivoryPaper})">
+  <button class="skip" onclick={() => scrollToId("lp-main")}>{t("lp.skip")}</button>
+
+  <header class="cover">
+    <div class="frame">
+      <nav class="nav" aria-label={t("lp.nav.label")}>
+        <a class="wordmark" href={href("/")}>jude.</a>
+        <div class="links">
+          <button onclick={() => scrollToId("lp-how")}>{t("lp.nav.how")}</button>
+          <button onclick={() => scrollToId("lp-source")}>{t("lp.nav.source")}</button>
+          <button onclick={() => scrollToId("lp-approach")}>{t("lp.nav.approach")}</button>
+        </div>
+        <div class="lang" role="group" aria-label={t("lp.language")}>
+          <button aria-pressed={prefs.lang === "id"} onclick={() => (prefs.lang = "id")}>ID</button>
+          <button aria-pressed={prefs.lang === "en"} onclick={() => (prefs.lang = "en")}>EN</button>
+        </div>
+        <a class="button outline nav-action" href={href("/cases")}>{t("lp.open")}<ArrowRight size={18} strokeWidth={1.5} /></a>
+        <button
+          class="menu-toggle"
+          bind:this={menuButton}
+          aria-expanded={menuOpen}
+          aria-controls="lp-menu"
+          aria-label={menuOpen ? t("lp.closeMenu") : t("lp.menu")}
+          onclick={() => (menuOpen = !menuOpen)}
+        >
+          {#if menuOpen}<X size={20} />{:else}<MenuIcon size={20} />{/if}
+        </button>
+        {#if menuOpen}
+          <div id="lp-menu" class="menu">
+            <button onclick={() => scrollToId("lp-how")}>{t("lp.nav.how")}<ArrowRight size={17} /></button>
+            <button onclick={() => scrollToId("lp-source")}>{t("lp.nav.source")}<ArrowRight size={17} /></button>
+            <button onclick={() => scrollToId("lp-approach")}>{t("lp.nav.approach")}<ArrowRight size={17} /></button>
+            <a href={href("/cases")}>{t("lp.open")}<ArrowRight size={17} /></a>
+            <div class="lang menu-lang" role="group" aria-label={t("lp.language")}>
+              <button aria-pressed={prefs.lang === "id"} onclick={() => (prefs.lang = "id")}>ID</button>
+              <button aria-pressed={prefs.lang === "en"} onclick={() => (prefs.lang = "en")}>EN</button>
+            </div>
+          </div>
+        {/if}
+      </nav>
+
+      <div class="opening">
+        <h1 class="display">
+          <span>{t("lp.title1")}</span>
+          <span class="turn">{t("lp.title2")}</span>
+        </h1>
+        <p class="lead">{t("lp.lead")}</p>
+        <div class="actions">
+          <a class="button cream" href={href("/case/c1")}>{t("lp.demo")}<ArrowRight size={22} strokeWidth={1.5} /></a>
+          <button class="button outline" onclick={() => scrollToId("lp-how")}>{t("lp.how")}</button>
         </div>
       </div>
-    {:else}
-      <div class="examine">
-        {#each quiet.slice(0, 2) as line, i (i)}<p class="q" style:--i={i}>✓ {line}</p>{/each}
-        <div class="e-card">
-          <span class="e-pill">! {t("status.potential_inconsistency")}</span>
-          <strong>Jam kedatangan saksi berbeda dengan BAP dan log akses.</strong>
-          <span class="e-ask">“Apakah itu saat Saudara tap kartu di gerbang, atau saat mulai berjaga?”</span>
-          <span class="e-btn">✓ {t("attn.done")}</span>
-        </div>
-        {#each quiet.slice(2, 4) as line, i (i)}<p class="q" style:--i={i + 2}>✓ {line}</p>{/each}
-      </div>
-    {/if}
-  </div>
-{/snippet}
 
-<div class="landing" class:paused>
-  <header class="nav" class:scrolled>
-    <a class="logo" href="#/">jude.</a>
-    <nav class="links" aria-label={t("lp.nav.label")}>
-      <button onclick={() => scrollTo("how")}>{t("lp.nav.how")}</button>
-      <button onclick={() => scrollTo("signal")}>{t("lp.nav.signal")}</button>
-      <button onclick={() => scrollTo("approach")}>{t("lp.nav.approach")}</button>
-    </nav>
-    <div class="nav-end">
-      <div class="lang" role="group" aria-label={t("mk.language")}>
-        <button aria-pressed={prefs.lang === "id"} onclick={() => (prefs.lang = "id")}>ID</button>
-        <button aria-pressed={prefs.lang === "en"} onclick={() => (prefs.lang = "en")}>EN</button>
-      </div>
-      <button class="nav-cta" use:magnetic onclick={() => go("/cases")}>{t("lp.open")}<ArrowRight size={16} /></button>
+      <figure class="sheet paper" class:run={playing} class:held={offscreen || hidden} bind:this={sheet}>
+        <figcaption class="sheet-bar">
+          <span class="sample">{t("lp.sample")}</span>
+          {#if motionOk}<button class="replay" onclick={replay}><RotateCcw size={14} />{t("lp.replay")}</button>{/if}
+        </figcaption>
+        <div class="compare">
+          <div class="side">
+            <h2 class="side-label">{t("lp.testimony")}</h2>
+            <blockquote class="quote">“{t("lp.quote1")} <span class="hl one">{t("lp.time1")}</span>”</blockquote>
+            <button class="source" onclick={() => go("/case/c1/findings/f1")}>
+              <FileText size={15} />{t("lp.transcript")} · <span class="tabular">00:14:32</span>
+            </button>
+          </div>
+          <div class="finding">
+            <span class="pill">{t("status.potential_inconsistency")}</span>
+            <svg class="thread" viewBox="0 0 240 16" preserveAspectRatio="none" aria-hidden="true">
+              <circle cx="4" cy="8" r="3.5" />
+              <path d="M8,8 C70,1 170,15 232,8" pathLength="1" />
+              <circle cx="236" cy="8" r="3.5" />
+            </svg>
+            <p class="check">{t("lp.check")}</p>
+          </div>
+          <div class="side earlier">
+            <h2 class="side-label">{t("lp.earlier")}</h2>
+            <blockquote class="quote">“{t("lp.quote2")} <span class="hl two">{t("lp.time2")}</span>”</blockquote>
+            <button class="source" onclick={() => go("/case/c1/findings/f1")}>
+              <FileText size={15} />{t("lp.witnessStatement")} · {t("common.page", { n: 4 })}
+            </button>
+          </div>
+        </div>
+      </figure>
     </div>
   </header>
 
-  <section class="hero" bind:this={hero} onpointermove={spotlight} role="presentation">
-    <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
-    <div class="grain" aria-hidden="true"></div>
-    <div class="hero-inner">
-      <div class="hero-copy">
-        <h1>
-          {#key prefs.lang}
-            <span class="line">{#each words(t("lp.title1")) as w, i (i)}<span class="word" style:--i={i}>{w}&nbsp;</span>{/each}</span>
-            <span class="line">{#each words(t("lp.title2")) as w, i (i)}<span class="word" style:--i={i + 4}>{w}&nbsp;</span>{/each}</span>
-          {/key}
-        </h1>
-        <p class="lead" use:reveal={500}>{t("lp.lead")}</p>
-        <div class="ctas" use:reveal={700}>
-          <button class="cta" use:magnetic onclick={() => go("/case/c1")}><span>{t("lp.demo")}</span><ArrowRight size={18} /></button>
-          <button class="ghost" onclick={() => scrollTo("how")}>{t("lp.how")}</button>
-        </div>
+  <main id="lp-main" tabindex="-1">
+    <section class="intro wrap" id="lp-source" tabindex="-1" aria-labelledby="lp-source-title">
+      <div>
+        <h2 class="rufina" id="lp-source-title">{t("lp.sourceTitle")}</h2>
+        <p class="intro-lead">{t("lp.sourceLead")}</p>
       </div>
+      <p class="intro-aside">{t("lp.sourceAside")}</p>
+    </section>
 
-      <div class="device-wrap" use:reveal={300}>
-        <div class="device" bind:this={device}>
-          <span class="sr-only">{t("lp.sample")}: {lines[1].text}</span>
-          <div class="device-bar">
-            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="device-title" aria-hidden="true">Sidang 2 · Pemeriksaan saksi</span>
-            <span class="device-rec" aria-hidden="true"><span class="live-dot"></span>REC</span>
-            {#if !reduced}
-              <button class="pause-demo" onclick={() => (paused = !paused)} aria-label={paused ? t("lp.play") : t("lp.pause")}>
-                {#if paused}<Play size={12} />{:else}<Pause size={12} />{/if}
-              </button>
-            {/if}
+    <section class="gather wrap" aria-label={t("lp.g.label")}>
+      <div class="desk" class:scatter={!gathered} bind:this={desk}>
+        <svg class="wires" viewBox="0 0 1200 560" aria-hidden="true">
+          {#each slips as s (s.id)}
+            <path class="wire" class:suggested={!s.reviewed} data-rel={s.rel} d={wires[s.id].d} pathLength="1" />
+          {/each}
+        </svg>
+        <article class="slip statement">
+          <p class="slip-meta">{t("lp.g.statementMeta")}</p>
+          <p class="statement-text">“{t("lp.g.statement")}”</p>
+        </article>
+        {#each slips as s, i (s.id)}
+          {@const parts = around(t(s.text), s.mark ? t(s.mark) : "")}
+          <article class="slip source-slip {s.id}" style:--d="{i * 70}ms">
+            <p class="slip-meta">{#if s.id === "law"}<Scale size={13} />{:else}<FileText size={13} />{/if}{t(s.meta)}</p>
+            <p class="slip-text">{parts[0]}{#if parts[1]}<mark>{parts[1]}</mark>{/if}{parts[2]}</p>
+            <p class="slip-rel" data-rel={s.rel}>{t(`rel.${s.rel}`)}</p>
+          </article>
+          <span class="wire-label" data-rel={s.rel} style:left="{wires[s.id].x}%" style:top="{wires[s.id].y}%">{t(`rel.${s.rel}`)}</span>
+        {/each}
+      </div>
+      <p class="legend">{t("lp.g.legend")} · {t("lp.sample")}</p>
+    </section>
+
+    <section class="how wrap" id="lp-how" tabindex="-1" aria-labelledby="lp-how-title">
+      <header class="section-head">
+        <h2 class="headline" id="lp-how-title">{t("lp.howTitle1")}<br />{t("lp.howTitle2")}</h2>
+        <p>{t("lp.howLead")}</p>
+      </header>
+      <ol class="steps">
+        <li class="step">
+          <div class="caption">
+            <h3>{t("lp.s1.title")}</h3>
+            <p>{t("lp.s1.text")}</p>
           </div>
-          <div class="device-stage" aria-hidden="true">
-            {#each ["hk", "pu", "rina", "ph"] as id (id)}
-              <span class="d-seat" class:on={demo.who === id && !demo.card}>
-                <Avatar {id} size="md" speaking={speakingNow && demo.who === id} dim={!!demo.typed && demo.who !== id && !demo.card} />
-              </span>
-            {/each}
-          </div>
-          <div class="device-log" aria-hidden="true">
-            <p class="device-quiet"><b>Saksi Rina Hartati</b>Saya satpam di Gudang B, sejak awal tahun 2024.<span>✓</span></p>
-            <p class="device-quiet"><b>Saksi Rina Hartati</b>Pak Yusuf, satpam shift sore. Dia pulang setelah saya datang.<span>✓</span></p>
-            <div class="device-line">
-              <Avatar id={demo.who} size="sm" />
-              <p><b>{demo.who === "pu" ? "Penuntut Umum" : "Saksi Rina Hartati"}</b>{demo.typed}<span class="caret"></span></p>
-            </div>
-            <div class="card-wrap" class:show={demo.card}>
-              <div class="card-inner">
-                <div class="device-card" class:show={demo.card} class:done={demo.done}>
-                  <span class="d-pill">! {t("status.potential_inconsistency")}</span>
-                  <div class="d-compare">
-                    <div class="d-quote"><span>{t("attn.said")}</span>“…di gudang <mark>jam setengah sepuluh malam</mark>”</div>
-                    <svg class="d-wire" class:drawn={demo.drawn} viewBox="0 0 40 20" preserveAspectRatio="none"><path d="M0,10 C15,0 25,20 40,10" /></svg>
-                    <div class="d-quote"><span>Log akses · hal. 7</span>“…masuk <mark>pukul 20:07:41</mark>”</div>
-                  </div>
-                  <span class="d-ask">{t("attn.ask")}: “Apakah itu saat Saudara tap kartu di gerbang?”</span>
-                  <span class="d-check">{demo.done ? `✓ ${t("attn.done")}` : t("attn.done")}</span>
+          <div class="plate" style:--pos="6% 10%">
+            <div class="vignette listen paper">
+              <div class="v-line quiet">
+                <span class="v-face" data-tone="judge">HK</span>
+                <div><span class="v-name">{t("role.judge")}</span><p>{t("lp.v1.judge")}</p></div>
+              </div>
+              <div class="v-line now">
+                <span class="v-face speaking" data-tone="witness">RH</span>
+                <div>
+                  <span class="v-name">Saksi Rina Hartati <span class="v-listening">{t("live.listeningShort")}</span></span>
+                  <p class="v-said">{t("lp.g.statement")}</p>
                 </div>
               </div>
+              <span class="v-sample">{t("lp.sample")}</span>
             </div>
           </div>
-          <div class="device-foot" aria-hidden="true">{t("lp.sample")}</div>
-        </div>
-      </div>
-    </div>
-  </section>
+        </li>
+        <li class="step flip">
+          <div class="caption">
+            <h3>{t("lp.s2.title")}</h3>
+            <p>{t("lp.s2.text")}</p>
+          </div>
+          <div class="plate" style:--pos="34% 4%">
+            <div class="vignette reading paper">
+              <p class="v-head">{t("lp.v2.title")}</p>
+              <ul>
+                <li><FileText size={15} /><span>{t("lp.v2.d1")}</span><span class="v-pages">{t("lp.v2.pages", { n: 6 })}</span><span class="v-state"><Check size={13} />{t("lp.v2.read")}</span></li>
+                <li><FileText size={15} /><span>{t("lp.v2.d2")}</span><span class="v-pages">{t("lp.v2.pages", { n: 12 })}</span><span class="v-state"><Check size={13} />{t("lp.v2.read")}</span></li>
+                <li><FileText size={15} /><span>{t("lp.v2.d3")}</span><span class="v-pages">{t("lp.v2.pages", { n: 9 })}</span><span class="v-state"><Check size={13} />{t("lp.v2.read")}</span></li>
+                <li><Scale size={15} /><span>{t("lp.v2.d4")}</span><span class="v-pages">Pasal.id</span><span class="v-state"><Check size={13} />{t("lp.v2.referenced")}</span></li>
+              </ul>
+              <span class="v-sample">{t("lp.sample")}</span>
+            </div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="caption">
+            <h3>{t("lp.s3.title")}</h3>
+            <p>{t("lp.s3.text")}</p>
+          </div>
+          <div class="plate" style:--pos="16% 22%">
+            <div class="vignette examine paper">
+              <span class="pill">{t("status.potential_inconsistency")}</span>
+              <p class="v-title">{t("lp.v3.title")}</p>
+              <p class="v-sub">{t("lp.v3.checked")}</p>
+              <ul class="v-checks">
+                <li>{t("lp.v3.alt")}</li>
+                <li>{t("lp.v3.context")}</li>
+              </ul>
+              <p class="v-sub">{t("lp.v3.ask")}</p>
+              <p class="v-question">{t("lp.v3.question")}</p>
+              <span class="v-sample">{t("lp.sample")}</span>
+            </div>
+          </div>
+        </li>
+      </ol>
+    </section>
 
-  <div class="marquee" aria-label={t("lp.sourceTitle")}>
-    <div class="track">
-      {#each [0, 1] as copy (copy)}
-        <div class="run" aria-hidden={copy === 1}>
-          {#each marquee as item (item)}<span>{item}</span><span class="sep">✦</span>{/each}
-        </div>
-      {/each}
-    </div>
-  </div>
-
-  <section class="how" id="how">
-    <div class="how-head" use:reveal>
-      <h2>{t("lp.howTitle1")}<br /><em>{t("lp.howTitle2")}</em></h2>
-      <p>{t("lp.howLead")}</p>
-    </div>
-    <div class="how-body">
-      <ol class="steps">
-        {#each steps as s, i (s.n)}
-          <li class="step" class:active={activeStep === i} use:step={i}>
-            <span class="step-n">{s.n}</span>
-            <h3>{s.title}</h3>
-            <p>{s.text}</p>
-            {#if width < 900}<div class="inline-scene">{@render scene(i, activeStep === i)}</div>{/if}
+    <section class="signal wrap" aria-labelledby="lp-signal-title">
+      <header class="section-head">
+        <h2 class="headline" id="lp-signal-title">{t("lp.signalTitle")}</h2>
+        <p>{t("lp.signalLead")}</p>
+      </header>
+      <ol class="transcript paper">
+        {#each quietLines as line (line.text)}
+          <li class="t-row">
+            <span class="t-who">{t(line.who)}</span>
+            <p class="t-text">{t(line.text)}</p>
+            {#if line.matches}<span class="t-ok"><Check size={13} />{t("lp.tMatches")}</span>{:else}<span></span>{/if}
           </li>
         {/each}
+        <li class="t-row raised">
+          <span class="t-who">{t("role.witness")}</span>
+          <p class="t-text">{raised[0]}<mark>{raised[1]}</mark>{raised[2]}</p>
+          <span class="pill small">{t("status.potential_inconsistency")}</span>
+          <p class="t-note">{t("lp.tNote")}</p>
+        </li>
+        <li class="t-row">
+          <span class="t-who">{t("role.witness")}</span>
+          <p class="t-text">{t("lp.t5")}</p>
+          <span></span>
+        </li>
       </ol>
-      {#if width >= 900}
-        <div class="sticky">
-          <div class="frame">
-            <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span>{steps[activeStep].title}</span></div>
-            {#each [0, 1, 2] as k (k)}
-              <div class="frame-scene" class:show={activeStep === k}>{@render scene(k, activeStep === k)}</div>
-            {/each}
-          </div>
-          <div class="progress" aria-hidden="true">{#each steps as s, i (s.n)}<span class:on={activeStep >= i}></span>{/each}</div>
-        </div>
-      {/if}
-    </div>
-  </section>
+    </section>
 
-  <section class="signal" id="signal">
-    <div class="signal-copy" use:reveal>
-      <h2>{t("lp.signalTitle")}</h2>
-      <p>{t("lp.signalLead")}</p>
-    </div>
-    <div class="feed" use:reveal={150}>
-      {#each quiet.slice(0, 2) as line, i (i)}<p class="feed-q" style:--i={i}>{line}<span>✓</span></p>{/each}
-      <div class="feed-hit">
-        <span class="feed-pill">!</span>
-        <div>
-          <p>Saya sampai di gudang <mark>jam setengah sepuluh malam</mark>, Pak.</p>
-          <span>{t("status.potential_inconsistency")} · Log akses: <mark>pukul 20:07:41</mark></span>
+    <section class="spread wrap" aria-labelledby="lp-page-title">
+      <div class="page paper" aria-label={t("lp.sample")}>
+        <p class="page-folio tabular">{samplePage.folio}</p>
+        {#each samplePage.heading as line (line)}<p class="page-heading">{line}</p>{/each}
+        <p class="page-intro">{samplePage.intro}</p>
+        <ol class="page-items">
+          {#each samplePage.items as item (item.n)}
+            {@const parts = around(item.a, item.mark)}
+            <li class:marked={!!item.mark}>
+              <span class="page-n tabular">{item.n}.</span>
+              <div>
+                <p><span class="page-tag">{samplePage.labels.q}:</span> {item.q}</p>
+                <p><span class="page-tag">{samplePage.labels.a}:</span> {parts[0]}{#if parts[1]}<mark>{parts[1]}</mark>{/if}{parts[2]}</p>
+                {#if item.mark}
+                  <aside class="margin-note">
+                    <span class="pill small">{t("status.potential_inconsistency")}</span>
+                    <p>{t("lp.pageNote")}</p>
+                  </aside>
+                {/if}
+              </div>
+            </li>
+          {/each}
+        </ol>
+        <p class="page-sample">{t("lp.sample")}</p>
+      </div>
+      <div class="spread-caption">
+        <h2 class="headline" id="lp-page-title">{t("lp.pageTitle")}</h2>
+        <p>{t("lp.pageText")}</p>
+        <p class="quiet">{t("lp.pageOriginal")}</p>
+      </div>
+    </section>
+
+    <section class="approach wrap" id="lp-approach" tabindex="-1" aria-labelledby="lp-approach-title">
+      <header class="section-head">
+        <h2 class="headline" id="lp-approach-title">{t("lp.approachTitle1")}<br />{t("lp.approachTitle2")}</h2>
+        <p>{t("lp.approachLead")}</p>
+      </header>
+      <ul class="principles">
+        <li><h3>{t("lp.p1.title")}</h3><p>{t("lp.p1.text")}</p></li>
+        <li><h3>{t("lp.p2.title")}</h3><p>{t("lp.p2.text")}</p></li>
+        <li><h3>{t("lp.p3.title")}</h3><p>{t("lp.p3.text")}</p></li>
+      </ul>
+    </section>
+
+    <section class="closing" aria-labelledby="lp-closing-title">
+      <div class="closing-frame">
+        <h2 class="headline" id="lp-closing-title">{t("lp.closingTitle1")}<br />{t("lp.closingTitle2")}</h2>
+        <p>{t("lp.closingLead")}</p>
+        <div class="actions">
+          <a class="button cream" href={href("/case/c1")}>{t("lp.demo")}<ArrowRight size={22} strokeWidth={1.5} /></a>
+          <a class="button outline" href={href("/cases")}>{t("lp.open")}</a>
         </div>
       </div>
-      {#each quiet.slice(2) as line, i (i)}<p class="feed-q" style:--i={i + 2}>{line}<span>✓</span></p>{/each}
-    </div>
-  </section>
+    </section>
+  </main>
 
-  <section class="approach" id="approach">
-    <div class="approach-head" use:reveal>
-      <h2>{t("lp.approachTitle1")}<br /><em>{t("lp.approachTitle2")}</em></h2>
-      <p>{t("lp.approachLead")}</p>
+  <footer class="foot wrap">
+    <div>
+      <a class="wordmark foot-mark" href={href("/")}>jude.</a>
+      <p>{t("lp.tagline")}</p>
     </div>
-    <div class="principles">
-      {#each [["01", t("lp.p1.title"), t("lp.p1.text")], ["02", t("lp.p2.title"), t("lp.p2.text")], ["03", t("lp.p3.title"), t("lp.p3.text")]] as p, i (p[0])}
-        <article class="principle" use:tilt use:reveal={i * 120}>
-          <span class="p-n">{p[0]}</span>
-          <h3>{p[1]}</h3>
-          <p>{p[2]}</p>
-        </article>
-      {/each}
+    <div class="foot-notes">
+      <p>{t("lp.note")}</p>
+      <p>{t("lp.footerNote")}</p>
+      <p class="quiet">{t("lp.concept")}</p>
     </div>
-  </section>
-
-  <section class="closing">
-    <div class="aurora small" aria-hidden="true"><span></span><span></span></div>
-    <div class="closing-inner" use:reveal>
-      <h2>{t("lp.closingTitle1")}<br /><em>{t("lp.closingTitle2")}</em></h2>
-      <p>{t("lp.closingLead")}</p>
-      <button class="cta shine" use:magnetic onclick={() => go("/case/c1")}><span>{t("lp.demo")}</span><ArrowRight size={18} /></button>
-      <span class="note">{t("lp.note")}</span>
-    </div>
-  </section>
-
-  <footer class="footer">
-    <span class="logo">jude.</span>
-    <span>{t("lp.tagline")}</span>
-    <span class="muted">{t("lp.concept")}</span>
-    <p class="footnote">{t("lp.footerNote")}</p>
   </footer>
 </div>
 
 <style>
-  .landing {
-    --forest: #10281e;
-    --forest-2: #183b2d;
-    --cream: #f6f0e4;
-    --amber: #e3a95c;
-    background: var(--bg);
-    color: var(--ink);
+  .lp {
+    --lp-bg: #faf7f0;
+    --lp-ink: #14281f;
+    --lp-forest: #16382b;
+    --lp-forest-deep: #153328;
+    --lp-cream: #f6f0e4;
+    --lp-accent: #eadcc4;
+    --lp-paper: #f5eee2;
+    --lp-muted: #64675e;
+    --lp-line: #d9d6ca;
+    --lp-button: #f4ebda;
+    --lp-button-ink: #15271d;
+    --lp-button-hover: #e8d6b5;
+    --lp-amber: #e9bf7c;
+    --lp-amber-ink: #422d10;
+    --lp-amber-wash: rgb(233 191 124 / 0.42);
+    --lp-sage-ink: #245037;
+    --lp-rel-conflicts: #b57539;
+    --lp-rel-conflicts-text: #835025;
+    --lp-rel-context: #83709b;
+    --lp-rel-context-text: #67547e;
+    --lp-rel-related: #8e9e91;
+    --lp-rel-related-text: #546758;
+    --lp-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --lp-section: 84px;
+    min-height: 100dvh;
+    background: var(--lp-bg);
+    color: var(--lp-ink);
+    font: 400 15px / 1.65 "Manrope", system-ui, sans-serif;
     overflow-x: clip;
   }
-  /* Navigation */
-  .nav {
+  .lp ::selection {
+    background: var(--lp-amber-wash);
+    color: inherit;
+  }
+  .lp :focus-visible {
+    outline: 2px solid var(--lp-amber);
+    outline-offset: 6px;
+  }
+  .lp [tabindex="-1"]:focus {
+    outline: none;
+  }
+  .wrap {
+    width: min(90%, 1440px);
+    margin-inline: auto;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .paper {
+    background-color: var(--lp-paper);
+    background-image: var(--lp-ivory);
+    background-size: 600px 600px;
+    color: #111c16;
+  }
+  .skip {
     position: fixed;
-    inset: 0 0 auto 0;
-    z-index: 40;
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    padding: 18px clamp(16px, 4vw, 56px);
-    color: var(--cream);
-    transition: background-color 0.35s, padding 0.35s, color 0.35s, box-shadow 0.35s;
-  }
-  .nav.scrolled {
-    padding-block: 10px;
-    background: color-mix(in srgb, var(--forest) 82%, transparent);
-    backdrop-filter: blur(14px) saturate(1.2);
-    box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
-  }
-  .logo {
-    font-family: var(--font-title);
-    font-size: 34px;
-    line-height: 1;
-    color: inherit;
-    text-decoration: none;
-  }
-  .links {
-    display: flex;
-    gap: clamp(14px, 2.5vw, 34px);
-    margin-left: auto;
-  }
-  .links button {
-    color: inherit;
-    font-size: 14px;
-    opacity: 0.85;
-    position: relative;
-    padding: 6px 0;
-  }
-  .links button::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    background: currentColor;
-    transform: scaleX(0);
-    transform-origin: right;
-    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .links button:hover::after {
-    transform: scaleX(1);
-    transform-origin: left;
-  }
-  .nav-end {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .lang {
-    display: flex;
-    border: 1px solid color-mix(in srgb, var(--cream) 35%, transparent);
-    border-radius: 999px;
-    padding: 2px;
-  }
-  .lang button {
-    color: inherit;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 999px;
-    opacity: 0.7;
-  }
-  .lang button[aria-pressed="true"] {
-    background: var(--cream);
-    color: var(--forest);
-    opacity: 1;
-  }
-  .nav-cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--cream) 50%, transparent);
-    color: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.25s, color 0.25s;
-  }
-  .nav-cta:hover {
-    background: var(--cream);
-    color: var(--forest);
-  }
-  @media (max-width: 860px) {
-    .links {
-      display: none;
-    }
-    .nav-end {
-      margin-left: auto;
-    }
-  }
-  @media (max-width: 520px) {
-    .nav-cta {
-      display: none;
-    }
-  }
-
-  /* Hero */
-  .hero {
-    --mx: 70%;
-    --my: 30%;
-    position: relative;
-    min-height: 100svh;
-    display: flex;
-    align-items: center;
-    padding: 120px clamp(16px, 5vw, 72px) 70px;
-    background: radial-gradient(700px circle at var(--mx) var(--my), rgb(246 228 190 / 0.1), transparent 45%), linear-gradient(160deg, #0d2219 0%, var(--forest) 45%, #1b4433 100%);
-    color: var(--cream);
-    overflow: hidden;
-    isolation: isolate;
-  }
-  .aurora {
-    position: absolute;
-    inset: -20%;
-    z-index: -1;
-    filter: blur(60px);
-    opacity: 0.75;
-    pointer-events: none;
-  }
-  .aurora span {
-    position: absolute;
-    width: 46vmax;
-    height: 46vmax;
-    border-radius: 50%;
-    mix-blend-mode: screen;
-    animation: drift 22s ease-in-out infinite alternate;
-  }
-  .aurora span:nth-child(1) {
-    left: 5%;
-    top: 10%;
-    background: radial-gradient(circle, rgb(47 110 76 / 0.75), transparent 65%);
-  }
-  .aurora span:nth-child(2) {
-    right: 0;
-    top: 30%;
-    background: radial-gradient(circle, rgb(196 140 60 / 0.35), transparent 65%);
-    animation-duration: 28s;
-    animation-direction: alternate-reverse;
-  }
-  .aurora span:nth-child(3) {
-    left: 35%;
-    bottom: -10%;
-    background: radial-gradient(circle, rgb(80 140 120 / 0.45), transparent 65%);
-    animation-duration: 34s;
-  }
-  @keyframes drift {
-    0% { transform: translate3d(0, 0, 0) scale(1); }
-    50% { transform: translate3d(6vw, -4vh, 0) scale(1.12); }
-    100% { transform: translate3d(-5vw, 5vh, 0) scale(0.94); }
-  }
-  .grain {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    opacity: 0.09;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-  .hero-inner {
-    width: 100%;
-    max-width: 1320px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    gap: clamp(28px, 5vw, 80px);
-    align-items: center;
-  }
-  @media (max-width: 960px) {
-    .hero-inner {
-      grid-template-columns: 1fr;
-    }
-  }
-  h1 {
-    font-family: var(--font-title);
-    font-weight: 400;
-    font-size: clamp(46px, 6.4vw, 96px);
-    line-height: 0.98;
-    letter-spacing: -0.03em;
-  }
-  .line {
-    display: block;
-    overflow: hidden;
-    padding-bottom: 0.08em;
-  }
-  .line:nth-child(2) {
-    color: #e9d3a8;
-    font-style: italic;
-  }
-  .word {
-    display: inline-block;
-    transform: translateY(105%) rotate(4deg);
-    opacity: 0;
-    filter: blur(6px);
-    animation: rise 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    animation-delay: calc(var(--i) * 75ms + 150ms);
-  }
-  @keyframes rise {
-    to {
-      transform: none;
-      opacity: 1;
-      filter: blur(0);
-    }
-  }
-  .lead {
-    margin-top: 26px;
-    max-width: 34ch;
-    font-size: clamp(18px, 1.6vw, 23px);
-    line-height: 1.45;
-    color: color-mix(in srgb, var(--cream) 82%, transparent);
-  }
-  .ctas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 34px;
-  }
-  .cta {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    padding: 16px 28px;
-    border-radius: 999px;
-    background: var(--cream);
-    color: var(--forest);
-    font-family: var(--font-serif);
-    font-size: 21px;
-    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s;
-    box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
-  }
-  .cta:hover {
-    box-shadow: 0 16px 50px rgb(233 211 168 / 0.35);
-  }
-  .cta :global(svg) {
-    transition: transform 0.25s;
-  }
-  .cta:hover :global(svg) {
-    transform: translateX(4px);
-  }
-  .ghost {
-    padding: 16px 22px;
-    border-radius: 999px;
-    color: var(--cream);
-    font-size: 16px;
-    border: 1px solid color-mix(in srgb, var(--cream) 30%, transparent);
-    transition: background-color 0.25s;
-  }
-  .ghost:hover {
-    background: color-mix(in srgb, var(--cream) 10%, transparent);
-  }
-
-  /* Hero device */
-  .device-wrap {
-    position: relative;
-  }
-  .device {
-    position: relative;
-    display: grid;
-    gap: 14px;
-    padding: 16px;
-    border-radius: 20px;
-    background: rgb(250 247 240 / 0.96);
-    color: #1d2f25;
-    box-shadow: 0 40px 90px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(255 255 255 / 0.12) inset;
-    transform: perspective(1400px) rotateY(-6deg) rotateX(3deg);
-    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .device-wrap:hover .device {
-    transform: perspective(1400px) rotateY(-2deg) rotateX(1deg);
-  }
-  .device-bar,
-  .frame-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #65705f;
-  }
-  .dots {
-    display: flex;
-    gap: 5px;
-  }
-  .dots i {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: #d8d3c4;
-  }
-  .device-title {
-    flex: 1;
-  }
-  .device-rec {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: #b4472f;
-    font-weight: 800;
-  }
-  .device-stage {
-    display: flex;
-    justify-content: space-around;
-    padding: 22px 8px 12px;
-    border-radius: 12px;
-    background: linear-gradient(180deg, #f1ede2, #e9e4d6);
-  }
-  .d-seat {
-    transition: transform 0.35s;
-  }
-  .d-seat.on {
-    transform: translateY(-4px);
-  }
-  .device-log {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    gap: 8px;
-    height: 300px;
-    overflow: hidden;
-    mask-image: linear-gradient(180deg, transparent 0, #000 36px);
-  }
-  .device-quiet {
-    display: flex;
-    gap: 8px;
-    align-items: baseline;
-    flex-shrink: 0;
-    padding: 8px 12px;
-    border-radius: 10px;
-    background: #f1ede2;
-    color: #7a7f73;
-    font-size: 12.5px;
-    line-height: 1.4;
-  }
-  .device-quiet b {
-    flex-shrink: 0;
-    font-size: 11px;
-    color: #a8731c;
-  }
-  .device-quiet span {
-    margin-left: auto;
-    color: #5f8a69;
-    font-weight: 700;
-  }
-  .card-wrap {
-    display: grid;
-    grid-template-rows: 0fr;
-    flex-shrink: 0;
-    transition: grid-template-rows 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .card-wrap.show {
-    grid-template-rows: 1fr;
-  }
-  .card-inner {
-    min-height: 0;
-    overflow: hidden;
-    padding: 0 4px 6px;
-  }
-  .device-line {
-    display: flex;
-    flex-shrink: 0;
-    gap: 10px;
-    align-items: flex-start;
-    min-height: 64px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: #fff;
-    border: 1px solid #e3e0d4;
-  }
-  .device-line p {
-    font-size: 15px;
-    line-height: 1.45;
-    color: #173a2c;
-  }
-  .device-line b {
-    display: block;
-    font-size: 12px;
-    color: #a8731c;
-  }
-  .caret {
-    display: inline-block;
-    width: 2px;
-    height: 1em;
-    margin-left: 2px;
-    background: #173a2c;
-    vertical-align: -2px;
-    animation: blink 1s steps(2) infinite;
-  }
-  @keyframes blink {
-    50% {
-      opacity: 0;
-    }
-  }
-  .device-card {
-    display: grid;
-    gap: 10px;
-    padding: 14px;
-    border-radius: 14px;
-    background: linear-gradient(180deg, #fbe7d6, #fffaf3 60%);
-    border: 1px solid #ecc49f;
-    border-top: 4px solid #c4622d;
-    opacity: 0;
-    transform: translateY(18px) scale(0.97);
-    transition: opacity 0.5s, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.6s;
-  }
-  .device-card.show {
-    opacity: 1;
-    transform: none;
-    box-shadow: 0 0 0 6px rgb(196 98 45 / 0.12), 0 18px 40px rgb(196 98 45 / 0.18);
-  }
-  .device-card.done {
-    border-top-color: #9fb3a3;
-    box-shadow: none;
-  }
-  .d-pill {
-    justify-self: start;
-    padding: 3px 10px;
-    border-radius: 999px;
-    background: #c4622d;
-    color: #fff;
-    font-size: 12px;
-    font-weight: 700;
-  }
-  .d-compare {
-    display: grid;
-    grid-template-columns: 1fr 34px 1fr;
-    align-items: center;
-    gap: 6px;
-  }
-  .d-quote {
-    display: grid;
-    gap: 4px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    background: #fff;
-    border: 1px solid #ead7c4;
-    font-size: 13px;
-    line-height: 1.4;
-  }
-  .d-quote span {
-    font-size: 10.5px;
-    font-weight: 700;
-    color: #7a6a58;
-  }
-  .d-quote :global(mark),
-  .c-card :global(mark),
-  .feed :global(mark) {
-    background: rgb(196 98 45 / 0.18);
-    box-shadow: inset 0 -2px 0 #c4622d;
-    color: inherit;
-  }
-  .d-wire {
-    width: 34px;
-    height: 20px;
-    overflow: visible;
-  }
-  .d-wire path {
-    fill: none;
-    stroke: #c4622d;
-    stroke-width: 2.5;
-    stroke-dasharray: 60;
-    stroke-dashoffset: 60;
-    transition: stroke-dashoffset 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .d-wire.drawn path {
-    stroke-dashoffset: 0;
-  }
-  .d-ask {
-    font-family: var(--font-serif);
-    font-size: 15px;
-    color: #173a2c;
-  }
-  .d-check {
-    justify-self: end;
-    padding: 6px 14px;
+    z-index: 50;
+    left: 16px;
+    top: -100px;
+    padding: 12px 20px;
     border-radius: 7px;
-    background: #173a2c;
-    color: #f6f0e4;
-    font-size: 12.5px;
-    font-weight: 600;
-    transition: background-color 0.3s;
+    background: var(--lp-paper);
+    color: var(--lp-ink);
   }
-  .done .d-check {
-    background: #5f8a69;
-  }
-  .device-foot {
-    font-size: 11px;
-    color: #7c8174;
-    text-align: right;
-  }
-  .pause-demo {
-    display: grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: 1px solid #d8d3c4;
-    color: #65705f;
-  }
-  .pause-demo:hover {
-    background: #ece8dc;
+  .skip:focus-visible {
+    top: 16px;
   }
 
-  /* Marquee */
-  .marquee {
-    overflow: hidden;
-    background: var(--forest-2);
-    color: var(--cream);
-    padding: 18px 0;
-    border-block: 1px solid rgb(255 255 255 / 0.08);
-  }
-  .track {
-    display: flex;
-    width: max-content;
-    animation: slide 38s linear infinite;
-  }
-  .marquee:hover .track,
-  .paused .track {
-    animation-play-state: paused;
-  }
-  .run {
-    display: flex;
-    align-items: center;
-    gap: 28px;
-    padding-right: 28px;
-    font-family: var(--font-serif);
-    font-size: clamp(20px, 2vw, 28px);
-    white-space: nowrap;
-  }
-  .sep {
-    color: var(--amber);
-    font-size: 14px;
-  }
-  @keyframes slide {
-    to {
-      transform: translateX(-50%);
-    }
-  }
-
-  /* Reveal: classes are added by the reveal action, so they are global. */
-  :global(.lp-reveal) {
-    opacity: 0;
-    transform: translateY(28px);
-    filter: blur(4px);
-    transition:
-      opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms),
-      transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) var(--delay, 0ms),
-      filter 0.9s var(--delay, 0ms);
-  }
-  :global(.lp-reveal.in) {
-    opacity: 1;
-    transform: none;
-    filter: none;
-  }
-
-  /* How it works */
-  .how {
-    padding: clamp(80px, 10vw, 140px) clamp(16px, 5vw, 72px);
-    max-width: 1320px;
-    margin: 0 auto;
-  }
-  .how-head,
-  .approach-head {
-    display: grid;
-    grid-template-columns: 1.1fr 0.9fr;
-    gap: 40px;
-    align-items: end;
-    margin-bottom: 60px;
-  }
-  @media (max-width: 860px) {
-    .how-head,
-    .approach-head {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-  }
-  h2 {
-    font-family: var(--font-serif);
-    font-weight: 400;
-    font-size: clamp(38px, 4.6vw, 66px);
-    line-height: 1.02;
-    letter-spacing: -0.02em;
-    color: var(--ink-strong);
-  }
-  h2 em {
-    color: var(--focus);
-  }
-  .how-head p,
-  .approach-head p,
-  .signal-copy p {
-    font-size: 17px;
-    line-height: 1.6;
-    color: var(--muted);
-    max-width: 46ch;
-  }
-  .how-body {
-    display: grid;
-    grid-template-columns: 0.9fr 1.1fr;
-    gap: clamp(30px, 5vw, 80px);
-  }
-  @media (max-width: 899px) {
-    .how-body {
-      grid-template-columns: 1fr;
-    }
-  }
-  .steps {
-    display: grid;
-    gap: 0;
-  }
-  .step {
-    display: grid;
-    gap: 10px;
-    padding: 12vh 0;
-    border-top: 1px solid var(--line);
-    opacity: 0.35;
-    transition: opacity 0.5s;
-  }
-  .step.active {
-    opacity: 1;
-  }
-  @media (max-width: 899px) {
-    .step {
-      padding: 40px 0;
-      opacity: 1;
-    }
-  }
-  .step-n {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--focus);
-  }
-  .step h3 {
-    font-family: var(--font-serif);
-    font-weight: 400;
-    font-size: clamp(28px, 3vw, 40px);
-    color: var(--ink-strong);
-  }
-  .step p {
-    color: var(--muted);
-    font-size: 16px;
-    line-height: 1.65;
-    max-width: 44ch;
-  }
-  .inline-scene {
-    margin-top: 12px;
-  }
-  .sticky {
-    position: sticky;
-    top: 18vh;
-    align-self: start;
-    display: grid;
-    gap: 16px;
+  /* Cover: the forest case file, set into the page with a quiet margin. */
+  .cover {
+    padding: 14px 14px 0;
   }
   .frame {
     position: relative;
-    display: grid;
-    gap: 12px;
-    padding: 16px;
-    min-height: 380px;
-    border-radius: 20px;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    box-shadow: 0 30px 80px rgb(20 40 30 / 0.12);
-  }
-  .frame-scene {
-    grid-area: 2 / 1;
-    opacity: 0;
-    transform: translateY(16px) scale(0.98);
-    transition: opacity 0.5s, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    pointer-events: none;
-  }
-  .frame-scene.show {
-    opacity: 1;
-    transform: none;
-  }
-  .progress {
     display: flex;
-    gap: 6px;
+    flex-direction: column;
+    border-radius: 28px 28px 0 0;
+    background: var(--lp-forest-deep) var(--lp-case-files) center bottom / cover no-repeat;
+    color: var(--lp-cream);
+    padding: 0 max(5%, 28px);
+    overflow: hidden;
   }
-  .progress span {
-    flex: 1;
-    height: 3px;
-    border-radius: 2px;
-    background: var(--line);
-    transition: background-color 0.4s;
+  .nav {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    min-height: 104px;
   }
-  .progress span.on {
-    background: var(--ink-strong);
+  .wordmark {
+    font-family: "Rufina", Georgia, serif;
+    font-size: 53px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: inherit;
+    text-decoration: none;
+    margin-right: auto;
+  }
+  .links {
+    display: flex;
+    gap: 28px;
+  }
+  .links button {
+    font-size: 15px;
+    color: var(--lp-cream);
+    text-underline-offset: 6px;
+  }
+  .links button:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+  }
+  .lang {
+    display: inline-flex;
+    padding: 3px;
+    border-radius: 30px;
+    border: 1px solid rgb(246 240 228 / 0.35);
+  }
+  .lang button {
+    min-width: 36px;
+    padding: 3px 9px;
+    border-radius: 30px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: rgb(246 240 228 / 0.8);
+  }
+  .lang button[aria-pressed="true"] {
+    background: var(--lp-cream);
+    color: var(--lp-forest);
+  }
+  .menu-toggle {
+    display: none;
+  }
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    min-height: 56px;
+    padding: 10px 30px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    font-family: "Caslon Display", Georgia, serif;
+    font-size: 23px;
+    line-height: 1.3;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+  .button :global(svg) {
+    transition: transform 0.2s var(--lp-ease);
+  }
+  .button:hover :global(svg) {
+    transform: translateX(4px);
+  }
+  .cream {
+    background: var(--lp-button);
+    color: var(--lp-button-ink);
+  }
+  .cream:hover {
+    background: var(--lp-button-hover);
+  }
+  .outline {
+    border-color: rgb(246 240 228 / 0.7);
+    color: var(--lp-cream);
+  }
+  .outline:hover {
+    background: var(--lp-paper);
+    color: var(--lp-forest);
+  }
+  .nav-action {
+    min-height: 48px;
+    padding: 8px 22px;
+    gap: 12px;
+    font-size: 19px;
   }
 
-  /* Scenes */
-  .scene {
+  .opening {
+    max-width: 980px;
+    padding: clamp(40px, 7vh, 84px) 0 clamp(48px, 8vh, 96px);
+  }
+  .display {
+    display: grid;
+    font-family: "Rufina", Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(58px, 5.85vw, 90px);
+    line-height: 0.98;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  .turn {
+    color: var(--lp-accent);
+  }
+  .lead {
+    max-width: 30em;
+    margin-top: 28px;
+    font-size: 20px;
+    line-height: 1.55;
+    color: rgb(246 240 228 / 0.88);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 36px;
+  }
+
+  /* The source paper rises from the lower edge of the cover. */
+  .sheet {
+    position: relative;
+    align-self: center;
+    width: min(85%, 1340px);
+    margin: 0;
+    padding: 18px clamp(24px, 3vw, 44px) 40px;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -14px 40px rgb(5 20 12 / 0.28);
+  }
+  .sheet-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 32px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid rgb(17 28 22 / 0.12);
+    padding-bottom: 12px;
+  }
+  .sample {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--lp-muted);
+    white-space: nowrap;
+  }
+  .replay {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    min-height: 32px;
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 13px;
+    color: var(--lp-forest);
+  }
+  .replay:hover {
+    background: rgb(22 56 43 / 0.07);
+  }
+  .compare {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1.1fr;
+    align-items: start;
+  }
+  .side {
     display: grid;
     gap: 14px;
+    padding-right: 28px;
   }
-  .scene-stage {
-    display: flex;
-    justify-content: space-around;
-    padding: 24px 8px 14px;
-    border-radius: 14px;
-    background: var(--surface-2);
-    border: 1px solid var(--line);
+  .side.earlier {
+    padding: 0 0 0 28px;
   }
-  .cycler :global(.avatar) {
-    animation: cycle 6s infinite;
-    animation-delay: calc(var(--i) * 1.5s);
-    animation-play-state: paused;
+  .side-label {
+    font-family: "Manrope", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lp-muted);
   }
-  .active .cycler :global(.avatar) {
-    animation-play-state: running;
+  .quote {
+    margin: 0;
+    font-family: "Caslon Display", Georgia, serif;
+    font-size: clamp(27px, 2.65vw, 42px);
+    line-height: 1.2;
   }
-  .paused .cycler :global(.avatar) {
-    animation-play-state: paused;
+  .hl {
+    background: linear-gradient(var(--lp-amber-wash), var(--lp-amber-wash)) no-repeat 0 88% / 100% 0.55em;
+    padding: 0 2px;
   }
-  @keyframes cycle {
-    0%, 25% { transform: scale(1.12); box-shadow: 0 0 0 4px var(--tone), 0 0 26px var(--tone); }
-    30%, 100% { transform: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--tone) 35%, transparent); }
-  }
-  .scene-lines {
-    display: grid;
-    gap: 8px;
-  }
-  .scene-lines p {
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--surface-2);
-    font-size: 14px;
-    color: var(--ink-strong);
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity 0.5s, transform 0.5s;
-    transition-delay: calc(var(--i) * 260ms + 200ms);
-  }
-  .scene-lines b {
-    display: block;
-    font-size: 11.5px;
-    color: var(--muted);
-  }
-  .active .scene-lines p {
-    opacity: 1;
-    transform: none;
-  }
-  .connect {
-    display: grid;
-    grid-template-columns: 1fr 70px 1fr;
+  .source {
+    display: inline-flex;
     align-items: center;
-    min-height: 260px;
-  }
-  .c-right {
-    display: grid;
-    gap: 40px;
-  }
-  .c-card {
-    display: grid;
-    gap: 6px;
-    padding: 12px;
-    border-radius: 12px;
-    background: var(--surface-2);
-    border: 1px solid var(--line);
+    gap: 7px;
+    width: fit-content;
+    min-height: 32px;
     font-size: 13.5px;
-    line-height: 1.45;
-    color: var(--ink-strong);
-    opacity: 0.3;
-    transition: opacity 0.6s 0.2s;
+    color: var(--lp-forest);
+    text-decoration: underline;
+    text-decoration-color: rgb(22 56 43 / 0.35);
+    text-underline-offset: 4px;
   }
-  .c-card.said {
-    border-left: 4px solid var(--role-witness);
+  .source:hover {
+    text-decoration-color: currentColor;
   }
-  .active .c-card {
-    opacity: 1;
+  .finding {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    align-self: stretch;
+    padding: 6px 24px 0;
+    border-inline: 1px solid rgb(17 28 22 / 0.14);
+    text-align: center;
   }
-  .c-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--muted);
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 18px;
+    border-radius: 30px;
+    background: var(--lp-amber);
+    color: var(--lp-amber-ink);
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
   }
-  .c-wires {
+  .pill.small {
+    padding: 3px 11px;
+    font-size: 12px;
+  }
+  .thread {
     width: 100%;
-    height: 200px;
+    height: 16px;
     overflow: visible;
   }
-  .c-wires path {
+  .thread path {
     fill: none;
-    stroke: var(--rel-conflicts);
-    stroke-width: 2.5;
-    stroke-dasharray: 220;
-    stroke-dashoffset: 220;
-    transition: stroke-dashoffset 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s;
+    stroke: var(--lp-rel-conflicts);
+    stroke-width: 1.5;
+    stroke-dasharray: 1;
     vector-effect: non-scaling-stroke;
   }
-  .c-wires path:nth-child(2) {
-    transition-delay: 0.8s;
+  .thread circle {
+    fill: var(--lp-rel-conflicts);
   }
-  .active .c-wires path {
-    stroke-dashoffset: 0;
+  .check {
+    max-width: 22em;
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: #2a3a31;
   }
-  .examine {
+
+  /* One finite sequence: the sheet settles, each time is marked, the thread draws, the finding lands. */
+  .sheet.run {
+    animation: lp-rise 0.75s var(--lp-ease) both;
+  }
+  .sheet.run .hl.one {
+    animation: lp-mark 0.6s var(--lp-ease) 0.45s both;
+  }
+  .sheet.run .hl.two {
+    animation: lp-mark 0.6s var(--lp-ease) 1.05s both;
+  }
+  .sheet.run .thread path {
+    animation: lp-draw 0.8s var(--lp-ease) 1.6s both;
+  }
+  .sheet.run .thread circle {
+    animation: lp-fade 0.4s var(--lp-ease) 1.55s both;
+  }
+  .sheet.run .pill {
+    animation: lp-settle 0.5s var(--lp-ease) 2.3s both;
+  }
+  .sheet.run .check {
+    animation: lp-fade 0.6s var(--lp-ease) 2.5s both;
+  }
+  .sheet.held,
+  .sheet.held * {
+    animation-play-state: paused !important;
+  }
+  @keyframes lp-rise {
+    from {
+      transform: translateY(8px);
+    }
+  }
+  @keyframes lp-mark {
+    from {
+      background-size: 0% 0.55em;
+    }
+  }
+  @keyframes lp-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+  }
+  @keyframes lp-fade {
+    from {
+      opacity: 0.25;
+    }
+  }
+  @keyframes lp-settle {
+    from {
+      transform: scale(0.94);
+      opacity: 0.5;
+    }
+  }
+
+  /* Editorial sections share one rhythm: more space above a heading than below it. */
+  main {
     display: grid;
-    gap: 8px;
   }
-  .q {
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-size: 13px;
-    color: var(--muted);
-    background: var(--surface-2);
-    transition: opacity 0.6s;
-    transition-delay: calc(var(--i) * 120ms);
-  }
-  .active .q {
-    opacity: 0.45;
-  }
-  .e-card {
+  .intro {
     display: grid;
-    gap: 8px;
-    padding: 14px;
-    border-radius: 14px;
-    background: linear-gradient(180deg, var(--alert-soft), var(--surface) 70%);
-    border: 1px solid color-mix(in srgb, var(--alert) 45%, var(--line));
-    border-top: 4px solid var(--alert);
-    transform: scale(0.96);
-    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s, box-shadow 0.6s 0.3s;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    gap: 40px clamp(40px, 6vw, 110px);
+    align-items: end;
+    padding: calc(var(--lp-section) * 1.15) 0 calc(var(--lp-section) * 0.6);
   }
-  .active .e-card {
-    transform: scale(1.02);
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--alert) 14%, transparent), 0 18px 40px color-mix(in srgb, var(--alert) 18%, transparent);
-  }
-  .e-pill {
-    justify-self: start;
-    padding: 2px 10px;
-    border-radius: 999px;
-    background: var(--alert);
-    color: #fff;
-    font-size: 12px;
-    font-weight: 700;
-  }
-  .e-card strong {
-    font-family: var(--font-serif);
+  .rufina {
+    font-family: "Rufina", Georgia, serif;
     font-weight: 400;
+    font-size: clamp(40px, 4vw, 64px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    color: var(--lp-forest);
+    text-wrap: balance;
+  }
+  .intro-lead {
+    max-width: 34em;
+    margin-top: 22px;
     font-size: 19px;
-    color: var(--ink-strong);
+    line-height: 1.6;
   }
-  .e-ask {
-    font-size: 13.5px;
-    color: var(--ink);
+  .intro-aside {
+    font-size: 15.5px;
+    color: var(--lp-muted);
+    padding-top: 18px;
+    border-top: 1px solid var(--lp-line);
   }
-  .e-btn {
-    justify-self: end;
-    padding: 6px 14px;
-    border-radius: 7px;
-    background: var(--primary);
-    color: var(--primary-ink);
+  .headline {
+    font-family: "Caslon Display", Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(42px, 4.2vw, 64px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--lp-forest);
+    text-wrap: balance;
+  }
+  .section-head {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    gap: 24px clamp(40px, 6vw, 110px);
+    align-items: end;
+    margin-bottom: 52px;
+  }
+  .section-head p {
+    font-size: 16.5px;
+    color: var(--lp-muted);
+  }
+
+  /* The gathering: four sources around one statement, drawn as a case-wide thread. */
+  .gather {
+    padding-bottom: var(--lp-section);
+  }
+  .desk {
+    position: relative;
+    container-type: inline-size;
+    max-width: 1200px;
+    margin: 0 auto;
+    aspect-ratio: 1200 / 560;
+  }
+  .wires {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .wire {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-dasharray: 1;
+    transition: stroke-dashoffset 0.7s var(--lp-ease) 0.62s;
+  }
+  .wire.suggested {
+    stroke-dasharray: 0.012 0.01;
+    transition: opacity 0.6s var(--lp-ease) 0.7s;
+  }
+  .wire[data-rel="conflicts"] {
+    stroke: var(--lp-rel-conflicts);
+  }
+  .wire[data-rel="context"] {
+    stroke: var(--lp-rel-context);
+  }
+  .wire[data-rel="related"] {
+    stroke: var(--lp-rel-related);
+  }
+  .scatter .wire {
+    stroke-dashoffset: 1;
+  }
+  .scatter .wire.suggested {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  .wire-label {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--lp-bg);
+    font-size: clamp(11px, 1cqi, 12.5px);
+    font-weight: 600;
+    transition: opacity 0.5s var(--lp-ease) 1s;
+  }
+  .wire-label[data-rel="conflicts"],
+  .slip-rel[data-rel="conflicts"] {
+    color: var(--lp-rel-conflicts-text);
+  }
+  .wire-label[data-rel="context"],
+  .slip-rel[data-rel="context"] {
+    color: var(--lp-rel-context-text);
+  }
+  .wire-label[data-rel="related"],
+  .slip-rel[data-rel="related"] {
+    color: var(--lp-rel-related-text);
+  }
+  .scatter .wire-label {
+    opacity: 0;
+  }
+  .slip {
+    position: absolute;
+    display: grid;
+    align-content: start;
+    gap: 0.5cqi;
+    padding: 1.15cqi 1.35cqi;
+    border-radius: 6px;
+    background-color: var(--lp-paper);
+    background-image: var(--lp-ivory);
+    background-size: 600px 600px;
+    box-shadow:
+      0 1px 0 rgb(17 28 22 / 0.06),
+      0 10px 24px rgb(20 40 30 / 0.1);
+    transform: rotate(var(--fr, 0deg));
+    transition: transform 0.9s var(--lp-ease) var(--d, 0ms);
+  }
+  .slip-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: clamp(11px, 1.02cqi, 13px);
+    font-weight: 600;
+    color: var(--lp-muted);
+  }
+  .slip-text {
+    font-size: clamp(12.5px, 1.24cqi, 15px);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .slip mark,
+  .t-text mark,
+  .page mark {
+    background: var(--lp-amber-wash);
+    color: inherit;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+  .slip-rel {
+    display: none;
     font-size: 12.5px;
     font-weight: 600;
   }
+  .statement {
+    left: 35.83%;
+    top: 35.7%;
+    width: 28.33%;
+    height: 28.57%;
+    align-content: center;
+    background: var(--lp-forest);
+    background-image: none;
+    color: var(--lp-cream);
+    --fr: 0deg;
+  }
+  .statement .slip-meta {
+    color: rgb(246 240 228 / 0.72);
+  }
+  .statement-text {
+    font-family: "Caslon Display", Georgia, serif;
+    font-size: clamp(18px, 2.3cqi, 28px);
+    line-height: 1.2;
+  }
+  .bap {
+    left: 3.33%;
+    top: 7.14%;
+    width: 26.67%;
+    height: 23.2%;
+    --fr: -0.8deg;
+    --sx: -70px;
+    --sy: -40px;
+    --sr: -7deg;
+  }
+  .log {
+    left: 5%;
+    top: 69.6%;
+    width: 26.67%;
+    height: 23.2%;
+    --fr: 0.6deg;
+    --sx: -100px;
+    --sy: 50px;
+    --sr: 5deg;
+  }
+  .shift {
+    left: 70%;
+    top: 8.9%;
+    width: 26.67%;
+    height: 23.2%;
+    --fr: 0.7deg;
+    --sx: 80px;
+    --sy: -50px;
+    --sr: 6deg;
+  }
+  .law {
+    left: 68.33%;
+    top: 67.9%;
+    width: 26.67%;
+    height: 23.2%;
+    --fr: -0.6deg;
+    --sx: 100px;
+    --sy: 40px;
+    --sr: -5deg;
+  }
+  .scatter .source-slip {
+    transform: translate(var(--sx), var(--sy)) rotate(var(--sr));
+  }
+  .legend {
+    margin-top: 22px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--lp-muted);
+  }
 
-  /* Signal */
-  .signal {
+  /* How it works: ruled rows that pair a caption with one product moment on forest cloth. */
+  .how {
+    padding: var(--lp-section) 0;
+    border-top: 1px solid var(--lp-line);
+  }
+  .steps {
     display: grid;
-    grid-template-columns: 0.9fr 1.1fr;
-    gap: clamp(30px, 6vw, 90px);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+    gap: clamp(32px, 5vw, 88px);
     align-items: center;
-    padding: clamp(70px, 9vw, 130px) clamp(16px, 5vw, 72px);
-    max-width: 1320px;
-    margin: 0 auto;
+    padding: 44px 0;
+    border-top: 1px solid var(--lp-line);
   }
-  @media (max-width: 899px) {
-    .signal {
-      grid-template-columns: 1fr;
-    }
+  .step.flip .caption {
+    order: 2;
   }
-  .signal-copy {
+  .step.flip {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+  }
+  .caption h3 {
+    font-family: "Caslon Display", Georgia, serif;
+    font-weight: 400;
+    font-size: 33px;
+    line-height: 1.2;
+    color: var(--lp-forest);
+  }
+  .caption p {
+    max-width: 30em;
+    margin-top: 14px;
+    font-size: 16px;
+    color: #3d4a41;
+  }
+  .plate {
     display: grid;
-    gap: 18px;
+    place-items: center;
+    min-height: 380px;
+    padding: 44px clamp(20px, 4vw, 64px);
+    border-radius: 22px;
+    background: var(--lp-forest-deep) var(--lp-case-files) no-repeat;
+    background-size: 240% auto;
+    background-position: var(--pos, 10% 10%);
   }
-  .feed {
+  .vignette {
+    position: relative;
     display: grid;
-    gap: 8px;
-  }
-  .feed-q {
-    display: flex;
-    justify-content: space-between;
     gap: 12px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    color: var(--muted);
-    font-size: 14px;
-    opacity: 0.55;
+    width: min(100%, 480px);
+    padding: 22px 24px 30px;
+    border-radius: 9px;
+    box-shadow: 0 18px 40px rgb(3 14 9 / 0.35);
   }
-  .feed-q span {
-    color: var(--st-supported-dot);
-    font-weight: 700;
+  .v-sample {
+    position: absolute;
+    right: 14px;
+    bottom: 9px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--lp-muted);
   }
-  .feed-hit {
+  .v-line {
     display: flex;
-    gap: 14px;
+    gap: 12px;
     align-items: flex-start;
-    padding: 18px;
-    border-radius: 16px;
-    background: linear-gradient(180deg, var(--alert-soft), var(--surface) 80%);
-    border: 1px solid color-mix(in srgb, var(--alert) 45%, var(--line));
-    transform: scale(1.04);
-    box-shadow: 0 24px 60px color-mix(in srgb, var(--alert) 18%, transparent);
-    animation: hit-glow 3.2s ease-in-out infinite;
   }
-  .paused .feed-hit {
-    animation-play-state: paused;
+  .v-line.quiet {
+    opacity: 0.62;
   }
-  @keyframes hit-glow {
-    0%, 100% { box-shadow: 0 24px 60px color-mix(in srgb, var(--alert) 14%, transparent), 0 0 0 0 color-mix(in srgb, var(--alert) 0%, transparent); }
-    50% { box-shadow: 0 24px 60px color-mix(in srgb, var(--alert) 22%, transparent), 0 0 0 8px color-mix(in srgb, var(--alert) 12%, transparent); }
-  }
-  .feed-pill {
+  .v-face {
     display: grid;
     place-items: center;
     flex-shrink: 0;
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: var(--alert);
-    color: #fff;
-    font-weight: 800;
-  }
-  .feed-hit p {
-    font-family: var(--font-serif);
-    font-size: 21px;
-    line-height: 1.3;
-    color: var(--ink-strong);
-  }
-  .feed-hit span {
-    display: block;
-    margin-top: 6px;
+    background: var(--tone-soft, #eee);
+    color: var(--tone, #333);
     font-size: 13px;
-    color: var(--ink);
+    font-weight: 700;
+  }
+  .v-face.speaking {
+    width: 52px;
+    height: 52px;
+    font-size: 15px;
+    box-shadow:
+      0 0 0 3px var(--lp-paper),
+      0 0 0 5px var(--tone, #333);
+  }
+  .v-name {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--tone, var(--lp-ink));
+  }
+  .v-listening {
+    font-weight: 500;
+    color: var(--lp-muted);
+  }
+  .v-line p {
+    font-size: 14px;
+  }
+  .v-said {
+    font-family: "Caslon Display", Georgia, serif;
+    font-size: 26px !important;
+    line-height: 1.2;
+  }
+  .v-head {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lp-muted);
+  }
+  .reading ul {
+    display: grid;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .reading li {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid rgb(17 28 22 / 0.1);
+    font-size: 14px;
+  }
+  .v-pages {
+    font-size: 12.5px;
+    color: var(--lp-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .v-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--lp-sage-ink);
+  }
+  .examine .pill {
+    justify-self: start;
+  }
+  .v-title {
+    font-family: "Caslon Display", Georgia, serif;
+    font-size: 23px;
+    line-height: 1.25;
+  }
+  .v-sub {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--lp-muted);
+  }
+  .v-checks {
+    display: grid;
+    gap: 6px;
+    margin: -4px 0 0;
+    padding-left: 18px;
+    font-size: 14px;
+  }
+  .v-question {
+    font-family: "Caslon Display", Georgia, serif;
+    font-size: 19px;
+    line-height: 1.3;
   }
 
-  /* Approach */
-  .approach {
-    padding: clamp(70px, 9vw, 130px) clamp(16px, 5vw, 72px);
-    max-width: 1320px;
+  /* Signal: a transcript where almost everything stays quiet. */
+  .signal {
+    padding: var(--lp-section) 0;
+    border-top: 1px solid var(--lp-line);
+  }
+  .transcript {
+    display: grid;
+    list-style: none;
     margin: 0 auto;
+    padding: 10px clamp(18px, 3vw, 36px);
+    max-width: 980px;
+    border-radius: 10px;
+    box-shadow: 0 1px 0 rgb(17 28 22 / 0.05);
+  }
+  .t-row {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) auto;
+    gap: 6px 22px;
+    align-items: baseline;
+    padding: 16px 0;
+    border-top: 1px solid rgb(17 28 22 / 0.1);
+  }
+  .t-row:first-child {
+    border-top: 0;
+  }
+  .t-who {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lp-muted);
+  }
+  .t-text {
+    font-size: 16px;
+    color: #4a554d;
+  }
+  .t-ok {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12.5px;
+    color: var(--lp-sage-ink);
+    white-space: nowrap;
+  }
+  .t-row.raised .t-who,
+  .t-row.raised .t-text {
+    color: var(--lp-ink);
+  }
+  .t-row.raised .t-text {
+    font-family: "Caslon Display", Georgia, serif;
+    font-size: 23px;
+    line-height: 1.3;
+  }
+  .t-row .pill {
+    justify-self: start;
+  }
+  .t-note {
+    grid-column: 2 / -1;
+    font-size: 14px;
+    color: var(--lp-rel-conflicts-text);
+  }
+
+  /* The page: a real-looking source document, with Jude's note in its margin. */
+  .spread {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: clamp(40px, 6vw, 110px);
+    align-items: center;
+    padding: var(--lp-section) 0;
+    border-top: 1px solid var(--lp-line);
+  }
+  .page {
+    position: relative;
+    padding: clamp(36px, 5vw, 64px) clamp(28px, 5.5vw, 76px) 56px;
+    font-family: "Rufina", Georgia, serif;
+    font-size: 15px;
+    line-height: 1.75;
+    box-shadow:
+      0 1px 0 rgb(17 28 22 / 0.06),
+      0 24px 50px rgb(20 40 30 / 0.12);
+  }
+  .page-folio {
+    position: absolute;
+    top: 20px;
+    right: 28px;
+    font-family: "Manrope", sans-serif;
+    font-size: 12px;
+    color: var(--lp-muted);
+  }
+  .page-heading {
+    text-align: center;
+    letter-spacing: 0.08em;
+  }
+  .page-heading + .page-heading {
+    margin-bottom: 18px;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .page-intro {
+    margin-bottom: 14px;
+    text-align: justify;
+    hyphens: auto;
+  }
+  .page-items {
+    display: grid;
+    gap: 12px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .page-items li {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+  .page-tag {
+    font-style: normal;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .margin-note {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+    margin: 10px 0 2px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    background: rgb(255 255 255 / 0.55);
+    border: 1px solid rgb(181 117 57 / 0.35);
+    font-family: "Manrope", sans-serif;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .page-sample {
+    position: absolute;
+    left: clamp(28px, 5.5vw, 76px);
+    bottom: 18px;
+    font-family: "Manrope", sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--lp-muted);
+  }
+  .spread-caption {
+    display: grid;
+    gap: 18px;
+  }
+  .spread-caption p {
+    font-size: 17px;
+    color: #3d4a41;
+  }
+  .spread-caption .quiet {
+    font-size: 14px;
+    color: var(--lp-muted);
+  }
+
+  /* Approach: principles as ruled rows, not cards. */
+  .approach {
+    padding: var(--lp-section) 0;
+    border-top: 1px solid var(--lp-line);
   }
   .principles {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
-  @media (max-width: 899px) {
-    .principles {
-      grid-template-columns: 1fr;
-    }
-  }
-  .principle {
-    --gx: 50%;
-    --gy: 0%;
-    position: relative;
+  .principles li {
     display: grid;
-    gap: 12px;
-    align-content: start;
-    padding: 28px;
-    border-radius: 20px;
-    background: radial-gradient(400px circle at var(--gx) var(--gy), color-mix(in srgb, var(--amber) 14%, transparent), transparent 60%), var(--surface);
-    border: 1px solid var(--line);
-    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.9s, filter 0.9s, box-shadow 0.35s;
-    will-change: transform;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 16px clamp(40px, 6vw, 110px);
+    padding: 30px 0;
+    border-top: 1px solid var(--lp-line);
   }
-  .principle:hover {
-    box-shadow: 0 30px 60px rgb(20 40 30 / 0.12);
-  }
-  .p-n {
-    font-family: var(--font-title);
-    font-size: 44px;
-    line-height: 1;
-    color: var(--focus);
-  }
-  .principle h3 {
-    font-family: var(--font-serif);
+  .principles h3 {
+    font-family: "Caslon Display", Georgia, serif;
     font-weight: 400;
-    font-size: 26px;
-    color: var(--ink-strong);
+    font-size: 30px;
+    line-height: 1.2;
+    color: var(--lp-forest);
   }
-  .principle p {
-    color: var(--muted);
-    line-height: 1.6;
+  .principles p {
+    max-width: 36em;
+    font-size: 16px;
+    color: #3d4a41;
   }
 
-  /* Closing */
+  /* Closing: the case file again, as the back cover. */
   .closing {
-    position: relative;
-    overflow: hidden;
-    isolation: isolate;
-    padding: clamp(90px, 12vw, 170px) clamp(16px, 5vw, 72px);
-    background: linear-gradient(160deg, var(--forest) 0%, #1b4433 100%);
-    color: var(--cream);
-    text-align: center;
+    padding: 0 14px;
   }
-  .aurora.small {
-    opacity: 0.6;
-  }
-  .closing-inner {
+  .closing-frame {
     display: grid;
-    justify-items: center;
+    justify-items: start;
     gap: 22px;
+    padding: clamp(64px, 9vw, 120px) max(5%, 28px);
+    border-radius: 28px;
+    /* Only the cloth of the case file: the papers belong to the opening. */
+    background: var(--lp-forest-deep) var(--lp-case-files) no-repeat;
+    background-size: 240% auto;
+    background-position: 8% 6%;
+    color: var(--lp-cream);
   }
-  .closing h2 {
-    color: var(--cream);
-    font-size: clamp(42px, 5.6vw, 84px);
-  }
-  .closing h2 em {
-    color: #e9d3a8;
+  .closing .headline {
+    color: var(--lp-cream);
+    max-width: 14em;
   }
   .closing p {
+    max-width: 30em;
     font-size: 19px;
-    color: color-mix(in srgb, var(--cream) 80%, transparent);
+    color: rgb(246 240 228 / 0.88);
   }
-  .shine {
-    overflow: hidden;
-  }
-  .shine::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.55) 50%, transparent 70%);
-    transform: translateX(-120%);
-    animation: sheen 3.6s ease-in-out infinite;
-  }
-  .paused .shine::after {
-    animation-play-state: paused;
-  }
-  @keyframes sheen {
-    0%, 55% { transform: translateX(-120%); }
-    80%, 100% { transform: translateX(120%); }
-  }
-  .note {
-    font-size: 13px;
-    color: color-mix(in srgb, var(--cream) 65%, transparent);
+  .closing .actions {
+    margin-top: 8px;
   }
 
-  /* Footer */
-  .footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 10px 24px;
-    padding: 40px clamp(16px, 5vw, 72px) 120px;
-    background: #0b1d15;
-    color: color-mix(in srgb, var(--cream) 80%, transparent);
+  .foot {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 28px 60px;
+    padding: 56px 0 72px;
+  }
+  .foot-mark {
+    display: inline-block;
+    font-size: 43px;
+    color: var(--lp-forest);
+    margin-bottom: 8px;
+  }
+  .foot p {
     font-size: 14px;
+    color: var(--lp-muted);
   }
-  .footer .logo {
-    font-size: 40px;
-    color: var(--cream);
+  .foot-notes {
+    display: grid;
+    gap: 8px;
+    align-content: start;
   }
-  .footer .muted {
-    color: color-mix(in srgb, var(--cream) 55%, transparent);
-  }
-  .footnote {
-    flex-basis: 100%;
-    font-size: 12px;
-    color: color-mix(in srgb, var(--cream) 55%, transparent);
+  .foot-notes p:first-child {
+    color: var(--lp-ink);
   }
 
+  @media (min-width: 1600px) {
+    .opening {
+      padding-top: 110px;
+      padding-bottom: 120px;
+    }
+  }
+  @media (max-width: 1100px) {
+    .links {
+      gap: 18px;
+    }
+    .display {
+      font-size: 7vw;
+    }
+    .sheet {
+      width: 90%;
+    }
+  }
+  @media (max-width: 960px) {
+    .links,
+    .nav > .lang,
+    .nav-action {
+      display: none;
+    }
+    .menu-toggle {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 7px;
+      border: 1px solid rgb(246 240 228 / 0.6);
+      color: var(--lp-cream);
+    }
+    .menu {
+      position: absolute;
+      z-index: 20;
+      top: 88px;
+      right: 0;
+      display: grid;
+      min-width: 260px;
+      padding: 10px;
+      border-radius: 10px;
+      background: var(--lp-forest);
+      box-shadow: 0 18px 40px rgb(3 14 9 / 0.4);
+    }
+    .menu > button,
+    .menu > a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 48px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: var(--lp-cream);
+      text-decoration: none;
+      font-size: 16px;
+    }
+    .menu > button:hover,
+    .menu > a:hover {
+      background: rgb(246 240 228 / 0.08);
+    }
+    .menu-lang {
+      justify-self: start;
+      margin: 8px 12px 4px;
+    }
+  }
+  @media (max-width: 899px) {
+    .desk {
+      aspect-ratio: auto;
+      display: grid;
+      gap: 12px;
+    }
+    .wires,
+    .wire-label {
+      display: none;
+    }
+    .slip {
+      position: static;
+      width: auto !important;
+      height: auto !important;
+      padding: 14px 16px;
+      gap: 6px;
+      transform: none;
+    }
+    .slip-meta {
+      font-size: 12.5px;
+    }
+    .slip-text {
+      font-size: 15px;
+      -webkit-line-clamp: unset;
+      line-clamp: none;
+    }
+    .slip-rel {
+      display: block;
+    }
+    .statement-text {
+      font-size: 26px;
+    }
+  }
+  @media (max-width: 760px) {
+    .lp {
+      --lp-section: 55px;
+    }
+    .wrap {
+      width: auto;
+      margin-inline: 20px;
+    }
+    .cover {
+      padding: 8px 8px 0;
+    }
+    .frame {
+      border-radius: 18px 18px 0 0;
+      padding: 0 20px;
+    }
+    .nav {
+      min-height: 84px;
+    }
+    .wordmark {
+      font-size: 47px;
+    }
+    .display {
+      font-size: clamp(44px, 8.4vw, 63px);
+      line-height: 1.03;
+    }
+    .lead {
+      font-size: 17.5px;
+      margin-top: 20px;
+    }
+    .actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .button {
+      min-height: 50px;
+      font-size: 21px;
+    }
+    .sheet {
+      width: 100%;
+      padding: 14px 18px 28px;
+    }
+    .compare {
+      grid-template-columns: 1fr;
+      gap: 22px;
+    }
+    .side,
+    .side.earlier {
+      padding: 0;
+    }
+    .finding {
+      order: 3;
+      justify-items: start;
+      text-align: left;
+      border: 0;
+      border-top: 1px solid rgb(17 28 22 / 0.14);
+      padding: 18px 0 0;
+    }
+    .thread {
+      display: none;
+    }
+    .quote {
+      font-size: 33px;
+    }
+    .source {
+      min-height: 44px;
+    }
+    .intro,
+    .section-head,
+    .spread,
+    .principles li {
+      grid-template-columns: 1fr;
+    }
+    .rufina {
+      font-size: 42px;
+    }
+    .headline {
+      font-size: 43px;
+    }
+    .step,
+    .step.flip {
+      grid-template-columns: 1fr;
+      gap: 22px;
+      padding: 32px 0;
+    }
+    .step.flip .caption {
+      order: 0;
+    }
+    .caption h3 {
+      font-size: 28px;
+    }
+    .plate {
+      min-height: 0;
+      padding: 28px 16px;
+      border-radius: 16px;
+      background-size: 420% auto;
+      background-position: 0 0;
+    }
+    .sheet-bar {
+      flex-wrap: wrap;
+      gap: 4px 12px;
+    }
+    .replay {
+      margin-left: -10px;
+    }
+    .vignette {
+      padding: 18px 18px 28px;
+    }
+    .reading li {
+      grid-template-columns: 18px minmax(0, 1fr) auto;
+    }
+    .reading .v-pages {
+      display: none;
+    }
+    .t-row {
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+    .t-note {
+      grid-column: 1;
+    }
+    .page {
+      font-size: 14px;
+      padding: 40px 22px 48px;
+    }
+    .page-sample {
+      left: 22px;
+    }
+    .closing {
+      padding: 0 8px;
+    }
+    .closing-frame {
+      border-radius: 18px;
+      padding: 56px 20px 64px;
+      background-size: 520% auto;
+      background-position: 0 0;
+    }
+    .foot {
+      grid-template-columns: 1fr;
+    }
+    .foot-mark {
+      font-size: 43px;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .aurora span,
-    .track,
-    .feed-hit,
-    .shine::after,
-    .cycler :global(.avatar),
-    .caret {
-      animation: none;
-    }
-    .word {
-      animation: none;
-      opacity: 1;
-      transform: none;
-      filter: none;
-    }
-    .device {
-      transform: none;
+    .lp *,
+    .lp *::before,
+    .lp *::after {
+      animation: none !important;
+      transition: none !important;
     }
   }
 </style>

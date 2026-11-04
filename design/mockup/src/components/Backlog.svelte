@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Mark from "./Mark.svelte";
   import { Bookmark, Play, Scale } from "@lucide/svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import { roleTone } from "../lib/people";
@@ -78,7 +79,7 @@
             <div class="inline-card"><AlertCard f={shown} mode="inline" onview={() => inspect({ kind: "finding", id: shown.id })} /></div>
           {:else}
             <button class="pill" class:loud={shown.status === "potential_inconsistency"} class:quiet={!isMeaningful(shown)} class:done={shown.reviewed} onclick={() => ontoggle?.(shown.id)}>
-              <span class="dot" aria-hidden="true">{shown.reviewed ? "✓" : isMeaningful(shown) ? "!" : "·"}</span>
+              <span class="dot" aria-hidden="true"><Mark kind={shown.reviewed ? "done" : isMeaningful(shown) ? "look" : "quiet"} size={10} /></span>
               <span class="pill-text">{t(`status.${shown.status}`)} · {l(shown.title)}</span>
             </button>
           {/if}
@@ -97,7 +98,7 @@
     grid-template-columns: 34px minmax(0, 1fr);
     gap: 10px;
     padding: 8px 12px 8px 10px;
-    border-left: 3px solid transparent;
+    border-radius: var(--radius-control);
   }
   .row.continued {
     padding-top: 0;
@@ -109,13 +110,12 @@
   }
   .row.current {
     background: color-mix(in srgb, var(--tone-soft) 60%, transparent);
-    border-left-color: var(--tone);
   }
   .row.highlight {
     background: var(--selected);
   }
   .row.attention {
-    border-left-color: var(--alert);
+    background: color-mix(in srgb, var(--alert-soft) 35%, transparent);
   }
   .who {
     padding-top: 2px;

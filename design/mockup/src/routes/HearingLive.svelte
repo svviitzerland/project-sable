@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Mark from "../components/Mark.svelte";
   import {
     AArrowDown,
     AArrowUp,
@@ -213,7 +214,7 @@
         {#if rest.length}
           <button class="more" class:open={showRest} aria-expanded={showRest} onclick={() => (showRest = !showRest)}>
             <span class="pips" aria-hidden="true">
-              {#each rest.slice(0, 3) as f (f.id)}<span class="pip" class:loud={f.status === "potential_inconsistency"}>!</span>{/each}
+              {#each rest.slice(0, 3) as f (f.id)}<span class="pip" class:loud={f.status === "potential_inconsistency"}><Mark size={10} /></span>{/each}
             </span>
             <span class="more-label">{top ? t("live.moreToCheck", { n: rest.length }) : t("live.laterCount", { n: rest.length })}</span>
             <span class="chev" aria-hidden="true"><ChevronDown size={16} /></span>

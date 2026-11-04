@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Mark from "./Mark.svelte";
   import { Briefcase, CircleHelp, Gavel, Shield, User, UserRound } from "@lucide/svelte";
   import { initials, roleTone } from "../lib/people";
   import { speaker, speakerName } from "../lib/store.svelte";
@@ -26,7 +27,7 @@
   <span class="face">{initials(sp)}</span>
   {#if size !== "xs"}<span class="emblem"><Icon size={iconSize[size]} strokeWidth={2.2} /></span>{/if}
   {#if speaking && size !== "xs"}<span class="eq"><i></i><i></i><i></i></span>{/if}
-  {#if badge}<span class="quest">!</span>{/if}
+  {#if badge}<span class="quest"><Mark size={11} /></span>{/if}
 </span>
 
 <style>
