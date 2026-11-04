@@ -30,6 +30,7 @@ apps/
     tests/             Node and Playwright tests
     scripts/           live Bedrock benchmarks (spend real money)
   voice/               optional Python voice service (FastAPI, pyannote, Docker)
+design/mockup/         interactive UI mockup with simulated services (not deployed)
 db/                    PostgreSQL schema shared by every service
   migrations/          ordered SQL migrations
   migrate.mjs          migration runner (own Docker image, runs before the web app)

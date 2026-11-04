@@ -9,6 +9,7 @@ Jude is a SvelteKit + TypeScript courtroom workspace and marketing introduction.
 - `db/`: the PostgreSQL schema shared by every service: `migrations/` (ordered, idempotent; add the next number, never edit applied files), `migrate.mjs` and its own Docker image, run as a one-shot job before the web app. Local SQLite mirrors the schema in `apps/web/src/lib/server/database.ts`.
 - `docs/`: `product/` (spec, limitations), `engineering/` (architecture, `.jude` format, `decisions/` for numbered decision records), `research/` (report, notes, public case sources), `phases/` (dated work records).
 - `infra/`: AWS Terraform (`terraform/`) and the production Compose stack (`docker/`), codename project-sable; see `infra/README.md`. `.github/workflows/deploy.yml` checks, builds and deploys `main` through GitHub OIDC.
+- `design/mockup/`: interactive UI-only brainstorming prototype of the workspace (Svelte 5 + Vite, simulated services, synthetic data, hash routes, bilingual copy as `[id, en]` pairs in `src/lib/i18n.ts`). Not deployed; nothing in `apps/web` depends on it. See its README and `docs/phases/2026-11-04-ui-mockup.md`.
 - `examples/`: the public-record demo pack (`sambo-796-public/`, also bundled as `apps/web/static/demo/sambo-796-public.jude`). `compose.yaml`: local Docker service for `apps/voice`.
 - `.impeccable/`: shared Impeccable design context (config, design tokens, surfaces, mocks). The Impeccable skill itself is installed per developer (`bunx impeccable install`, gitignored under `.claude/`) for frontend design and review.
 
@@ -19,6 +20,7 @@ Jude is a SvelteKit + TypeScript courtroom workspace and marketing introduction.
 - Development: `cd apps/web && pnpm dev` (one process for frontend and backend).
 - Checks: `cd apps/web && pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 - Browser checks against the running app: `cd apps/web && pnpm test:e2e`. Set `CHROMIUM_EXECUTABLE` for system Chromium or install it with Playwright. `JUDE_TEST_URL` overrides the URL.
+- UI mockup: `cd design/mockup && pnpm install && pnpm dev` (`pnpm check`, `pnpm build`, `pnpm preview` on port 4173).
 - Voice service: `cd apps/voice && uv sync && uv run pytest && uv run ruff check . && uv run ruff format --check .` (`uv sync --extra ml` for real pyannote models). Docker: `docker compose up --build voice`.
 - PostgreSQL checks: set `JUDE_TEST_DATABASE_URL` to a disposable pgvector database named `jude_test*` before `pnpm test`.
 
