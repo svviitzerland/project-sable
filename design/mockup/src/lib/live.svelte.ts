@@ -123,22 +123,25 @@ async function analyze(id: string, line: ScriptLine, gen: number) {
     db.connections.push({ ...structuredClone(c), id: `lc-${id}-${i}`, from: { kind: "statement", id } });
   }
   const viewing = route.parts[2] === "hearings" && route.parts[3] === hearingId;
-  // Brainstorm pages (feature map, moodboard, preview) stay quiet.
-  const meta = ["map", "moodboard", "canvas"].includes(route.parts[0] ?? "");
+  // Quiet findings (supported, insufficient evidence) are saved without interrupting anyone.
+  const worthALook = line.finding.status === "potential_inconsistency" || line.finding.status === "context_needed";
+  const stored = db.findings.find((f) => f.id === findingId);
+  if (stored && !worthALook) stored.isNew = false;
+  if (!worthALook) return;
   if (!viewing) live.unseen += 1;
-  if (!meta && (!viewing || ui.vw < 900)) {
-    // Several findings in quick succession share one notice instead of stacking up.
-    const open = ui.toasts.find((x) => x.tone === "finding");
-    if (open) {
-      open.count = (open.count ?? 1) + 1;
-      open.text = t("live.newFindings", { n: open.count });
-      open.action = { label: t("toast.view"), run: () => go(`/case/${hearing(hearingId)?.caseId}/hearings/${hearingId}`) };
-    } else {
-      toast(t("toast.newFinding", { status: t(`status.${line.finding.status}`) }), {
-        tone: "finding",
-        action: { label: t("toast.view"), run: () => inspect({ kind: "finding", id: findingId }) },
-      });
-    }
+  // Brainstorm pages (feature map, moodboard, preview) stay quiet; the live screen shows its own card.
+  const meta = ["", "map", "moodboard", "canvas"].includes(route.parts[0] ?? "");
+  if (meta || viewing) return;
+  const open = ui.toasts.find((x) => x.tone === "finding");
+  if (open) {
+    open.count = (open.count ?? 1) + 1;
+    open.text = t("live.newFindings", { n: open.count });
+    open.action = { label: t("toast.view"), run: () => go(`/case/${hearing(hearingId)?.caseId}/hearings/${hearingId}`) };
+  } else {
+    toast(`${t("attn.title")} · ${t(`status.${line.finding.status}`)}`, {
+      tone: "finding",
+      action: { label: t("toast.view"), run: () => inspect({ kind: "finding", id: findingId }) },
+    });
   }
 }
 

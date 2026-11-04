@@ -54,6 +54,16 @@
   --rel-context: #83709b; --rel-context-ink: #67547e;
   --rel-related: #8e9e91; --rel-related-ink: #546758;
 
+  /* People: one color family per role, used by portraits, timeline lanes and name plates. */
+  --role-judge: #4c5b92; --role-judge-soft: #e2e5f1;
+  --role-prosecutor: #a24e3d; --role-prosecutor-soft: #f4e1db;
+  --role-defense: #2e6c4b; --role-defense-soft: #dbeae0;
+  --role-witness: #a8731c; --role-witness-soft: #f4e5c4;
+  --role-defendant: #6b6658; --role-defendant-soft: #e8e5da;
+  --role-unknown: #868b83; --role-unknown-soft: #ebeae3;
+  --alert: #c4622d;
+  --alert-soft: #fbe7d6;
+
   --radius-control: 5px;
   --radius-action: 7px;
   --radius-surface: 9px;
@@ -130,6 +140,14 @@
   --rel-conflicts: #d79a5c; --rel-conflicts-ink: #f0c08c;
   --rel-context: #a996c4; --rel-context-ink: #cbbde3;
   --rel-related: #8d9d90; --rel-related-ink: #b6c4b8;
+  --role-judge: #93a1e2; --role-judge-soft: #222a45;
+  --role-prosecutor: #e48b74; --role-prosecutor-soft: #3c231c;
+  --role-defense: #6fc596; --role-defense-soft: #1a3326;
+  --role-witness: #e9b552; --role-witness-soft: #3a2b10;
+  --role-defendant: #c0baa8; --role-defendant-soft: #2b2a24;
+  --role-unknown: #a5aaa2; --role-unknown-soft: #252a26;
+  --alert: #f08a4e;
+  --alert-soft: #3d2516;
   color-scheme: dark;
 }
 
@@ -258,6 +276,37 @@ select.field { appearance: none; padding-right: 32px; background-image: linear-g
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
 .scroll-y { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+
+/* Role tones: set --tone/--tone-soft from a data-tone attribute. */
+[data-tone="judge"] { --tone: var(--role-judge); --tone-soft: var(--role-judge-soft); }
+[data-tone="prosecutor"] { --tone: var(--role-prosecutor); --tone-soft: var(--role-prosecutor-soft); }
+[data-tone="defense"] { --tone: var(--role-defense); --tone-soft: var(--role-defense-soft); }
+[data-tone="witness"] { --tone: var(--role-witness); --tone-soft: var(--role-witness-soft); }
+[data-tone="defendant"] { --tone: var(--role-defendant); --tone-soft: var(--role-defendant-soft); }
+[data-tone="unknown"] { --tone: var(--role-unknown); --tone-soft: var(--role-unknown-soft); }
+
+@keyframes voice-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tone) 55%, transparent), 0 0 0 3px var(--tone); }
+  70% { box-shadow: 0 0 0 12px transparent, 0 0 0 3px var(--tone); }
+  100% { box-shadow: 0 0 0 0 transparent, 0 0 0 3px var(--tone); }
+}
+@keyframes eq {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+@keyframes alert-in {
+  0% { opacity: 0; transform: translateY(14px) scale(0.98); }
+  60% { opacity: 1; transform: translateY(-2px) scale(1.01); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes alert-glow {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--alert) 0%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--alert) 22%, transparent); }
+}
+@keyframes bob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -3px); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }

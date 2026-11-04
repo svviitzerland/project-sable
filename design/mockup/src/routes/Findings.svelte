@@ -1,61 +1,58 @@
 <script lang="ts">
-  import { ListChecks, Search, ShieldCheck, SkipForward } from "@lucide/svelte";
+  import { LayoutDashboard, List, ListChecks, Search } from "@lucide/svelte";
   import { untrack } from "svelte";
+  import AlertCard from "../components/AlertCard.svelte";
   import FindingDetail from "../components/FindingDetail.svelte";
-  import FindingRow from "../components/FindingRow.svelte";
+  import FindingsBoard from "../components/FindingsBoard.svelte";
+  import { getBoard } from "../lib/board.svelte";
   import { l, t } from "../lib/i18n";
   import { go, route } from "../lib/router.svelte";
-  import { finding, findingsOfCase, hearing, hearingsOf, inspect, setReviewed, statement, toastT, ui } from "../lib/store.svelte";
-  import type { Status } from "../lib/types";
+  import { finding, findingsOfCase, hearing, hearingsOf, inspect, isMeaningful, setReviewed, statement, toastT, ui } from "../lib/store.svelte";
 
+  /**
+   * One queue for every hearing, split by what it asks of the lawyer: worth a look, already
+   * checked, and others (supported or without enough evidence), which never ask for anything.
+   * The board view is the lawyer's own arrangement of findings and what stands behind them.
+   */
   let { caseId, selectedId }: { caseId: string; selectedId?: string } = $props();
 
-  const statuses: Status[] = ["potential_inconsistency", "context_needed", "insufficient_evidence", "supported"];
-
+  type Tab = "attention" | "checked" | "others";
   let width = $state(0);
   let wide = $derived(width >= 760);
   let query = $state("");
-  // svelte-ignore state_referenced_locally
-  let needsReview = $state(route.query.review === "1");
-  let statusFilter = $state<Status[]>([]);
   let hearingFilter = $state("");
+  // svelte-ignore state_referenced_locally
+  let tab = $state<Tab>(route.query.tab === "checked" || route.query.tab === "others" ? route.query.tab : "attention");
 
+  let view = $derived<"list" | "board">(route.query.view === "board" ? "board" : "list");
+  let cards = $derived(getBoard(caseId).cards.length);
   let all = $derived(findingsOfCase(caseId));
-  let reviewed = $derived(all.filter((f) => f.reviewed).length);
+  let groups = $derived({
+    attention: all.filter((f) => isMeaningful(f) && !f.reviewed),
+    checked: all.filter((f) => isMeaningful(f) && f.reviewed),
+    others: all.filter((f) => !isMeaningful(f)),
+  });
   let shown = $derived(
-    all.filter((f) => {
-      if (needsReview && f.reviewed) return false;
-      if (statusFilter.length && !statusFilter.includes(f.status)) return false;
+    groups[tab].filter((f) => {
       if (hearingFilter && f.hearingId !== hearingFilter) return false;
       const q = query.trim().toLowerCase();
-      if (q) {
-        const text = `${l(f.title)} ${l(f.explanation)} ${statement(f.statementId)?.text ?? ""} ${f.note}`.toLowerCase();
-        if (!text.includes(q)) return false;
-      }
-      return true;
+      if (!q) return true;
+      return `${l(f.title)} ${statement(f.statementId)?.text ?? ""} ${f.note}`.toLowerCase().includes(q);
     }),
   );
   let queue = $derived(shown.map((f) => f.id));
-  let groups = $derived.by(() => {
-    const out: { hearingId: string; items: typeof shown }[] = [];
-    for (const f of shown) {
-      const last = out.at(-1);
-      if (last && last.hearingId === f.hearingId) last.items.push(f);
-      else out.push({ hearingId: f.hearingId, items: [f] });
-    }
-    return out;
-  });
-
-  // Wide screens keep a finding selected beside the list; the route remembers it.
   let selected = $derived(selectedId && finding(selectedId) ? selectedId : null);
+
+  // Wide screens keep the first item open beside the list.
   $effect(() => {
-    if (!wide || selected) return;
-    const first = untrack(() => shown.find((f) => !f.reviewed) ?? shown[0]);
-    if (first) go(`/case/${caseId}/findings/${first.id}${needsReview ? "?review=1" : ""}`);
+    if (!wide || view === "board") return;
+    const first = untrack(() => shown[0]);
+    const current = untrack(() => selected);
+    if (first && (!current || !queue.includes(current))) go(`/case/${caseId}/findings/${first.id}`);
   });
 
   function open(id: string) {
-    if (wide) go(`/case/${caseId}/findings/${id}${needsReview ? "?review=1" : ""}`);
+    if (wide) go(`/case/${caseId}/findings/${id}`);
     else inspect({ kind: "finding", id }, queue);
   }
 
@@ -65,18 +62,8 @@
     if (next) open(next);
   }
 
-  function nextUnreviewed() {
-    const start = selected ? all.findIndex((f) => f.id === selected) : -1;
-    const ordered = [...all.slice(start + 1), ...all.slice(0, start + 1)];
-    const next = ordered.find((f) => !f.reviewed);
-    if (next) open(next.id);
-  }
-
-  function toggleStatus(s: Status) {
-    statusFilter = statusFilter.includes(s) ? statusFilter.filter((x) => x !== s) : [...statusFilter, s];
-  }
-
   function onkeydown(event: KeyboardEvent) {
+    if (view === "board") return;
     const el = event.target as HTMLElement;
     if (ui.modal || ui.inspector || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) || event.metaKey || event.ctrlKey || event.altKey) return;
     const key = event.key.toLowerCase();
@@ -98,17 +85,25 @@
 <div class="page findings" bind:clientWidth={width}>
   <header class="page-head">
     <div>
-      <h1>{t("fd.title")}</h1>
-      <p>{t("fd.lead")}</p>
+      <h1>{view === "board" ? t("board.title") : t("fd.title")}</h1>
+      <p>{view === "board" ? t("board.lead") : t("fd.lead2")}</p>
     </div>
-    <div class="progress">
-      <span class="small tabular">{t("common.reviewedOf", { done: reviewed, total: all.length })}</span>
-      <span class="meter" aria-hidden="true"><span style:width="{all.length ? (reviewed / all.length) * 100 : 0}%"></span></span>
-      <button class="btn" disabled={reviewed === all.length} onclick={nextUnreviewed}><SkipForward size={15} />{t("hv.nextUnreviewed")}</button>
+    <div class="seg view-switch" role="tablist" aria-label={t("fd.title")}>
+      <button role="tab" aria-selected={view === "list"} onclick={() => go(`/case/${caseId}/findings`)}><List size={15} />{t("board.list")}</button>
+      <button role="tab" aria-selected={view === "board"} onclick={() => go(`/case/${caseId}/findings?view=board`)}><LayoutDashboard size={15} />{t("board.tab")} {#if cards}<span class="badge">{cards}</span>{/if}</button>
     </div>
   </header>
 
+  {#if view === "board"}
+    <FindingsBoard {caseId} start={route.query.start} />
+  {:else}
+
   <div class="filters">
+    <div class="seg" role="tablist" aria-label={t("fd.title")}>
+      <button role="tab" aria-selected={tab === "attention"} onclick={() => (tab = "attention")}><span class="bang" aria-hidden="true">!</span>{t("attn.title")} <span class="badge" class:badge-amber={groups.attention.length > 0}>{groups.attention.length}</span></button>
+      <button role="tab" aria-selected={tab === "checked"} onclick={() => (tab = "checked")}>{t("attn.done")} <span class="badge">{groups.checked.length}</span></button>
+      <button role="tab" aria-selected={tab === "others"} onclick={() => (tab = "others")}>{t("attn.others")} <span class="badge">{groups.others.length}</span></button>
+    </div>
     <div class="search grow">
       <Search size={16} />
       <label class="sr-only" for="f-search">{t("fd.search")}</label>
@@ -121,32 +116,26 @@
         <option value={h.id}>{t("common.hearingN", { n: h.number })} · {l(h.title)}</option>
       {/each}
     </select>
-    <button class="chip" aria-pressed={needsReview} onclick={() => (needsReview = !needsReview)}><ShieldCheck size={14} />{t("fd.needsReview")}</button>
   </div>
-  <div class="status-filters" role="group" aria-label="Status">
-    {#each statuses as s (s)}
-      {@const n = all.filter((f) => f.status === s && (!needsReview || !f.reviewed)).length}
-      <button class="chip status-chip" data-status={s} aria-pressed={statusFilter.includes(s)} onclick={() => toggleStatus(s)}>
-        <span class="dot" aria-hidden="true"></span>{t(`status.${s}`)} <span class="count">{n}</span>
-      </button>
-    {/each}
-    <span class="small muted tabular" role="status">{t("fd.shownOf", { shown: shown.length, total: all.length })}</span>
-  </div>
+  {#if tab === "others"}<p class="notice others-hint">{t("attn.othersHint")}</p>{/if}
 
   <div class="body" class:wide>
-    <section class="pane list" aria-label={t("fd.title")}>
-      {#each groups as g (g.hearingId)}
-        {@const h = hearing(g.hearingId)}
-        <h2 class="group">{h ? `${t("common.hearingN", { n: h.number })} · ${l(h.title)}` : ""}</h2>
-        {#each g.items as f (f.id)}
-          <FindingRow {f} showHearing={false} selected={wide && selected === f.id} onclick={() => open(f.id)} />
-        {/each}
+    <section class="list" aria-label={t("fd.title")}>
+      {#each shown as f, i (f.id)}
+        {@const h = hearing(f.hearingId)}
+        {#if i === 0 || shown[i - 1].hearingId !== f.hearingId}
+          <h2 class="group">{h ? `${t("common.hearingN", { n: h.number })} · ${l(h.title)}` : ""}</h2>
+        {/if}
+        <div class="item" class:selected={wide && selected === f.id}>
+          <AlertCard {f} mode="compact" onopen={() => open(f.id)} />
+        </div>
       {:else}
         <div class="empty">
           <ListChecks size={22} />
-          <p class="t-serif">{all.length && reviewed === all.length && needsReview ? t("fd.queueDone") : t("fd.emptyTitle")}</p>
-          <p class="small muted">{t("fd.emptyText")}</p>
-          <button class="btn btn-sm" onclick={() => { query = ""; statusFilter = []; hearingFilter = ""; needsReview = false; }}>{t("common.clearFilters")}</button>
+          <p class="t-serif">{tab === "attention" ? t("attn.allChecked") : t("fd.emptyTitle")}</p>
+          {#if query || hearingFilter}
+            <button class="btn btn-sm" onclick={() => { query = ""; hearingFilter = ""; }}>{t("common.clearFilters")}</button>
+          {/if}
         </div>
       {/each}
     </section>
@@ -161,71 +150,53 @@
       </section>
     {/if}
   </div>
+  {/if}
 </div>
 
 <style>
   .findings {
     max-width: 1500px;
   }
-  .progress {
+  .filters {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px 12px;
-    min-width: min(100%, 360px);
+    gap: 8px 10px;
+    margin-bottom: 12px;
   }
-  .meter {
-    flex: 1 1 80px;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--sunken);
-    overflow: hidden;
-  }
-  .meter span {
-    display: block;
-    height: 100%;
-    background: var(--st-supported-dot);
-    transition: width 0.3s;
-  }
-  .filters,
-  .status-filters {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
+  .bang {
+    display: inline-grid;
+    place-items: center;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: var(--alert);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
   }
   .grow {
-    flex: 1 1 240px;
+    flex: 1 1 220px;
   }
   .hearing-select {
     width: auto;
-    flex: 0 1 300px;
+    flex: 0 1 280px;
   }
-  .status-chip .dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-  }
-  [data-status="potential_inconsistency"] .dot { background: var(--st-inconsistency-dot); border-radius: 1px; transform: rotate(45deg); }
-  [data-status="supported"] .dot { background: var(--st-supported-dot); }
-  [data-status="context_needed"] .dot { border: 2px solid var(--st-context-dot); }
-  [data-status="insufficient_evidence"] .dot { background: var(--st-insufficient-dot); height: 2px; }
-  .status-chip[aria-pressed="true"] .dot {
-    background: currentColor;
-    border-color: currentColor;
+  .others-hint {
+    margin-bottom: 12px;
   }
   .body {
     display: grid;
     gap: 14px;
-    margin-top: 6px;
   }
   .body.wide {
     grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
     align-items: start;
   }
   .list {
-    overflow: hidden;
+    display: grid;
+    gap: 8px;
+    align-content: start;
   }
   .wide .list,
   .detail {
@@ -235,21 +206,21 @@
     overflow-y: auto;
   }
   .group {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding: 8px 14px;
-    background: var(--surface-2);
-    border-bottom: 1px solid var(--line);
+    padding: 6px 2px 0;
     font-size: 12px;
     font-weight: 600;
     color: var(--muted);
+  }
+  .item.selected :global(.compact) {
+    border-color: var(--ink-strong);
+    box-shadow: 0 0 0 1px var(--ink-strong);
+    background: var(--selected);
   }
   .empty {
     display: grid;
     justify-items: start;
     gap: 8px;
-    padding: 24px 16px;
+    padding: 24px 4px;
   }
   .empty .t-serif {
     font-size: 20px;

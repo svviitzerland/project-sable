@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FlaskConical, LayoutGrid, Map as MapIcon, MonitorSmartphone, Palette, RotateCcw, X } from "@lucide/svelte";
+  import { FlaskConical, LayoutGrid, Map as MapIcon, MonitorSmartphone, Palette, RotateCcw, Sparkles, X } from "@lucide/svelte";
   import { fly } from "svelte/transition";
   import { t } from "../lib/i18n";
   import { replayLive } from "../lib/live.svelte";
@@ -50,7 +50,7 @@
 
       <h3 class="t-label">{t("mk.variants")}</h3>
       {@render seg(t("mk.assistant"), prefs.assistantMode, [{ v: "docked", label: t("mk.docked") }, { v: "overlay", label: t("mk.overlay") }], (v) => (prefs.assistantMode = v))}
-      {@render seg(t("mk.liveLayout"), prefs.liveLayout, [{ v: "split", label: t("live.layoutSplit") }, { v: "focus", label: t("live.layoutFocus") }], (v) => (prefs.liveLayout = v))}
+      {@render seg(t("mk.scope"), prefs.findingScope, [{ v: "meaningful", label: t("mk.meaningful") }, { v: "all", label: t("mk.allFindings") }], (v) => (prefs.findingScope = v))}
 
       <h3 class="t-label">{t("mk.services")}</h3>
       {@render seg(t("mk.ai"), prefs.ai, [{ v: true, label: "On" }, { v: false, label: "Off" }], (v) => (prefs.ai = v))}
@@ -68,7 +68,8 @@
         <button class="page-link" aria-current={route.parts[0] === "map" ? "page" : undefined} onclick={() => { go("/map"); ui.mockOpen = false; }}><MapIcon size={16} />{t("nav.featureMap")}</button>
         <button class="page-link" aria-current={route.parts[0] === "moodboard" ? "page" : undefined} onclick={() => { go("/moodboard"); ui.mockOpen = false; }}><Palette size={16} />{t("nav.moodboard")}</button>
         <a class="page-link" href={`./#/canvas?route=${encodeURIComponent(route.path === "/canvas" ? "/case/c1" : route.path)}`} onclick={() => (ui.mockOpen = false)}><MonitorSmartphone size={16} />{t("nav.canvas")}</a>
-        <button class="page-link" onclick={() => { go("/"); ui.mockOpen = false; }}><LayoutGrid size={16} />{t("nav.cases")}</button>
+        <button class="page-link" onclick={() => { go("/cases"); ui.mockOpen = false; }}><LayoutGrid size={16} />{t("nav.cases")}</button>
+        <button class="page-link" aria-current={route.path === "/" ? "page" : undefined} onclick={() => { go("/"); ui.mockOpen = false; }}><Sparkles size={16} />{t("mk.landing")}</button>
       </nav>
     </section>
   {/if}

@@ -168,7 +168,7 @@
         L("Daftar keterkaitan untuk konfirmasi cepat", "Connection list for quick confirmation"),
         L("Pertanyaan diteruskan ke asisten", "Questions hand off to the assistant"),
       ],
-      open: () => go("/case/c1/evidence?view=map"),
+      open: () => go("/case/c1/evidence?view=connections&of=statement:s208"),
     },
     {
       id: "practice", label: L("Latihan sidang", "Courtroom practice"), kind: "out", x: 110, y: 470, w: 170,

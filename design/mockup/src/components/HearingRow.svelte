@@ -3,13 +3,15 @@
   import { fmtClock, fmtDate, fmtDuration, l, t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
   import { href } from "../lib/router.svelte";
-  import { findingsOf, statementsOf, ui } from "../lib/store.svelte";
+  import { findingsOf, isMeaningful, participantsOf, statementsOf, ui } from "../lib/store.svelte";
+  import Avatar from "./Avatar.svelte";
   import type { Hearing } from "../lib/types";
 
   let { h, compact = false, match = "" }: { h: Hearing; compact?: boolean; match?: string } = $props();
 
   let findings = $derived(findingsOf(h.id));
-  let open = $derived(findings.filter((f) => !f.reviewed).length);
+  let open = $derived(findings.filter((f) => isMeaningful(f) && !f.reviewed).length);
+  let cast = $derived(h.mode === "scheduled" ? [] : participantsOf(h.id).filter((sp) => statementsOf(h.id).some((s) => s.speakerId === sp.id)).slice(0, 5));
   let count = $derived(statementsOf(h.id).length);
   let isLiveNow = $derived(h.mode === "live" && live.hearingId === h.id && live.status !== "idle");
   const icons = { live: Mic, recorded: AudioLines, imported: FileText, scheduled: CalendarClock };
@@ -42,12 +44,11 @@
       {/if}
     {:else if isLiveNow}
       <a class="btn btn-sm btn-live" href={href(`/case/${h.caseId}/hearings/${h.id}`)}>{t("hearings.returnLive")}<ArrowRight size={14} /></a>
-    {:else if findings.length === 0}
-      <span class="tag">{t("hearings.noFindings")}</span>
     {:else if open}
-      <span class="badge badge-amber">{t("common.toReview", { n: open })}</span>
-    {:else}
-      <span class="tag">{t("hearings.allReviewed")}</span>
+      <span class="attn"><span class="bang" aria-hidden="true">!</span>{t("attn.count", { n: open })}</span>
+    {/if}
+    {#if cast.length && !compact}
+      <span class="cast" aria-hidden="true">{#each cast as sp (sp.id)}<Avatar id={sp.id} size="xs" />{/each}</span>
     {/if}
   </span>
 </div>
@@ -133,6 +134,38 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    gap: 12px;
+  }
+  .attn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px 3px 4px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--alert) 12%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--alert) 40%, var(--line));
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-strong);
+    white-space: nowrap;
+  }
+  .bang {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--alert);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .cast {
+    display: inline-flex;
+  }
+  .cast :global(.avatar) {
+    margin-left: -6px;
+    box-shadow: 0 0 0 2px var(--bg);
   }
   @container main (max-width: 520px) {
     .hrow {

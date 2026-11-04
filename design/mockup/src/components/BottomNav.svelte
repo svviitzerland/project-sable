@@ -3,12 +3,12 @@
   import { t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
   import { href, route } from "../lib/router.svelte";
-  import { findingsOfCase, hearing, openAssistant, ui } from "../lib/store.svelte";
+  import { findingsOfCase, hearing, needsLook, openAssistant, ui } from "../lib/store.svelte";
 
   let { caseId }: { caseId: string } = $props();
 
   let section = $derived(route.parts[2] ?? "overview");
-  let toReview = $derived(findingsOfCase(caseId).filter((f) => !f.reviewed).length);
+  let toReview = $derived(findingsOfCase(caseId).filter(needsLook).length);
   let liveHere = $derived(hearing(live.hearingId)?.caseId === caseId && live.status !== "idle");
   let items = $derived([
     { key: "overview", icon: House, label: t("nav.overview"), path: `/case/${caseId}` },

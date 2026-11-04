@@ -10,7 +10,8 @@ export interface Prefs {
   transcribe: boolean;
   /** Design variants under discussion. */
   assistantMode: "docked" | "overlay";
-  liveLayout: "split" | "focus";
+  /** Show only findings that need a look, or every finding. */
+  findingScope: "meaningful" | "all";
   liveText: number;
   liveSpeed: number;
   railCollapsed: boolean;
@@ -26,7 +27,7 @@ const defaults: Prefs = {
   pasal: true,
   transcribe: true,
   assistantMode: "docked",
-  liveLayout: "split",
+  findingScope: "meaningful",
   liveText: 1,
   liveSpeed: 1,
   railCollapsed: false,
@@ -35,7 +36,9 @@ const defaults: Prefs = {
 function load(): Prefs {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? "{}");
-    return { ...defaults, ...saved };
+    // Ignore settings from earlier rounds of the mockup that no longer exist.
+    const known = Object.fromEntries(Object.entries(saved).filter(([key]) => key in defaults));
+    return { ...defaults, ...known };
   } catch {
     return { ...defaults };
   }

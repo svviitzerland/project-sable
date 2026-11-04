@@ -1,5 +1,6 @@
 import * as seed from "./data";
 import { t, type Key, type Vars } from "./i18n";
+import { prefs } from "./prefs.svelte";
 import type {
   ChatMessage,
   Citation,
@@ -142,7 +143,11 @@ export const connectionsFor = (ref: NodeRef) =>
 export const findingsCiting = (passageId: string) =>
   db.findings.filter((f) => f.sources.some((s) => s.passageId === passageId));
 
-export const speaker = (id: string) => db.speakers.find((s) => s.id === id);
+/** Resolves voices the user has assigned to a participant, so they render as that person. */
+export function speaker(id: string): Speaker | undefined {
+  const sp = db.speakers.find((s) => s.id === id);
+  return sp?.alias && sp.alias !== id ? speaker(sp.alias) : sp;
+}
 export function speakerName(sp: Speaker | undefined) {
   if (!sp) return "—";
   if (sp.label) return sp.label;
@@ -151,6 +156,44 @@ export function speakerName(sp: Speaker | undefined) {
 }
 
 export const caseOfHearing = (hearingId: string) => hearing(hearingId)?.caseId;
+
+/**
+ * Findings worth a lawyer's attention: a difference from the source, or a point that needs
+ * context. Supported and insufficient-evidence findings stay quiet unless "all" is chosen.
+ */
+export const isMeaningful = (f: Finding) => f.status === "potential_inconsistency" || f.status === "context_needed";
+export const isShown = (f: Finding) => prefs.findingScope === "all" || isMeaningful(f);
+export const needsLook = (f: Finding) => isMeaningful(f) && !f.reviewed;
+
+/** People in the room for a hearing: the regular parties plus anyone who has spoken. */
+export function participantsOf(hearingId: string, extra: string[] = []): Speaker[] {
+  const spoken = new Set([...statementsOf(hearingId).map((s) => s.speakerId), ...extra.filter(Boolean)]);
+  const seen = new Set<string>();
+  const out: Speaker[] = [];
+  const add = (sp: Speaker | undefined) => {
+    if (sp && !seen.has(sp.id)) {
+      seen.add(sp.id);
+      out.push(sp);
+    }
+  };
+  for (const sp of db.speakers) {
+    if (sp.alias) continue;
+    if (["judge", "prosecutor", "defense", "defendant"].includes(sp.role)) add(sp);
+  }
+  for (const id of spoken) add(speaker(id));
+  return out;
+}
+
+/** Assigns an unidentified voice to someone already in the room. Their lines follow. */
+export function assignVoice(voiceId: string, targetId: string) {
+  const voice = db.speakers.find((s) => s.id === voiceId);
+  const target = speaker(targetId);
+  if (!voice || !target || voice.id === target.id) return;
+  const before = speakerName(voice);
+  voice.alias = target.id;
+  voice.confirmed = true;
+  toast(t("stage.assigned", { voice: before, name: speakerName(target) }));
+}
 
 // Actions
 export function setReviewed(f: Finding, reviewed: boolean) {

@@ -4,7 +4,9 @@
   import { endLive, live } from "../lib/live.svelte";
   import { prefs } from "../lib/prefs.svelte";
   import { go, route } from "../lib/router.svelte";
-  import { caseById, db, hearing, renameSpeaker, speaker, speakerName, toast, toastT, ui } from "../lib/store.svelte";
+  import { assignVoice, caseById, db, hearing, renameSpeaker, speaker, speakerName, toast, toastT, ui } from "../lib/store.svelte";
+  import { roleTone } from "../lib/people";
+  import Avatar from "./Avatar.svelte";
   import NewHearingModal from "./NewHearingModal.svelte";
   import Overlay from "./Overlay.svelte";
 
@@ -150,14 +152,17 @@
         {@const sp = speaker(modal.speakerId)}
         <form class="form" onsubmit={(e) => { e.preventDefault(); renameSpeaker(modal.speakerId, renameValue); close(); }}>
           <p class="small muted">{t("rn.text")}</p>
-          <p><strong>{speakerName(sp)}</strong></p>
-          <label class="field-label">{t("rn.label")}<input class="field" bind:value={renameValue} placeholder={t("rn.placeholder")} required data-autofocus /></label>
-          <div class="quick">
-            <span class="xsmall muted">{t("rn.quick")}</span>
-            {#each ["Penasihat Hukum", "Hakim Anggota", "Panitera Pengganti", "Saksi Yusuf"] as q (q)}
-              <button type="button" class="chip" aria-pressed={renameValue === q} onclick={() => (renameValue = q)}>{q}</button>
+          <div class="voice-row"><Avatar id={modal.speakerId} size="md" /><strong>{speakerName(sp)}</strong></div>
+          <span class="xsmall muted">{t("rn.pick")}</span>
+          <div class="seats">
+            {#each db.speakers.filter((x) => !x.alias && x.role !== "unknown") as person (person.id)}
+              <button type="button" class="seat-pick" data-tone={roleTone(person.role)} onclick={() => { assignVoice(modal.speakerId, person.id); close(); }}>
+                <Avatar id={person.id} size="sm" />
+                <span>{speakerName(person)}</span>
+              </button>
             {/each}
           </div>
+          <label class="field-label">{t("rn.other")}<input class="field" bind:value={renameValue} placeholder={t("rn.placeholder")} /></label>
           <div class="foot">
             <button type="button" class="btn" onclick={close}>{t("common.cancel")}</button>
             <button class="btn btn-primary" type="submit" disabled={!renameValue.trim()}>{t("rn.save")}</button>
@@ -298,11 +303,31 @@
   .danger h3 {
     color: var(--live);
   }
-  .quick {
+  .voice-row {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
+    gap: 12px;
+  }
+  .seats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
     gap: 6px;
+  }
+  .seat-pick {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px 6px 6px;
+    border-radius: var(--radius-action);
+    border: 1px solid var(--line);
+    text-align: left;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-strong);
+  }
+  .seat-pick:hover {
+    border-color: var(--tone);
+    background: var(--tone-soft);
   }
   .keys {
     display: grid;

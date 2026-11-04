@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowDownUp, BookOpen, Check, ExternalLink, Flag, MessageSquare, RotateCcw, Scale } from "@lucide/svelte";
+  import { ArrowDownUp, BookOpen, Check, ExternalLink, Flag, MessageSquare, RotateCcw, Scale, Waypoints } from "@lucide/svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import { go, href } from "../lib/router.svelte";
   import {
@@ -93,6 +93,7 @@
       <div class="actions">
         <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${d.caseId}/evidence/doc/${d.id}?p=${p.id}`); }}><BookOpen size={14} />{t("fx.openDoc")}</button>
         <button class="btn btn-sm" onclick={() => openAssistant({ kind: "passage", id: p.id }, undefined, [{ kind: "passage", id: p.id }])}><MessageSquare size={14} />{t("fx.ask")}</button>
+        <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${d.caseId}/evidence?view=connections&of=passage:${p.id}`); }}><Waypoints size={14} />{t("fx.connections")}</button>
       </div>
       {@const citing = findingsCiting(p.id)}
       {#if citing.length}
@@ -125,6 +126,7 @@
       <div class="actions">
         <a class="btn btn-sm" href={href(`/case/${h.caseId}/hearings/${h.id}?s=${s.id}`)} onclick={() => (ui.inspector = null)}>{t("fx.openInHearing")}</a>
         <button class="btn btn-sm" aria-pressed={!!s.flagged} onclick={() => toggleFlag(s)}><Flag size={14} />{s.flagged ? t("live.unflag") : t("live.flag")}</button>
+        <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${h.caseId}/evidence?view=connections&of=statement:${s.id}`); }}><Waypoints size={14} />{t("fx.connections")}</button>
       </div>
       {#if f}
         <button class="conn" onclick={() => inspect({ kind: "finding", id: f.id })}>

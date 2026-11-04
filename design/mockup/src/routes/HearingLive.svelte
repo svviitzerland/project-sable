@@ -2,28 +2,32 @@
   import {
     AArrowDown,
     AArrowUp,
-    ArrowDown,
+    Bookmark,
+    ChevronDown,
     ChevronLeft,
-    Columns2,
-    Flag,
-    LoaderCircle,
+    Ellipsis,
     MessageSquare,
     Mic,
     Moon,
     Pause,
     Play,
-    Scale,
+    ScrollText,
     Square,
     Sun,
-    Captions,
+    X,
   } from "@lucide/svelte";
   import { tick } from "svelte";
-  import FindingDetail from "../components/FindingDetail.svelte";
-  import FindingRow from "../components/FindingRow.svelte";
-  import SpeakerTag from "../components/SpeakerTag.svelte";
-  import StatusChip from "../components/StatusChip.svelte";
+  import { flip } from "svelte/animate";
+  import { fly, slide } from "svelte/transition";
+  import AlertCard from "../components/AlertCard.svelte";
+  import Avatar from "../components/Avatar.svelte";
+  import Backlog from "../components/Backlog.svelte";
+  import DialogueBox from "../components/DialogueBox.svelte";
+  import Menu, { type MenuItem } from "../components/Menu.svelte";
+  import Overlay from "../components/Overlay.svelte";
   import { fmtClock, fmtDate, l, t } from "../lib/i18n";
   import { isLive, live, pause, resume } from "../lib/live.svelte";
+  import { roleOrder, roleTone } from "../lib/people";
   import { prefs } from "../lib/prefs.svelte";
   import { href } from "../lib/router.svelte";
   import {
@@ -31,296 +35,271 @@
     findingsOf,
     hearing,
     inspect,
-    legalRef,
+    isMeaningful,
+    needsLook,
     openAssistant,
+    participantsOf,
+    speakerName,
+    statement,
     statementsOf,
-    toggleFlag,
+    toastT,
     ui,
   } from "../lib/store.svelte";
+  import type { Finding } from "../lib/types";
 
+  /**
+   * Live recording, top to bottom in order of what matters: the finding most worth a look (only
+   * when there is one), what the person speaking is saying now, then the last few lines. Where
+   * people sit is not shown; who is talking is.
+   */
   let { hearingId, phone }: { hearingId: string; phone: boolean } = $props();
 
   let h = $derived(hearing(hearingId)!);
   let recording = $derived(live.hearingId === hearingId && live.status !== "idle");
   let statements = $derived(statementsOf(hearingId));
-  let feed = $derived(findingsOf(hearingId).slice().reverse());
-  let freshCount = $derived(feed.filter((f) => f.isNew).length);
-  let width = $state(0);
-  let wide = $derived(width >= 720);
-  let roomForDetail = $derived(width >= 980);
-  let tab = $state<"transcript" | "findings">("transcript");
-  let selected = $state<string | null>(null);
-  let follow = $state(true);
-  let baseline = $state(0);
-  let behind = $derived(follow ? 0 : Math.max(0, statements.length - baseline));
-  let scroller: HTMLElement | undefined = $state();
-  let announce = $state("");
+  let last = $derived(statements.at(-1));
+  let showTranscript = $state(false);
+  let showRest = $state(false);
+  let transcriptEl: HTMLElement | undefined = $state();
   const sizes = [14, 16, 19, 23];
+  const motion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 1;
+
+  let current = $derived(
+    recording && live.partial
+      ? { speakerId: live.partialSpeaker, text: live.partial, partial: true, time: undefined as number | undefined, id: "" }
+      : last
+        ? { speakerId: last.speakerId, text: last.text, partial: false, time: last.t, id: last.id }
+        : null,
+  );
+  let speaking = $derived(recording && live.status === "recording" && !!live.partial);
+
+  // Most relevant first: what just arrived, then differences from a source, then the newest.
+  // "Later" moves a finding below the line; checking it removes it.
+  let snoozed = $state<string[]>([]);
+  const weight = (f: Finding) =>
+    (snoozed.includes(f.id) ? -10 : 0) + (f.isNew ? 4 : 0) + (f.status === "potential_inconsistency" ? 2 : 1);
+  let alerts = $derived(
+    findingsOf(hearingId)
+      .filter(needsLook)
+      .map((f) => ({ f, w: weight(f), at: statement(f.statementId)?.t ?? 0 }))
+      .sort((a, b) => b.w - a.w || b.at - a.at)
+      .map((x) => x.f),
+  );
+  let top = $derived(alerts[0] && !snoozed.includes(alerts[0].id) ? alerts[0] : undefined);
+  let rest = $derived(top ? alerts.slice(1) : alerts);
+  let currentFinding = $derived.by(() => {
+    const f = current && !current.partial ? findingForStatement(current.id) : undefined;
+    return f && isMeaningful(f) && !f.reviewed ? f : undefined;
+  });
+  let recent = $derived(statements.slice(current?.partial ? -5 : -6, current?.partial ? undefined : -1).reverse());
+  let cast = $derived(participantsOf(hearingId).sort((a, b) => roleOrder.indexOf(a.role) - roleOrder.indexOf(b.role)));
+  let announce = $state("");
 
   $effect(() => {
     if (recording && live.unseen) live.unseen = 0;
   });
 
-  // Announce findings politely without reading every caption aloud.
-  let lastFeed = 0;
+  // Announce a finding worth a look politely; captions are not read aloud line by line.
+  let lastCount = -1;
   $effect(() => {
-    const n = feed.length;
-    if (n > lastFeed && lastFeed !== 0) announce = `${t("live.newFinding")}: ${t(`status.${feed[0].status}`)}. ${l(feed[0].title)}`;
-    lastFeed = n;
+    const n = alerts.length;
+    if (lastCount >= 0 && n > lastCount && alerts[0]) announce = `${t("attn.title")}: ${l(alerts[0].title)}`;
+    lastCount = n;
   });
 
-  $effect(() => {
-    void statements.length;
-    void live.partial;
-    void tab;
-    void prefs.liveLayout;
-    if (follow) tick().then(() => scroller?.scrollTo({ top: scroller.scrollHeight }));
-  });
-
-  function onscroll() {
-    if (!scroller) return;
-    const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 48;
-    if (!atBottom && follow) {
-      follow = false;
-      baseline = statements.length;
-    } else if (atBottom && !follow) {
-      follow = true;
-    }
+  function later(id: string) {
+    const f = alerts.find((x) => x.id === id);
+    if (f) f.isNew = false;
+    if (!snoozed.includes(id)) snoozed = [...snoozed, id];
   }
 
-  function jumpToLatest() {
-    follow = true;
-    scroller?.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+  function view(id: string) {
+    const f = alerts.find((x) => x.id === id);
+    if (f) f.isNew = false;
+    inspect({ kind: "finding", id }, alerts.map((x) => x.id));
   }
 
-  function openFinding(id: string) {
-    if (roomForDetail && prefs.liveLayout === "split") selected = id;
-    else inspect({ kind: "finding", id }, feed.map((f) => f.id));
+  function markMoment() {
+    if (last && !last.flagged) last.flagged = true;
+    toastT("live.marked");
   }
 
-  const busyPhase = (p?: string) => p === "queued" || p === "retrieving" || p === "analyzing" || p === "reviewing";
+  async function openTranscript() {
+    showTranscript = true;
+    await tick();
+    setTimeout(() => transcriptEl?.scrollTo({ top: transcriptEl.scrollHeight }), 60);
+  }
+
+  let menu = $derived<MenuItem[]>([
+    { label: t("live.larger"), icon: AArrowUp, run: () => (prefs.liveText = Math.min(3, prefs.liveText + 1)) },
+    { label: t("live.smaller"), icon: AArrowDown, run: () => (prefs.liveText = Math.max(0, prefs.liveText - 1)) },
+    {
+      label: prefs.theme === "night" ? t("live.lightMode") : t("live.courtMode"),
+      icon: prefs.theme === "night" ? Sun : Moon,
+      run: () => (prefs.theme = prefs.theme === "night" ? "paper" : "night"),
+    },
+    { label: t("live.fullTranscript"), icon: ScrollText, run: openTranscript },
+    { label: t("top.ask"), icon: MessageSquare, run: () => openAssistant({ kind: "hearing", id: hearingId }) },
+  ]);
 </script>
 
-{#snippet transcriptList()}
-  <ol class="transcript" aria-label={t("hv.transcript")}>
-    {#each statements as s (s.id)}
-      {@const f = findingForStatement(s.id)}
-      <li class="st" class:flagged={s.flagged}>
-        <div class="st-meta">
-          <time class="tabular">{fmtClock(s.t)}</time>
-          <SpeakerTag id={s.speakerId} />
-          {#if busyPhase(s.phase)}
-            <span class="phase"><LoaderCircle size={12} class="spin" />{t(`phase.${s.phase!}`)}</span>
-          {/if}
-          {#if s.flagged}<span class="flag-tag"><Flag size={11} />{t("live.flagged")}</span>{/if}
-          {#if f}
-            <button class="finding-link" onclick={() => openFinding(f.id)} aria-label={`${t("hv.openFinding")}: ${t(`status.${f.status}`)}`}><StatusChip status={f.status} size="sm" /></button>
-          {/if}
-        </div>
-        <p class="st-text">
-          {s.text}
-          {#each s.legal ?? [] as lid (lid)}
-            {@const ref = legalRef(lid)}
-            {#if ref && prefs.pasal}
-              <button class="mention" onclick={() => inspect({ kind: "legal", id: lid })} title={t("live.legalMention")}><Scale size={12} />{ref.article}</button>
-            {/if}
-          {/each}
-        </p>
-        <div class="st-actions">
-          <button class="icon-btn" aria-pressed={!!s.flagged} aria-label={s.flagged ? t("live.unflag") : t("live.flag")} title={s.flagged ? t("live.unflag") : t("live.flag")} onclick={() => toggleFlag(s)}><Flag size={14} /></button>
-        </div>
-      </li>
-    {/each}
-    {#if recording && live.partial}
-      <li class="st partial">
-        <div class="st-meta">
-          <span class="tabular listening">{t("live.listening")}</span>
-          <SpeakerTag id={live.partialSpeaker} compact />
-        </div>
-        <p class="st-text">{live.partial}<span class="caret" aria-hidden="true"></span></p>
-      </li>
-    {:else if recording}
-      <li class="waiting small muted">{live.status === "paused" ? t("live.paused") : t("live.waiting")}</li>
-    {/if}
-  </ol>
-{/snippet}
-
-{#snippet feedList()}
-  {#if selected && roomForDetail}
-    <div class="feed-detail">
-      <button class="back-link" onclick={() => (selected = null)}><ChevronLeft size={16} />{t("live.feed")}</button>
-      <div class="scroll-y detail-scroll">
-        <FindingDetail id={selected} inHearing />
-      </div>
-    </div>
-  {:else}
-    <div class="feed scroll-y">
-      {#each feed as f (f.id)}
-        <FindingRow {f} showHearing={false} onclick={() => openFinding(f.id)} />
-      {:else}
-        <p class="feed-empty small muted">{t("live.feedEmpty")}</p>
-      {/each}
-    </div>
-  {/if}
-{/snippet}
-
-<div class="live-page" class:phone bind:clientWidth={width} style:--live-size="{sizes[prefs.liveText] ?? 16}px">
-  <header class="head">
-    <div class="head-top">
+<div class="live" class:phone style:--live-size="{sizes[prefs.liveText] ?? 16}px">
+  <header class="bar">
+    <div class="titles">
       <a class="back" href={href(`/case/${h.caseId}/hearings`)}><ChevronLeft size={16} />{t("hv.allHearings")}</a>
-      <span class="small muted">{fmtDate(h.date)}{h.time ? ` · ${h.time} WIB` : ""}</span>
+      <h1 class="t-serif"><span class="num">{t("common.hearingN", { n: h.number })}</span> {l(h.title)}</h1>
     </div>
-    <h1 class="t-serif"><span class="num">{t("common.hearingN", { n: h.number })}</span> {l(h.title)}</h1>
-
     {#if recording}
       <div class="controls">
         <span class="rec" class:paused={live.status !== "recording"}>
           {#if live.status === "recording"}<span class="live-dot"></span>{:else}<span class="pause-dot"></span>{/if}
-          <span>{live.status === "connecting" ? t("live.connecting") : live.status === "paused" ? t("live.paused") : t("live.recording")}</span>
+          {#if !phone}<span>{live.status === "connecting" ? t("live.connecting") : live.status === "paused" ? t("live.paused") : t("live.recording")}</span>{/if}
           <span class="tabular clock">{fmtClock(live.elapsed)}</span>
         </span>
-        {#if !phone}<span class="xsmall muted keep">{t("live.keepOpen")} · {t("live.keepAwake")}</span>{/if}
-        <span class="grow"></span>
         <button
           class="btn"
           class:btn-icon={phone}
           aria-label={live.status === "paused" ? t("live.resume") : t("live.pause")}
-          onclick={() => (live.status === "paused" ? resume() : pause())}
           disabled={live.status === "connecting"}
+          onclick={() => (live.status === "paused" ? resume() : pause())}
         >
           {#if live.status === "paused"}<Play size={16} />{#if !phone}{t("live.resume")}{/if}{:else}<Pause size={16} />{#if !phone}{t("live.pause")}{/if}{/if}
         </button>
-        <button class="btn btn-danger" onclick={() => (ui.modal = { kind: "endLive" })}><Square size={14} />{t("live.end")}</button>
-      </div>
-      <div class="view" role="group" aria-label={t("live.layout")}>
-        <div class="seg">
-          <button aria-pressed={prefs.liveLayout === "split"} aria-label={t("live.layoutSplit")} title={t("live.layoutSplit")} onclick={() => (prefs.liveLayout = "split")}><Columns2 size={15} />{#if !phone}{t("live.layoutSplit")}{/if}</button>
-          <button aria-pressed={prefs.liveLayout === "focus"} aria-label={t("live.layoutFocus")} title={t("live.layoutFocus")} onclick={() => (prefs.liveLayout = "focus")}><Captions size={15} />{#if !phone}{t("live.layoutFocus")}{/if}</button>
-        </div>
-        <div class="size" role="group" aria-label={t("live.textSize")}>
-          <button class="btn btn-ghost btn-icon" aria-label={t("live.smaller")} disabled={prefs.liveText <= 0} onclick={() => (prefs.liveText -= 1)}><AArrowDown size={17} /></button>
-          <button class="btn btn-ghost btn-icon" aria-label={t("live.larger")} disabled={prefs.liveText >= 3} onclick={() => (prefs.liveText += 1)}><AArrowUp size={17} /></button>
-        </div>
-        <button class="btn btn-ghost" class:btn-icon={phone} aria-label={t("live.courtMode")} aria-pressed={prefs.theme === "night"} title={t("live.courtModeHint")} onclick={() => (prefs.theme = prefs.theme === "night" ? "paper" : "night")}>
-          {#if prefs.theme === "night"}<Sun size={16} />{:else}<Moon size={16} />{/if}
-          {#if !phone}<span>{t("live.courtMode")}</span>{/if}
-        </button>
-        <button class="btn btn-ghost" class:btn-icon={phone} aria-label={t("top.ask")} onclick={() => openAssistant({ kind: "hearing", id: h.id })}><MessageSquare size={16} />{#if !phone}<span>{t("top.ask")}</span>{/if}</button>
+        <button class="btn btn-danger" onclick={() => (ui.modal = { kind: "endLive" })}><Square size={13} />{t("live.end")}</button>
+        <Menu label={t("live.viewOptions")} items={menu}>
+          {#snippet button()}
+            <span class="btn btn-ghost btn-icon" aria-hidden="true"><Ellipsis size={18} /></span>
+          {/snippet}
+        </Menu>
       </div>
     {/if}
   </header>
 
   {#if !recording}
-    <section class="not-started">
-      <span class="ns-icon"><Mic size={22} /></span>
-      <h2 class="t-serif">{t("hv.scheduledTitle")}</h2>
-      <p class="muted">{t("hv.scheduledText")}</p>
-      {#if isLive()}
-        <p class="notice notice-sand">{t("nh.busy", { n: hearing(live.hearingId)?.number ?? "" })}</p>
-      {/if}
+    <section class="flow not-started">
+      <div class="ns-text">
+        <h2 class="t-serif">{t("hv.scheduledTitle")}</h2>
+        <p class="muted">{fmtDate(h.date, { weekday: "long", day: "numeric", month: "long" })}{h.time ? ` · ${h.time} WIB` : ""}</p>
+      </div>
+      <div class="cast">
+        <h3 class="t-label">{t("live.cast")}</h3>
+        <ul>
+          {#each cast as sp (sp.id)}
+            <li data-tone={roleTone(sp.role)}>
+              <Avatar id={sp.id} size="sm" />
+              <span class="cast-text"><strong>{speakerName(sp)}</strong><span class="xsmall muted">{t(`role.${sp.role}`)}</span></span>
+            </li>
+          {/each}
+        </ul>
+      </div>
+      {#if isLive()}<p class="notice notice-sand">{t("nh.busy", { n: hearing(live.hearingId)?.number ?? "" })}</p>{/if}
       <div class="ns-actions">
         <button class="btn btn-live" disabled={isLive()} onclick={() => (ui.modal = { kind: "newHearing", flow: "live", hearingId: h.id })}><Mic size={16} />{t("hearings.startNow")}</button>
         <button class="btn" onclick={() => openAssistant({ kind: "case" }, l({ id: "Pertanyaan apa yang perlu saya siapkan untuk sidang berikutnya?", en: "What questions should I prepare for the next hearing?" }), undefined, true)}><MessageSquare size={16} />{t("ov.prepare")}</button>
       </div>
     </section>
-  {:else if prefs.liveLayout === "focus"}
-    <div class="focus">
-      <div class="captions scroll-y" bind:this={scroller} {onscroll}>
-        <ol class="caps" aria-label={t("live.recent")}>
-          {#each statements.slice(-4) as s, i (s.id)}
-            {@const f = findingForStatement(s.id)}
-            <li class="cap" class:old={i < statements.slice(-4).length - 1 || !!live.partial}>
-              <div class="cap-meta"><SpeakerTag id={s.speakerId} /><time class="tabular xsmall muted">{fmtClock(s.t)}</time>{#if f}<button class="finding-link" onclick={() => openFinding(f.id)}><StatusChip status={f.status} size="sm" /></button>{/if}</div>
-              <p>{s.text}</p>
-            </li>
-          {/each}
-          {#if live.partial}
-            <li class="cap current">
-              <div class="cap-meta"><SpeakerTag id={live.partialSpeaker} compact /><span class="listening xsmall">{t("live.listening")}</span></div>
-              <p>{live.partial}<span class="caret" aria-hidden="true"></span></p>
-            </li>
+  {:else}
+    <div class="flow">
+      <section class="attention" aria-label={t("attn.title")}>
+        {#if top}
+          {#key top.id}
+            <div in:fly={{ y: -14, duration: 280 * motion }}>
+              <AlertCard f={top} mode={top.isNew ? "hero" : "card"} brief now onview={() => view(top!.id)} onlater={() => later(top!.id)} />
+            </div>
+          {/key}
+        {:else if !alerts.length}
+          <p class="calm"><span class="breath" aria-hidden="true"></span>{t("attn.calm")}</p>
+        {/if}
+        {#if rest.length}
+          <button class="more" class:open={showRest} aria-expanded={showRest} onclick={() => (showRest = !showRest)}>
+            <span class="pips" aria-hidden="true">
+              {#each rest.slice(0, 3) as f (f.id)}<span class="pip" class:loud={f.status === "potential_inconsistency"}>!</span>{/each}
+            </span>
+            <span class="more-label">{top ? t("live.moreToCheck", { n: rest.length }) : t("live.laterCount", { n: rest.length })}</span>
+            <span class="chev" aria-hidden="true"><ChevronDown size={16} /></span>
+          </button>
+          {#if showRest}
+            <div class="rest" transition:slide={{ duration: 220 * motion }}>
+              {#each rest as f (f.id)}
+                <div animate:flip={{ duration: 220 * motion }}>
+                  <AlertCard {f} mode="compact" onopen={() => view(f.id)} />
+                </div>
+              {/each}
+            </div>
           {/if}
-        </ol>
-      </div>
-      <section class="tray" aria-label={t("live.feed")}>
-        <h2 class="t-label">{t("live.feed")} · {feed.length}</h2>
-        <div class="tray-list">
-          {#each feed as f (f.id)}
-            <button class="tray-card" class:fresh={f.isNew} onclick={() => openFinding(f.id)}>
-              <StatusChip status={f.status} size="sm" />
-              <span class="clamp-3">{l(f.title)}</span>
-            </button>
-          {:else}
-            <p class="small muted">{t("live.feedEmpty")}</p>
-          {/each}
-        </div>
-      </section>
-    </div>
-  {:else if wide}
-    <div class="split" class:with-detail={!!selected && roomForDetail}>
-      <section class="pane transcript-pane" aria-label={t("hv.transcript")}>
-        <div class="scroll-y fill" bind:this={scroller} {onscroll}>{@render transcriptList()}</div>
-        {#if !follow}
-          <button class="catchup" onclick={jumpToLatest}><ArrowDown size={15} />{behind ? t("live.behind", { n: behind }) : t("live.follow")}</button>
         {/if}
       </section>
-      <section class="pane feed-pane" aria-label={t("live.feed")}>
-        <div class="pane-head">
-          <h2>{t("live.feed")}</h2>
-          {#if freshCount}<span class="badge badge-amber">{freshCount} {t("live.newFinding").toLowerCase()}</span>{/if}
+
+      <section class="now" aria-label={t("live.speakingNow")}>
+        <div class="now-head">
+          <h2 class="t-label">{t("live.speakingNow")}</h2>
+          <button class="btn btn-sm btn-ghost" onclick={markMoment}><Bookmark size={14} />{t("live.mark")}</button>
         </div>
-        {@render feedList()}
+        {#if current}
+          <DialogueBox
+            speakerId={current.speakerId}
+            text={current.text}
+            partial={current.partial}
+            {speaking}
+            time={current.time}
+            mark={currentFinding?.said}
+            portrait={phone ? "lg" : "xl"}
+            alert={!!currentFinding}
+          />
+        {:else}
+          <p class="muted small">{t("live.waiting")}</p>
+        {/if}
       </section>
-    </div>
-  {:else}
-    <div class="stacked">
-      <div class="seg tabs" role="tablist" aria-label={t("live.layout")}>
-        <button role="tab" aria-selected={tab === "transcript"} onclick={() => (tab = "transcript")}>{t("hv.transcript")}</button>
-        <button role="tab" aria-selected={tab === "findings"} onclick={() => (tab = "findings")}>
-          {t("hv.findings")} <span class="badge" class:badge-amber={freshCount > 0}>{feed.length}</span>
-        </button>
-      </div>
-      {#if tab === "transcript"}
-        <div class="pane fill-pane">
-          <div class="scroll-y fill" bind:this={scroller} {onscroll}>{@render transcriptList()}</div>
-          {#if !follow}
-            <button class="catchup" onclick={jumpToLatest}><ArrowDown size={15} />{behind ? t("live.behind", { n: behind }) : t("live.follow")}</button>
-          {/if}
-        </div>
-      {:else}
-        <div class="pane fill-pane">{@render feedList()}</div>
+
+      {#if recent.length}
+        <section class="recent">
+          <div class="recent-head">
+            <h2 class="t-label">{t("live.justNow")}</h2>
+            <button class="link-btn" onclick={openTranscript}><ScrollText size={14} />{t("live.fullTranscript")}</button>
+          </div>
+          <Backlog statements={recent} compact showTime={false} ontoggle={(id) => view(id)} />
+        </section>
       {/if}
     </div>
   {/if}
   <p class="sr-only" role="status" aria-live="polite">{announce}</p>
 </div>
 
+<Overlay open={showTranscript} onclose={() => (showTranscript = false)} variant={phone ? "sheet" : "drawer"} label={t("live.fullTranscript")} width={560}>
+  <div class="sheet-head">
+    <h2>{t("live.fullTranscript")}</h2>
+    <button class="btn btn-ghost btn-icon" aria-label={t("common.close")} onclick={() => (showTranscript = false)}><X size={18} /></button>
+  </div>
+  <div class="sheet-body scroll-y" bind:this={transcriptEl}>
+    <Backlog {statements} ontoggle={(id) => view(id)} />
+  </div>
+</Overlay>
+
 <style>
-  .live-page {
+  .live {
     display: flex;
     flex-direction: column;
-    height: calc(100dvh - var(--topbar-h));
-    padding: 14px clamp(12px, 2.4cqi, 28px) 14px;
-    gap: 12px;
-    min-height: 480px;
+    gap: 14px;
+    padding: 14px clamp(12px, 2.4cqi, 28px) 24px;
+    min-height: calc(100dvh - var(--topbar-h));
   }
-  .live-page.phone {
-    height: calc(100dvh - var(--topbar-h) - var(--bottomnav-h) - var(--safe-bottom));
-    padding: 10px 10px 8px;
-    gap: 8px;
-  }
-  .head {
-    display: grid;
-    gap: 8px;
-  }
-  .head-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .live.phone {
+    padding: 10px 10px 16px;
     gap: 10px;
   }
-  .back,
-  .back-link {
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px 16px;
+  }
+  .titles {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+  .back {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -328,18 +307,20 @@
     font-weight: 500;
     color: var(--muted);
     text-decoration: none;
-    min-height: 28px;
+    width: fit-content;
   }
-  .back:hover,
-  .back-link:hover {
+  .back:hover {
     color: var(--ink-strong);
   }
+  .phone .back {
+    display: none;
+  }
   h1 {
-    font-size: clamp(20px, 3cqi, 28px);
+    font-size: clamp(20px, 2.8cqi, 28px);
     line-height: 1.2;
   }
   .phone h1 {
-    font-size: 19px;
+    font-size: 18px;
   }
   .num {
     font-family: var(--font-ui);
@@ -349,21 +330,14 @@
     vertical-align: 3px;
     margin-right: 4px;
   }
-  .controls,
-  .view {
+  .controls {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
   }
-  .phone .controls,
-  .phone .view {
-    flex-wrap: nowrap;
+  .phone .controls {
+    width: 100%;
     gap: 6px;
-  }
-  .phone .rec {
-    flex: 1;
-    min-width: 0;
   }
   .rec {
     display: inline-flex;
@@ -375,6 +349,10 @@
     color: var(--live);
     font-weight: 700;
     font-size: 13px;
+    white-space: nowrap;
+  }
+  .phone .rec {
+    flex: 1;
   }
   .rec.paused {
     background: var(--sunken);
@@ -389,324 +367,183 @@
   .clock {
     color: var(--ink-strong);
   }
-  .grow {
-    flex: 1;
-  }
-  .phone .grow {
-    display: none;
-  }
-  .size {
-    display: inline-flex;
-  }
-  .view .seg button {
-    font-size: 12.5px;
-  }
-  .split {
-    flex: 1;
-    min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(260px, 380px);
-    gap: 14px;
-  }
-  .split.with-detail {
-    grid-template-columns: minmax(0, 1fr) minmax(380px, 520px);
-  }
-  .pane {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-  .fill {
-    flex: 1;
-    min-height: 0;
-  }
-  .stacked {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .tabs {
-    display: flex;
-  }
-  .tabs button {
-    flex: 1;
-    justify-content: center;
-  }
-  .fill-pane {
-    flex: 1;
-  }
-  .transcript {
-    display: grid;
-    padding: 6px 0 24px;
-  }
-  .st {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 4px 12px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--line);
-  }
-  .st.flagged {
-    box-shadow: inset 3px 0 0 var(--focus);
-  }
-  .st-meta {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 10px;
-  }
-  .st-meta time {
-    font-size: 11.5px;
-    color: var(--muted);
-  }
-  .st-text {
-    font-size: var(--live-size);
-    line-height: 1.5;
-    color: var(--ink-strong);
-  }
-  .st-actions {
-    display: flex;
-    align-items: flex-start;
-    gap: 4px;
-  }
-  .icon-btn {
-    display: grid;
-    place-items: center;
-    width: var(--hit);
-    height: var(--hit);
-    border-radius: var(--radius-control);
-    color: var(--muted);
-    opacity: 0;
-  }
-  .st:hover .icon-btn,
-  .icon-btn:focus-visible,
-  .icon-btn[aria-pressed="true"] {
-    opacity: 1;
-  }
-  @media (pointer: coarse) {
-    .icon-btn {
-      opacity: 0.7;
-    }
-  }
-  .icon-btn:hover {
-    background: var(--sunken);
-    color: var(--ink-strong);
-  }
-  .icon-btn[aria-pressed="true"] {
-    color: var(--focus);
-  }
-  .finding-link {
-    display: inline-flex;
-    border-radius: 4px;
-  }
-  .phase {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--muted);
-  }
-  .phase :global(.spin) {
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  .flag-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--focus);
-  }
-  .mention {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: 6px;
-    padding: 1px 7px;
-    border-radius: 4px;
-    background: var(--sand);
-    color: var(--sand-ink);
-    font-size: 12px;
-    font-weight: 600;
-    vertical-align: 2px;
-  }
-  .partial .st-text {
-    color: var(--muted);
-  }
-  .listening {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--live);
-  }
-  .caret {
-    display: inline-block;
-    width: 2px;
-    height: 1em;
-    margin-left: 2px;
-    background: var(--live);
-    vertical-align: -2px;
-    animation: blink 1s steps(2) infinite;
-  }
-  @keyframes blink {
-    50% {
-      opacity: 0;
-    }
-  }
-  .waiting {
-    padding: 14px 16px;
-  }
-  .catchup {
-    position: absolute;
-    left: 50%;
-    bottom: 14px;
-    transform: translateX(-50%);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-radius: var(--radius-pill);
-    background: var(--ink-strong);
-    color: var(--surface);
-    font-size: 12.5px;
-    font-weight: 600;
-    box-shadow: var(--shadow-float);
-    white-space: nowrap;
-  }
-  .feed {
-    flex: 1;
-    min-height: 0;
-  }
-  .feed-empty {
-    padding: 18px 16px;
-  }
-  .feed-detail {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    flex: 1;
-  }
-  .feed-detail .back-link {
-    padding: 8px 14px;
-    border-bottom: 1px solid var(--line);
-  }
-  .detail-scroll {
-    flex: 1;
-    min-height: 0;
-  }
-  .focus {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .captions {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  .caps {
-    margin-top: auto;
+  /* One column, read top to bottom: what needs you, who is speaking, what was just said. */
+  .flow {
     display: grid;
     gap: 18px;
-    padding: 10px 4px;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
   }
-  .cap {
+  .phone .flow {
+    gap: 14px;
+  }
+  .attention {
+    display: grid;
+    gap: 8px;
+  }
+  .calm {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: var(--radius-surface);
+    border: 1px dashed var(--line-strong);
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .breath {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--st-supported-dot);
+    animation: breathe 2.4s ease-in-out infinite;
+  }
+  .more {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: var(--radius-action);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-strong);
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: left;
+  }
+  .more:hover {
+    border-color: var(--line-strong);
+  }
+  .pips {
+    display: flex;
+  }
+  .pip {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    margin-right: -5px;
+    border-radius: 50%;
+    border: 2px solid var(--surface);
+    background: var(--st-context-dot);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .pip.loud {
+    background: var(--alert);
+  }
+  .more-label {
+    flex: 1;
+    margin-left: 6px;
+  }
+  .chev {
+    display: grid;
+    color: var(--muted);
+    transition: transform 0.2s ease;
+  }
+  .more.open .chev {
+    transform: rotate(180deg);
+  }
+  .rest {
     display: grid;
     gap: 6px;
   }
-  .cap p {
-    font-family: var(--font-serif);
-    font-size: calc(var(--live-size) * 1.55);
-    line-height: 1.3;
-    color: var(--ink-strong);
-  }
-  .cap.old p {
-    color: var(--muted);
-    font-size: calc(var(--live-size) * 1.2);
-  }
-  .cap-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-  }
-  .tray {
+  .now {
     display: grid;
     gap: 8px;
+  }
+  .now-head,
+  .recent-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .recent {
+    display: grid;
+    gap: 6px;
     padding-top: 10px;
     border-top: 1px solid var(--line);
   }
-  .tray-list {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 6px;
-    scroll-snap-type: x mandatory;
-  }
-  .tray-card {
-    flex: 0 0 min(280px, 78vw);
-    scroll-snap-align: start;
-    display: grid;
-    gap: 6px;
-    align-content: start;
-    padding: 12px;
-    text-align: left;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-action);
-    background: var(--surface);
-    font-size: 13px;
-    color: var(--ink-strong);
-  }
-  .tray-card.fresh {
-    border-color: var(--st-inconsistency-dot);
-    box-shadow: 0 0 0 1px var(--st-inconsistency-dot);
-  }
   .not-started {
-    display: grid;
-    justify-items: center;
-    align-content: center;
-    gap: 12px;
-    flex: 1;
-    text-align: center;
-    padding: 24px;
-    border: 1.5px dashed var(--line-strong);
-    border-radius: var(--radius-surface);
+    gap: 22px;
+    margin: 8px auto 0;
   }
-  .not-started h2 {
+  .ns-text {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+  }
+  .ns-text h2 {
     font-size: 26px;
   }
-  .not-started p {
-    max-width: 52ch;
-  }
-  .ns-icon {
+  .cast {
     display: grid;
-    place-items: center;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: var(--live-soft);
-    color: var(--live);
+    gap: 10px;
+  }
+  .cast ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .cast li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-action);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    min-width: 0;
+  }
+  .cast-text {
+    display: grid;
+    min-width: 0;
+  }
+  .cast-text strong {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink-strong);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .ns-actions {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
     gap: 8px;
   }
-  .keep {
-    max-width: 40ch;
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 10px 10px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sheet-head h2 {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink-strong);
+  }
+  .sheet-body {
+    flex: 1;
+    min-height: 0;
+    padding: 8px 0 20px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .breath {
+      animation: none;
+    }
+    .chev {
+      transition: none;
+    }
   }
 </style>

@@ -13,13 +13,13 @@
   import { live } from "../lib/live.svelte";
   import { prefs } from "../lib/prefs.svelte";
   import { href, route } from "../lib/router.svelte";
-  import { caseById, db, docsOf, findingsOfCase, hearing, openAssistant, ui } from "../lib/store.svelte";
+  import { caseById, db, docsOf, findingsOfCase, hearing, needsLook, openAssistant, ui } from "../lib/store.svelte";
 
   let { caseId, collapsed, canCollapse }: { caseId: string | null; collapsed: boolean; canCollapse: boolean } = $props();
 
   let record = $derived(caseById(caseId));
   let section = $derived(route.parts[0] === "case" ? (route.parts[2] ?? "overview") : "cases");
-  let toReview = $derived(caseId ? findingsOfCase(caseId).filter((f) => !f.reviewed).length : 0);
+  let toReview = $derived(caseId ? findingsOfCase(caseId).filter(needsLook).length : 0);
   let liveHere = $derived(!!caseId && hearing(live.hearingId)?.caseId === caseId && live.status !== "idle");
 
   let items = $derived(
@@ -35,12 +35,12 @@
 </script>
 
 <nav class="rail" class:collapsed aria-label={t("nav.caseSections")}>
-  <a class="brand" href={href("/")} aria-label="Jude">
+  <a class="brand" href={href("/cases")} aria-label="Jude">
     <span class="wordmark">{collapsed ? "j." : "jude."}</span>
   </a>
 
   {#if record}
-    <a class="case" href={href("/")} title={t("top.backToCases")}>
+    <a class="case" href={href("/cases")} title={t("top.backToCases")}>
       <span class="avatar" aria-hidden="true">{record.title.replace(/^Perkara\s+/, "").charAt(0)}</span>
       {#if !collapsed}
         <span class="case-text">
@@ -81,7 +81,7 @@
   {:else}
     <ul class="items">
       <li>
-        <a class="item" href={href("/")} aria-current={section === "cases" ? "page" : undefined} title={collapsed ? t("nav.cases") : undefined}>
+        <a class="item" href={href("/cases")} aria-current={section === "cases" ? "page" : undefined} title={collapsed ? t("nav.cases") : undefined}>
           <span class="icon"><FolderOpen size={19} strokeWidth={1.75} /></span>
           <span class="label">{t("nav.cases")}</span>
           {#if !collapsed}<span class="count">{db.cases.length}</span>{/if}

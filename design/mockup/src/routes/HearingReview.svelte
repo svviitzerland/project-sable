@@ -1,23 +1,14 @@
 <script lang="ts">
-  import {
-    ChevronLeft,
-    Download,
-    FileText,
-    MessageSquare,
-    Pause,
-    Play,
-    RotateCcw,
-    RotateCw,
-    Search,
-    SkipForward,
-  } from "@lucide/svelte";
+  import { ChevronLeft, ChevronRight, Download, Ellipsis, FileText, MessageSquare, Pause, Play, RotateCcw, RotateCw, Search } from "@lucide/svelte";
   import { tick, untrack } from "svelte";
-  import FindingDetail from "../components/FindingDetail.svelte";
-  import FindingRow from "../components/FindingRow.svelte";
-  import SpeakerTag from "../components/SpeakerTag.svelte";
-  import StatusChip from "../components/StatusChip.svelte";
-  import Waveform from "../components/Waveform.svelte";
+  import AlertCard from "../components/AlertCard.svelte";
+  import Avatar from "../components/Avatar.svelte";
+  import Backlog from "../components/Backlog.svelte";
+  import DialogueBox from "../components/DialogueBox.svelte";
+  import Menu, { type MenuItem } from "../components/Menu.svelte";
+  import SpeakerTimeline from "../components/SpeakerTimeline.svelte";
   import { fmtClock, fmtDate, fmtDuration, l, t } from "../lib/i18n";
+  import { roleTone, roleOrder } from "../lib/people";
   import { href, route } from "../lib/router.svelte";
   import {
     finding,
@@ -25,6 +16,9 @@
     findingsOf,
     hearing,
     inspect,
+    isMeaningful,
+    isShown,
+    needsLook,
     openAssistant,
     setReviewed,
     speaker,
@@ -34,36 +28,32 @@
     toastT,
     ui,
   } from "../lib/store.svelte";
+  import type { Speaker } from "../lib/types";
 
+  /**
+   * A recorded or imported hearing in review. The transcript is the page; findings worth a
+   * look open in place under the line where they happened, and a timeline shows who spoke when.
+   */
   let { hearingId }: { hearingId: string } = $props();
 
   let h = $derived(hearing(hearingId)!);
   let all = $derived(statementsOf(hearingId));
   let findings = $derived(findingsOf(hearingId));
-  let open = $derived(findings.filter((f) => !f.reviewed));
+  let attention = $derived(findings.filter(needsLook));
+  let quiet = $derived(findings.filter((f) => !isMeaningful(f)));
   let audio = $derived(h.mode === "recorded");
   let duration = $derived(h.duration ?? Math.max(60, (all.at(-1)?.t ?? 0) + 30));
 
   let width = $state(0);
-  let layout = $derived(width >= 1180 ? "three" : width >= 760 ? "two" : "one");
-  let tab = $state<"transcript" | "findings">("transcript");
-  let filter = $state<"all" | "open">("all");
-  let selected = $state<string | null>(null);
+  let wide = $derived(width >= 1000);
   let query = $state("");
-  let speakerFilter = $state("");
+  let expanded = $state<string | null>(null);
   let highlight = $state<string | null>(null);
 
   // Simulated playback.
   let playing = $state(false);
   let time = $state(0);
   let rate = $state(1);
-  let followPlayback = $state(true);
-  let current = $derived.by(() => {
-    let id: string | null = null;
-    for (const s of all) if (s.t <= time) id = s.id;
-    return id;
-  });
-
   $effect(() => {
     if (!playing) return;
     const timer = setInterval(() => {
@@ -72,87 +62,70 @@
     }, 250);
     return () => clearInterval(timer);
   });
-
-  let list: HTMLElement | undefined = $state();
+  let current = $derived.by(() => {
+    let found = all[0];
+    for (const s of all) if (s.t <= time) found = s;
+    return found;
+  });
   $effect(() => {
-    const id = current;
-    if (!playing || !followPlayback || !id) return;
-    untrack(() => list?.querySelector(`[data-sid="${id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
+    const id = current?.id;
+    if (!playing || !id) return;
+    untrack(() => document.querySelector(`[data-sid="${id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
   });
 
-  // Deep links: ?s=statement highlights a line, ?f=finding selects a finding.
+  let shown = $derived(query.trim() ? all.filter((s) => s.text.toLowerCase().includes(query.trim().toLowerCase())) : all);
+  let position = $derived(expanded ? attention.findIndex((f) => f.id === expanded) : -1);
+
+  async function jumpTo(id: string) {
+    const f = finding(id);
+    const s = f ? statement(f.statementId) : undefined;
+    if (!f || !s) return;
+    query = "";
+    expanded = f.id;
+    highlight = s.id;
+    if (audio && !playing) time = s.t;
+    await tick();
+    document.querySelector(`[data-sid="${s.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+
+  function step(delta: number) {
+    if (!attention.length) return;
+    const next = attention[(position + delta + attention.length) % attention.length] ?? attention[0];
+    void jumpTo(next.id);
+  }
+
+  // Deep links: ?f=finding opens it in place, ?s=statement highlights a line.
   $effect(() => {
-    const s = route.query.s;
     const f = route.query.f;
+    const s = route.query.s;
     untrack(() => {
-      if (f && finding(f)) selected = f;
-      else if (!selected && findings.length && layout !== "one") selected = (open[0] ?? findings[0]).id;
-      if (s && statement(s)) {
+      if (f && finding(f)) void jumpTo(f);
+      else if (s && statement(s)) {
         highlight = s;
         time = statement(s)!.t;
-        tick().then(() => list?.querySelector(`[data-sid="${s}"]`)?.scrollIntoView({ block: "center" }));
+        const sf = findingForStatement(s);
+        if (sf && isShown(sf)) expanded = sf.id;
+        tick().then(() => document.querySelector(`[data-sid="${s}"]`)?.scrollIntoView({ block: "center" }));
       }
     });
   });
 
-  let speakersHere = $derived([...new Set(all.map((s) => s.speakerId))]);
-  let shown = $derived(
-    all.filter(
-      (s) =>
-        (!speakerFilter || s.speakerId === speakerFilter) &&
-        (!query.trim() || s.text.toLowerCase().includes(query.trim().toLowerCase())),
-    ),
-  );
-  let visibleFindings = $derived(filter === "open" ? open : findings);
-  let queue = $derived(visibleFindings.map((f) => f.id));
+  // Participants with their share of talk time, like a match summary.
+  let people = $derived.by(() => {
+    const talk = new Map<string, number>();
+    all.forEach((s, i) => {
+      const sp = speaker(s.speakerId);
+      if (!sp) return;
+      const next = all[i + 1]?.t ?? duration;
+      talk.set(sp.id, (talk.get(sp.id) ?? 0) + Math.min(next - s.t, Math.max(5, s.text.length / 11)));
+    });
+    const total = [...talk.values()].reduce((a, b) => a + b, 0) || 1;
+    return [...talk.entries()]
+      .map(([id, seconds]) => ({ sp: speaker(id) as Speaker, pct: Math.round((seconds / total) * 100) }))
+      .sort((a, b) => roleOrder.indexOf(a.sp.role) - roleOrder.indexOf(b.sp.role));
+  });
 
-  function parts(text: string) {
-    const q = query.trim();
-    if (!q) return [{ text, hit: false }];
-    const out: { text: string; hit: boolean }[] = [];
-    const lower = text.toLowerCase();
-    let i = 0;
-    while (i < text.length) {
-      const j = lower.indexOf(q.toLowerCase(), i);
-      if (j < 0) {
-        out.push({ text: text.slice(i), hit: false });
-        break;
-      }
-      if (j > i) out.push({ text: text.slice(i, j), hit: false });
-      out.push({ text: text.slice(j, j + q.length), hit: true });
-      i = j + q.length;
-    }
-    return out;
-  }
-
-  function select(id: string) {
-    if (layout === "one") inspect({ kind: "finding", id }, queue);
-    else selected = id;
-    const f = finding(id);
-    const s = f ? statement(f.statementId) : undefined;
-    if (s) {
-      highlight = s.id;
-      if (audio && !playing) time = s.t;
-      tick().then(() => list?.querySelector(`[data-sid="${s.id}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
-    }
-  }
-
-  function step(delta: number) {
-    const i = selected ? queue.indexOf(selected) : -1;
-    const next = queue[Math.max(0, Math.min(queue.length - 1, i + delta))];
-    if (next) select(next);
-  }
-
-  function nextUnreviewed() {
-    const start = selected ? findings.findIndex((f) => f.id === selected) : -1;
-    const ordered = [...findings.slice(start + 1), ...findings.slice(0, start + 1)];
-    const next = ordered.find((f) => !f.reviewed);
-    if (next) select(next.id);
-  }
-
-  function seek(seconds: number) {
-    time = seconds;
-  }
+  let menu = $derived<MenuItem[]>([{ label: t("hv.export"), icon: Download, run: () => toastT("toast.exported") }]);
 
   function onkeydown(event: KeyboardEvent) {
     const el = event.target as HTMLElement;
@@ -160,103 +133,16 @@
     const key = event.key.toLowerCase();
     if (key === "j") step(1);
     else if (key === "k") step(-1);
-    else if (key === "r" && selected) {
-      const f = finding(selected);
+    else if (key === "r" && expanded) {
+      const f = finding(expanded);
       if (f) setReviewed(f, !f.reviewed);
-    } else if (key === "c" && selected) {
-      void navigator.clipboard?.writeText(finding(selected)?.question ?? "").catch(() => {});
-      toastT("toast.copied");
-    } else if (key === " " && audio && el.tagName !== "BUTTON") {
-      playing = !playing;
-    } else return;
+    } else if (key === " " && audio && el.tagName !== "BUTTON") playing = !playing;
+    else return;
     event.preventDefault();
   }
 </script>
 
 <svelte:window {onkeydown} />
-
-{#snippet transcript()}
-  <div class="tools">
-    <div class="search grow">
-      <Search size={15} />
-      <label class="sr-only" for="t-search">{t("hv.search")}</label>
-      <input id="t-search" class="field" type="search" placeholder={t("hv.search")} bind:value={query} />
-    </div>
-    <label class="sr-only" for="t-speaker">{t("hv.allSpeakers")}</label>
-    <select id="t-speaker" class="field speaker-select" bind:value={speakerFilter}>
-      <option value="">{t("hv.allSpeakers")}</option>
-      {#each speakersHere as id (id)}<option value={id}>{speakerName(speaker(id))}</option>{/each}
-    </select>
-  </div>
-  {#if query || speakerFilter}
-    <div class="filter-status small" role="status">
-      <span class="tabular">{t("hv.shownOf", { shown: shown.length, total: all.length })}</span>
-      <button class="link-btn" onclick={() => { query = ""; speakerFilter = ""; }}>{t("common.clearFilters")}</button>
-    </div>
-  {/if}
-  <ol class="lines scroll-y" bind:this={list} aria-label={t("hv.transcript")}>
-    {#each shown as s (s.id)}
-      {@const f = findingForStatement(s.id)}
-      <li class="line" data-sid={s.id} class:current={audio && current === s.id} class:highlight={highlight === s.id} class:has-finding={!!f}>
-        <button class="time tabular" disabled={!audio} onclick={() => { seek(s.t); playing = true; }} aria-label={audio ? t("hv.playFrom", { time: fmtClock(s.t) }) : fmtClock(s.t)}>{fmtClock(s.t)}</button>
-        <div class="line-body">
-          <SpeakerTag id={s.speakerId} />
-          <p>{#each parts(s.text) as p, i (i)}{#if p.hit}<mark>{p.text}</mark>{:else}{p.text}{/if}{/each}</p>
-        </div>
-        {#if f}
-          <button class="finding-link" onclick={() => select(f.id)} aria-label={`${t("hv.openFinding")}: ${t(`status.${f.status}`)}`}>
-            <StatusChip status={f.status} size="sm" />
-          </button>
-        {/if}
-      </li>
-    {:else}
-      <li class="none small muted">{t("hv.noMatch")}</li>
-    {/each}
-  </ol>
-{/snippet}
-
-{#snippet findingList()}
-  <div class="pane-head">
-    <h2>{t("hv.findings")}</h2>
-    <div class="seg" role="group" aria-label={t("fd.needsReview")}>
-      <button aria-pressed={filter === "all"} onclick={() => (filter = "all")}>{t("hv.all")} {findings.length}</button>
-      <button aria-pressed={filter === "open"} onclick={() => (filter = "open")}>{t("hv.needsReview")} {open.length}</button>
-    </div>
-  </div>
-  {#if findings.length === 0}
-    <div class="empty-pane">
-      <p class="t-serif">{t("hv.noFindingsTitle")}</p>
-      <p class="small muted">{t("hv.noFindingsText")}</p>
-    </div>
-  {:else}
-    <div class="progress">
-      <span class="small tabular">{t("common.reviewedOf", { done: findings.length - open.length, total: findings.length })}</span>
-      <span class="meter"><span style:width="{((findings.length - open.length) / findings.length) * 100}%"></span></span>
-      <button class="btn btn-sm" disabled={!open.length} onclick={nextUnreviewed}><SkipForward size={14} />{t("hv.nextUnreviewed")}</button>
-    </div>
-    <div class="flist scroll-y">
-      {#each visibleFindings as f (f.id)}
-        <FindingRow {f} showHearing={false} selected={selected === f.id && layout !== "one"} onclick={() => select(f.id)} />
-      {:else}
-        <p class="empty-pane small muted">{t("fd.queueDone")}</p>
-      {/each}
-    </div>
-  {/if}
-{/snippet}
-
-{#snippet detail()}
-  {#if selected}
-    {@const i = queue.indexOf(selected)}
-    <FindingDetail
-      id={selected}
-      inHearing
-      onplay={audio ? (s) => { seek(s); playing = true; } : undefined}
-      nav={i >= 0 ? { index: i, total: queue.length, prev: () => step(-1), next: () => step(1) } : undefined}
-    />
-  {:else}
-    <p class="empty-pane small muted">{t("hv.selectFinding")}</p>
-  {/if}
-{/snippet}
 
 <div class="review" bind:clientWidth={width}>
   <header class="head">
@@ -265,78 +151,131 @@
       <h1 class="t-serif"><span class="num">{t("common.hearingN", { n: h.number })}</span> {l(h.title)}</h1>
       <div class="actions">
         <button class="btn" onclick={() => openAssistant({ kind: "hearing", id: h.id })}><MessageSquare size={16} />{t("top.ask")}</button>
-        <button class="btn" onclick={() => toastT("toast.exported")}><Download size={16} />{t("hv.export")}</button>
+        <Menu label={t("common.more")} items={menu}>
+          {#snippet button()}<span class="btn btn-ghost btn-icon" aria-hidden="true"><Ellipsis size={18} /></span>{/snippet}
+        </Menu>
       </div>
     </div>
     <p class="meta small muted">
-      {fmtDate(h.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · {t(`mode.${h.mode}`)}{h.duration ? ` · ${fmtDuration(h.duration)}` : ""} · {t("common.statements", { n: all.length })}
+      {fmtDate(h.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · {t(`mode.${h.mode}`)}{h.duration ? ` · ${fmtDuration(h.duration)}` : ""}
     </p>
   </header>
 
   {#if audio}
-    <div class="player" role="group" aria-label={t("hv.audioSim")}>
-      <button class="btn btn-ghost btn-icon" aria-label={t("hv.back10")} onclick={() => seek(Math.max(0, time - 10))}><RotateCcw size={17} /></button>
-      <button class="btn btn-primary btn-icon play" aria-label={playing ? t("hv.pause") : t("hv.play")} onclick={() => (playing = !playing)}>
-        {#if playing}<Pause size={18} />{:else}<Play size={18} />{/if}
-      </button>
-      <button class="btn btn-ghost btn-icon" aria-label={t("hv.fwd10")} onclick={() => seek(Math.min(duration, time + 10))}><RotateCw size={17} /></button>
-      <span class="clock tabular small">{fmtClock(time)} / {fmtClock(duration)}</span>
-      <Waveform {duration} {time} markers={findings} statementOf={(f) => statement(f.statementId)} onseek={seek} onmarker={(f) => select(f.id)} />
-      <label class="sr-only" for="rate">{t("hv.speed")}</label>
-      <select id="rate" class="field rate" bind:value={rate}>
-        <option value={1}>1×</option>
-        <option value={1.5}>1.5×</option>
-        <option value={2}>2×</option>
-      </select>
-      <label class="follow small"><input type="checkbox" bind:checked={followPlayback} />{t("hv.followPlayback")}</label>
-      <span class="sim xsmall muted">{t("hv.audioSim")}</span>
-    </div>
+    <section class="player" aria-label={t("hv.audioSim")}>
+      <div class="controls">
+        <button class="btn btn-ghost btn-icon" aria-label={t("hv.back10")} onclick={() => (time = Math.max(0, time - 10))}><RotateCcw size={17} /></button>
+        <button class="btn btn-primary btn-icon play" aria-label={playing ? t("hv.pause") : t("hv.play")} onclick={() => (playing = !playing)}>
+          {#if playing}<Pause size={18} />{:else}<Play size={18} />{/if}
+        </button>
+        <button class="btn btn-ghost btn-icon" aria-label={t("hv.fwd10")} onclick={() => (time = Math.min(duration, time + 10))}><RotateCw size={17} /></button>
+        <span class="clock tabular small">{fmtClock(time)} / {fmtClock(duration)}</span>
+        <label class="sr-only" for="rate">{t("hv.speed")}</label>
+        <select id="rate" class="field rate" bind:value={rate}>
+          <option value={1}>1×</option>
+          <option value={1.5}>1.5×</option>
+          <option value={2}>2×</option>
+        </select>
+        <span class="sim xsmall muted">{t("hv.audioSim")}</span>
+      </div>
+      <SpeakerTimeline {hearingId} {duration} {time} markers={findings.filter(isShown)} single={width < 600} onseek={(s) => (time = s)} onmarker={(f) => jumpTo(f.id)} />
+      {#if current && (playing || time > 0)}
+        {@const cf = findingForStatement(current.id)}
+        <DialogueBox speakerId={current.speakerId} text={current.text} time={current.t} speaking={playing} compact mark={cf && isShown(cf) ? cf.said : ""} />
+      {/if}
+    </section>
   {:else}
     <p class="notice"><FileText size={14} />{t("hv.noAudio")}</p>
   {/if}
 
-  {#if layout === "one"}
-    <div class="seg tabs" role="tablist">
-      <button role="tab" aria-selected={tab === "transcript"} onclick={() => (tab = "transcript")}>{t("hv.transcript")}</button>
-      <button role="tab" aria-selected={tab === "findings"} onclick={() => (tab = "findings")}>{t("hv.findings")} <span class="badge" class:badge-amber={open.length > 0}>{open.length || findings.length}</span></button>
-    </div>
-    <section class="pane one">
-      {#if tab === "transcript"}{@render transcript()}{:else}{@render findingList()}{/if}
-    </section>
-  {:else}
-    <div class="body {layout}">
-      <section class="pane tpane" aria-label={t("hv.transcript")}>{@render transcript()}</section>
-      {#if layout === "three"}
-        <section class="pane lpane" aria-label={t("hv.findings")}>{@render findingList()}</section>
-        <section class="pane dpane scroll-y" aria-label={t("fd.title")}>{@render detail()}</section>
-      {:else}
-        <section class="pane rpane" aria-label={t("hv.findings")}>
-          {#if selected}
-            <button class="back-row" onclick={() => (selected = null)}><ChevronLeft size={16} />{t("hv.findings")} · {t("common.toReview", { n: open.length })}</button>
-            <div class="scroll-y fill">{@render detail()}</div>
-          {:else}
-            {@render findingList()}
-          {/if}
-        </section>
+  <div class="content" class:wide>
+    <section class="transcript" aria-label={t("hv.transcript")}>
+      <div class="tools">
+        <div class="search grow">
+          <Search size={15} />
+          <label class="sr-only" for="t-search">{t("hv.search")}</label>
+          <input id="t-search" class="field" type="search" placeholder={t("hv.search")} bind:value={query} />
+        </div>
+        {#if attention.length}
+          <div class="jump" role="group" aria-label={t("attn.title")}>
+            <span class="jump-label"><span class="bang" aria-hidden="true">!</span>{t("attn.count", { n: attention.length })}</span>
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label={t("attn.prev")} onclick={() => step(-1)}><ChevronLeft size={16} /></button>
+            {#if position >= 0}<span class="tabular small muted">{t("attn.position", { i: position + 1, n: attention.length })}</span>{/if}
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label={t("attn.next")} onclick={() => step(1)}><ChevronRight size={16} /></button>
+          </div>
+        {:else if findings.length}
+          <span class="small muted">{t("attn.allChecked")}</span>
+        {/if}
+      </div>
+      {#if query.trim()}
+        <p class="filter small muted" role="status">
+          {t("hv.shownOf", { shown: shown.length, total: all.length })}
+          <button class="link-btn" onclick={() => (query = "")}>{t("common.clearFilters")}</button>
+        </p>
       {/if}
-    </div>
-  {/if}
+      <Backlog
+        statements={shown}
+        currentId={audio && (playing || time > 0) ? current?.id : null}
+        highlightId={highlight}
+        expandedId={expanded}
+        {query}
+        onplay={audio ? (s) => { time = s; playing = true; } : undefined}
+        ontoggle={(id) => (expanded = expanded === id ? null : id)}
+      />
+      {#if shown.length === 0}<p class="none small muted">{t("hv.noMatch")}</p>{/if}
+    </section>
+
+    {#if wide}
+      <aside class="rail">
+        <section class="card block">
+          <h2>{t("attn.title")} {#if attention.length}<span class="badge badge-amber">{attention.length}</span>{/if}</h2>
+          {#each attention as f (f.id)}
+            <AlertCard {f} mode="compact" onopen={() => jumpTo(f.id)} />
+          {:else}
+            <p class="small muted">{findings.length ? t("attn.allChecked") : t("hv.noFindingsText")}</p>
+          {/each}
+        </section>
+        <section class="card block">
+          <h2>{t("rv.participants")}</h2>
+          <ul class="people">
+            {#each people as p (p.sp.id)}
+              <li data-tone={roleTone(p.sp.role)}>
+                <Avatar id={p.sp.id} size="sm" speaking={playing && speaker(current?.speakerId ?? "")?.id === p.sp.id} />
+                <span class="person">
+                  <span class="person-name">{speakerName(p.sp)}</span>
+                  <span class="bar"><span style:width="{p.pct}%"></span></span>
+                </span>
+                <span class="xsmall muted tabular">{p.pct}%</span>
+              </li>
+            {/each}
+          </ul>
+        </section>
+        {#if quiet.length}
+          <details class="card block quiet">
+            <summary>{t("attn.others")} · {quiet.length}</summary>
+            <p class="xsmall muted">{t("attn.othersHint")}</p>
+            {#each quiet as f (f.id)}
+              <AlertCard {f} mode="compact" onopen={() => inspect({ kind: "finding", id: f.id })} />
+            {/each}
+          </details>
+        {/if}
+      </aside>
+    {/if}
+  </div>
 </div>
 
 <style>
   .review {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 14px clamp(12px, 2.4cqi, 28px) 16px;
-    min-height: calc(100dvh - var(--topbar-h));
+    gap: 14px;
+    padding: 14px clamp(12px, 2.4cqi, 28px) 28px;
   }
   .head {
     display: grid;
     gap: 6px;
   }
-  .back,
-  .back-row {
+  .back {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -345,16 +284,9 @@
     color: var(--muted);
     text-decoration: none;
     width: fit-content;
-    min-height: 28px;
   }
-  .back:hover,
-  .back-row:hover {
+  .back:hover {
     color: var(--ink-strong);
-  }
-  .back-row {
-    width: 100%;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--line);
   }
   .title-row {
     display: flex;
@@ -377,207 +309,165 @@
   }
   .actions {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
   }
   .player {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 10px;
-    padding: 8px 12px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-action);
-    background: var(--surface);
     position: sticky;
     top: calc(var(--topbar-h) + 6px);
     z-index: 5;
+    display: grid;
+    gap: 10px;
+    padding: 10px 14px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-surface);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 6px 18px rgb(20 40 30 / 0.06);
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
   }
   .play {
     border-radius: 50%;
   }
   .clock {
     white-space: nowrap;
-    min-width: 128px;
-  }
-  .player :global(.wave) {
-    flex: 1 1 220px;
+    margin-right: 4px;
   }
   .rate {
     width: auto;
-    min-height: 32px;
+    min-height: 30px;
     padding: 2px 26px 2px 8px;
     font-size: 12px;
   }
-  .follow {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .follow input {
-    accent-color: var(--primary);
-  }
   .sim {
+    margin-left: auto;
     font-style: italic;
   }
-  .body {
-    flex: 1;
+  .content {
     display: grid;
-    gap: 14px;
-    min-height: 0;
+    gap: 16px;
+    align-items: start;
   }
-  .body.two {
-    grid-template-columns: minmax(0, 1fr) minmax(340px, 0.9fr);
+  .content.wide {
+    grid-template-columns: minmax(0, 1fr) 320px;
   }
-  .body.three {
-    grid-template-columns: minmax(0, 0.85fr) 300px minmax(420px, 1.15fr);
-  }
-  .pane {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    max-height: calc(100dvh - var(--topbar-h) - 190px);
-    overflow: hidden;
-  }
-  .pane.one {
-    max-height: none;
-    overflow: visible;
-  }
-  .dpane {
-    display: block;
-  }
-  .fill {
-    flex: 1;
-    min-height: 0;
-  }
-  .tabs {
-    display: flex;
-  }
-  .tabs button {
-    flex: 1;
-    justify-content: center;
+  .transcript {
+    display: grid;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-surface);
+    padding-bottom: 10px;
+    min-width: 0;
   }
   .tools {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px 12px;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 12px;
     border-bottom: 1px solid var(--line);
   }
   .grow {
-    flex: 1 1 200px;
+    flex: 1 1 220px;
   }
-  .speaker-select {
-    width: auto;
-    flex: 0 1 200px;
+  .jump {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
   }
-  .filter-status {
+  .jump-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-strong);
+    margin-right: 4px;
+  }
+  .bang {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--alert);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .filter {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
-    padding: 6px 14px;
-    background: var(--sunken);
+    padding: 4px 14px;
   }
-  .lines {
-    flex: 1;
-    min-height: 0;
+  .none {
+    padding: 16px;
   }
-  .one .lines {
-    overflow: visible;
+  .rail {
+    position: sticky;
+    top: calc(var(--topbar-h) + 12px);
+    display: grid;
+    gap: 12px;
   }
-  .line {
+  .block {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+  }
+  .block h2,
+  .block summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-strong);
+  }
+  .block summary {
+    cursor: pointer;
+  }
+  .people {
+    display: grid;
+    gap: 8px;
+  }
+  .people li {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 10px;
-    padding: var(--row-pad) 14px;
-    border-bottom: 1px solid var(--line);
-    align-items: start;
+    align-items: center;
   }
-  .line.current {
-    background: color-mix(in srgb, var(--live-soft) 60%, transparent);
-    box-shadow: inset 3px 0 0 var(--live);
-  }
-  .line.highlight {
-    background: var(--selected);
-  }
-  .line-body {
+  .person {
     display: grid;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
   }
-  .line-body p {
-    color: var(--ink-strong);
-    line-height: 1.5;
+  .person-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .time {
-    font-size: 11.5px;
-    color: var(--muted);
-    padding: 2px 4px;
-    border-radius: 4px;
-    margin-top: 1px;
-  }
-  .time:not(:disabled):hover {
-    background: var(--sunken);
-    color: var(--ink-strong);
-  }
-  .time:disabled {
-    opacity: 1;
-    cursor: default;
-  }
-  .finding-link {
-    border-radius: 4px;
-  }
-  .none {
-    padding: 20px 14px;
-  }
-  .progress {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 10px;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--line);
-  }
-  .meter {
-    flex: 1 1 60px;
-    height: 6px;
+  .bar {
+    height: 5px;
     border-radius: 3px;
     background: var(--sunken);
     overflow: hidden;
   }
-  .meter span {
+  .bar span {
     display: block;
     height: 100%;
-    background: var(--st-supported-dot);
+    background: var(--tone);
   }
-  .flist {
-    flex: 1;
-    min-height: 0;
-  }
-  .one .flist {
-    overflow: visible;
-  }
-  .empty-pane {
-    padding: 22px 16px;
-    display: grid;
-    gap: 6px;
-  }
-  .empty-pane .t-serif {
-    font-size: 20px;
-  }
-  @container main (max-width: 900px) {
-    .player :global(.wave) {
-      order: 10;
-      flex-basis: 100%;
-    }
-  }
-  @container main (max-width: 759px) {
+  @container main (max-width: 640px) {
     .player {
       position: static;
-    }
-    .clock {
-      min-width: 0;
     }
     .sim {
       display: none;

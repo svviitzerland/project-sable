@@ -1,9 +1,11 @@
 <script lang="ts">
   import { ArrowRight, ArrowUp, AudioLines, CalendarClock, FilePlus2, FileText, Mic, Upload } from "@lucide/svelte";
-  import FindingRow from "../components/FindingRow.svelte";
+  import AlertCard from "../components/AlertCard.svelte";
   import HearingRow from "../components/HearingRow.svelte";
+  import Avatar from "../components/Avatar.svelte";
   import { fmtClock, fmtDate, l, t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
+  import { roleTone } from "../lib/people";
   import { go } from "../lib/router.svelte";
   import { suggestionsFor } from "../lib/services";
   import {
@@ -15,19 +17,21 @@
     hearing,
     hearingsOf,
     inspect,
+    needsLook,
     openAssistant,
     passagesOfCase,
+    speaker,
+    speakerName,
     statementsOf,
     ui,
   } from "../lib/store.svelte";
-  import type { Status } from "../lib/types";
 
   let { caseId }: { caseId: string } = $props();
 
   let c = $derived(caseById(caseId)!);
   let hs = $derived(hearingsOf(caseId));
   let all = $derived(findingsOfCase(caseId));
-  let open = $derived(all.filter((f) => !f.reviewed));
+  let attention = $derived(all.filter(needsLook));
   let docs = $derived(docsOf(caseId));
   let links = $derived(connectionsOfCase(caseId));
   let suggested = $derived(links.filter((x) => !x.reviewed).length);
@@ -35,8 +39,6 @@
   let empty = $derived(docs.length === 0 && hs.length === 0);
   let question = $state("");
 
-  const order: Status[] = ["potential_inconsistency", "context_needed", "insufficient_evidence", "supported"];
-  let byStatus = $derived(order.map((s) => ({ s, n: open.filter((f) => f.status === s).length })));
 
   function ask(text?: string) {
     const q = (text ?? question).trim();
@@ -97,10 +99,17 @@
           <div class="live-head">
             <span class="live-state"><span class="live-dot"></span>{t("live.badge")} · <span class="tabular">{fmtClock(live.elapsed)}</span></span>
             <h2 class="t-serif">{t("ov.liveTitle", { n: liveH.number })}</h2>
-            <p class="small muted">{t("ov.liveText", { statements: statementsOf(liveH.id).length, findings: findingsOf(liveH.id).length })}</p>
+            <p class="small muted">{t("attn.listening")} · {findingsOf(liveH.id).filter(needsLook).length ? t("attn.count", { n: findingsOf(liveH.id).filter(needsLook).length }) : t("attn.none")}</p>
           </div>
           {#if live.partial || latest}
-            <blockquote class="live-quote clamp-2">“{live.partial || latest?.text}”</blockquote>
+            {@const who = speaker(live.partial ? live.partialSpeaker : (latest?.speakerId ?? ""))}
+            <div class="live-now">
+              <Avatar id={who?.id ?? ""} size="md" speaking={!!live.partial && live.status === "recording"} />
+              <div class="live-now-text">
+                <span class="live-name" data-tone={roleTone(who?.role)}>{speakerName(who)}</span>
+                <blockquote class="live-quote clamp-2">“{live.partial || latest?.text}”</blockquote>
+              </div>
+            </div>
           {/if}
           <button class="btn btn-live" onclick={() => go(`/case/${caseId}/hearings/${liveH.id}`)}>{t("ov.openLive")}<ArrowRight size={16} /></button>
         </section>
@@ -108,29 +117,18 @@
 
       <section class="card review">
         <header class="card-head">
-          <h2>{t("ov.review")}</h2>
-          <span class="small muted tabular">{t("common.reviewedOf", { done: all.length - open.length, total: all.length })}</span>
+          <h2>{t("attn.title")}</h2>
+          {#if attention.length}<span class="badge badge-amber">{attention.length}</span>{/if}
         </header>
-        {#if open.length}
-          <p class="big">{t("ov.reviewText", { n: open.length })}</p>
-          <div class="bar" role="img" aria-label={byStatus.map((x) => `${t(`status.${x.s}`)}: ${x.n}`).join(", ")}>
-            {#each byStatus as x (x.s)}
-              {#if x.n}<span class="seg-{x.s}" style:flex={x.n}></span>{/if}
-            {/each}
-          </div>
-          <ul class="legend">
-            {#each byStatus as x (x.s)}
-              {#if x.n}<li><span class="sw seg-{x.s}"></span>{t(`status.${x.s}`)} <strong class="tabular">{x.n}</strong></li>{/if}
-            {/each}
-          </ul>
+        {#if attention.length}
           <div class="list">
-            {#each open.slice(0, 3) as f (f.id)}
-              <FindingRow {f} quote={false} onclick={() => inspect({ kind: "finding", id: f.id }, open.map((x) => x.id))} />
+            {#each attention.slice(0, 3) as f (f.id)}
+              <AlertCard {f} mode="compact" onopen={() => inspect({ kind: "finding", id: f.id }, attention.map((x) => x.id))} />
             {/each}
           </div>
-          <button class="btn btn-primary" onclick={() => go(`/case/${caseId}/findings?review=1`)}>{t("ov.startReview")}<ArrowRight size={16} /></button>
+          <button class="btn btn-primary" onclick={() => go(`/case/${caseId}/findings`)}>{t("ov.startReview")}<ArrowRight size={16} /></button>
         {:else}
-          <p class="big">{all.length ? t("ov.allReviewed") : t("hv.noFindingsTitle")}</p>
+          <p class="big">{all.length ? t("attn.allChecked") : t("hv.noFindingsTitle")}</p>
         {/if}
       </section>
 
@@ -317,9 +315,25 @@
     font-weight: 700;
     color: var(--live);
   }
-  .live-quote {
+  .live-now {
     grid-column: 1 / -1;
     grid-row: 2;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+  }
+  .live-now-text {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .live-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--tone);
+  }
+  .live-quote {
     font-family: var(--font-serif);
     font-size: 18px;
     color: var(--ink);
@@ -328,40 +342,13 @@
     .live-card {
       grid-template-columns: 1fr;
     }
-    .live-quote {
+    .live-now {
       grid-row: auto;
     }
   }
-  .bar {
-    display: flex;
-    height: 10px;
-    border-radius: 5px;
-    overflow: hidden;
-    gap: 2px;
-  }
-  .seg-potential_inconsistency { background: var(--st-inconsistency-dot); }
-  .seg-context_needed { background: var(--st-context-dot); }
-  .seg-insufficient_evidence { background: var(--st-insufficient-dot); }
-  .seg-supported { background: var(--st-supported-dot); }
-  .legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    font-size: 12.5px;
-  }
-  .legend li {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .sw {
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-  }
   .list {
-    border-top: 1px solid var(--line);
-    margin: 0 -18px;
+    display: grid;
+    gap: 8px;
   }
   .review > .btn {
     justify-self: start;

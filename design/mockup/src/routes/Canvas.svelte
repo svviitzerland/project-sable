@@ -6,14 +6,16 @@
 
   /** Side-by-side device frames of one screen. Each frame is the real mockup in an iframe. */
   const screens = [
-    { path: "/", label: "Cases" },
+    { path: "/", label: "Landing page" },
+    { path: "/cases", label: "Cases" },
     { path: "/case/c1", label: "Case overview" },
     { path: "/case/c1/hearings", label: "Hearings" },
     { path: "/case/c1/hearings/h3", label: "Live hearing" },
     { path: "/case/c1/hearings/h2", label: "Recorded hearing (review)" },
     { path: "/case/c1/findings", label: "Findings queue" },
     { path: "/case/c1/evidence", label: "Evidence · documents" },
-    { path: "/case/c1/evidence?view=map", label: "Evidence · map" },
+    { path: "/case/c1/findings?view=board&start=finding:f1", label: "Findings · board" },
+    { path: "/case/c1/evidence?view=connections&of=statement:s208", label: "Evidence · connections" },
     { path: "/case/c1/evidence/doc/d3", label: "Document reader" },
     { path: "/case/c3", label: "Empty case" },
     { path: "/map", label: "Feature map" },

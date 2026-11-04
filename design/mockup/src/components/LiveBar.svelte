@@ -3,12 +3,15 @@
   import { fmtClock, l, t } from "../lib/i18n";
   import { live, pause, resume } from "../lib/live.svelte";
   import { go } from "../lib/router.svelte";
-  import { hearing, statementsOf } from "../lib/store.svelte";
+  import { findingsOf, hearing, needsLook, speaker, statementsOf } from "../lib/store.svelte";
+  import Avatar from "./Avatar.svelte";
 
   let { phone }: { phone: boolean } = $props();
 
   let h = $derived(hearing(live.hearingId));
   let latest = $derived(h ? statementsOf(h.id).at(-1) : undefined);
+  let activeId = $derived(speaker(live.partial ? live.partialSpeaker : (latest?.speakerId ?? ""))?.id ?? "");
+  let attention = $derived(h ? findingsOf(h.id).filter(needsLook).length : 0);
 </script>
 
 <!-- A persistent "now playing" bar: the hearing keeps recording while the lawyer checks other screens. -->
@@ -20,14 +23,15 @@
         <span class="badge-text">{live.status === "paused" ? t("live.paused") : t("live.badge")}</span>
         <span class="tabular clock">{fmtClock(live.elapsed)}</span>
       </span>
+      {#if activeId}<Avatar id={activeId} size="sm" speaking={!!live.partial && live.status === "recording"} />{/if}
       <span class="what">
         <span class="title">{t("common.hearingN", { n: h.number })} · {l(h.title)}</span>
         {#if !phone}
           <span class="snippet" aria-hidden="true">{live.partial || latest?.text || ""}</span>
         {/if}
       </span>
-      {#if live.unseen}
-        <span class="badge badge-amber">{t("common.findings", { n: live.unseen })}</span>
+      {#if attention}
+        <span class="badge badge-amber">! {t("attn.count", { n: attention })}</span>
       {/if}
       <span class="go">{#if !phone}{t("hearings.returnLive")}{/if}<ArrowRight size={16} /></span>
     </button>

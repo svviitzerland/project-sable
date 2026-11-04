@@ -69,13 +69,13 @@
 <header class="topbar" class:phone>
   {#if phone}
     {#if record}
-      <a class="btn btn-ghost btn-icon" href={href("/")} aria-label={t("top.backToCases")}><ChevronLeft size={20} /></a>
+      <a class="btn btn-ghost btn-icon" href={href("/cases")} aria-label={t("top.backToCases")}><ChevronLeft size={20} /></a>
       <div class="phone-title">
         <span class="phone-case">{record.title}</span>
         <span class="phone-ref">{record.reference || t("label.synthetic")}</span>
       </div>
     {:else}
-      <a class="wordmark" href={href("/")}>jude.</a>
+      <a class="wordmark" href={href("/cases")}>jude.</a>
       <div class="flex"></div>
     {/if}
   {:else}

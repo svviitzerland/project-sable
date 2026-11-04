@@ -24,6 +24,7 @@
   import HearingLive from "./routes/HearingLive.svelte";
   import HearingReview from "./routes/HearingReview.svelte";
   import Hearings from "./routes/Hearings.svelte";
+  import Landing from "./routes/Landing.svelte";
   import Moodboard from "./routes/Moodboard.svelte";
 
   startEngine();
@@ -139,6 +140,10 @@
 
 {#if route.parts[0] === "canvas"}
   <Canvas />
+{:else if route.parts.length === 0}
+  <Landing />
+  <Toasts />
+  {#if !embedded}<MockToolbar {phone} offsetRight={0} />{/if}
 {:else}
   <a class="skip" href="#main">{t("nav.skip")}</a>
   <div class="shell" class:phone class:docked={assistantVariant === "docked" && ui.assistantOpen && !!caseId}>

@@ -31,6 +31,8 @@ export interface Speaker {
   role: Role;
   /** Voice matches are suggestions until a person confirms the name. */
   confirmed: boolean;
+  /** An unidentified voice the user assigned to a participant. */
+  alias?: string;
 }
 
 export interface CaseRecord {
@@ -94,6 +96,8 @@ export interface Passage {
 export interface FindingSource {
   passageId: string;
   relation: Relation;
+  /** The phrase in the passage that the testimony is compared with. */
+  match?: string;
 }
 
 export interface Finding {
@@ -107,6 +111,8 @@ export interface Finding {
   uncertainty?: L10n;
   /** Suggested question in the courtroom language (Indonesian). */
   question: string;
+  /** The phrase in the testimony that the finding is about. */
+  said?: string;
   sources: FindingSource[];
   legal?: string[];
   reviewed: boolean;
