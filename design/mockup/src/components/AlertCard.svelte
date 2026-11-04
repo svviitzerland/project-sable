@@ -70,7 +70,7 @@
         <div class="side said">
           <span class="label">{now ? t("attn.saidNow") : t("attn.said")}</span>
           <p class="quote">“<Quote text={st.text} mark={f.said} around={brief ? 4 : 0} />”</p>
-          {#if mode !== "inline" && !brief}<SpeakerTag id={st.speakerId} compact />{/if}
+          {#if mode !== "inline"}<SpeakerTag id={st.speakerId} compact />{/if}
         </div>
         {#if p && d}
           <div class="side source">
