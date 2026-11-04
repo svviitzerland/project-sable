@@ -461,10 +461,9 @@
   }
   .driver-tag {
     flex-shrink: 0;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     color: var(--surface);
     background: var(--ink-strong);
     padding: 1px 6px;

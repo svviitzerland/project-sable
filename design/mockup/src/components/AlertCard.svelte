@@ -70,7 +70,7 @@
         <div class="side said">
           <span class="label">{now ? t("attn.saidNow") : t("attn.said")}</span>
           <p class="quote">“<Quote text={st.text} mark={f.said} around={brief ? 4 : 0} />”</p>
-          {#if mode !== "inline"}<SpeakerTag id={st.speakerId} compact />{/if}
+          {#if mode !== "inline" && !brief}<SpeakerTag id={st.speakerId} compact />{/if}
         </div>
         {#if p && d}
           <div class="side source">
@@ -86,7 +86,7 @@
         {t("attn.ask")}
         {#if brief}<button class="copy-mini" onclick={copy} aria-label={t("attn.copy")} title={t("attn.copy")}><Copy size={13} /></button>{/if}
       </span>
-      <p class="t-serif" class:clamp-2={brief}>{f.question}</p>
+      <p class="t-serif">{f.question}</p>
     </div>
     <footer class="actions">
       {#if !brief}<button class="btn btn-sm btn-ghost" onclick={copy}><Copy size={14} />{t("attn.copy")}</button>{/if}

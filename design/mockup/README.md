@@ -14,7 +14,7 @@ pnpm install
 pnpm dev          # http://localhost:5173, also reachable from phones on the same network
 ```
 
-`pnpm build` writes a static site to `dist/` (relative paths, hash routing, so any static server or sub-path works) and `pnpm preview` serves it on port 4173. `pnpm check` runs svelte-check. Fonts come from `apps/web/static/fonts`; the landing page also uses the case-file photograph and ivory paper texture from `apps/web/static/images`.
+`pnpm build` writes a static site to `dist/` (relative paths, hash routing, so any static server or sub-path works) and `pnpm preview` serves it on port 4173. `pnpm check` runs svelte-check. Fonts come from `apps/web/static/fonts`; the landing page also uses the case-file photograph and ivory paper texture from `apps/web/static/images`, plus a cloth tile cut from that photograph (`src/assets/case-cloth.webp`, origin in its sidecar).
 
 The visual system is the repository's `DESIGN.md` ("The Editorial Case File"). Design work on the mockup goes through the Impeccable skill (`bunx impeccable install`, see `AGENTS.md`), which reads `PRODUCT.md`, `DESIGN.md` and `.impeccable/`.
 

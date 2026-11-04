@@ -3,6 +3,7 @@
   import { onMount, tick } from "svelte";
   import caseFiles from "../../../../apps/web/static/images/jude-case-files.webp";
   import ivoryPaper from "../../../../apps/web/static/images/ivory-paper.webp";
+  import cloth from "../assets/case-cloth.webp";
   import { samplePage } from "../lib/data";
   import { t, type Key } from "../lib/i18n";
   import { prefs } from "../lib/prefs.svelte";
@@ -111,7 +112,7 @@
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && menuOpen && closeMenu()} />
 
-<div class="lp" style:--lp-case-files="url({caseFiles})" style:--lp-ivory="url({ivoryPaper})">
+<div class="lp" style:--lp-case-files="url({caseFiles})" style:--lp-ivory="url({ivoryPaper})" style:--lp-cloth="url({cloth})">
   <button class="skip" onclick={() => scrollToId("lp-main")}>{t("lp.skip")}</button>
 
   <header class="cover">
@@ -179,11 +180,7 @@
           </div>
           <div class="finding">
             <span class="pill">{t("status.potential_inconsistency")}</span>
-            <svg class="thread" viewBox="0 0 240 16" preserveAspectRatio="none" aria-hidden="true">
-              <circle cx="4" cy="8" r="3.5" />
-              <path d="M8,8 C70,1 170,15 232,8" pathLength="1" />
-              <circle cx="236" cy="8" r="3.5" />
-            </svg>
+            <span class="thread" aria-hidden="true"><i class="end"></i><i class="line"></i><i class="end"></i></span>
             <p class="check">{t("lp.check")}</p>
           </div>
           <div class="side earlier">
@@ -242,7 +239,7 @@
             <h3>{t("lp.s1.title")}</h3>
             <p>{t("lp.s1.text")}</p>
           </div>
-          <div class="plate" style:--pos="6% 10%">
+          <div class="plate">
             <div class="vignette listen paper">
               <div class="v-line quiet">
                 <span class="v-face" data-tone="judge">HK</span>
@@ -264,7 +261,7 @@
             <h3>{t("lp.s2.title")}</h3>
             <p>{t("lp.s2.text")}</p>
           </div>
-          <div class="plate" style:--pos="34% 4%">
+          <div class="plate">
             <div class="vignette reading paper">
               <p class="v-head">{t("lp.v2.title")}</p>
               <ul>
@@ -282,7 +279,7 @@
             <h3>{t("lp.s3.title")}</h3>
             <p>{t("lp.s3.text")}</p>
           </div>
-          <div class="plate" style:--pos="16% 22%">
+          <div class="plate">
             <div class="vignette examine paper">
               <span class="pill">{t("status.potential_inconsistency")}</span>
               <p class="v-title">{t("lp.v3.title")}</p>
@@ -305,7 +302,8 @@
         <h2 class="headline" id="lp-signal-title">{t("lp.signalTitle")}</h2>
         <p>{t("lp.signalLead")}</p>
       </header>
-      <ol class="transcript paper">
+      <figure class="transcript paper">
+      <ol class="t-list">
         {#each quietLines as line (line.text)}
           <li class="t-row">
             <span class="t-who">{t(line.who)}</span>
@@ -325,37 +323,47 @@
           <span></span>
         </li>
       </ol>
+      <figcaption class="panel-sample">{t("lp.sample")}</figcaption>
+      </figure>
     </section>
 
     <section class="spread wrap" aria-labelledby="lp-page-title">
-      <div class="page paper" aria-label={t("lp.sample")}>
-        <p class="page-folio tabular">{samplePage.folio}</p>
-        {#each samplePage.heading as line (line)}<p class="page-heading">{line}</p>{/each}
-        <p class="page-intro">{samplePage.intro}</p>
-        <ol class="page-items">
-          {#each samplePage.items as item (item.n)}
-            {@const parts = around(item.a, item.mark)}
-            <li class:marked={!!item.mark}>
-              <span class="page-n tabular">{item.n}.</span>
-              <div>
-                <p><span class="page-tag">{samplePage.labels.q}:</span> {item.q}</p>
-                <p><span class="page-tag">{samplePage.labels.a}:</span> {parts[0]}{#if parts[1]}<mark>{parts[1]}</mark>{/if}{parts[2]}</p>
-                {#if item.mark}
-                  <aside class="margin-note">
-                    <span class="pill small">{t("status.potential_inconsistency")}</span>
-                    <p>{t("lp.pageNote")}</p>
-                  </aside>
-                {/if}
-              </div>
-            </li>
-          {/each}
-        </ol>
-        <p class="page-sample">{t("lp.sample")}</p>
-      </div>
-      <div class="spread-caption">
+      <header class="section-head">
         <h2 class="headline" id="lp-page-title">{t("lp.pageTitle")}</h2>
-        <p>{t("lp.pageText")}</p>
-        <p class="quiet">{t("lp.pageOriginal")}</p>
+        <div class="spread-text">
+          <p>{t("lp.pageText")}</p>
+          <p class="quiet">{t("lp.pageOriginal")}</p>
+        </div>
+      </header>
+      <div class="page-row">
+        <div class="page paper" aria-label={t("lp.sample")}>
+          <p class="page-folio tabular">{samplePage.folio}</p>
+          {#each samplePage.heading as line (line)}<p class="page-heading">{line}</p>{/each}
+          <p class="page-intro">{samplePage.intro}</p>
+          <ol class="page-items">
+            {#each samplePage.items as item (item.n)}
+              {@const parts = around(item.a, item.mark)}
+              <li>
+                <span class="page-n tabular">{item.n}.</span>
+                <div class="page-qa">
+                  <p><span class="page-tag">{samplePage.labels.q}:</span> {item.q}</p>
+                  <p><span class="page-tag">{samplePage.labels.a}:</span> {parts[0]}{#if parts[1]}<mark>{parts[1]}</mark>{/if}{parts[2]}</p>
+                  {#if item.mark}
+                    <aside class="margin-note in-margin">
+                      <span class="pill small">{t("status.potential_inconsistency")}</span>
+                      <p>{t("lp.pageNote")}</p>
+                    </aside>
+                  {/if}
+                </div>
+              </li>
+            {/each}
+          </ol>
+          <p class="page-sample">{t("lp.sample")}</p>
+        </div>
+        <aside class="margin-note below-page">
+          <span class="pill small">{t("status.potential_inconsistency")}</span>
+          <p>{t("lp.pageNote")}</p>
+        </aside>
       </div>
     </section>
 
@@ -373,11 +381,19 @@
 
     <section class="closing" aria-labelledby="lp-closing-title">
       <div class="closing-frame">
-        <h2 class="headline" id="lp-closing-title">{t("lp.closingTitle1")}<br />{t("lp.closingTitle2")}</h2>
-        <p>{t("lp.closingLead")}</p>
-        <div class="actions">
-          <a class="button cream" href={href("/case/c1")}>{t("lp.demo")}<ArrowRight size={22} strokeWidth={1.5} /></a>
-          <a class="button outline" href={href("/cases")}>{t("lp.open")}</a>
+        <div class="closing-copy">
+          <h2 class="headline" id="lp-closing-title">{t("lp.closingTitle1")}<br />{t("lp.closingTitle2")}</h2>
+          <p>{t("lp.closingLead")}</p>
+          <div class="actions">
+            <a class="button cream" href={href("/case/c1")}>{t("lp.demo")}<ArrowRight size={22} strokeWidth={1.5} /></a>
+            <a class="button outline" href={href("/cases")}>{t("lp.open")}</a>
+          </div>
+        </div>
+        <div class="closing-slip paper">
+          <span class="pill">{t("status.potential_inconsistency")}</span>
+          <p class="v-title">{t("lp.v3.title")}</p>
+          <p class="closing-done"><Check size={15} />{t("lp.closingDone")}</p>
+          <span class="v-sample">{t("lp.sample")}</span>
         </div>
       </div>
     </section>
@@ -670,6 +686,7 @@
     font-family: "Caslon Display", Georgia, serif;
     font-size: clamp(27px, 2.65vw, 42px);
     line-height: 1.2;
+    text-wrap: balance;
   }
   .hl {
     background: linear-gradient(var(--lp-amber-wash), var(--lp-amber-wash)) no-repeat 0 88% / 100% 0.55em;
@@ -715,19 +732,22 @@
     font-size: 12px;
   }
   .thread {
+    display: flex;
+    align-items: center;
     width: 100%;
-    height: 16px;
-    overflow: visible;
   }
-  .thread path {
-    fill: none;
-    stroke: var(--lp-rel-conflicts);
-    stroke-width: 1.5;
-    stroke-dasharray: 1;
-    vector-effect: non-scaling-stroke;
+  .thread .end {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--lp-rel-conflicts);
   }
-  .thread circle {
-    fill: var(--lp-rel-conflicts);
+  .thread .line {
+    flex: 1;
+    height: 1.5px;
+    background: var(--lp-rel-conflicts);
+    transform-origin: left center;
   }
   .check {
     max-width: 22em;
@@ -746,10 +766,10 @@
   .sheet.run .hl.two {
     animation: lp-mark 0.6s var(--lp-ease) 1.05s both;
   }
-  .sheet.run .thread path {
+  .sheet.run .thread .line {
     animation: lp-draw 0.8s var(--lp-ease) 1.6s both;
   }
-  .sheet.run .thread circle {
+  .sheet.run .thread .end {
     animation: lp-fade 0.4s var(--lp-ease) 1.55s both;
   }
   .sheet.run .pill {
@@ -774,7 +794,7 @@
   }
   @keyframes lp-draw {
     from {
-      stroke-dashoffset: 1;
+      transform: scaleX(0);
     }
   }
   @keyframes lp-fade {
@@ -1066,22 +1086,22 @@
   }
   .plate {
     display: grid;
-    place-items: center;
-    min-height: 380px;
-    padding: 44px clamp(20px, 4vw, 64px);
+    place-items: end center;
+    min-height: 360px;
+    padding: 56px clamp(20px, 4vw, 64px) 0;
     border-radius: 22px;
-    background: var(--lp-forest-deep) var(--lp-case-files) no-repeat;
-    background-size: 240% auto;
-    background-position: var(--pos, 10% 10%);
+    overflow: hidden;
+    background: var(--lp-forest-deep) var(--lp-cloth) repeat;
+    background-size: 1300px auto;
   }
   .vignette {
     position: relative;
     display: grid;
     gap: 12px;
     width: min(100%, 480px);
-    padding: 22px 24px 30px;
-    border-radius: 9px;
-    box-shadow: 0 18px 40px rgb(3 14 9 / 0.35);
+    padding: 22px 24px 34px;
+    border-radius: 9px 9px 0 0;
+    box-shadow: 0 -10px 34px rgb(3 14 9 / 0.32);
   }
   .v-sample {
     position: absolute;
@@ -1204,13 +1224,24 @@
     border-top: 1px solid var(--lp-line);
   }
   .transcript {
-    display: grid;
-    list-style: none;
     margin: 0 auto;
-    padding: 10px clamp(18px, 3vw, 36px);
+    padding: 10px clamp(18px, 3vw, 36px) 16px;
     max-width: 980px;
     border-radius: 10px;
     box-shadow: 0 1px 0 rgb(17 28 22 / 0.05);
+  }
+  .t-list {
+    display: grid;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .panel-sample {
+    padding-top: 10px;
+    border-top: 1px solid rgb(17 28 22 / 0.1);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--lp-muted);
   }
   .t-row {
     display: grid;
@@ -1258,20 +1289,29 @@
     color: var(--lp-rel-conflicts-text);
   }
 
-  /* The page: a real-looking source document, with Jude's note in its margin. */
+  /* The page: a real-looking source document; Jude's note stays in the margin, outside the record. */
   .spread {
-    display: grid;
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    gap: clamp(40px, 6vw, 110px);
-    align-items: center;
     padding: var(--lp-section) 0;
     border-top: 1px solid var(--lp-line);
   }
+  .spread-text {
+    display: grid;
+    gap: 10px;
+  }
+  .spread-text .quiet {
+    font-size: 14px;
+  }
+  .page-row {
+    display: grid;
+    grid-template-columns: minmax(0, 720px) minmax(240px, 300px);
+    gap: 0;
+  }
   .page {
+    --page-pad: clamp(28px, 5vw, 68px);
     position: relative;
-    padding: clamp(36px, 5vw, 64px) clamp(28px, 5.5vw, 76px) 56px;
-    font-family: "Rufina", Georgia, serif;
-    font-size: 15px;
+    padding: clamp(36px, 5vw, 60px) var(--page-pad) 56px;
+    font-family: "Manrope", sans-serif;
+    font-size: 14px;
     line-height: 1.75;
     box-shadow:
       0 1px 0 rgb(17 28 22 / 0.06),
@@ -1281,12 +1321,12 @@
     position: absolute;
     top: 20px;
     right: 28px;
-    font-family: "Manrope", sans-serif;
     font-size: 12px;
     color: var(--lp-muted);
   }
   .page-heading {
     text-align: center;
+    font-weight: 600;
     letter-spacing: 0.08em;
   }
   .page-heading + .page-heading {
@@ -1310,8 +1350,10 @@
     display: grid;
     grid-template-columns: 26px minmax(0, 1fr);
   }
+  .page-qa {
+    position: relative;
+  }
   .page-tag {
-    font-style: normal;
     text-decoration: underline;
     text-underline-offset: 3px;
   }
@@ -1319,34 +1361,39 @@
     display: grid;
     justify-items: start;
     gap: 6px;
-    margin: 10px 0 2px;
     padding: 12px 14px;
     border-radius: 6px;
-    background: rgb(255 255 255 / 0.55);
-    border: 1px solid rgb(181 117 57 / 0.35);
+    background: #fffdf8;
+    border: 1px solid rgb(181 117 57 / 0.4);
     font-family: "Manrope", sans-serif;
     font-size: 13.5px;
     line-height: 1.5;
+    color: var(--lp-ink);
+  }
+  /* Hangs beside the highlighted answer, joined to it by a fine rule. */
+  .in-margin {
+    position: absolute;
+    top: 2.6em;
+    left: calc(100% + var(--page-pad) + 32px);
+    width: 250px;
+  }
+  .in-margin::before {
+    content: "";
+    position: absolute;
+    top: 18px;
+    right: 100%;
+    width: calc(var(--page-pad) + 32px);
+    border-top: 1px solid var(--lp-rel-conflicts);
+  }
+  .below-page {
+    display: none;
   }
   .page-sample {
     position: absolute;
-    left: clamp(28px, 5.5vw, 76px);
+    left: var(--page-pad);
     bottom: 18px;
-    font-family: "Manrope", sans-serif;
     font-size: 12px;
     font-weight: 600;
-    color: var(--lp-muted);
-  }
-  .spread-caption {
-    display: grid;
-    gap: 18px;
-  }
-  .spread-caption p {
-    font-size: 17px;
-    color: #3d4a41;
-  }
-  .spread-caption .quiet {
-    font-size: 14px;
     color: var(--lp-muted);
   }
 
@@ -1387,21 +1434,46 @@
   }
   .closing-frame {
     display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 400px);
+    gap: 40px clamp(40px, 6vw, 96px);
+    align-items: end;
+    padding: 0 max(5%, 28px);
+    border-radius: 28px;
+    overflow: hidden;
+    background: var(--lp-forest-deep) var(--lp-cloth) repeat;
+    background-size: 1300px auto;
+    color: var(--lp-cream);
+  }
+  .closing-copy {
+    display: grid;
     justify-items: start;
     gap: 22px;
-    padding: clamp(64px, 9vw, 120px) max(5%, 28px);
-    border-radius: 28px;
-    /* Only the cloth of the case file: the papers belong to the opening. */
-    background: var(--lp-forest-deep) var(--lp-case-files) no-repeat;
-    background-size: 240% auto;
-    background-position: 8% 6%;
-    color: var(--lp-cream);
+    align-self: center;
+    padding: clamp(64px, 9vw, 120px) 0;
+  }
+  .closing-slip {
+    position: relative;
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+    margin-top: 56px;
+    padding: 24px 26px 40px;
+    border-radius: 9px 9px 0 0;
+    box-shadow: 0 -10px 34px rgb(3 14 9 / 0.32);
+  }
+  .closing-done {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--lp-sage-ink);
   }
   .closing .headline {
     color: var(--lp-cream);
     max-width: 14em;
   }
-  .closing p {
+  .closing-copy > p {
     max-width: 30em;
     font-size: 19px;
     color: rgb(246 240 228 / 0.88);
@@ -1442,6 +1514,17 @@
     }
   }
   @media (max-width: 1100px) {
+    .page-row {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .in-margin {
+      display: none;
+    }
+    .below-page {
+      display: grid;
+      max-width: 520px;
+    }
     .links {
       gap: 18px;
     }
@@ -1602,9 +1685,32 @@
     }
     .intro,
     .section-head,
-    .spread,
     .principles li {
       grid-template-columns: 1fr;
+    }
+    .page-row {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .in-margin {
+      display: none;
+    }
+    .below-page {
+      display: grid;
+    }
+    .page-intro {
+      text-align: left;
+      hyphens: manual;
+    }
+    .closing-frame {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    .closing-copy {
+      padding: 56px 0 8px;
+    }
+    .closing-slip {
+      margin-top: 32px;
     }
     .rufina {
       font-size: 42px;
@@ -1626,10 +1732,8 @@
     }
     .plate {
       min-height: 0;
-      padding: 28px 16px;
+      padding: 32px 16px 0;
       border-radius: 16px;
-      background-size: 420% auto;
-      background-position: 0 0;
     }
     .sheet-bar {
       flex-wrap: wrap;
@@ -1655,20 +1759,16 @@
       grid-column: 1;
     }
     .page {
-      font-size: 14px;
+      --page-pad: 22px;
+      font-size: 13.5px;
       padding: 40px 22px 48px;
-    }
-    .page-sample {
-      left: 22px;
     }
     .closing {
       padding: 0 8px;
     }
     .closing-frame {
       border-radius: 18px;
-      padding: 56px 20px 64px;
-      background-size: 520% auto;
-      background-position: 0 0;
+      padding: 0 20px;
     }
     .foot {
       grid-template-columns: 1fr;

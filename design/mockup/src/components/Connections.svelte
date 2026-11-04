@@ -483,6 +483,22 @@
       flex-wrap: wrap;
     }
   }
+  /* On narrow screens the subject stays compact so the ranked list starts sooner. */
+  .layout:not(.wide) .subject {
+    gap: 10px;
+    padding: 14px;
+  }
+  .layout:not(.wide) .quote {
+    font-size: 17px;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .layout:not(.wide) .note {
+    padding: 6px 10px;
+  }
   .maybe-head {
     margin-top: 6px;
   }

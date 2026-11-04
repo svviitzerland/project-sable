@@ -635,6 +635,7 @@ const M = {
   "lp.closingTitle1": ["Tetap hadir.", "Stay present."],
   "lp.closingTitle2": ["Lihat apa yang terhubung.", "See what connects."],
   "lp.closingLead": ["Menelaah bukti lebih dekat dimulai dari pertanyaan yang lebih baik.", "A closer look at the evidence starts with a better question."],
+  "lp.closingDone": ["Sudah dicek · ditanyakan di Sidang 3", "Checked · asked at Hearing 3"],
   "lp.note": ["Dirancang untuk praktisi hukum Indonesia.", "Designed for Indonesian legal professionals."],
   "lp.tagline": ["Kecerdasan ruang sidang berbasis bukti.", "Evidence-grounded courtroom intelligence."],
   "lp.concept": ["Konsep produk · mockup", "Product concept · mockup"],
