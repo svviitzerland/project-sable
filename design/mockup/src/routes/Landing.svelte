@@ -5,7 +5,7 @@
   import { onMount, tick } from "svelte";
   import Avatar from "../components/Avatar.svelte";
   import KindIcon from "../components/KindIcon.svelte";
-  import { cases, samplePage } from "../lib/data";
+  import { deskPapers, samplePage } from "../lib/data";
   import { t, type Key } from "../lib/i18n";
   import { prefs } from "../lib/prefs.svelte";
   import { go, href } from "../lib/router.svelte";
@@ -105,18 +105,17 @@
       ["cs", 0.1, 0.6],
       ["ck", 0.55, 0.85],
     ],
-    // The showpiece: the file turns into view, opens, comes apart, is threaded, then closes again.
+    // The showpiece: papers land on the desk, Jude reads them, three lines stay lit and are tied
+    // together, then they come forward readable, and the finding after them.
     show: [
-      ["si", -0.3, 0.08],
-      ["op", 0.08, 0.24],
-      ["ex", 0.26, 0.5],
-      ["tg", 0.42, 0.52],
-      ["th", 0.46, 0.6],
-      ["fs", 0.5, 0.58],
-      ["rex", 0.7, 0.84],
-      ["cl", 0.8, 0.92],
-      ["ld", 0.86, 0.98],
-      ["orb", -0.3, 1],
+      ["si", -0.4, 0],
+      ["dr", -0.3, 0.05],
+      ["sc", 0.08, 0.42],
+      ["fd", 0.4, 0.5],
+      ["th", 0.48, 0.62],
+      ["co", 0.54, 0.74],
+      ["fs", 0.76, 0.9],
+      ["orb", -0.4, 1],
     ],
   };
   const unit = (x: number) => Math.min(1, Math.max(0, x));
@@ -219,10 +218,50 @@
     { who: "role.prosecutor", speaker: "pu", text: "lp.t3", matches: false },
   ];
   let raised = $derived(around(t("lp.t4"), t("lp.t4Mark")));
-  const demoCase = cases.find((c) => c.id === "c1");
   const citedItem = samplePage.items.find((item) => item.mark);
   const bapCited = citedItem ? around(citedItem.a, citedItem.mark) : null;
   let logCited = $derived(around(t("lp.g.log"), t("lp.g.logMark")));
+  let bapQuote = $derived(around(t("lp.g.bap"), t("lp.g.bapMark")));
+
+  // The showpiece desk, drawn in its own 1000 × 640 space: six papers dropped every which way, in
+  // the order they land. Lines and pins sit at fractions of a paper, turned with it.
+  type Box = { x: number; y: number; w: number; h: number; r: number };
+  const papers: Record<"bap" | "law" | "talk" | "roster" | "log" | "cctv", Box> = {
+    bap: { x: 70, y: 46, w: 262, h: 330, r: -7 },
+    law: { x: 52, y: 404, w: 238, h: 190, r: -12 },
+    talk: { x: 372, y: 104, w: 276, h: 330, r: 4 },
+    roster: { x: 712, y: 34, w: 212, h: 168, r: 11 },
+    log: { x: 660, y: 262, w: 290, h: 214, r: -5 },
+    cctv: { x: 380, y: 470, w: 218, h: 138, r: 7 },
+  };
+  const order = Object.keys(papers) as (keyof typeof papers)[];
+  function on(p: keyof typeof papers, fx: number, fy: number) {
+    const b = papers[p];
+    const a = (b.r * Math.PI) / 180;
+    const lx = (fx - 0.5) * b.w;
+    const ly = (fy - 0.5) * b.h;
+    return { x: b.x + b.w / 2 + lx * Math.cos(a) - ly * Math.sin(a), y: b.y + b.h / 2 + lx * Math.sin(a) + ly * Math.cos(a) };
+  }
+  const place = (p: keyof typeof papers) => {
+    const b = papers[p];
+    return `left:${b.x / 10}%;top:${b.y / 6.4}%;width:${b.w / 10}%;height:${b.h / 6.4}%;--r:${b.r}deg;--i:${order.indexOf(p)}`;
+  };
+  // Where each time sits across the desk (0 to 1), for the moment the reading light passes it.
+  const across = (p: keyof typeof papers, fx: number, fy: number) => (on(p, fx, fy).x / 1000).toFixed(3);
+  // The three lines that belong together, numbered as they are listed beside the desk.
+  const pins = [
+    { n: 1, ...on("talk", 20 / 276, 0.69) },
+    { n: 2, ...on("bap", 20 / 262, 0.69) },
+    { n: 3, ...on("log", 20 / 290, 0.633) },
+  ];
+  function thread(a: { x: number; y: number }, b: { x: number; y: number }, bend: number) {
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    const cx = (a.x + b.x) / 2 - ((b.y - a.y) / len) * bend;
+    const cy = (a.y + b.y) / 2 + ((b.x - a.x) / len) * bend;
+    return `M${a.x.toFixed(1)},${a.y.toFixed(1)} Q${cx.toFixed(1)},${cy.toFixed(1)} ${b.x.toFixed(1)},${b.y.toFixed(1)}`;
+  }
+  const threads = [thread(pins[0], pins[1], -46), thread(pins[0], pins[2], 40)];
+  const introCited = around(samplePage.intro, "pukul 10.00 WIB");
 
   const slips = [
     { id: "bap", meta: "lp.g.bapMeta", text: "lp.g.bap", mark: "lp.g.bapMark", rel: "conflicts", reviewed: true },
@@ -364,71 +403,85 @@
     <section class="showcase" aria-labelledby="lp-show-title">
       <div class="scene show-scene" data-scene="show">
         <div class="stage show-stage">
-          <header class="show-head">
-            <h2 class="headline" id="lp-show-title">{t("lp.show.title1")}<br />{t("lp.show.title2")}</h2>
-            <p>{t("lp.show.lead")}</p>
-            <p class="show-cue">{t("lp.show.cue")}</p>
+          <div class="show-copy">
+            <header class="show-head">
+              <h2 class="headline" id="lp-show-title">{t("lp.show.title1")}<br />{t("lp.show.title2")}</h2>
+              <p class="show-lead">{t("lp.show.lead")}</p>
+            </header>
+            <p class="show-status" aria-hidden="true">
+              <span class="st-cue">{t("lp.show.cue")}</span>
+              <span class="st-read">{t("lp.show.reading", { n: order.length })}</span>
+              <span class="st-linked">{t("lp.show.linked", { n: pins.length })}</span>
+            </p>
+            <ol class="show-lines">
+              <li style:--k="0">
+                <span class="sl-n" aria-hidden="true">1</span>
+                <span class="sl-meta"><KindIcon kind="hearing" size={13} />{t("lp.g.statementMeta")}</span>
+                <span class="sl-text">{raised[0]}<mark>{raised[1]}</mark>{raised[2]}</span>
+              </li>
+              <li style:--k="1">
+                <span class="sl-n" aria-hidden="true">2</span>
+                <span class="sl-meta"><KindIcon kind="document" size={13} />{t("lp.g.bapMeta")}</span>
+                <span class="sl-text typed">{bapQuote[0]}<mark>{bapQuote[1]}</mark>{bapQuote[2]}</span>
+              </li>
+              <li style:--k="2">
+                <span class="sl-n" aria-hidden="true">3</span>
+                <span class="sl-meta"><KindIcon kind="document" size={13} />{t("lp.g.logMeta")}</span>
+                <span class="sl-text typed">{logCited[0]}<mark>{logCited[1]}</mark>{logCited[2]}</span>
+              </li>
+            </ol>
             <p class="show-sample">{t("lp.sample")}</p>
-          </header>
-          <ul class="show-legend" aria-hidden="true">
-            <li style:--k="0"><KindIcon kind="document" size={13} />{t("lp.g.bapMeta")}</li>
-            <li style:--k="1"><KindIcon kind="hearing" size={13} />{t("lp.g.statementMeta")}</li>
-            <li style:--k="2"><KindIcon kind="document" size={13} />{t("lp.g.logMeta")}</li>
-            <li style:--k="3"><KindIcon kind="legal" size={13} />{t("lp.g.lawMeta")}</li>
-          </ul>
+          </div>
           <p class="sr-only">{t("lp.show.alt")}</p>
-          <div class="model-wrap" aria-hidden="true">
-            <div class="model">
-              <div class="m-shadow"></div>
-              <div class="leaf cover-back"></div>
-              <div class="leaf sheet-page law-page" style:--i="1">
-                <p class="mp-head">{t("lp.v2.d4")}</p>
-                <p class="mp-typed">{t("lp.g.law")}</p>
-                <span class="mp-lines"><i></i><i></i><i></i><i></i><i></i><i></i></span>
-                <span class="m-tag"><KindIcon kind="legal" size={13} />{t("lp.g.lawMeta")}</span>
-              </div>
-              <div class="leaf sheet-page log-page" style:--i="2">
-                <p class="mp-head">{t("lp.v2.d2")}</p>
-                <span class="mp-lines"><i></i><i></i><i></i></span>
-                <p class="mp-cited mp-typed">{logCited[0]}<mark>{logCited[1]}</mark>{logCited[2]}</p>
-                <span class="m-pin"></span>
-                <span class="m-tag"><KindIcon kind="document" size={13} />{t("lp.g.logMeta")}</span>
-              </div>
-              <div class="leaf sheet-page talk-page" style:--i="3">
-                <p class="mp-meta"><KindIcon kind="hearing" size={12} />{t("lp.g.statementMeta")}</p>
-                <span class="mp-wave">{#each [3, 6, 4, 9, 5, 8, 3, 7, 10, 6, 4, 8, 5, 9, 3, 6, 8, 4, 7, 5, 9, 4, 6, 3] as h, i (i)}<i style:--h={h}></i>{/each}</span>
-                <p class="mp-quiet"><Avatar id="hk" size="xxs" />{t("lp.t1")}</p>
-                <p class="mp-cited mp-spoken"><Avatar id="rina" size="xxs" />{raised[0]}<mark>{raised[1]}</mark>{raised[2]}</p>
-                <span class="m-pin"></span>
-                <span class="m-tag"><KindIcon kind="hearing" size={13} />{t("lp.g.statementMeta")}</span>
-              </div>
-              <div class="leaf sheet-page bap-page" style:--i="4">
-                <p class="mp-folio">{samplePage.folio}</p>
-                {#each samplePage.heading as line (line)}<p class="mp-heading">{line}</p>{/each}
-                <span class="mp-lines"><i></i><i></i><i></i></span>
+          <div class="tb-wrap" aria-hidden="true">
+            <div class="tb">
+              <div class="tb-paper p-bap key" style={place("bap")}>
+                <p class="pp-folio">{samplePage.folio}</p>
+                {#each samplePage.heading as line (line)}<p class="pp-heading">{line}</p>{/each}
+                <p class="pp-typed pp-intro">{introCited[0]}<mark class="tb-c" style:--mx={across("bap", 0.5, 0.33)}>{introCited[1]}</mark>{introCited[2]}</p>
                 {#if bapCited}
-                  <p class="mp-cited mp-typed"><u>{samplePage.labels.a}:</u> {bapCited[0]}<mark>{bapCited[1]}</mark>{bapCited[2]}</p>
+                  <p class="pp-typed pp-key"><u>{samplePage.labels.a}:</u> {bapCited[0]}<mark class="tb-c key" style:--mx={across("bap", 0.45, 0.72)}>{bapCited[1]}</mark>{bapCited[2]}</p>
                 {/if}
-                <span class="m-pin"></span>
-                <span class="m-tag"><KindIcon kind="document" size={13} />{t("lp.g.bapMeta")}</span>
               </div>
-              <div class="leaf cover-front">
-                <div class="face face-out">
-                  <div class="file-label paper">
-                    <span class="file-kind">{t("lp.show.file")}</span>
-                    <span class="file-title">{demoCase?.title}</span>
-                    <span class="file-ref tabular">{demoCase?.reference}</span>
-                  </div>
-                </div>
-                <div class="face face-in"></div>
+              <div class="tb-paper p-law" style={place("law")}>
+                <p class="pp-head">{t("lp.v2.d4")}</p>
+                <p class="pp-typed">{t("lp.g.law")}</p>
+                <span class="pp-lines"><i></i><i></i><i></i><i></i></span>
               </div>
-              <div class="m-thread"></div>
-              <div class="leaf m-slip paper">
-                <span class="m-pin"></span>
-                <span class="pill small">{t("status.potential_inconsistency")}</span>
-                <p>{t("lp.v3.title")}</p>
+              <div class="tb-paper p-talk key" style={place("talk")}>
+                <p class="pp-head">{deskPapers.transcript}</p>
+                <span class="pp-wave">{#each [3, 6, 4, 9, 5, 8, 3, 7, 10, 6, 4, 8, 5, 9, 3, 6, 8, 4, 7, 5] as h, i (i)}<i style:--h={h}></i>{/each}</span>
+                {#each quietLines as line (line.text)}<p class="pp-line"><b>{t(line.who)}</b> {t(line.text)}</p>{/each}
+                <p class="pp-line pp-key"><b>{t("role.witness")}</b> {raised[0]}<mark class="tb-c key" style:--mx={across("talk", 0.45, 0.7)}>{raised[1]}</mark>{raised[2]}</p>
               </div>
+              <div class="tb-paper p-roster" style={place("roster")}>
+                <p class="pp-head">{deskPapers.roster.title}</p>
+                {#each deskPapers.roster.rows as row, i (row.shift)}
+                  <p class="pp-row" style:--row={i}><span>{row.shift}</span><mark class="tb-c" style:--mx={across("roster", 0.7, 0.45 + i * 0.17)}>{row.time}</mark></p>
+                {/each}
+              </div>
+              <div class="tb-paper p-log key" style={place("log")}>
+                <p class="pp-folio">{deskPapers.log.folio}</p>
+                <p class="pp-head">{deskPapers.log.title}</p>
+                <p class="pp-sub">{deskPapers.log.sub}</p>
+                {#each deskPapers.log.rows as row, i (row.time)}
+                  <p class="pp-row pp-typed" style:--row={i}><mark class="tb-c" class:key={row.key} style:--mx={across("log", 0.24, 0.5 + i * 0.16)}>{row.time}</mark><span>{row.gate}</span><span>{row.who}</span></p>
+                {/each}
+              </div>
+              <div class="tb-paper p-cctv" style={place("cctv")}>
+                <span class="cc-frame"><span class="cc-cam">{deskPapers.cctv.cam}</span><mark class="tb-c cc-stamp" style:--mx={across("cctv", 0.68, 0.22)}>{deskPapers.cctv.stamp}</mark></span>
+              </div>
+              <div class="tb-light"></div>
+              <svg class="tb-threads" viewBox="0 0 1000 640" preserveAspectRatio="none">
+                {#each threads as d, i (i)}<path {d} pathLength="1" style:--k={i} />{/each}
+              </svg>
+              {#each pins as pin (pin.n)}<span class="tb-pin" style:left="{pin.x / 10}%" style:top="{pin.y / 6.4}%">{pin.n}</span>{/each}
             </div>
+          </div>
+          <div class="show-finding">
+            <span class="pill small">{t("status.potential_inconsistency")}</span>
+            <p class="sf-title">{t("lp.v3.title")}</p>
+            <p class="sf-ask"><span>{t("lp.v3.ask")}</span>{t("lp.v3.question")}</p>
           </div>
         </div>
       </div>
@@ -1962,16 +2015,17 @@
   }
 
   /*
-   * The showpiece: the case file as a 3D object on a cloth stage. It turns into view, the cover
-   * swings open, the documents lift apart with standing labels, one amber thread runs through the
-   * cited line of each and up to the finding, then everything settles back with the finding on the
-   * closed cover. Static (no script, reduced motion): the opened, threaded view.
+   * The showpiece: a desk of case papers, dropped every which way and shown off at an angle. Jude
+   * reads them: a light passes over the desk and every time a paper mentions glints as it goes by;
+   * the three lines about the witness's arrival stay lit, their papers lift, threads tie them
+   * together, and beside the desk the same lines come forward flat and readable, then the finding.
+   * Anything meant to be read faces the reader; only the papers are at an angle. Scroll scrubs it
+   * and scrolling back undoes it. Static (no script, reduced motion): the finished desk.
    */
   .showcase {
     padding: 0 14px;
   }
   .show-scene {
-    --open: calc(var(--op, 1) * (1 - var(--cl, 0)));
     border-radius: 28px;
     background-color: var(--lp-forest-deep);
     background-image: url("../assets/case-cloth.webp");
@@ -1983,336 +2037,407 @@
   .show-stage {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
     align-items: center;
-    gap: 24px clamp(24px, 4vw, 64px);
-    padding: clamp(56px, 8vw, 96px) max(5%, 28px);
-    background: radial-gradient(ellipse 55% 60% at 70% 55%, rgb(246 240 228 / 0.09), transparent 70%);
+    gap: 24px clamp(20px, 3.4vw, 56px);
+    padding: clamp(56px, 7vw, 88px) max(4%, 24px);
+  }
+  .show-copy {
+    grid-area: 1 / 1;
+    display: grid;
+    align-content: center;
+    gap: 16px;
+    max-width: 31em;
   }
   .show-head {
     display: grid;
-    gap: 18px;
-    max-width: 30em;
+    gap: 14px;
   }
   .show-head .headline {
-    font-size: clamp(40px, 3.6vw, 56px);
+    font-size: clamp(38px, 3.4vw, 54px);
     color: var(--lp-cream);
   }
-  .show-head p {
-    font-size: 17px;
-    color: rgb(246 240 228 / 0.82);
+  .show-lead {
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: rgb(246 240 228 / 0.84);
   }
-  .show-cue {
+  .show-status {
     display: none;
   }
-  .scrolly .show-cue {
-    display: block;
-    font-size: 13.5px !important;
+  .scrolly .show-status {
+    display: grid;
+    font-size: 13.5px;
     font-weight: 600;
-    color: var(--lp-accent) !important;
-    opacity: calc(1 - var(--op, 1));
+    color: var(--lp-accent);
   }
-  .show-head .show-sample {
+  .show-status > span {
+    grid-area: 1 / 1;
+  }
+  .st-cue {
+    opacity: clamp(0, calc(1 - var(--sc, 1) * 6), 1);
+  }
+  .st-read {
+    opacity: calc(clamp(0, calc(var(--sc, 1) * 8), 1) * (1 - var(--fd, 1)));
+  }
+  .st-linked {
+    opacity: var(--fd, 1);
+  }
+  .show-lines {
+    display: grid;
+    gap: 9px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .show-lines li,
+  .show-finding {
+    border-radius: 9px;
+    background-color: var(--lp-paper);
+    background-image: url("../../../../apps/web/static/images/ivory-paper.webp");
+    background-size: 600px 600px;
+    color: var(--lp-ink);
+    box-shadow: 0 10px 26px rgb(3 14 9 / 0.3);
+  }
+  .show-lines li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 3px 11px;
+    padding: 10px 14px 11px 11px;
+  }
+  .sl-n {
+    grid-row: span 2;
+    display: grid;
+    place-items: center;
+    width: 23px;
+    height: 23px;
+    border-radius: 50%;
+    background-color: var(--lp-rel-conflicts);
+    color: #fffaf0;
+    font: 700 12px / 1 "Manrope", sans-serif;
+  }
+  .sl-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font: 600 12.5px / 1.35 "Manrope", sans-serif;
+    color: #4f584f;
+  }
+  .sl-text {
+    font: 400 15px / 1.45 "Manrope", sans-serif;
+  }
+  .sl-text.typed {
+    font-family: var(--lp-doc);
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .sl-text mark {
+    padding: 0 2px;
+    border-radius: 2px;
+    background-color: rgb(233 191 124 / 0.55);
+    color: inherit;
+  }
+  /* The lines come forward one by one, in the order they are numbered on the desk. */
+  .scrolly .show-lines li {
+    --in: clamp(0, calc(var(--co, 1) * 2.4 - var(--k) * 0.7), 1);
+    opacity: var(--in);
+    translate: calc((1 - var(--in)) * -16px) 0;
+  }
+  .show-finding {
+    grid-area: 1 / 2;
+    align-self: end;
+    justify-self: start;
+    position: relative;
+    z-index: 2;
+    display: grid;
+    justify-items: start;
+    gap: 7px;
+    width: min(390px, 62%);
+    margin: 0 0 clamp(28px, 7vh, 72px) 1%;
+    padding: 13px 16px 14px;
+    box-shadow: 0 16px 36px rgb(3 14 9 / 0.42);
+  }
+  .show-finding .pill {
+    font-family: "Manrope", sans-serif;
+  }
+  .sf-title {
+    font-family: "Caslon Display", Georgia, serif;
+    font-size: 21px;
+    line-height: 1.2;
+  }
+  .sf-ask {
+    display: grid;
+    gap: 2px;
+    font-family: "Caslon Display", Georgia, serif;
+    font-size: 16px;
+    line-height: 1.3;
+    color: #2a3a31;
+  }
+  .sf-ask span {
+    font: 600 12px / 1.35 "Manrope", sans-serif;
+    color: #4f584f;
+  }
+  .scrolly .show-finding {
+    opacity: var(--fs, 1);
+    translate: 0 calc((1 - var(--fs, 1)) * 14px);
+  }
+  .show-sample {
     font-size: 12.5px;
     font-weight: 600;
     color: rgb(246 240 228 / 0.6);
   }
-  .model-wrap {
-    --u: clamp(210px, 18vw, 280px);
+
+  /* The desk, in its own 1000 × 640 space; sizes inside it follow its width (cqi). */
+  .tb-wrap {
+    grid-area: 1 / 2;
     position: relative;
-    display: grid;
-    place-items: center;
-    height: calc(var(--u) * 2.2);
-    perspective: 1700px;
-    perspective-origin: 50% 15%;
+    container-type: inline-size;
+    perspective: 1500px;
+    perspective-origin: 50% 0%;
   }
-  .model {
-    --rx: calc(18 + 40 * var(--si, 1));
-    --rz: calc(-10 - 24 * var(--si, 1) + 8 * var(--orb, 1));
-    --exn: calc(var(--ex, 1) * (1 - var(--rex, 0)));
-    --gap: calc(4px + (var(--u) * 0.25 - 4px) * var(--exn));
+  .tb {
+    /* The desk tilts into view and turns a little as the section passes. */
+    --rx: calc(20 + 26 * var(--si, 1));
+    --rz: calc(-12 + 9 * var(--orb, 1));
+    /* Where the reading light is across the desk, from 0 (left edge) to 1 (right edge). */
+    --s: calc(var(--sc, 1) * 1.3 - 0.15);
     position: relative;
-    width: var(--u);
-    height: calc(var(--u) * 1.3);
+    aspect-ratio: 1000 / 640;
+    border-radius: 2cqi;
     transform-style: preserve-3d;
-    /* Slides right as the cover opens, so the open spread stays clear of the text. */
-    --mx: calc(var(--u) * (0.12 + 0.3 * var(--open)));
-    --my: calc(var(--u) * 0.36 + (1 - var(--si, 1)) * 110px);
-    transform: translate(var(--mx), var(--my)) rotateX(calc(var(--rx) * 1deg)) rotateZ(calc(var(--rz) * 1deg));
-  }
-  .leaf {
-    position: absolute;
-    inset: 0;
-    border-radius: 3px;
-    transform-style: preserve-3d;
-    backface-visibility: hidden;
-    outline: 1px solid transparent;
-  }
-  .m-shadow {
-    position: absolute;
-    inset: calc(var(--u) * -0.16);
-    border-radius: 50%;
-    background: radial-gradient(closest-side, rgb(2 10 6 / 0.6), transparent);
-    transform: translateZ(-2px) scale(calc(1 + 0.3 * var(--exn)));
-    opacity: calc(0.75 - 0.25 * var(--exn));
-  }
-  .cover-back,
-  .cover-front {
-    inset: calc(var(--u) * -0.05);
-    border-radius: 6px;
-  }
-  .cover-back,
-  .face-out {
-    background-color: var(--lp-forest);
+    transform: translateY(calc((1 - var(--si, 1)) * 14cqi)) rotateX(calc(var(--rx) * 1deg)) rotateZ(calc(var(--rz) * 1deg));
+    background-color: #102b21;
     background-image: url("../assets/case-cloth.webp");
-    background-repeat: repeat;
     background-size: 900px auto;
-    box-shadow: inset 0 0 0 1px rgb(246 240 228 / 0.1);
+    box-shadow:
+      inset 0 0 0 1px rgb(246 240 228 / 0.08),
+      inset 0 0 8cqi rgb(2 10 6 / 0.6),
+      0 3cqi 7cqi rgb(2 10 6 / 0.5);
   }
-  .cover-back {
-    transform: translateZ(-1px);
-  }
-  .cover-front {
-    transform-origin: 0 50%;
-    transform: translateZ(22px) rotateY(calc(var(--open) * -178deg));
-  }
-  .face {
+  .tb-paper {
+    /* Each paper's own fall, one after another; the ones that belong together lift at the end. */
+    --pd: clamp(0, calc(var(--dr, 1) * 1.9 - var(--i) * 0.16), 1);
+    --lift: 0px;
     position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    backface-visibility: hidden;
-  }
-  .face-in {
-    transform: rotateY(180deg);
-    background-color: #e6dcc6;
-    background-image: url("../../../../apps/web/static/images/ivory-paper.webp");
-    background-size: 600px 600px;
-    box-shadow: inset 0 0 calc(var(--u) * 0.08) rgb(60 45 20 / 0.18);
-  }
-  .file-label {
-    position: absolute;
-    left: 15%;
-    right: 15%;
-    top: 30%;
     display: grid;
-    gap: calc(var(--u) * 0.02);
-    padding: calc(var(--u) * 0.06) calc(var(--u) * 0.05);
-    border-radius: 3px;
-    text-align: center;
-    box-shadow: 0 2px 8px rgb(3 14 9 / 0.3);
-  }
-  .file-kind {
-    font-family: var(--lp-doc);
-    font-size: calc(var(--u) * 0.03);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--lp-muted);
-  }
-  .file-title {
-    font-family: "Rufina", Georgia, serif;
-    font-size: calc(var(--u) * 0.062);
-    line-height: 1.12;
-    color: var(--lp-forest);
-  }
-  .file-ref {
-    font-size: calc(var(--u) * 0.03);
-    color: var(--lp-muted);
-  }
-  .sheet-page {
-    padding: calc(var(--u) * 0.085) calc(var(--u) * 0.09);
+    align-content: start;
+    gap: 0.6cqi;
+    padding: 2cqi 2.2cqi;
+    border-radius: 0.35cqi;
     background-color: var(--lp-paper);
     background-image: url("../../../../apps/web/static/images/ivory-paper.webp");
     background-size: 600px 600px;
     color: #1d2a22;
-    font-size: calc(var(--u) * 0.036);
-    line-height: 1.5;
-    transform: translateZ(calc(var(--gap) * var(--i)));
-    box-shadow:
-      0 1px 0 rgb(17 28 22 / 0.08),
-      0 calc(var(--u) * 0.03 * var(--exn)) calc(var(--u) * 0.1) rgb(3 14 9 / calc(0.16 + 0.22 * var(--exn)));
+    font-size: 1.05cqi;
+    line-height: 1.45;
+    overflow: hidden;
+    transform: translateZ(calc(var(--i) * 0.5px + var(--lift) + (1 - var(--pd)) * 30cqi)) rotateZ(calc(var(--r) + (1 - var(--pd)) * 16deg));
+    opacity: calc(var(--pd) * (1 - 0.45 * var(--fd, 1)));
+    box-shadow: 0 0.5cqi 1.4cqi rgb(3 14 9 / 0.38);
   }
-  .mp-head,
-  .mp-heading {
+  .tb-paper.key {
+    --lift: calc(var(--fd, 1) * 2.4cqi);
+    opacity: var(--pd);
+    box-shadow: 0 1.6cqi 3cqi rgb(3 14 9 / 0.45);
+  }
+  .pp-folio {
+    position: absolute;
+    top: 1.4cqi;
+    right: 1.8cqi;
+    font-family: var(--lp-doc);
+    font-size: 0.9cqi;
+    color: #6b6f63;
+  }
+  .pp-heading,
+  .pp-head {
     font-family: var(--lp-doc);
     font-weight: 700;
+    font-size: 1.05cqi;
     letter-spacing: 0.06em;
-    text-transform: uppercase;
-    font-size: calc(var(--u) * 0.032);
   }
-  .mp-head {
-    margin-bottom: calc(var(--u) * 0.04);
-  }
-  .mp-heading {
+  .pp-heading {
     text-align: center;
   }
-  .mp-heading + .mp-heading {
+  .pp-heading + .pp-heading {
     text-decoration: underline;
-    text-underline-offset: 3px;
+    text-underline-offset: 0.3cqi;
   }
-  .mp-folio {
+  .pp-sub {
+    font-size: 0.95cqi;
+    color: #5d655c;
+  }
+  .pp-typed {
+    font-family: var(--lp-doc);
+    font-size: 1cqi;
+  }
+  .pp-intro {
+    margin-top: 1cqi;
+  }
+  .pp-key {
     position: absolute;
-    top: calc(var(--u) * 0.04);
-    right: calc(var(--u) * 0.06);
-    font-family: var(--lp-doc);
-    font-size: calc(var(--u) * 0.028);
-    color: var(--lp-muted);
+    left: 4.2cqi;
+    right: 2.2cqi;
+    top: 66%;
   }
-  .mp-typed {
-    font-family: var(--lp-doc);
-    font-size: calc(var(--u) * 0.033);
-  }
-  .mp-lines {
+  .pp-lines {
     display: grid;
-    gap: calc(var(--u) * 0.03);
-    margin: calc(var(--u) * 0.05) 0;
+    gap: 1cqi;
+    margin-top: 1cqi;
   }
-  .mp-lines i {
-    height: calc(var(--u) * 0.012);
-    border-radius: 2px;
-    background: rgb(17 28 22 / 0.13);
+  .pp-lines i {
+    height: 0.5cqi;
+    border-radius: 0.2cqi;
+    background-color: rgb(17 28 22 / 0.14);
   }
-  .mp-lines i:nth-child(3n) {
-    width: 70%;
+  .pp-lines i:nth-child(3n) {
+    width: 72%;
   }
-  .mp-lines i:nth-child(3n + 2) {
-    width: 88%;
-  }
-  .mp-cited {
-    position: absolute;
-    left: calc(var(--u) * 0.09);
-    right: calc(var(--u) * 0.26);
-    top: calc(var(--u) * 0.66);
-  }
-  .mp-cited mark {
-    background: var(--lp-amber-wash);
-    color: inherit;
-    padding: 0 2px;
-    border-radius: 2px;
-  }
-  .mp-meta,
-  .mp-quiet,
-  .mp-spoken {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-  }
-  .mp-meta {
-    align-items: center;
-    font-weight: 600;
-    font-size: calc(var(--u) * 0.03);
-    color: var(--lp-muted);
-  }
-  .mp-wave {
+  .pp-wave {
     display: flex;
     align-items: center;
-    gap: calc(var(--u) * 0.008);
-    height: calc(var(--u) * 0.12);
-    margin: calc(var(--u) * 0.04) 0 calc(var(--u) * 0.05);
+    gap: 0.3cqi;
+    height: 3cqi;
   }
-  .mp-wave i {
+  .pp-wave i {
     flex: 1;
     height: calc(var(--h) * 9%);
-    border-radius: 2px;
-    background: rgb(22 56 43 / 0.42);
+    border-radius: 0.2cqi;
+    background-color: rgb(22 56 43 / 0.4);
   }
-  .mp-quiet {
-    font-size: calc(var(--u) * 0.032);
-    color: #56635a;
+  .pp-line {
+    color: #4a564d;
   }
-  .mp-spoken {
-    font-family: "Caslon Display", Georgia, serif;
-    font-size: calc(var(--u) * 0.048);
-    line-height: 1.25;
-    color: var(--lp-ink);
+  .pp-line b {
+    font-weight: 700;
+    color: #1d2a22;
   }
-  .m-pin {
+  .p-talk .pp-key {
+    color: #1d2a22;
+  }
+  .pp-row {
     position: absolute;
-    left: calc(var(--u) * 0.762);
-    top: calc(var(--u) * 0.732);
-    width: calc(var(--u) * 0.036);
-    height: calc(var(--u) * 0.036);
-    border-radius: 50%;
-    background: var(--lp-rel-conflicts);
-    box-shadow: 0 0 0 calc(var(--u) * 0.008) rgb(255 253 248 / 0.9);
+    left: 2.2cqi;
+    right: 2.2cqi;
+    display: flex;
+    align-items: baseline;
+    gap: 1.6cqi;
   }
-  .m-thread {
-    position: absolute;
-    left: calc(var(--u) * 0.78 - 1px);
-    top: calc(var(--u) * 0.75);
-    width: 2px;
-    height: calc(var(--gap) * 3.6);
-    background: var(--lp-rel-conflicts);
-    transform-origin: 50% 0;
-    transform: translateZ(calc(var(--gap) * 2)) rotateX(90deg) scaleY(calc(var(--th, 1) * (1 - var(--rex, 0))));
-    opacity: calc(var(--th, 1) * (1 - var(--rex, 0)));
+  .p-roster .pp-row {
+    top: calc(38% + var(--row) * 17%);
+    justify-content: space-between;
+    font-size: 1.1cqi;
   }
-  .m-slip {
-    inset: auto;
-    left: calc(var(--u) * 0.28);
-    top: calc(var(--u) * 0.67);
-    width: calc(var(--u) * 0.62);
-    display: grid;
-    justify-items: start;
-    gap: calc(var(--u) * 0.03);
-    padding: calc(var(--u) * 0.08) calc(var(--u) * 0.06) calc(var(--u) * 0.06);
-    border-radius: 4px;
-    font-family: "Caslon Display", Georgia, serif;
-    font-size: calc(var(--u) * 0.05);
-    line-height: 1.2;
-    transform: translate(calc(var(--u) * 0.34 * var(--ld, 0)), calc(var(--u) * 0.4 * var(--ld, 0)))
-      translateZ(max(calc(var(--gap) * 5.6), 26px)) rotateZ(calc(-5deg * var(--ld, 0)));
-    opacity: var(--fs, 1);
-    box-shadow: 0 calc(var(--u) * 0.03) calc(var(--u) * 0.08) rgb(3 14 9 / 0.32);
+  .p-log .pp-row {
+    top: calc(44% + var(--row) * 16%);
+    left: 4.2cqi;
   }
-  .m-slip .m-pin {
-    left: calc(var(--u) * 0.482);
-    top: calc(var(--u) * 0.062);
+  .p-log .pp-row span:last-child {
+    margin-left: auto;
   }
-  .m-slip .pill {
-    font-family: "Manrope", sans-serif;
-  }
-  .m-tag {
-    position: absolute;
-    /* On the left edge, the part of each page the page above leaves in view; it stands over the open cover. */
-    right: calc(100% + var(--u) * 0.03);
-    top: calc(var(--u) * 0.98);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 11px;
-    border-radius: 30px;
-    background: rgb(250 247 240 / 0.95);
-    color: var(--lp-ink);
-    font: 600 12.5px / 1.3 "Manrope", sans-serif;
-    white-space: nowrap;
-    box-shadow: 0 6px 18px rgb(3 14 9 / 0.28);
-    transform-origin: 100% 100%;
-    transform: rotateZ(calc(var(--rz) * -1deg)) rotateX(calc(var(--rx) * -1deg));
-    opacity: calc(var(--tg, 1) * (1 - var(--rex, 0)));
-  }
-  .show-legend {
-    display: none;
-    margin: 0;
+  .p-cctv {
     padding: 0;
-    list-style: none;
-    justify-items: start;
-    gap: 8px;
   }
-  .show-legend li {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 11px;
-    border-radius: 30px;
-    background: rgb(250 247 240 / 0.95);
-    color: var(--lp-ink);
-    font: 600 12.5px / 1.3 "Manrope", sans-serif;
-    box-shadow: 0 6px 18px rgb(3 14 9 / 0.28);
+  .cc-frame {
+    position: absolute;
+    inset: 0.9cqi;
+    border-radius: 0.2cqi;
+    background: linear-gradient(160deg, #3a4540, #1b2420 60%, #101614);
+    overflow: hidden;
   }
-  .scrolly .show-legend li {
-    /* One after another as the pages part, all together as they settle. */
-    opacity: calc(clamp(0, var(--tg, 1) * 1.6 - var(--k) * 0.2, 1) * (1 - var(--rex, 0)));
-    translate: 0 calc((1 - clamp(0, var(--tg, 1) * 1.6 - var(--k) * 0.2, 1)) * 8px);
+  .cc-frame::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 3px);
+  }
+  .cc-cam,
+  .cc-stamp {
+    position: absolute;
+    font-family: var(--lp-doc);
+    font-size: 0.9cqi;
+    letter-spacing: 0.04em;
+    color: rgb(232 238 232 / 0.86);
+  }
+  .cc-cam {
+    left: 1cqi;
+    bottom: 0.8cqi;
+  }
+  .cc-stamp {
+    right: 1cqi;
+    top: 0.8cqi;
+  }
+  /* A time on a paper: it glints as the reading light passes and fades again, unless it belongs
+     with the testimony, in which case it stays lit. */
+  .tb-c {
+    position: relative;
+    padding: 0 0.15em;
+    background: none;
+    color: inherit;
+  }
+  .tb-c::before {
+    --d: calc(var(--s) - var(--mx));
+    content: "";
+    position: absolute;
+    inset: -0.1em -0.05em;
+    z-index: -1;
+    border-radius: 0.2em;
+    background-color: rgb(233 191 124);
+    opacity: clamp(0, calc(1 - max(var(--d), calc(var(--d) * -1)) * 7), 1);
+    will-change: opacity;
+  }
+  .tb-c.key::before {
+    opacity: clamp(0, calc(1 + var(--d) * 7), 1);
+  }
+  .cc-stamp.tb-c {
+    position: absolute;
+  }
+  .tb-light {
+    position: absolute;
+    top: -6%;
+    bottom: -6%;
+    left: -20%;
+    width: 40%;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgb(255 238 200 / 0), rgb(255 238 200 / 0.12) 40%, rgb(255 240 210 / 0.3) 50%, rgb(255 238 200 / 0.12) 60%, rgb(255 238 200 / 0));
+    transform: translateZ(4cqi) translateX(calc(var(--s) * 250%));
+    opacity: clamp(0, calc(min(var(--sc, 1), 1 - var(--sc, 1)) * 10), 1);
+  }
+  .tb-threads {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    transform: translateZ(3.2cqi);
+  }
+  .tb-threads path {
+    --tp: clamp(0, calc(var(--th, 1) * 1.8 - var(--k) * 0.8), 1);
+    fill: none;
+    stroke: rgb(233 191 124);
+    stroke-width: 3.2;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: calc(1 - var(--tp));
+  }
+  /* The numbers stand up off the paper to face the reader, matching the lines beside the desk. */
+  .tb-pin {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 3.4cqi;
+    height: 3.4cqi;
+    margin: -1.7cqi 0 0 -1.7cqi;
+    border-radius: 50%;
+    background-color: var(--lp-rel-conflicts);
+    color: #fffaf0;
+    font: 700 1.7cqi / 1 "Manrope", sans-serif;
+    box-shadow:
+      0 0 0 0.4cqi rgb(255 250 240 / 0.92),
+      0 0.6cqi 1.4cqi rgb(3 14 9 / 0.4);
+    transform: translateZ(4.4cqi) rotateZ(calc(var(--rz) * -1deg)) rotateX(calc(var(--rx) * -1deg)) scale(var(--fd, 1));
+    opacity: var(--fd, 1);
   }
   .pinned .show-scene {
     height: 340vh;
@@ -2320,7 +2445,7 @@
   .pinned .show-stage {
     padding-block: 0;
   }
-  .pinned .model {
+  .pinned .tb {
     will-change: transform;
   }
 
@@ -2429,63 +2554,105 @@
   @media (max-width: 899px) {
     .show-stage {
       grid-template-columns: 1fr;
-      padding: 56px 24px 64px;
+      padding: 56px 20px 60px;
     }
-    .model-wrap {
-      --u: min(50vw, 40vh, 240px);
-      height: calc(var(--u) * 2.4);
+    /* One column: the copy, the desk, then the lines and the finding. */
+    .show-copy {
+      display: contents;
     }
-    /* Too narrow for labels beside the pages: the sources are listed above the file instead. */
-    .m-tag {
-      display: none;
+    .show-head {
+      order: 1;
     }
-    .show-legend {
-      display: grid;
+    .show-status {
+      order: 2;
     }
-    .model {
-      --mx: calc(var(--u) * 0.08 * var(--open));
-      --my: calc(var(--u) * 0.42 + (1 - var(--si, 1)) * 80px);
+    .tb-wrap {
+      order: 3;
+      grid-area: auto;
+      margin-block: 6px;
     }
-    /* The finding is set down on the closed cover, inside the frame. */
-    .m-slip {
-      translate: calc(var(--u) * -0.3 * var(--ld, 0)) calc(var(--u) * 0.06 * var(--ld, 0));
+    .show-lines {
+      order: 4;
     }
-    /* Pinned on a phone: the copy yields to the open file and returns when it closes. */
+    .show-finding {
+      order: 5;
+      grid-area: auto;
+      justify-self: stretch;
+      width: auto;
+      margin: 0;
+    }
+    .show-sample {
+      order: 6;
+    }
+    .sl-text {
+      font-size: 14px;
+    }
+    .sl-text.typed {
+      font-size: 12.5px;
+    }
+    .sf-title {
+      font-size: 19px;
+    }
+    .show-head .headline {
+      font-size: clamp(32px, 8.6vw, 40px);
+    }
+    /* Pinned on a phone: the copy yields to the desk, the lines rise below it, and the finding
+       takes their place. */
     .show-pin .show-scene {
-      height: 300svh;
+      height: 320svh;
     }
     .show-pin .show-stage {
       position: sticky;
       top: 0;
       height: 100svh;
-      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr) auto;
       align-items: start;
-      gap: 12px;
-      padding: 44px 22px 20px;
+      gap: 10px;
+      padding: 44px 18px 18px;
     }
     .show-pin .show-head,
-    .show-pin .show-legend {
+    .show-pin .show-status {
       grid-area: 1 / 1;
     }
-    .show-pin .show-head > :not(.show-sample) {
-      opacity: calc(1 - var(--open));
-      translate: 0 calc(var(--open) * -18px);
+    .show-pin .show-head {
+      opacity: clamp(0, calc(1 - var(--sc, 1) * 5), 1);
+    }
+    .show-pin .show-status {
+      align-self: end;
+    }
+    .show-pin .st-cue {
+      display: none;
+    }
+    .show-pin .st-read {
+      opacity: calc(clamp(0, calc(var(--sc, 1) * 8 - 2), 1) * (1 - var(--fd, 1)));
+    }
+    .show-pin .tb-wrap {
+      grid-area: 2 / 1;
+      align-self: center;
+      margin: 0;
+    }
+    .show-pin .show-lines,
+    .show-pin .show-finding {
+      grid-area: 3 / 1;
+    }
+    .show-pin .show-lines {
+      gap: 7px;
+      opacity: calc(1 - var(--fs, 1));
+    }
+    .show-pin .show-lines li {
+      padding: 8px 12px 9px 9px;
+    }
+    .show-pin .sl-text {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     .show-pin .show-sample {
       position: absolute;
-      left: 22px;
-      bottom: 20px;
-    }
-    .show-pin .model-wrap {
-      --u: min(47vw, 30svh, 280px);
-      grid-area: 2 / 1;
-      align-self: stretch;
-      height: auto;
-      min-height: 0;
-    }
-    .show-pin .model {
-      --my: calc(var(--u) * -0.06 + (1 - var(--si, 1)) * 80px);
-      will-change: transform;
+      top: 16px;
+      right: 18px;
     }
     .desk {
       aspect-ratio: auto;
@@ -2517,6 +2684,24 @@
     }
     .statement-text {
       font-size: 26px;
+    }
+  }
+  /* Short phones, pinned: the headline alone, and tighter lines, so the desk keeps its room. */
+  @media (max-width: 899px) and (max-height: 740px) {
+    .show-pin .show-lead {
+      display: none;
+    }
+    .show-pin .show-lines li {
+      padding: 7px 10px 8px 8px;
+    }
+    .show-pin .sl-meta {
+      font-size: 11.5px;
+    }
+    .show-pin .sl-text {
+      font-size: 13px;
+    }
+    .show-pin .sl-text.typed {
+      font-size: 12px;
     }
   }
   @media (max-width: 760px) {

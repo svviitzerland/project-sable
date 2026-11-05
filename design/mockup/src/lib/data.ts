@@ -767,3 +767,31 @@ export const samplePage = {
   folio: "4 / 6",
 };
 
+/**
+ * The other papers on the landing's desk: synthetic, and as filed (in Indonesian), like the BAP page
+ * above. Times are what Jude's reading lights up; `key` marks the one that belongs with the
+ * testimony.
+ */
+export const deskPapers = {
+  log: {
+    title: "LAPORAN LOG AKSES GERBANG",
+    sub: "PT Contoh Logistik · Gudang B · 14 Maret 2026",
+    rows: [
+      { time: "19:52:10", gate: "Gerbang Barat", who: "D. Prasetyo", key: false },
+      { time: "20:07:41", gate: "Gerbang Timur", who: "R. Hartati", key: true },
+      { time: "22:40:05", gate: "Gerbang Timur", who: "Patroli", key: false },
+    ],
+    folio: "7 / 12",
+  },
+  roster: {
+    title: "JADWAL JAGA GUDANG B",
+    rows: [
+      { shift: "Pagi", time: "08.00–14.00" },
+      { shift: "Sore", time: "14.00–20.00" },
+      { shift: "Malam", time: "20.00–08.00" },
+    ],
+  },
+  cctv: { cam: "CAM-03 · GERBANG TIMUR", stamp: "14-03-2026 22:40:05" },
+  transcript: "TRANSKRIP SIDANG 2",
+};
+
