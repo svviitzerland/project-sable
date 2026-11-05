@@ -510,6 +510,30 @@ export async function handleApi(
           );
       }
       if (action === "sources" && method === "GET") {
+        if (parts[3]?.startsWith("statement:")) {
+          // A finding may cite earlier testimony; it reads like a source passage.
+          const statement = await rt.db.one("segments", "id=? AND case_id=?", [
+            parts[3].slice(10),
+            caseId,
+          ]);
+          assert(statement, 404, "Source not found");
+          const hearing = statement.hearing_id
+            ? await rt.db.one("hearings", "id=?", [statement.hearing_id])
+            : null;
+          return send({
+            id: parts[3],
+            document_id: "",
+            document_name: hearing?.title ?? "",
+            page: 1,
+            section: "testimony",
+            text: statement.text,
+            score: 0,
+            kind: "testimony",
+            speaker: statement.speaker,
+            start: statement.start,
+            hearing_id: statement.hearing_id,
+          });
+        }
         const chunk = await rt.db.one("chunks", "id=? AND case_id=?", [
           parts[3],
           caseId,

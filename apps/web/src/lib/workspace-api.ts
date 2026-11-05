@@ -110,6 +110,11 @@ export type Source = {
   section: string;
   text: string;
   score: number;
+  /** Set when a finding cites earlier hearing testimony instead of a document. */
+  kind?: "testimony";
+  speaker?: string;
+  start?: number;
+  hearing_id?: string | null;
 };
 export type Hearing = {
   id: string;

@@ -1356,3 +1356,10 @@
 .app .accountItem:focus-visible {
   background: #eef1e8;
 }
+.liveTab {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #d44c3d;
+  box-shadow: 0 0 0 3px rgb(212 76 61 / 0.2);
+}

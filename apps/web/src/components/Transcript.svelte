@@ -1,21 +1,16 @@
 <script lang="ts">
-  import { t, tp, type MessageKey } from "../lib/i18n/index.svelte";
-  import {
-    AudioLines,
-    ChevronRight,
-    RefreshCw,
-    Search,
-    X,
-  } from "@lucide/svelte";
+  import { t, tp } from "../lib/i18n/index.svelte";
+  import { ArrowDown, AudioLines, RefreshCw, Search } from "@lucide/svelte";
   import {
     userFacingError,
     speakerName,
+    statusLabel,
     timestamp,
     type Finding,
     type Segment,
   } from "../lib/workspace-api";
   import ui from "./workspace.module.css";
-  import styles from "./case-tabs.module.css";
+  import styles from "./hearing.module.css";
   import { untrack } from "svelte";
   import TranscriptText from "./TranscriptText.svelte";
   import Modal from "./Modal.svelte";
@@ -28,205 +23,169 @@
     select,
     findings,
     onRename,
+    selectedSegment = null,
   }: {
     segments: Segment[];
     speakers: Record<string, string>;
     partial: string;
-    caseId: string;
     onRetry: (id: string) => void;
     select: (id: string) => void;
     findings: Finding[];
     onRename?: (speaker: string, label: string) => Promise<unknown>;
+    selectedSegment?: string | null;
   } = $props();
 
-  // Naming a speaker happens where the voice is heard: click its name.
   let renaming = $state<string | null>(null);
   let renameValue = $state("");
-
-  let follow = $state(true);
-  const phases: Record<string, MessageKey> = {
-    pending: "phase.pending",
-    queued: "phase.queued",
-    extracting: "phase.extracting",
-    retrieving: "phase.retrieving",
-    analyzing: "phase.analyzing",
-    reviewing: "phase.reviewing",
-    synthesizing: "phase.synthesizing",
-    complete: "phase.complete",
-  };
-
   let query = $state("");
+  /** Follow new statements while the reader is at the bottom. */
+  let atBottom = $state(true);
 
-  let speaker = $state("");
+  const working = new Set([
+    "queued",
+    "extracting",
+    "retrieving",
+    "analyzing",
+    "reviewing",
+    "synthesizing",
+  ]);
 
   let term = $derived(query.trim().toLocaleLowerCase());
-
-  let filtering = $derived(!!term || !!speaker);
-
   let visibleSegments = $derived(
-    segments.filter(
-      (s) =>
-        (!speaker || s.speaker === speaker) &&
-        (!term || s.text.toLocaleLowerCase().includes(term)),
-    ),
+    term
+      ? segments.filter((s) => s.text.toLocaleLowerCase().includes(term))
+      : segments,
   );
-
-  // Long hearings hold thousands of statements: look findings up once, not per row.
   let findingBySegment = $derived(
     new Map(findings.map((f) => [f.segment_id, f])),
   );
 
-  let speakerIds = $derived(
-    Array.from(new Set(segments.map((s) => s.speaker))),
-  );
-
   const scroller = { current: null as HTMLDivElement | null };
 
+  function toBottom() {
+    if (scroller.current)
+      scroller.current.scrollTop = scroller.current.scrollHeight;
+    atBottom = true;
+  }
+
   $effect(() => {
-    void [segments.length, partial, follow, filtering];
+    void [segments.length, partial];
     return untrack(() => {
-      if (follow && !filtering && scroller.current)
-        scroller.current.scrollTop = scroller.current.scrollHeight;
+      if (atBottom && !term) requestAnimationFrame(toBottom);
+    });
+  });
+
+  // Opening a finding brings its statement into view.
+  $effect(() => {
+    void [selectedSegment];
+    return untrack(() => {
+      if (!selectedSegment || !scroller.current) return;
+      const line = document.getElementById(`line-${selectedSegment}`);
+      if (!line) return;
+      atBottom = false;
+      scroller.current.scrollTop =
+        line.offsetTop - scroller.current.offsetTop - 80;
     });
   });
 
   $effect(() => {
-    void [query, speaker, filtering];
+    void [term];
     return untrack(() => {
-      if (scroller.current && filtering) scroller.current.scrollTop = 0;
+      if (scroller.current && term) scroller.current.scrollTop = 0;
     });
   });
 </script>
 
 <div class={styles.colHead}>
-  <div class={styles.colTitle}>
-    <h2 id="transcript-heading">{t("hearing.transcript")}</h2>
-    <label class={styles.follow}>
-      <input
-        type="checkbox"
-        checked={follow && !filtering}
-        disabled={filtering}
-        oninput={(e) => (follow = e.currentTarget.checked)}
-      />
-      {filtering ? t("transcript.followPaused") : t("transcript.follow")}
-    </label>
-  </div>
-  <div class={styles.filterRow}>
-    <label class={styles.searchBox}>
-      <Search size={15}></Search>
-      <span class={ui.srOnly}>{t("transcript.search")}</span>
-      <input
-        type="search"
-        placeholder={t("transcript.searchPlaceholder")}
-        value={query}
-        oninput={(e) => (query = e.currentTarget.value)}
-      />
-    </label>
-    <label>
-      <span class={ui.srOnly}>{t("transcript.filterSpeaker")}</span>
-      <select
-        value={speaker}
-        onchange={(e) => (speaker = e.currentTarget.value)}
-      >
-        <option value="">{t("transcript.allSpeakers")}</option>
-        {#each speakerIds as id (id)}<option value={id}>
-            {speakerName(id, speakers)}
-          </option>{/each}
-      </select>
-    </label>
-  </div>
-  <div class={styles.results}>
-    <span role="status">
-      {filtering
-        ? t("transcript.shownOf", {
-            shown: visibleSegments.length,
-            total: segments.length,
-          })
-        : tp("count.statements", segments.length)}
-    </span>
-    {#if filtering}<button
-        class={styles.ghost}
-        onclick={() => {
-          query = "";
-          speaker = "";
-        }}
-      >
-        <X size={14}></X>
-        {t("transcript.clear")}
-      </button>{/if}
-  </div>
+  <h2 id="transcript-heading">
+    {t("hearing.transcript")}
+    <small>{tp("count.statements", segments.length)}</small>
+  </h2>
+  <label class={styles.search}>
+    <Search size={14}></Search>
+    <span class={ui.srOnly}>{t("transcript.search")}</span>
+    <input
+      type="search"
+      placeholder={t("transcript.searchShort")}
+      bind:value={query}
+    />
+  </label>
 </div>
-<div bind:this={scroller.current} class={styles.scroll}>
+{#if term}<p class={styles.quiet} role="status">
+    {t("transcript.shownOf", {
+      shown: visibleSegments.length,
+      total: segments.length,
+    })}
+  </p>{/if}
+<div
+  bind:this={scroller.current}
+  class={styles.scroll}
+  onscroll={(e) => {
+    const el = e.currentTarget;
+    atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+  }}
+>
   {#if visibleSegments.length}{#each visibleSegments as s (s.id)}{@const finding =
         findingBySegment.get(s.id)}
-      <article class={styles.segment}>
-        <div class={styles.segmentHead}>
+      <article
+        id={`line-${s.id}`}
+        class={styles.line}
+        data-selected={selectedSegment === s.id || undefined}
+        data-status={finding?.status}
+      >
+        <div class={styles.lineHead}>
           {#if onRename}<button
-              class={ui.speakerButton}
+              class={styles.speaker}
               title={t("transcript.renameSpeaker")}
               onclick={() => {
                 renaming = s.speaker;
                 renameValue = speakers[s.speaker] ?? "";
               }}>{speakerName(s.speaker, speakers)}</button
-            >{:else}<strong>{speakerName(s.speaker, speakers)}</strong>{/if}
+            >{:else}<strong class={styles.speaker}
+              >{speakerName(s.speaker, speakers)}</strong
+            >{/if}
           <time>
             {s.origin === "imported" && !s.start && !s.end
-              ? t("transcript.noTime")
+              ? ""
               : timestamp(s.start)}
           </time>
         </div>
-        <p>
-          <TranscriptText text={s.text} {term}></TranscriptText>
-        </p>
-        <div class={styles.segmentFoot}>
-          <span>
-            {s.origin === "manual"
-              ? t("transcript.manual")
-              : s.origin === "imported"
-                ? t("common.importedTranscript")
-                : s.confidence === null
-                  ? t("transcript.noConfidence")
-                  : t("transcript.confidence", {
-                      value: Math.round(s.confidence * 100),
-                    })}
-            {!speakers[s.speaker] &&
-            ["transcribe", "speechmatics"].includes(s.origin)
-              ? t("transcript.roleUnconfirmed")
-              : ""}
-          </span>
-          {#if finding}<button onclick={() => select(s.id)}>
-              <i
-                class={`${ui.statusDot} ${ui[finding.status]}`}
-                aria-hidden="true"
-              ></i>
-              {t("transcript.viewFinding")}
-              <ChevronRight size={12}></ChevronRight>
-            </button>{:else}{#if !["skipped", "unavailable", "failed", "interrupted"].includes(s.analysis_state)}<span
-                class={styles.phase}
-                >{t(phases[s.analysis_state] ?? "phase.saved")}</span
-              >{/if}{/if}
-        </div>
-        {#if s.analysis_error}<div class={styles.segmentError}>
-            <p>{userFacingError(s.analysis_error)}</p>
+        <p><TranscriptText text={s.text} {term}></TranscriptText></p>
+        {#if finding}<button
+            class={styles.flag}
+            data-status={finding.status}
+            onclick={() => select(s.id)}
+          >
+            <i aria-hidden="true"></i>
+            {statusLabel(finding.status)}: {finding.title}
+          </button>{:else if working.has(s.analysis_state)}<span
+            class={styles.working}>{t("transcript.checking")}</span
+          >{/if}
+        {#if s.analysis_error && s.analysis_state === "failed"}<div
+            class={styles.lineError}
+          >
+            <span>{userFacingError(s.analysis_error)}</span>
             <button onclick={() => onRetry(s.id)}>
               <RefreshCw size={12}></RefreshCw>
               {t("transcript.retry")}
             </button>
           </div>{/if}
-      </article>{/each}{:else}<div class={styles.empty}>
-      <AudioLines size={26}></AudioLines>
+      </article>{/each}{:else if !partial}<div class={styles.empty}>
+      <AudioLines size={24}></AudioLines>
       <h3>
-        {filtering ? t("transcript.noMatchTitle") : t("transcript.readyTitle")}
+        {term ? t("transcript.noMatchTitle") : t("transcript.readyTitle")}
       </h3>
-      <p>
-        {filtering ? t("transcript.noMatchText") : t("transcript.readyText")}
-      </p>
+      <p>{term ? t("transcript.noMatchText") : t("transcript.readyText")}</p>
     </div>{/if}
-  {#if partial && !filtering}<div class={styles.partial}>
+  {#if partial && !term}<div class={styles.partial} aria-live="polite">
       <span>{t("transcript.listening")}</span>
       <p>{partial}</p>
     </div>{/if}
 </div>
+{#if !atBottom && !term}<button class={styles.jump} onclick={toBottom}>
+    <ArrowDown size={14}></ArrowDown>
+    {t("transcript.latest")}
+  </button>{/if}
 
 <Modal
   open={renaming !== null}

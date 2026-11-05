@@ -603,9 +603,9 @@ export const id: Messages = {
     "Unggah transkrip yang sudah ada, atau buat sidang untuk audio langsung dan catatan manual.",
 
   // Peta dan pencarian bukti
-  "evidence.title": "Telusuri buktinya.",
+  "evidence.title": "Keterkaitan bukti",
   "evidence.lead":
-    "Ajukan pertanyaan tentang perkara. Telusuri setiap jawaban kembali ke sumbernya dan keterkaitan di antaranya.",
+    "Hubungan antara keterangan sidang dan berkas perkara. Yang berbeda tampil paling atas agar dapat Anda periksa sebelum sidang berikutnya.",
   "evidence.finding": "Mencari keterkaitan…",
   "evidence.find": "Cari keterkaitan",
   "evidence.searching": "Mencari dalam perkara…",
@@ -835,7 +835,7 @@ export const id: Messages = {
     "Setiap keterangan dicek terhadap sumber: didukung sumber, berbeda dari sumber, perlu konteks, atau bukti belum cukup. Buka temuan untuk melihat kedua kutipan, lalu tandai sudah ditinjau dengan catatan Anda.",
   "tour.assistant.title": "5. Tanya tentang perkara",
   "tour.assistant.text":
-    "Ajukan pertanyaan dengan bahasa sehari-hari. Jawaban mengutip bagian persis dari perkara ini saja.",
+    "Tombol Tanya Jude ada di setiap layar, termasuk saat sidang berlangsung. Jawaban mengutip bagian persis dari perkara ini saja.",
   "tour.practice.title": "6. Latihan sidang",
   "tour.practice.text":
     "Berlatih sebagai Penasihat Hukum, Penuntut Umum, atau Hakim dengan kondisi dari perkara. Latihan tidak pernah mengubah catatan bukti.",
@@ -1207,4 +1207,82 @@ export const id: Messages = {
   "account.usageOf": "{used} dari {limit}",
   "account.overLimit": "Melebihi batas paket",
   "account.changePlan": "Ubah paket",
+
+  // Assistant dock, hearing room and evidence list
+  "dock.bubble": "Tanya Jude",
+  "dock.open": "Buka asisten perkara",
+  "dock.title": "Asisten Jude",
+  "dock.following": "Mengikuti: {title}",
+  "dock.wholeCase": "Seluruh perkara",
+  "dock.history": "Percakapan sebelumnya",
+  "dock.new": "Percakapan baru",
+  "dock.noHistory": "Belum ada percakapan sebelumnya.",
+  "dock.welcome": "Apa yang perlu Anda pahami?",
+  "dock.welcomeHearing": "Saya mengikuti sidang ini.",
+  "dock.welcomeText":
+    "Tanyakan apa saja. Setiap jawaban mengutip berkas atau keterangan sidang agar dapat Anda periksa.",
+  "dock.aiOff":
+    "Balasan AI sedang tidak tersedia. Anda tetap mendapat kutipan perkara yang relevan.",
+  "dock.ask.caseSummary": "Ringkas perkara ini dan hal yang masih belum pasti.",
+  "dock.ask.caseConflicts":
+    "Di bagian mana keterangan para saksi saling berbeda atau berbeda dari berkas?",
+  "dock.ask.caseQuestions":
+    "Pertanyaan apa yang perlu saya siapkan untuk sidang berikutnya?",
+  "dock.ask.hearingConflicts":
+    "Keterangan mana di sidang ini yang bertentangan dengan keterangan sebelumnya atau berkas perkara?",
+  "dock.ask.hearingSummary": "Ringkas keterangan setiap saksi di sidang ini.",
+  "dock.ask.hearingQuestions":
+    "Sarankan tiga pertanyaan lanjutan untuk saksi saat ini.",
+  "dock.ask.liveConflicts":
+    "Apakah saksi barusan mengatakan sesuatu yang berbeda dari keterangan sebelumnya atau berkas?",
+  "dock.ask.liveSummary": "Ringkas keterangan beberapa menit terakhir.",
+  "dock.ask.liveQuestions":
+    "Apa yang sebaiknya saya tanyakan ke saksi berikutnya?",
+  "dock.ask.finding":
+    "Jelaskan temuan ini dan cara mengujinya di persidangan: {title}",
+  "dock.ask.connection":
+    "Bandingkan dua kutipan ini. Apakah sejalan, berbeda, atau perlu konteks?",
+  "dock.thinking": "Membaca perkara…",
+  "dock.opening": "Membuka…",
+  "dock.label": "Pesan untuk asisten",
+  "dock.placeholder": "Tanyakan tentang perkara ini…",
+  "dock.placeholderHearing": "Tanyakan tentang sidang ini…",
+  "dock.send": "Kirim",
+  "dock.hint":
+    "Enter untuk kirim · Shift+Enter untuk baris baru · Jawaban membantu pertimbangan Anda, bukan menggantikannya.",
+  "dock.toggleHearing": "Sertakan atau lepaskan sidang ini",
+  "dock.attached": "Materi terpilih",
+  "dock.removeAttached": "Lepaskan materi terlampir",
+  "hearing.more": "Tindakan lain",
+  "hearing.waiting": "{count} pernyataan belum dianalisis.",
+  "hearing.analyzeNow": "Analisis sekarang",
+  "hearing.filter.all": "Semua",
+  "hearing.filter.conflicts": "Berbeda",
+  "hearing.filter.open": "Perlu ditinjau",
+  "hearing.askConflicts": "Tanya Jude soal kontradiksi di sidang ini",
+  "count.conflicts.one": "{count} perbedaan",
+  "count.conflicts.other": "{count} perbedaan",
+  "transcript.searchShort": "Cari…",
+  "transcript.checking": "Mencocokkan dengan berkas…",
+  "transcript.latest": "Terbaru",
+  "finding.askJude": "Tanya Jude",
+  "finding.moreDetail": "Ketidakpastian dan tinjauan",
+  "finding.addNote": "Tambah catatan",
+  "finding.earlierTestimony": "Keterangan sebelumnya · {speaker} · {time}",
+  "audio.recordingFor": "Merekam {time}",
+  "audio.noRecordings": "Belum ada rekaman untuk sidang ini.",
+  "evidence.filter": "Saring keterkaitan",
+  "evidence.stat.all": "Semua keterkaitan",
+  "evidence.stat.conflicts": "Berbeda",
+  "evidence.stat.supports": "Mendukung",
+  "evidence.stat.context": "Perlu konteks",
+  "evidence.stat.open": "Belum dikonfirmasi",
+  "evidence.searchList": "Cari keterkaitan, nama, atau kutipan…",
+  "evidence.fromFinding": "Dari temuan sidang",
+  "evidence.confirmed": "Dikonfirmasi oleh Anda",
+  "evidence.showMore": "Tampilkan {count} lagi",
+  "evidence.noMatchTitle": "Tidak ada yang cocok dengan saringan ini.",
+  "evidence.noMatchText": "Pilih saringan lain atau hapus pencarian.",
+  "finding.showMore": "Selengkapnya",
+  "finding.showLess": "Ringkas",
 };

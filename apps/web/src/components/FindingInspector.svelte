@@ -1,53 +1,57 @@
 <script lang="ts">
   import { t } from "../lib/i18n/index.svelte";
   import Skeleton from "./Skeleton.svelte";
-  import { ArrowLeft, Check, ChevronDown, Copy } from "@lucide/svelte";
+  import {
+    Check,
+    ChevronDown,
+    Copy,
+    Download,
+    MessageSquareText,
+    Sparkles,
+  } from "@lucide/svelte";
   import {
     api,
     relationLabel,
+    speakerName,
     timestamp,
     type Finding,
     type Segment,
     type Source,
   } from "../lib/workspace-api";
-  import ui from "./workspace.module.css";
-  import styles from "./case-tabs.module.css";
+  import styles from "./hearing.module.css";
   import { untrack } from "svelte";
-  import SourceCard from "./SourceCard.svelte";
-  import LegalResults from "./LegalResults.svelte";
 
   let {
     finding,
     segment,
     caseId,
     busy,
-    note,
-    onNote,
+    speakers = {},
     save,
-    onBack,
+    onAsk,
   }: {
-    note: string;
-    onNote: (note: string) => void;
     finding: Finding;
     segment?: Segment;
     caseId: string;
     busy: boolean;
+    speakers?: Record<string, string>;
     save: (body: { reviewed: boolean; note: string }) => Promise<boolean>;
-    /** Returns focus to the finding list on one-column layouts. */
-    onBack?: () => void;
+    /** Opens the assistant about this finding. */
+    onAsk?: () => void;
   } = $props();
 
   let source = $state<Source | null>(null);
-
   let sourceError = $state("");
-
   let citationIndex = $state(0);
-
   let copied = $state(false);
-
-  let copyError = $state("");
+  let note = $state(untrack(() => finding.note));
+  let noteOpen = $state(untrack(() => !!finding.note));
+  let full = $state(false);
 
   let citation = $derived(finding.citations[citationIndex]);
+  let quoteAt = $derived(
+    source && citation?.quote ? source.text.indexOf(citation.quote) : -1,
+  );
 
   $effect(() => {
     void [caseId, citation?.chunk_id];
@@ -56,7 +60,9 @@
       source = null;
       sourceError = "";
       if (citation?.chunk_id)
-        api<Source>(`/cases/${caseId}/sources/${citation.chunk_id}`)
+        api<Source>(
+          `/cases/${caseId}/sources/${encodeURIComponent(citation.chunk_id)}`,
+        )
           .then((s) => {
             if (alive) source = s;
           })
@@ -71,25 +77,31 @@
 </script>
 
 <div class={styles.detail}>
-  <div class={styles.testimony}>
-    <span
-      >{t("finding.hearingAt", {
-        time: timestamp(segment?.start ?? 0),
-      })}</span
-    >
-    <blockquote>“{segment?.text}”</blockquote>
-  </div>
-  <p>{finding.explanation}</p>
-  <div>
+  {#if segment}
+    <figure class={styles.said}>
+      <figcaption>
+        {speakerName(segment.speaker, speakers)} · {timestamp(segment.start)}
+      </figcaption>
+      <blockquote>{segment.text}</blockquote>
+    </figure>
+  {/if}
+
+  <p class={styles.explain} data-full={full || undefined}>
+    {finding.explanation}
+  </p>
+  {#if finding.explanation.length > 320}<button
+      class={styles.link}
+      aria-expanded={full}
+      onclick={() => (full = !full)}
+      >{full ? t("finding.showLess") : t("finding.showMore")}</button
+    >{/if}
+
+  <div class={styles.block}>
     <h4>{t("common.atSource")}</h4>
-    {#if finding.citations.length > 1}<div class={styles.citationTabs}>
+    {#if finding.citations.length > 1}<div class={styles.tabs}>
         {#each finding.citations as c, i (i)}<button
             aria-pressed={i === citationIndex}
-            onclick={() => {
-              citationIndex = i;
-              source = null;
-              sourceError = "";
-            }}
+            onclick={() => (citationIndex = i)}
           >
             {t("finding.sourceTab", {
               n: i + 1,
@@ -97,69 +109,105 @@
             })}
           </button>{/each}
       </div>{/if}
-    {#if sourceError}<p role="alert" class={ui.error}>
-        {sourceError}
-      </p>{:else}{#if source && source.id === citation?.chunk_id}<SourceCard
-          {source}
-          {caseId}
-          quote={citation?.quote}
-        ></SourceCard>{:else if citation}<Skeleton
-          variant="reader"
-          label={t("finding.loadingPassage")}
-        />{:else}<p class={styles.quiet}>
-          {t("finding.noCitation")}
-        </p>{/if}{/if}
+    {#if sourceError}<p role="alert" class={styles.alert}>{sourceError}</p>
+    {:else if source && source.id === citation?.chunk_id}
+      <div class={styles.source} data-relation={citation.relation}>
+        <div class={styles.sourceHead}>
+          <strong>
+            {source.kind === "testimony"
+              ? t("finding.earlierTestimony", {
+                  speaker: speakerName(source.speaker ?? "", speakers),
+                  time: timestamp(source.start ?? 0),
+                })
+              : source.document_name}
+          </strong>
+          <small>
+            {source.kind === "testimony"
+              ? source.document_name
+              : source.section
+                ? t("source.docxSection")
+                : t("common.page", { page: source.page })}
+          </small>
+        </div>
+        <p>
+          {#if quoteAt >= 0 && citation.quote}{source.text.slice(
+              Math.max(0, quoteAt - 220),
+              quoteAt,
+            )}<mark>{citation.quote}</mark>{source.text.slice(
+              quoteAt + citation.quote.length,
+              quoteAt + citation.quote.length + 220,
+            )}{:else}{source.text.slice(0, 600)}{/if}
+        </p>
+        {#if source.document_id}<a
+            rel="external"
+            href={`/api/v1/cases/${caseId}/documents/${source.document_id}/original`}
+          >
+            <Download size={13}></Download>
+            {t("common.downloadOriginal")}
+          </a>{/if}
+      </div>
+    {:else if citation}<Skeleton
+        variant="compact"
+        label={t("finding.loadingPassage")}
+      />
+    {:else}<p class={styles.quiet}>{t("finding.noCitation")}</p>{/if}
   </div>
-  <div class={styles.verify}>
+
+  <div class={styles.block}>
     <h4>{t("common.whatToVerify")}</h4>
     <p>{finding.verification}</p>
   </div>
-  <div>
-    <h4>{t("finding.uncertainty")}</h4>
-    <p class={styles.quiet}>{finding.uncertainty}</p>
-  </div>
-  <div class={styles.question}>
+
+  <div class={`${styles.block} ${styles.ask}`}>
     <h4>{t("common.questionToConsider")}</h4>
     <p>{finding.question}</p>
-    <button
-      class={styles.ghost}
-      onclick={async () => {
-        try {
-          await navigator.clipboard.writeText(finding.question);
-          copied = true;
-          copyError = "";
-        } catch {
-          copyError = t("finding.clipboardError");
-        }
-      }}
-    >
-      {#if copied}<Check size={14}></Check>{:else}<Copy size={14}></Copy>{/if}
-      {copied ? t("common.copied") : t("common.copyQuestion")}
-    </button>
-    <span class={ui.srOnly} role="status">
-      {copied ? t("finding.questionCopied") : ""}
-    </span>
-    {#if copyError}<p role="alert" class={styles.draft}>{copyError}</p>{/if}
+    <div class={styles.row}>
+      <button
+        class={styles.link}
+        onclick={async () => {
+          try {
+            await navigator.clipboard.writeText(finding.question);
+            copied = true;
+          } catch {
+            copied = false;
+          }
+        }}
+      >
+        {#if copied}<Check size={13}></Check>{:else}<Copy size={13}></Copy>{/if}
+        {copied ? t("common.copied") : t("common.copyQuestion")}
+      </button>
+      {#if onAsk}<button class={styles.link} onclick={onAsk}>
+          <Sparkles size={13}></Sparkles>
+          {t("finding.askJude")}
+        </button>{/if}
+    </div>
   </div>
-  <details class={styles.reviewDetails}>
+
+  <details class={styles.more}>
     <summary>
-      {finding.mode === "imported"
-        ? t("finding.importedReview")
-        : t("finding.independentReview")}
-      <ChevronDown size={15}></ChevronDown>
+      {t("finding.moreDetail")}
+      <ChevronDown size={14}></ChevronDown>
     </summary>
     <div>
-      <p>{finding.review.summary}</p>
+      {#if finding.uncertainty}<p>
+          <strong>{t("finding.uncertainty")}:</strong>
+          {finding.uncertainty}
+        </p>{/if}
+      {#if finding.review.summary && finding.review.summary !== finding.explanation}<p
+        >
+          <strong
+            >{finding.mode === "imported"
+              ? t("finding.importedReview")
+              : t("finding.independentReview")}:</strong
+          >
+          {finding.review.summary}
+        </p>{/if}
       {#each finding.review.alternative_explanations as item, i (i)}<p>
           {t("finding.alternative", { text: item })}
         </p>{/each}
       {#each finding.review.missing_context as item, i (i)}<p>
           {t("finding.missingContext", { text: item })}
         </p>{/each}
-      {#if finding.review.analyst_summary}<p>
-          {t("finding.analyst", { text: finding.review.analyst_summary })}
-        </p>{/if}
-      {#if finding.review.legal_note}<p>{finding.review.legal_note}</p>{/if}
       <small>
         {finding.mode === "imported"
           ? t("finding.importedVerify")
@@ -167,52 +215,39 @@
       </small>
     </div>
   </details>
-  {#if finding.legal.length > 0}
-    <div>
-      <h4>{t("finding.legal")}</h4>
-      <LegalResults results={finding.legal}></LegalResults>
-    </div>
-  {/if}
-  <div class={styles.review}>
-    <label>
-      {t("finding.note")}
+
+  {#if noteOpen}
+    <label class={styles.note}>
+      <span>{t("finding.note")}</span>
       <textarea
-        value={note}
-        oninput={(e) => onNote(e.currentTarget.value)}
-        rows={3}
+        bind:value={note}
+        rows={2}
         maxlength={4000}
         placeholder={t("finding.notePlaceholder")}></textarea>
     </label>
-    {#if note !== finding.note}<p class={styles.draft} role="status">
-        {t("finding.unsaved")}
-      </p>{/if}
-    <div class={styles.reviewActions}>
-      <button
-        class={finding.reviewed ? ui.secondary : ui.primary}
-        disabled={busy}
-        onclick={() => save({ reviewed: !finding.reviewed, note })}
+  {/if}
+
+  <div class={styles.actions}>
+    <button
+      class={finding.reviewed ? styles.secondary : styles.primary}
+      disabled={busy}
+      onclick={() => save({ reviewed: !finding.reviewed, note })}
+    >
+      <Check size={15}></Check>
+      {finding.reviewed ? t("finding.reopen") : t("finding.markReviewed")}
+    </button>
+    {#if !noteOpen}<button
+        class={styles.link}
+        onclick={() => (noteOpen = true)}
       >
-        <Check size={15}></Check>
-        {finding.reviewed ? t("finding.reopen") : t("finding.markReviewed")}
-      </button>
-      <button
-        class={styles.ghost}
-        disabled={busy || note === finding.note}
+        <MessageSquareText size={14}></MessageSquareText>
+        {t("finding.addNote")}
+      </button>{:else if note !== finding.note}<button
+        class={styles.link}
+        disabled={busy}
         onclick={() => save({ reviewed: finding.reviewed, note })}
       >
         {t("finding.saveNote")}
-      </button>
-    </div>
-    {#if finding.reviewed}<p class={styles.reviewed}>
-        <Check size={14}></Check>
-        {t("finding.reviewedByYou")}
-      </p>{/if}
-    {#if onBack}<button
-        class={`${styles.back} ${styles.backToFindings}`}
-        onclick={onBack}
-      >
-        <ArrowLeft size={14}></ArrowLeft>
-        {t("hearing.backToFindings")}
       </button>{/if}
   </div>
 </div>

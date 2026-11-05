@@ -16,7 +16,12 @@ import {
 import { pack, unpack, validateArchive } from "../src/lib/server/archive";
 import { extractPages } from "../src/lib/server/documents";
 import { previewHearing } from "../src/lib/server/hearings";
-import { investigate } from "../src/lib/server/analysis";
+import {
+  investigate,
+  notCheckable,
+  REVIEW_ROLE,
+  SCREEN_ROLE,
+} from "../src/lib/server/analysis";
 import {
   safePasalUrl,
   structured,
@@ -1352,6 +1357,105 @@ test("analysis screens with one cheap call, reviews only inconsistencies indepen
   );
   assert.equal(finding.status, "context_needed");
   assert.equal(finding.review.reviewed_by, "review_unavailable");
+});
+
+test("courtesy turns and questions skip analysis without a model call", () => {
+  for (const text of [
+    "Ya, silahkan.",
+    "Ya silahkan, silahkan.",
+    "Terima kasih, Yang Mulia.",
+    "Jam berapa Saudara datang?",
+  ])
+    assert.equal(notCheckable(text), true, text);
+  for (const text of ["Jam sembilan pagi.", "Dia pakai AK-47.", "Tidak."])
+    assert.equal(notCheckable(text), false, text);
+});
+
+test("analysis cites the witness's own earlier testimony and names concrete conflicts", async (t) => {
+  const { a, rt, record } = await fixture(t),
+    base = `/cases/${record.id}`;
+  const hearing = await a.json(base + "/hearings", "POST", { title: "Sidang" });
+  const say = (text: string, created_at: string) =>
+    rt.db.insert("segments", {
+      case_id: record.id,
+      hearing_id: hearing.id,
+      speaker: "Saksi Susi",
+      text,
+      created_at,
+    });
+  const before = await say(
+    "Saya tiba di rumah itu jam 8 pagi.",
+    "2026-01-01T08:00:00.000Z",
+  );
+  const later = await say(
+    "Saya tiba di rumah itu jam 9 pagi.",
+    "2026-01-01T09:00:00.000Z",
+  );
+  const roles: string[] = [];
+  fakeModel(rt, ({ system, payload }) => {
+    roles.push(system);
+    const earlier = (
+      payload.sources as { id: string; kind: string; text: string }[]
+    ).find((s) => s.kind === "earlier_testimony");
+    assert.ok(earlier, "earlier testimony is offered as a source");
+    assert.equal(earlier.id, `statement:${before.id}`);
+    if (system.includes("Independent reviewer")) {
+      assert.deepEqual(payload.passages_to_compare, [
+        { source_id: earlier.id, quote: "jam 8 pagi" },
+      ]);
+      return {
+        summary: "Dua waktu berbeda untuk kedatangan yang sama.",
+        alternative_explanations: ["Perkiraan waktu"],
+        missing_context: [],
+        conflict_confirmed: true,
+      };
+    }
+    return {
+      checkable: true,
+      status: "potential_inconsistency",
+      title: "Waktu kedatangan: jam 9 di sidang, jam 8 sebelumnya",
+      explanation: "Saksi sebelumnya menyebut jam 8 pagi.",
+      uncertainty: "Bisa jadi perkiraan.",
+      verification: "Bandingkan kedua keterangan.",
+      question: "Jam berapa tepatnya Saudara tiba?",
+      citations: [
+        { chunk_id: earlier.id, quote: "jam 8 pagi", relation: "conflicts" },
+      ],
+    };
+  });
+  await investigate(rt, later.id);
+  const finding = (await a.json(base)).findings.find(
+    (f: { segment_id: string }) => f.segment_id === later.id,
+  );
+  assert.equal(finding.status, "potential_inconsistency");
+  assert.equal(finding.citations[0].chunk_id, `statement:${before.id}`);
+  const source = await a.json(`${base}/sources/statement:${before.id}`);
+  assert.equal(source.kind, "testimony");
+  assert.equal(source.text, "Saya tiba di rumah itu jam 8 pagi.");
+  // The prompts treat different concrete values as conflicts, not wording.
+  for (const role of [SCREEN_ROLE, REVIEW_ROLE]) {
+    assert.match(role, /AK-47/);
+    assert.match(role, /earlier_testimony/);
+  }
+  assert.doesNotMatch(
+    SCREEN_ROLE,
+    /A difference in wording, a paraphrase or a possible transcription error is not a contradiction/,
+  );
+  // Archives keep testimony citations when a case moves between workspaces.
+  const exported = await a.call(`${base}/export.jude`);
+  const imported = await a.json(
+    "/cases/import",
+    "POST",
+    upload("case.jude", new Uint8Array(await exported.arrayBuffer())),
+  );
+  const copy = await a.json(`/cases/${imported.id}`);
+  const copiedLater = copy.segments.find(
+    (s: { text: string }) => s.text === "Saya tiba di rumah itu jam 8 pagi.",
+  );
+  assert.equal(
+    copy.findings[0].citations[0].chunk_id,
+    `statement:${copiedLater.id}`,
+  );
 });
 
 test("Bedrock structured calls repair stringified arrays and retry one schema failure by field path only", async (t) => {

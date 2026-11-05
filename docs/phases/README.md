@@ -25,3 +25,4 @@ Keep plans and results for each project phase here. Suggested file format name: 
 - [Cleanup](2026-11-02-cleanup.md): simulation and Speechmatics leftovers removed, provider-neutral errors, real demo excerpts on the landing page, unused copy removed, docs aligned with Transcribe.
 - [Pricing and simulated plans](2026-11-02-pricing.md): public `/pricing` page, plan calculator, simulated plan switch with usage metering, unit economics.
 - [Trim](2026-11-02-trim.md): OpenRouter, embeddings, the synthetic evaluation harness, the Cendana pack and voice diarization removed; minimal `.env.example` files.
+- [Workspace redesign](2026-11-05-workspace-redesign.md): location in the URL, floating Ask Jude assistant, simpler hearing room and evidence list, speech batching, earlier-testimony contradictions; assistant and legal reference tabs removed.

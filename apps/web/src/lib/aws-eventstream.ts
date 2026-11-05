@@ -132,3 +132,43 @@ export function toBatchResults(result: TranscribeResult) {
         },
   );
 }
+
+export type BatchResult = ReturnType<typeof toBatchResults>[number];
+
+/**
+ * Finalized speech waits in the browser until a natural break so the API stores, and
+ * the analysis pays for, whole turns instead of two-word fragments.
+ */
+export const SPEECH_BATCH = {
+  /** A finished sentence this long is worth saving at once. */
+  minWords: 18,
+  /** A pause without any new speech (partial or final) ends the turn. */
+  idleMs: 2500,
+  /** Long monologues are saved at least this often. */
+  maxMs: 30_000,
+  /** Absolute word cap for one saved batch. */
+  maxWords: 220,
+};
+
+/** Text of buffered results, as the transcript will show it once saved. */
+export function batchText(results: BatchResult[]) {
+  return results.reduce(
+    (text, r) =>
+      r.type === "punctuation"
+        ? text + r.alternatives[0].content
+        : text + (text ? " " : "") + r.alternatives[0].content,
+    "",
+  );
+}
+
+/** Whether the buffered results should be saved now, before the idle timer fires. */
+export function batchReady(results: BatchResult[], ageMs: number) {
+  const words = results.filter((r) => r.type !== "punctuation").length;
+  if (!words) return false;
+  if (words >= SPEECH_BATCH.maxWords || ageMs >= SPEECH_BATCH.maxMs)
+    return true;
+  const last = results.at(-1)!;
+  const sentenceEnd =
+    last.type === "punctuation" && /[.!?]$/.test(last.alternatives[0].content);
+  return sentenceEnd && words >= SPEECH_BATCH.minWords;
+}

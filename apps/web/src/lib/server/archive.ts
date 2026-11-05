@@ -288,7 +288,14 @@ export function validateArchive(data: Uint8Array) {
         422,
         "Finding refers to a missing statement.",
       );
-      validateCitations(f, archive.sources);
+      validateCitations(f, [
+        ...archive.sources,
+        // Findings may cite the witness's own earlier testimony.
+        ...archive.segments.map((s) => ({
+          id: `statement:${s.id}`,
+          text: s.text,
+        })),
+      ]);
     }
     const pairs = new Set<string>();
     for (const l of archive.links) {
@@ -421,7 +428,9 @@ export async function importCase(rt: Runtime, user: User, data: Uint8Array) {
           segment_id: mapped(f.segment_id),
           citations: f.citations.map((c) => ({
             ...c,
-            chunk_id: mapped(c.chunk_id),
+            chunk_id: c.chunk_id.startsWith("statement:")
+              ? `statement:${mapped(c.chunk_id.slice(10))}`
+              : mapped(c.chunk_id),
           })),
           mode: "imported",
           reviewed: false,

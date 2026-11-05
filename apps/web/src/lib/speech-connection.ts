@@ -2,8 +2,12 @@ import { t } from "./i18n/index.svelte";
 import { api } from "./workspace-api";
 import {
   audioEvent,
+  batchReady,
+  batchText,
   decodeEvent,
+  SPEECH_BATCH,
   toBatchResults,
+  type BatchResult,
   type TranscribeResult,
 } from "./aws-eventstream";
 export type SpeechCredentials = {
@@ -26,6 +30,11 @@ export class SpeechConnection {
   private stopping = false;
   private ended = false;
   private closed = false;
+  /** Finalized results not yet saved (see SPEECH_BATCH). */
+  private held: BatchResult[] = [];
+  private heldSince = 0;
+  private idle: ReturnType<typeof setTimeout> | undefined;
+  private live = "";
   onopen: (() => void) | null = null;
   onmessage: ((event: { data: string }) => void) | null = null;
   onerror: (() => void) | null = null;
@@ -72,11 +81,14 @@ export class SpeechConnection {
         for (const result of (body.Transcript?.Results ??
           []) as TranscribeResult[]) {
           if (result.IsPartial) {
-            this.partial(result.Alternatives?.[0]?.Transcript ?? "");
+            this.live = result.Alternatives?.[0]?.Transcript ?? "";
+            this.show();
+            this.wait();
             continue;
           }
+          this.live = "";
           const results = toBatchResults(result);
-          if (results.length) this.queue(results);
+          if (results.length) this.hold(results);
         }
       } catch {
         this.emit({
@@ -86,7 +98,34 @@ export class SpeechConnection {
       }
     };
   }
-  private queue(results: ReturnType<typeof toBatchResults>) {
+  /** The live line shows held text plus what is being said now. */
+  private show() {
+    this.partial([batchText(this.held), this.live].filter(Boolean).join(" "));
+  }
+  private hold(results: BatchResult[]) {
+    if (!this.held.length) this.heldSince = Date.now();
+    this.held.push(...results);
+    if (batchReady(this.held, Date.now() - this.heldSince)) this.flush();
+    else {
+      this.show();
+      this.wait();
+    }
+  }
+  /** Restart the pause timer; silence saves what is held. */
+  private wait() {
+    clearTimeout(this.idle);
+    if (this.held.length)
+      this.idle = setTimeout(() => this.flush(), SPEECH_BATCH.idleMs);
+  }
+  private flush() {
+    clearTimeout(this.idle);
+    if (!this.held.length) return;
+    const results = this.held;
+    this.held = [];
+    this.show();
+    this.queue(results);
+  }
+  private queue(results: BatchResult[]) {
     const batch = { sequence: ++this.sequence, results };
     this.saves = this.saves.then(async () => {
       let last: unknown;
@@ -96,7 +135,7 @@ export class SpeechConnection {
             `/cases/${this.caseId}/audio-sessions/${this.credentials.id}/transcripts`,
             { method: "POST", body: JSON.stringify(batch) },
           );
-          this.partial("");
+          this.show();
           if (result?.segments?.length) this.saved(result.segments);
           return;
         } catch (error) {
@@ -119,6 +158,7 @@ export class SpeechConnection {
   private finish() {
     if (this.ended) return;
     this.ended = true;
+    this.flush();
     void this.saves
       .then(() =>
         api(
@@ -163,6 +203,7 @@ export class SpeechConnection {
   }
   close() {
     if (this.closed) return;
+    this.flush();
     this.closed = true;
     this.socket.close();
     void this.saves

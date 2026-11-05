@@ -73,15 +73,18 @@ export async function caseContext(
           .slice(0, 3)
           .map(passage),
       );
-    else if (kind === "hearing" && hearingNames.has(id))
+    else if (kind === "hearing" && hearingNames.has(id)) {
+      // The assistant follows a hearing as it happens: the latest turns plus the most
+      // relevant earlier ones, so "what has the witness said so far" has material.
+      const turns = segments.filter((s) => s.hearing_id === id);
       chosen.push(
-        ...segments
-          .filter((s) => s.hearing_id === id)
-          .sort((a, b) => rank(b.text) - rank(a.text))
-          .slice(0, 4)
+        ...turns.slice(-6).map(testimony),
+        ...turns
+          .toSorted((a, b) => rank(b.text) - rank(a.text))
+          .slice(0, 8)
           .map(testimony),
       );
-    else if (kind === "passage" && chunkMap.has(id))
+    } else if (kind === "passage" && chunkMap.has(id))
       chosen.push(passage(chunkMap.get(id)!));
     else if (kind === "statement" && segmentMap.has(id))
       chosen.push(testimony(segmentMap.get(id)!));
@@ -120,7 +123,7 @@ export async function caseContext(
         seen.add(s.chunk_id);
         return true;
       })
-      .slice(0, 20);
+      .slice(0, 24);
   const findings = await rt.db.all(
     "findings",
     "case_id=?",

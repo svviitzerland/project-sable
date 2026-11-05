@@ -1,10 +1,11 @@
 <script lang="ts">
   import { formatDate, t } from "../lib/i18n/index.svelte";
   import { api, type Recording } from "../lib/workspace-api";
-  import { FileAudio, Mic, Square, ChevronDown } from "@lucide/svelte";
+  import { Mic, Square } from "@lucide/svelte";
   import Modal from "./Modal.svelte";
   import ui from "./workspace.module.css";
-  import styles from "./casebook.module.css";
+  import styles from "./hearing.module.css";
+  import { untrack } from "svelte";
 
   let {
     audio,
@@ -12,7 +13,6 @@
     caseId,
     recordings = [],
     onChanged = () => undefined,
-    empty = false,
   }: {
     audio: ReturnType<
       typeof import("../lib/hearing-audio.svelte").createHearingAudio
@@ -21,154 +21,89 @@
     caseId: string;
     recordings?: Recording[];
     onChanged?: () => void;
-    empty?: boolean;
   } = $props();
 
-  // One small decision modal per start: microphone or prepared file.
   let mode = $state<"mic" | "file" | null>(null);
   let authorized = $state(false);
   let keepRecording = $state(true);
   let language = $state("id");
   let file = $state<File | null>(null);
-  let showRecordings = $state(false);
+  let recordingsOpen = $state(false);
+  let elapsed = $state(0);
 
-  const minutes = (seconds: number) =>
+  const clock = (seconds: number) =>
     `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, "0")}`;
+
+  $effect(() => {
+    void [audio.status];
+    return untrack(() => {
+      if (audio.status !== "recording") return;
+      const started = Date.now() - elapsed * 1000;
+      const timer = setInterval(
+        () => (elapsed = Math.floor((Date.now() - started) / 1000)),
+        1000,
+      );
+      return () => clearInterval(timer);
+    });
+  });
 
   function choose(next: "mic" | "file") {
     mode = next;
     authorized = false;
     file = null;
   }
+
+  /** Menu entry: transcribe a prepared audio file. */
+  export function chooseFile() {
+    choose("file");
+  }
+
+  /** Menu entry: list saved hearing recordings. */
+  export function openRecordings() {
+    recordingsOpen = true;
+  }
+
   function begin() {
     if (!mode || !authorized) return;
     const chosen = mode;
     mode = null;
+    elapsed = 0;
     if (chosen === "mic") void audio.start(language, undefined, keepRecording);
     else if (file) void audio.start(language, file, false);
   }
 </script>
 
-<section class={styles.capture} aria-label={t("audio.title")}>
-  {#if audio.status === "idle" && empty}
-    <div class={styles.captureEmpty}>
-      <span class={styles.captureIcon} aria-hidden="true"
-        ><Mic size={24}></Mic></span
-      >
-      <h3>{t("audio.empty.title")}</h3>
-      <p>{t("audio.empty.text")}</p>
-      <div class={styles.captureActions}>
-        <button
-          class={ui.primary}
-          disabled={!configured}
-          onclick={() => choose("mic")}
-        >
-          <Mic size={16}></Mic>
-          {t("audio.start")}
-        </button>
-        <button
-          class={ui.secondary}
-          disabled={!configured}
-          onclick={() => choose("file")}
-        >
-          <FileAudio size={16}></FileAudio>
-          {t("audio.prepared")}
-        </button>
-      </div>
-      <small role="status"
-        >{configured ? t("audio.empty.alt") : t("audio.unavailable")}</small
-      >
-    </div>
-  {:else if audio.status === "idle"}
-    <div class={styles.captureBar}>
-      <button
-        class={ui.primary}
-        disabled={!configured}
-        onclick={() => choose("mic")}
-      >
-        <Mic size={16}></Mic>
-        {t("audio.start")}
-      </button>
-      <button
-        class={ui.secondary}
-        disabled={!configured}
-        onclick={() => choose("file")}
-      >
-        <FileAudio size={16}></FileAudio>
-        {t("audio.prepared")}
-      </button>
-      {#if recordings.length}
-        <button
-          class={styles.captureLink}
-          aria-expanded={showRecordings}
-          onclick={() => (showRecordings = !showRecordings)}
-        >
-          {t("audio.recordings")} ({recordings.length})
-          <ChevronDown size={14}></ChevronDown>
-        </button>
-      {/if}
-      <span class={styles.captureHint} role="status">
-        {configured ? t("audio.idleShort") : t("audio.unavailable")}
-      </span>
-    </div>
-  {:else}
-    <div class={styles.captureLive} role="status">
-      <span class={styles.liveDot} data-state={audio.status} aria-hidden="true"
-      ></span>
-      <strong>
-        {audio.status === "recording"
-          ? t("audio.recording")
-          : audio.status === "stopping"
-            ? t("audio.waiting")
-            : t("audio.connecting")}
-      </strong>
-      <button
-        class={ui.primary}
-        onclick={audio.stop}
-        disabled={audio.status === "stopping"}
-      >
-        <Square size={13}></Square>
-        {audio.status === "connecting"
-          ? t("audio.cancel")
-          : audio.status === "stopping"
-            ? t("audio.finishing")
-            : t("audio.stop")}
-      </button>
-    </div>
-  {/if}
-
-  {#if showRecordings && recordings.length}
-    <div class={styles.recordings}>
-      <p class={ui.muted}>{t("audio.recordingsNote")}</p>
-      <ul>
-        {#each recordings as r (r.id)}
-          <li>
-            <span
-              >{t("audio.recordingItem", {
-                when: formatDate(r.created_at),
-                duration: minutes(r.duration),
-              })}</span
-            >
-            <audio
-              controls
-              preload="none"
-              src={`/api/v1/cases/${caseId}/recordings/${r.id}`}
-            ></audio>
-            <button
-              class={styles.captureLink}
-              onclick={async () => {
-                await api(`/cases/${caseId}/recordings/${r.id}`, {
-                  method: "DELETE",
-                });
-                onChanged();
-              }}>{t("audio.deleteRecording")}</button
-            >
-          </li>
-        {/each}
-      </ul>
-    </div>
-  {/if}
-</section>
+{#if audio.status === "idle"}
+  <button
+    class={styles.record}
+    disabled={!configured}
+    title={configured ? undefined : t("audio.unavailable")}
+    onclick={() => choose("mic")}
+  >
+    <Mic size={16}></Mic>
+    {t("audio.start")}
+  </button>
+{:else}
+  <div class={styles.liveControl} role="status">
+    <span class={styles.liveDot} data-state={audio.status} aria-hidden="true"
+    ></span>
+    <span>
+      {audio.status === "recording"
+        ? t("audio.recordingFor", { time: clock(elapsed) })
+        : audio.status === "stopping"
+          ? t("audio.waiting")
+          : t("audio.connecting")}
+    </span>
+    <button onclick={audio.stop} disabled={audio.status === "stopping"}>
+      <Square size={12}></Square>
+      {audio.status === "connecting"
+        ? t("audio.cancel")
+        : audio.status === "stopping"
+          ? t("audio.finishing")
+          : t("audio.stop")}
+    </button>
+  </div>
+{/if}
 
 <Modal
   open={mode !== null}
@@ -177,17 +112,10 @@
     : t("audio.modal.micTitle")}
   onClose={() => (mode = null)}
 >
-  <div class={styles.captureForm}>
+  <div class={styles.form}>
     <p>
       {mode === "file" ? t("audio.modal.fileText") : t("audio.modal.micText")}
     </p>
-    <label>
-      {t("audio.recognitionLanguage")}
-      <select bind:value={language}>
-        <option value="id">Bahasa Indonesia</option>
-        <option value="en">English</option>
-      </select>
-    </label>
     {#if mode === "file"}
       <label>
         {t("audio.modal.chooseFile")}
@@ -198,6 +126,13 @@
         />
       </label>
     {/if}
+    <label>
+      {t("audio.recognitionLanguage")}
+      <select bind:value={language}>
+        <option value="id">Bahasa Indonesia</option>
+        <option value="en">English</option>
+      </select>
+    </label>
     <label class={styles.check}>
       <input type="checkbox" bind:checked={authorized} />
       <span>{t("audio.permission")}</span>
@@ -219,6 +154,49 @@
       onclick={begin}
     >
       {mode === "file" ? t("audio.modal.transcribe") : t("audio.modal.begin")}
+    </button>
+  {/snippet}
+</Modal>
+
+<Modal
+  open={recordingsOpen}
+  title={t("audio.recordings")}
+  onClose={() => (recordingsOpen = false)}
+>
+  <div class={styles.form}>
+    <p>{t("audio.recordingsNote")}</p>
+    {#if recordings.length}
+      <ul class={styles.recordings}>
+        {#each recordings as r (r.id)}
+          <li>
+            <span
+              >{t("audio.recordingItem", {
+                when: formatDate(r.created_at),
+                duration: clock(r.duration),
+              })}</span
+            >
+            <audio
+              controls
+              preload="none"
+              src={`/api/v1/cases/${caseId}/recordings/${r.id}`}
+            ></audio>
+            <button
+              class={styles.link}
+              onclick={async () => {
+                await api(`/cases/${caseId}/recordings/${r.id}`, {
+                  method: "DELETE",
+                });
+                onChanged();
+              }}>{t("audio.deleteRecording")}</button
+            >
+          </li>
+        {/each}
+      </ul>
+    {:else}<p class={styles.quiet}>{t("audio.noRecordings")}</p>{/if}
+  </div>
+  {#snippet footer()}
+    <button class={ui.secondary} onclick={() => (recordingsOpen = false)}>
+      {t("common.close")}
     </button>
   {/snippet}
 </Modal>

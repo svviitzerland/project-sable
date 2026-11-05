@@ -1,14 +1,17 @@
 <script lang="ts">
   import { t } from "../lib/i18n/index.svelte";
-  import Skeleton from "./Skeleton.svelte";
-  import { Plus } from "@lucide/svelte";
+  import Modal from "./Modal.svelte";
   import ui from "./workspace.module.css";
-  import styles from "./case-tabs.module.css";
+  import styles from "./hearing.module.css";
 
   let {
+    open,
+    onClose,
     busy,
     submit,
   }: {
+    open: boolean;
+    onClose: () => void;
     busy: boolean;
     submit: (body: {
       text: string;
@@ -18,52 +21,46 @@
     }) => Promise<boolean>;
   } = $props();
 
-  let open = $state(false);
-
   let text = $state("");
-
   let speaker = $state(t("manual.defaultSpeaker"));
 </script>
 
-<div class={styles.manual}>
-  <button
-    class={styles.ghost}
-    aria-expanded={open}
-    onclick={() => (open = !open)}
+<Modal {open} title={t("manual.add")} {onClose}>
+  <form
+    id="manual-statement"
+    class={styles.form}
+    onsubmit={async (e) => {
+      e.preventDefault();
+      if (await submit({ text, speaker, start: 0, end: 0 })) {
+        text = "";
+        onClose();
+      }
+    }}
   >
-    <Plus size={15}></Plus>
-    {t("manual.add")}
-  </button>
-  {#if open}<form
-      onsubmit={async (e) => {
-        e.preventDefault();
-        if (await submit({ text, speaker, start: 0, end: 0 })) text = "";
-      }}
+    <label>
+      {t("manual.speaker")}
+      <input bind:value={speaker} required maxlength={80} />
+    </label>
+    <label>
+      {t("manual.statement")}
+      <textarea
+        bind:value={text}
+        required
+        minLength={3}
+        maxlength={6000}
+        rows={4}
+        placeholder={t("manual.placeholder")}></textarea>
+    </label>
+  </form>
+  {#snippet footer()}
+    <button class={ui.secondary} onclick={onClose}>{t("common.cancel")}</button>
+    <button
+      class={ui.primary}
+      type="submit"
+      form="manual-statement"
+      disabled={busy}
     >
-      <label>
-        {t("manual.speaker")}
-        <input
-          value={speaker}
-          oninput={(e) => (speaker = e.currentTarget.value)}
-          required
-          maxlength={80}
-        />
-      </label>
-      <label>
-        {t("manual.statement")}
-        <textarea
-          value={text}
-          oninput={(e) => (text = e.currentTarget.value)}
-          required
-          minLength={3}
-          maxlength={6000}
-          rows={3}
-          placeholder={t("manual.placeholder")}></textarea>
-      </label>
-      <button class={ui.primary} disabled={busy}>
-        {busy ? t("common.saving") : t("manual.save")}
-      </button>
-    </form>{/if}
-</div>
-
-{#if busy}<Skeleton variant="compact" label={t("manual.skeleton")} />{/if}
+      {busy ? t("common.saving") : t("manual.save")}
+    </button>
+  {/snippet}
+</Modal>

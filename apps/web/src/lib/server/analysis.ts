@@ -9,10 +9,11 @@ import {
   type Source,
   type Json,
   type Legal,
+  type Segment,
 } from "./contracts";
 import { ProviderError } from "./errors";
 import { structured, legalSearch } from "./providers";
-import { retrieve } from "./retrieval";
+import { retrieve, tokens } from "./retrieval";
 import { exactSourceQuote } from "./quotes";
 export function validateCitations(
   conclusion: Conclusion,
@@ -70,6 +71,89 @@ export function verifiedConclusion(
   validateCitations(verified, sources);
   return verified;
 }
+/** Specific facts whose values must agree: times, dates, places, objects, people, counts. */
+const FACT_RULES =
+  "Concrete specifics are the facts that matter: time of day, date, duration, place, object or weapon type, colour, quantity, the people present, and the order of events. When the testimony and a source state DIFFERENT values for the SAME specific (for example 'jam 8 pagi' versus 'jam 9 pagi', 'pistol' versus 'AK-47' or 'senapan', 'dua orang' versus 'tiga orang', 'di kamar' versus 'di ruang TV'), that is a potential_inconsistency even when the wording is otherwise different and even when an innocent explanation (memory, estimate, transcription) is possible: list that explanation as uncertainty instead of downgrading the status. A handgun and a rifle are different weapon types. A source of kind earlier_testimony is the same witness's (or another person's) earlier statement in the record: a conflict with it is a potential inconsistency within the testimony and must cite that earlier statement. Only a genuine paraphrase with the same values, or a difference about a clearly different event, moment or object, is not a conflict.";
+
+export const SCREEN_ROLE =
+  "Evidence screen. First decide whether the testimony makes a checkable factual assertion; questions, greetings, procedure and fragments are not checkable (use preceding_context to read short answers, so 'Jam sembilan' answering 'Jam berapa Saudara datang?' asserts an arrival time). Turns by the judge (Hakim), prosecutor (Penuntut Umum, JPU) or counsel (Penasihat Hukum) are usually questions, summaries put to the witness, or procedure even without a question mark: they are not checkable unless the speaker states a fact as their own evidence. Never describe a different turn from preceding_context as this testimony. If checkable, compare it with every source and return a calibrated finding: supported only with a supporting quote, potential_inconsistency only with a conflicting quote, context_needed when sources are related but do not settle the specific, insufficient_evidence when they say nothing about it. " +
+  FACT_RULES +
+  " Name the differing values in the title (for example 'Waktu kedatangan: jam 9 di sidang, jam 8 di BAP'). Give a concrete verification step and one neutral follow-up question.";
+
+export const REVIEW_ROLE =
+  "Independent reviewer. You have not seen any earlier assessment. passages_to_compare lists the source passages to check against the testimony. Decide whether they genuinely conflict with the testimony: conflict_confirmed=true when they state different values for the same specific fact; false only when the values actually agree, the difference is purely wording, or the passages plainly concern a different event, moment or object. " +
+  FACT_RULES +
+  " List alternative explanations and missing context. Do not judge credibility.";
+
+const COURTESY = new Set(
+  "ya iya yah baik oke ok silakan silahkan terima kasih mohon izin maaf sebentar yang mulia majelis hakim pak bu ibu bapak saudara saudari sekalian cukup lanjut lanjutkan hm hmm eh em nah thank you yes okay please go ahead your honour honor".split(
+    " ",
+  ),
+);
+
+/** Questions and pure courtesy or procedure turns, which never need a model call. */
+export function notCheckable(text: string) {
+  const trimmed = text.trim();
+  if (/\?\s*$/.test(trimmed)) return true;
+  const words = trimmed.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  return !words.length || words.every((word) => COURTESY.has(word));
+}
+
+/**
+ * The closest earlier statements in this case, as citable sources (`statement:<id>`).
+ * The same speaker's turns rank first; preceding_context already carries the last few turns.
+ */
+export async function priorTestimony(
+  rt: Runtime,
+  segment: Segment,
+  query: string,
+  limit = 6,
+): Promise<Source[]> {
+  const queryTokens = tokens(query);
+  if (!queryTokens.size) return [];
+  const hearings = new Map(
+    (await rt.db.all("hearings", "case_id=?", [segment.case_id])).map((h) => [
+      h.id,
+      h.title,
+    ]),
+  );
+  const earlier = await rt.db.all(
+    "segments",
+    "case_id=? AND id<>? AND (created_at<? OR (created_at=? AND start<?))",
+    [
+      segment.case_id,
+      segment.id,
+      segment.created_at,
+      segment.created_at,
+      segment.start,
+    ],
+    "ORDER BY created_at DESC LIMIT 2000",
+  );
+  return earlier
+    .filter((s) => !notCheckable(s.text))
+    .map((s) => {
+      const overlap = [...tokens(s.text)].filter((t) =>
+        queryTokens.has(t),
+      ).length;
+      const score =
+        overlap / Math.max(1, queryTokens.size) +
+        (overlap && s.speaker === segment.speaker ? 0.5 : 0);
+      return { s, score };
+    })
+    .filter(({ score }) => score > 0.1)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ s, score }) => ({
+      id: `statement:${s.id}`,
+      document_id: "",
+      document_name: `${hearings.get(s.hearing_id || "") || "Hearing"} · ${s.speaker}`,
+      page: 1,
+      section: "testimony",
+      text: s.text,
+      score: Math.round(score * 10000) / 10000,
+    }));
+}
+
 export async function analysisState(
   rt: Runtime,
   id: string,
@@ -99,9 +183,17 @@ async function runInvestigation(rt: Runtime, id: string) {
   const context = (
     await rt.db.all(
       "segments",
-      "case_id=? AND hearing_id=? AND created_at<?",
-      [segment.case_id, segment.hearing_id, segment.created_at],
-      "ORDER BY created_at DESC LIMIT 5",
+      // One saved batch can share a timestamp; its timeline order still applies.
+      "case_id=? AND hearing_id=? AND id<>? AND (created_at<? OR (created_at=? AND start<?))",
+      [
+        segment.case_id,
+        segment.hearing_id,
+        segment.id,
+        segment.created_at,
+        segment.created_at,
+        segment.start,
+      ],
+      "ORDER BY created_at DESC, start DESC LIMIT 5",
     )
   )
     .reverse()
@@ -119,8 +211,8 @@ async function runInvestigation(rt: Runtime, id: string) {
       );
       return;
     }
-    // Questions (usually from the bench or counsel) assert nothing; skip them for free.
-    if (/\?\s*$/.test(segment.text.trim())) {
+    // Questions and courtesy turns ("Ya, silakan.") assert nothing; skip them for free.
+    if (notCheckable(segment.text)) {
       await analysisState(rt, id, "skipped");
       return;
     }
@@ -128,13 +220,20 @@ async function runInvestigation(rt: Runtime, id: string) {
     // screens the statement and compares it with the sources. Only a potential
     // inconsistency pays for the independent review model.
     await analysisState(rt, id, "retrieving");
-    const { results: sources, mode: method } = await retrieve(
+    const query = [...context.slice(-2).map((c) => c.text), segment.text].join(
+      " ",
+    );
+    const { results: documents, mode: method } = await retrieve(
       rt,
       segment.case_id,
-      [...context.slice(-2).map((c) => c.text), segment.text].join(" "),
+      query,
       8,
       hearing?.source_document_id,
     );
+    // Earlier testimony is evidence too: a witness who said "jam 8" and now says "jam 9"
+    // contradicts their own statement even when no document mentions the time.
+    const earlier = await priorTestimony(rt, segment, query);
+    const sources = [...documents, ...earlier];
     if (!sources.length) {
       await analysisState(
         rt,
@@ -148,12 +247,20 @@ async function runInvestigation(rt: Runtime, id: string) {
       testimony: segment.text,
       speaker: segment.speaker,
       preceding_context: context,
-      sources,
+      sources: sources.map((source) => ({
+        id: source.id,
+        kind: source.id.startsWith("statement:")
+          ? "earlier_testimony"
+          : "document",
+        title: source.document_name,
+        page: source.page,
+        text: source.text,
+      })),
     };
     await analysisState(rt, id, "analyzing");
     const screen = await structured(
       rt,
-      "Evidence screen. First decide whether the testimony makes a checkable factual assertion; questions, greetings, procedure and fragments are not checkable (use preceding_context to read short answers). Turns by the judge (Hakim), prosecutor (Penuntut Umum, JPU) or counsel (Penasihat Hukum) are usually questions, summaries put to the witness, or procedure even without a question mark: they are not checkable unless the speaker states a fact as their own evidence. Never describe a different turn from preceding_context as this testimony. If checkable, compare it with the sources and return a calibrated finding: supported only with a supporting quote, potential_inconsistency only with a conflicting quote, context_needed when sources are related but do not settle it, insufficient_evidence when they say nothing. A difference in wording, a paraphrase or a possible transcription error is not a contradiction. Give a concrete verification step and one neutral follow-up question.",
+      SCREEN_ROLE,
       packet,
       conclusionSchema.extend({ checkable: z.boolean() }),
     );
@@ -189,8 +296,14 @@ async function runInvestigation(rt: Runtime, id: string) {
       // it. If the reviewer cannot answer, the finding falls back to context needed.
       const reviewer = await structured(
         rt,
-        "Independent reviewer. You have not seen any earlier assessment. Decide whether the sources genuinely conflict with the testimony, or whether the difference can be explained by paraphrase, a different event or time, missing context, or a transcription error. List alternative explanations and missing context. Do not judge credibility.",
-        packet,
+        REVIEW_ROLE,
+        {
+          ...packet,
+          // Only the passages in question, never the screen's reasoning or title.
+          passages_to_compare: conclusion.citations
+            .filter((c) => c.relation === "conflicts")
+            .map((c) => ({ source_id: c.chunk_id, quote: c.quote })),
+        },
         assessmentSchema.extend({ conflict_confirmed: z.boolean() }),
         { tier: "review" },
       ).catch(() => ({

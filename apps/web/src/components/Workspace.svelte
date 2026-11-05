@@ -1,24 +1,19 @@
 <script lang="ts">
   import Skeleton from "./Skeleton.svelte";
   import { resolve } from "$app/paths";
+  import { pushState, replaceState } from "$app/navigation";
   import {
-    ArrowLeft,
     ArrowRight,
     AudioLines,
-    BookOpen,
-    Check,
     ChevronRight,
     CircleHelp,
-    Download,
     FileText,
     FolderOpen,
     GitBranch,
     Menu,
-    MessageSquare,
     Gavel,
     Plus,
     Settings,
-    ShieldCheck,
     X,
     PanelLeftOpen,
     PanelLeftClose,
@@ -26,8 +21,6 @@
   import {
     api,
     ApiError,
-    statuses,
-    statusLabel,
     publicRecord,
     type Capabilities,
     type Case,
@@ -40,49 +33,38 @@
   import { onMount, untrack } from "svelte";
   import Auth from "./Auth.svelte";
   import NewCase from "./NewCase.svelte";
-  import StatusLabel from "./StatusLabel.svelte";
-  import Transcript from "./Transcript.svelte";
-  import ManualTranscript from "./ManualTranscript.svelte";
-  import FindingInspector from "./FindingInspector.svelte";
   import Documents from "./Documents.svelte";
-  import References from "./References.svelte";
   import SessionSettings from "./SessionSettings.svelte";
   import HearingLibrary from "./HearingLibrary.svelte";
   import EvidenceWorkspace from "./EvidenceWorkspace.svelte";
-  import HearingAudio from "./HearingAudio.svelte";
   import CaseDialogue from "./CaseDialogue.svelte";
+  import HearingView from "./HearingView.svelte";
+  import AssistantDock, { type DockSeed } from "./AssistantDock.svelte";
   import AccountMenu from "./AccountMenu.svelte";
-  import { t, tp } from "../lib/i18n/index.svelte";
+  import { t } from "../lib/i18n/index.svelte";
   import { maybeStartTour, startTour } from "../lib/tour";
 
-  type Tab =
-    | "assistant"
-    | "practice"
-    | "evidence"
-    | "hearing"
-    | "documents"
-    | "references"
-    | "settings";
+  type Tab = "hearing" | "evidence" | "documents" | "practice" | "settings";
 
   const icons = {
-    assistant: MessageSquare,
-    practice: Gavel,
-    evidence: GitBranch,
     hearing: AudioLines,
+    evidence: GitBranch,
     documents: FileText,
-    references: BookOpen,
+    practice: Gavel,
     settings: Settings,
   };
 
   const titles = {
-    evidence: "tab.evidence",
     hearing: "tab.hearing",
+    evidence: "tab.evidence",
     documents: "tab.documents",
-    assistant: "tab.assistant",
     practice: "tab.practice",
-    references: "tab.references",
     settings: "tab.settings",
   } as const satisfies Record<Tab, string>;
+
+  const tabKeys = Object.keys(titles) as Tab[];
+  const isTab = (value: string | null): value is Tab =>
+    !!value && (tabKeys as string[]).includes(value);
 
   let user = $state<User | null>(null);
 
@@ -113,15 +95,18 @@
 
   let detail = $state<CaseDetail | null>(null);
 
-  let tab = $state<Tab>("evidence");
-
-  let assistantReference = $state<string | null>(null);
+  let tab = $state<Tab>("hearing");
 
   let hearingId = $state<string | null>(null);
 
-  let selected = $state<string | null>(null);
+  /** The case assistant floats over every case screen. */
+  let dockOpen = $state(false);
+  let dockSeed = $state<DockSeed | null>(null);
 
-  let filter = $state("all");
+  function ask(seed: Omit<DockSeed, "nonce">) {
+    dockSeed = { ...seed, nonce: Date.now() };
+    dockOpen = true;
+  }
 
   let error = $state("");
 
@@ -140,10 +125,6 @@
   let connected = $state(false);
 
   let partial = $state("");
-
-  const returnTarget = { current: null as HTMLElement | null };
-
-  let noteDrafts = $state<Record<string, string>>({});
 
   const refreshVersion = { current: 0 as number };
 
@@ -225,7 +206,6 @@
         caseId = null;
         detail = null;
         cases = [];
-        noteDrafts = {};
         user = null;
       } else if (e instanceof ApiError && e.status === 404) {
         // The case was deleted (here or in another tab): leave it quietly.
@@ -238,22 +218,96 @@
     }
   };
 
-  const chooseCase = (id: string | null) => {
+  const chooseCase = (id: string | null, view?: Partial<Location>) => {
     if (activeCase.current === id) return;
     refreshVersion.current++;
     activeCase.current = id;
     caseId = id;
     detailLoading = !!id;
-    assistantReference = null;
-    hearingId = null;
-    tab = "evidence";
+    hearingId = view?.hearing ?? null;
+    tab = view?.tab ?? "hearing";
     detail = null;
-    selected = null;
     partial = "";
-    filter = "all";
     error = "";
     connected = false;
+    dockOpen = false;
+    dockSeed = null;
   };
+
+  /** Where the lawyer is, kept in the address so a reload or a shared link returns there. */
+  type Location = { case: string | null; tab: Tab; hearing: string | null };
+
+  function readLocation(): Location {
+    const params = new URL(window.location.href).searchParams;
+    const view = params.get("view");
+    return {
+      case: params.get("case"),
+      tab: isTab(view) ? view : "hearing",
+      hearing: params.get("hearing"),
+    };
+  }
+
+  function locationQuery() {
+    const pairs: [string, string][] = [];
+    if (caseId) {
+      pairs.push(["case", caseId]);
+      if (tab !== "hearing") pairs.push(["view", tab]);
+      else if (hearingId) pairs.push(["hearing", hearingId]);
+    }
+    const query = pairs
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+      .join("&");
+    return query ? `?${query}` : "";
+  }
+
+  /** The location requested by the address when the workspace opened. */
+  let requested: Location | null = null;
+  let routerReady = false;
+
+  onMount(() => {
+    requested = readLocation();
+    const back = () => {
+      const target = readLocation();
+      if (
+        target.case &&
+        target.case !== caseId &&
+        cases.some((c) => c.id === target.case)
+      )
+        chooseCase(target.case, target);
+      else {
+        tab = target.tab;
+        hearingId = target.hearing;
+      }
+    };
+    window.addEventListener("popstate", back);
+    return () => window.removeEventListener("popstate", back);
+  });
+
+  $effect(() => {
+    void [caseId, tab, hearingId];
+    return untrack(() => {
+      if (!routerReady || typeof window === "undefined") return;
+      const query = locationQuery();
+      if (query === window.location.search) return;
+      // Opening the workspace normalizes the address; later moves can go back.
+      const href = `${resolve("/workspace")}${query}`;
+      // The path is resolved above; only the query string changes.
+      if (new URL(window.location.href).searchParams.has("case"))
+        pushState(href, {}); // eslint-disable-line svelte/no-navigation-without-resolve
+      else replaceState(href, {}); // eslint-disable-line svelte/no-navigation-without-resolve
+    });
+  });
+
+  // A stale hearing in the address (deleted, or from another case) falls back to the list.
+  $effect(() => {
+    if (detail && hearingId && !detail.hearings.some((h) => h.id === hearingId))
+      untrack(() => (hearingId = null));
+  });
+
+  function selectTab(next: Tab) {
+    tab = next;
+    if (next !== "hearing") hearingId = null;
+  }
 
   const loadCases = async (preferred?: string) => {
     if (preferred) caseSearch = "";
@@ -290,7 +344,13 @@
         .then((list) => {
           if (active) {
             cases = list;
-            chooseCase(list[0]?.id ?? null);
+            const wanted = requested?.case
+              ? list.find((c) => c.id === requested!.case)
+              : undefined;
+            if (wanted) chooseCase(wanted.id, requested!);
+            else chooseCase(list[0]?.id ?? null);
+            requested = null;
+            routerReady = true;
           }
         })
         .catch((e) => {
@@ -385,21 +445,6 @@
       ?.focus();
   }
 
-  function inspectFinding(id: string) {
-    returnTarget.current = document.activeElement as HTMLElement;
-    selected = id;
-    // One column on narrow screens: move focus to the opened finding.
-    const narrow = window.matchMedia("(max-width: 960px)").matches;
-    requestAnimationFrame(() => {
-      const inspector = document.getElementById("finding-inspector");
-      if (narrow) inspector?.focus({ preventScroll: true });
-      inspector?.scrollIntoView({
-        behavior: "instant",
-        block: narrow ? "start" : "nearest",
-      });
-    });
-  }
-
   async function action(run: () => Promise<unknown>) {
     busy = true;
     error = "";
@@ -417,61 +462,13 @@
 
   let hearing = $derived(detail?.hearings.find((h) => h.id === hearingId));
 
-  let hearingSegments = $derived(
-    detail?.segments.filter((s) => s.hearing_id === hearingId) ?? [],
-  );
-
-  let hearingFindings = $derived.by(() => {
-    const ids = new Set(hearingSegments.map((s) => s.id));
-    return detail?.findings.filter((f) => ids.has(f.segment_id)) ?? [];
-  });
-
-  let visibleFindings = $derived(
-    hearingFindings
-      .filter(
-        (f) =>
-          filter === "all" ||
-          (filter === "unreviewed" ? !f.reviewed : f.status === filter),
-      )
-      .slice()
-      .reverse(),
-  );
-
-  let finding = $derived(
-    visibleFindings.find((f) => f.id === selected) ??
-      visibleFindings[0] ??
-      null,
-  );
-
-  let unreviewedFindings = $derived(hearingFindings.filter((f) => !f.reviewed));
-
-  let nextUnreviewed = $derived(
-    unreviewedFindings.length
-      ? unreviewedFindings[
-          (unreviewedFindings.findIndex((f) => f.id === finding?.id) + 1) %
-            unreviewedFindings.length
-        ]
-      : undefined,
-  );
-
-  let pending = $derived(
-    hearingSegments.filter((s) =>
-      [
-        "queued",
-        "extracting",
-        "retrieving",
-        "analyzing",
-        "reviewing",
-        "synthesizing",
-      ].includes(s.analysis_state),
-    ).length,
+  let liveHearing = $derived(
+    audio.status !== "idle" || hearing?.status === "live",
   );
 
   function openHearing(id: string) {
     hearingId = id;
     tab = "hearing";
-    selected = null;
-    filter = "all";
     partial = "";
   }
 
@@ -484,6 +481,7 @@
       <Auth {caps} {error} {setError} onUser={setUser}></Auth>
     </div>{:else}<div
       class={`${styles.app} ${shellReady ? styles.shellReady : ""}`}
+      data-workspace
     >
       <a class={styles.skip} href="#workspace-main">{t("ws.skip")}</a>
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions (Handle Escape and trap Tab from the mobile navigation controls.) -->
@@ -615,7 +613,6 @@
                 await api("/auth/logout", { method: "POST" });
                 user = null;
                 cases = [];
-                noteDrafts = {};
                 chooseCase(null);
               })}
           />
@@ -664,7 +661,6 @@
           onImported={async (id) => {
             creating = false;
             await loadCases(id);
-            tab = "evidence";
           }}
           onDemo={caps?.demo_available ? openDemo : undefined}
         ></NewCase>
@@ -716,8 +712,7 @@
               role="tablist"
               aria-label={t("ws.caseSections")}
             >
-              {#each Object.keys(titles) as Tab[] as key (key)}{@const Icon =
-                  icons[key]}<button
+              {#each tabKeys as key (key)}{@const Icon = icons[key]}<button
                   role="tab"
                   aria-selected={tab === key}
                   aria-controls={`panel-${key}`}
@@ -725,30 +720,35 @@
                   data-tour={`tab-${key}`}
                   tabindex={tab === key ? 0 : -1}
                   onkeydown={(event) => {
-                    const keys = Object.keys(titles) as Tab[];
-                    const index = keys.indexOf(key);
+                    const index = tabKeys.indexOf(key);
                     const next =
                       event.key === "ArrowRight"
-                        ? keys[(index + 1) % keys.length]
+                        ? tabKeys[(index + 1) % tabKeys.length]
                         : event.key === "ArrowLeft"
-                          ? keys[(index + keys.length - 1) % keys.length]
+                          ? tabKeys[
+                              (index + tabKeys.length - 1) % tabKeys.length
+                            ]
                           : event.key === "Home"
-                            ? keys[0]
+                            ? tabKeys[0]
                             : event.key === "End"
-                              ? keys.at(-1)
+                              ? tabKeys.at(-1)
                               : null;
                     if (next) {
                       event.preventDefault();
-                      tab = next;
+                      selectTab(next);
                       document.getElementById(`tab-${next}`)?.focus();
                     }
                   }}
-                  onclick={() => (tab = key)}
+                  onclick={() => selectTab(key)}
                 >
                   <Icon size={16}></Icon>
                   {t(titles[key])}
                   {#if key === "documents"}<span>{detail.documents.length}</span
                     >{/if}
+                  {#if key === "hearing" && liveHearing}<i
+                      class={styles.liveTab}
+                      aria-label={t("hearing.state.live")}
+                    ></i>{/if}
                 </button>{/each}
             </div>
             <div
@@ -756,413 +756,76 @@
               role="tabpanel"
               aria-labelledby={`tab-${tab}`}
               class={styles.panel}
-              tabindex={0}
+              tabindex={-1}
             >
-              {#if tab === "assistant" || tab === "practice"}{#key `${caseId}-${tab}`}<CaseDialogue
+              {#if tab === "practice"}{#key caseId}<CaseDialogue
                     {caseId}
-                    kind={tab === "practice" ? "practice" : "assistant"}
-                    initialReference={tab === "assistant"
-                      ? assistantReference
-                      : null}
+                    kind="practice"
                     {caps}
                     {openHearing}
                   ></CaseDialogue>{/key}{/if}
-              {#if tab === "evidence" && !detail.documents.length && !detail.segments.length}<section
-                  class={tabs.screen}
-                >
-                  <header class={tabs.heading}>
-                    <h2>{t("ws.start.title")}</h2>
-                    <p>{t("ws.start.text")}</p>
-                  </header>
-                  <div class={tabs.startOptions}>
-                    <button
-                      class={tabs.startOption}
-                      onclick={() => (tab = "documents")}
-                    >
-                      <FileText size={22} />
-                      <span
-                        ><strong>{t("ws.start.docs")}</strong><small
-                          >{t("ws.start.docsText")}</small
-                        ></span
+              {#if tab === "hearing" && !hearing}
+                {#if !detail.documents.length && !detail.segments.length && !detail.hearings.length}<section
+                    class={tabs.screen}
+                  >
+                    <header class={tabs.heading}>
+                      <h2>{t("ws.start.title")}</h2>
+                      <p>{t("ws.start.text")}</p>
+                    </header>
+                    <div class={tabs.startOptions}>
+                      <button
+                        class={tabs.startOption}
+                        onclick={() => selectTab("documents")}
                       >
-                      <ArrowRight size={18} />
-                    </button>
-                    <button
-                      class={tabs.startOption}
-                      onclick={() => (tab = "hearing")}
-                    >
-                      <AudioLines size={22} />
-                      <span
-                        ><strong>{t("ws.start.hearing")}</strong><small
-                          >{t("ws.start.hearingText")}</small
-                        ></span
-                      >
-                      <ArrowRight size={18} />
-                    </button>
-                  </div>
-                  <p class={tabs.note}>
-                    <CircleHelp size={15}></CircleHelp>
-                    {t("ws.start.then")}
-                  </p>
-                </section>{:else if tab === "evidence"}{#key caseId}<EvidenceWorkspace
-                    {caseId}
-                    askAssistant={(reference) => {
-                      assistantReference = reference;
-                      tab = "assistant";
-                      requestAnimationFrame(() =>
-                        document.getElementById("tab-assistant")?.focus(),
-                      );
-                    }}
-                    {openHearing}
-                  ></EvidenceWorkspace>{/key}{/if}
-              {#if tab === "hearing" && !hearing}{#key caseId}<HearingLibrary
+                        <FileText size={22} />
+                        <span
+                          ><strong>{t("ws.start.docs")}</strong><small
+                            >{t("ws.start.docsText")}</small
+                          ></span
+                        >
+                        <ArrowRight size={18} />
+                      </button>
+                    </div>
+                    <p class={tabs.note}>
+                      <CircleHelp size={15}></CircleHelp>
+                      {t("ws.start.then")}
+                    </p>
+                  </section>{/if}
+                {#key caseId}<HearingLibrary
                     {detail}
                     onOpen={openHearing}
                     {refresh}
                     configured={!!caps?.analysis.configured}
-                  ></HearingLibrary>{/key}{/if}
-              {#if tab === "hearing" && hearing}
-                <div class={`${tabs.screen} ${tabs.wide}`}>
-                  <button
-                    class={tabs.back}
-                    onclick={() => {
-                      audio.stop();
+                  ></HearingLibrary>{/key}
+              {/if}
+              {#if tab === "hearing" && hearing}{#key hearing.id}<HearingView
+                    caseId={detail.case.id}
+                    {detail}
+                    {hearing}
+                    {caps}
+                    {audio}
+                    {partial}
+                    {connected}
+                    {busy}
+                    {action}
+                    {refresh}
+                    onAsk={ask}
+                    onBack={() => {
                       hearingId = null;
                     }}
-                  >
-                    <ArrowLeft size={14}></ArrowLeft>
-                    {t("hearing.all")}
-                  </button>
-                  <header class={tabs.heading}>
-                    <h2>{hearing.title}</h2>
-                    <div class={tabs.headingActions}>
-                      <a
-                        class={tabs.ghost}
-                        rel="external"
-                        href={`/api/v1/cases/${caseId}/hearings/${hearing.id}/export.jude`}
-                      >
-                        <Download size={15}></Download>
-                        {t("hearing.export")}
-                      </a>
-                      <button
-                        class={styles.primary}
-                        disabled={busy ||
-                          pending > 0 ||
-                          !hearingSegments.length ||
-                          !caps?.analysis.configured}
-                        onclick={() =>
-                          action(() =>
-                            api(
-                              `/cases/${caseId}/hearings/${hearing.id}/analyze`,
-                              { method: "POST" },
-                            ),
-                          )}
-                      >
-                        <ShieldCheck size={16}></ShieldCheck>
-                        {t("hearing.analyze")}
-                      </button>
-                    </div>
-                  </header>
-                  <p class={tabs.statusLine}>
-                    <i class={tabs.dot} data-on={connected} aria-hidden="true"
-                    ></i>
-                    <strong>
-                      {hearing.status === "live"
-                        ? t("hearing.state.live")
-                        : hearing.status === "complete"
-                          ? t("hearing.state.complete")
-                          : t("hearing.state.ready")}
-                    </strong>
-                    <span class={tabs.sep} aria-hidden="true">·</span>
-                    <span
-                      >{connected
-                        ? t("hearing.autoUpdates")
-                        : t("hearing.checking")}</span
-                    >
-                    <span class={tabs.sep} aria-hidden="true">·</span>
-                    <span>
-                      {pending > 0
-                        ? tp("count.examining", pending)
-                        : hearingSegments.some(
-                              (s) => s.analysis_state === "pending",
-                            )
-                          ? t("hearing.readyForAnalysis")
-                          : t("hearing.upToDate")}
-                    </span>
-                  </p>
-                  {#if !caps?.analysis.configured}<p class={tabs.note}>
-                      <CircleHelp size={14}></CircleHelp>
-                      {t("hearing.analysisUnavailable")}
-                    </p>{/if}
-                  {#key hearing.id}<HearingAudio
-                      {audio}
-                      configured={!!caps?.speech.configured}
-                      caseId={detail.case.id}
-                      recordings={detail.recordings.filter(
-                        (r) => r.hearing_id === hearing.id,
-                      )}
-                      onChanged={() => void refresh()}
-                      empty={hearingSegments.length === 0}
-                    />{/key}
-                  <div class={tabs.hearingGrid}>
-                    <section
-                      class={`${tabs.column} ${tabs.transcriptColumn}`}
-                      aria-labelledby="transcript-heading"
-                    >
-                      {#key hearing.id}<Transcript
-                          segments={hearingSegments}
-                          speakers={session?.speakers ?? {}}
-                          onRename={(speaker, label) =>
-                            action(() =>
-                              api(`/cases/${caseId}/speakers`, {
-                                method: "PATCH",
-                                body: JSON.stringify({ speaker, label }),
-                              }),
-                            )}
-                          {partial}
-                          {caseId}
-                          onRetry={(id) =>
-                            action(() =>
-                              api(`/cases/${caseId}/transcripts/${id}/retry`, {
-                                method: "POST",
-                              }),
-                            )}
-                          select={(id) => {
-                            const f = hearingFindings.find(
-                              (f) => f.segment_id === id,
-                            );
-                            if (f) {
-                              filter = "all";
-                              inspectFinding(f.id);
-                            }
-                          }}
-                          findings={hearingFindings}
-                        ></Transcript>{/key}
-                      {#key hearing.id}<ManualTranscript
-                          {busy}
-                          submit={(body) =>
-                            action(() =>
-                              api(`/cases/${caseId}/transcripts`, {
-                                method: "POST",
-                                body: JSON.stringify({
-                                  ...body,
-                                  hearing_id: hearing.id,
-                                }),
-                              }),
-                            )}
-                        ></ManualTranscript>{/key}
-                    </section>
-                    <section
-                      class={tabs.column}
-                      aria-labelledby="findings-heading"
-                    >
-                      <div class={tabs.colHead}>
-                        <div class={tabs.colTitle}>
-                          <h2 id="findings-heading" tabindex="-1">
-                            {t("hearing.findings")}
-                          </h2>
-                          {#if hearingFindings.length > 0}<span
-                              class={`${tabs.chip} ${unreviewedFindings.length ? tabs.chipWarm : tabs.chipDone}`}
-                            >
-                              {unreviewedFindings.length
-                                ? t("hearing.toReview", {
-                                    count: unreviewedFindings.length,
-                                  })
-                                : t("library.allReviewed")}
-                            </span>{/if}
-                        </div>
-                        {#if hearingFindings.length > 0}<div
-                            class={tabs.progress}
-                            aria-hidden="true"
-                          >
-                            <span
-                              style={`width: ${((hearingFindings.length - unreviewedFindings.length) / hearingFindings.length) * 100}%`}
-                            ></span>
-                          </div>
-                          <div class={tabs.reviewLine}>
-                            <span role="status">
-                              {t("hearing.reviewedOf", {
-                                done:
-                                  hearingFindings.length -
-                                  unreviewedFindings.length,
-                                total: hearingFindings.length,
-                              })}
-                            </span>
-                            <button
-                              class={tabs.ghost}
-                              disabled={!nextUnreviewed || busy}
-                              onclick={() => {
-                                if (nextUnreviewed) {
-                                  filter = "unreviewed";
-                                  inspectFinding(nextUnreviewed.id);
-                                }
-                              }}
-                            >
-                              {t("hearing.nextUnreviewed")}
-                              <ArrowRight size={14}></ArrowRight>
-                            </button>
-                          </div>{/if}
-                        <label>
-                          <span class={styles.srOnly}
-                            >{t("hearing.filter")}</span
-                          >
-                          <select
-                            value={filter}
-                            onchange={(e) => (filter = e.currentTarget.value)}
-                          >
-                            <option value="all"
-                              >{t("hearing.allFindings")}</option
-                            >
-                            <option value="unreviewed"
-                              >{t("hearing.needsReview")}</option
-                            >
-                            {#each statuses as value (value)}<option {value}>
-                                {statusLabel(value)}
-                              </option>{/each}
-                          </select>
-                        </label>
-                      </div>
-                      {#if pending > 0}<Skeleton
-                          variant="rows"
-                          count={1}
-                          label={t("hearing.examining")}
-                        />{/if}
-                      <div class={tabs.findings}>
-                        {#if visibleFindings.length}{#each visibleFindings as f (f.id)}{@const open =
-                              finding?.id === f.id}{@const statement =
-                              hearingSegments.find(
-                                (s) => s.id === f.segment_id,
-                              )}
-                            <div
-                              class={`${tabs.card} ${open ? tabs.cardSelected : ""}`}
-                              id={open ? "finding-inspector" : undefined}
-                              role={open ? "region" : undefined}
-                              aria-label={open
-                                ? t("hearing.inspector")
-                                : undefined}
-                              tabindex="-1"
-                            >
-                              <button
-                                class={tabs.cardButton}
-                                aria-pressed={open}
-                                onclick={() => inspectFinding(f.id)}
-                              >
-                                <span class={tabs.cardTop}>
-                                  <StatusLabel status={f.status}></StatusLabel>
-                                  {#if f.reviewed}<span
-                                      class={tabs.reviewedMark}
-                                      ><Check
-                                        size={14}
-                                        aria-label={t("common.reviewed")}
-                                      ></Check></span
-                                    >{/if}
-                                </span>
-                                <h3>{f.title}</h3>
-                                <small class={tabs.cardMode}>
-                                  {f.mode === "imported"
-                                    ? t("hearing.mode.imported")
-                                    : t("hearing.mode.ai")}
-                                </small>
-                              </button>
-                              {#if open}<div class={tabs.cardDetail}>
-                                  {#key f.id}<FindingInspector
-                                      finding={f}
-                                      segment={statement}
-                                      {caseId}
-                                      {busy}
-                                      note={noteDrafts[f.id] ?? f.note}
-                                      onNote={(note) =>
-                                        (noteDrafts = ((
-                                          current: typeof noteDrafts,
-                                        ) => ({
-                                          ...current,
-                                          [f.id]: note,
-                                        }))(noteDrafts))}
-                                      onBack={() => {
-                                        const target = returnTarget.current
-                                          ?.isConnected
-                                          ? returnTarget.current
-                                          : document.getElementById(
-                                              "findings-heading",
-                                            );
-                                        target?.focus();
-                                        target?.scrollIntoView({
-                                          behavior: "instant",
-                                          block: "center",
-                                        });
-                                      }}
-                                      save={async (body) => {
-                                        const savedFindingId = f.id;
-                                        const saved = await action(() =>
-                                          api(
-                                            `/cases/${caseId}/findings/${f.id}`,
-                                            {
-                                              method: "PATCH",
-                                              body: JSON.stringify(body),
-                                            },
-                                          ),
-                                        );
-                                        if (saved)
-                                          noteDrafts = ((
-                                            current: typeof noteDrafts,
-                                          ) => {
-                                            if (
-                                              current[savedFindingId] !==
-                                              body.note
-                                            )
-                                              return current;
-                                            const next = { ...current };
-                                            delete next[savedFindingId];
-                                            return next;
-                                          })(noteDrafts);
-                                        return saved;
-                                      }}
-                                    ></FindingInspector>{/key}
-                                </div>{:else}<div class={tabs.cardQuotes}>
-                                  {#if statement}<p class={tabs.cardQuote}>
-                                      <span>{t("tabs.finding.testimony")}</span>
-                                      <q>{statement.text}</q>
-                                    </p>{/if}
-                                  {#if f.citations[0]?.quote}<p
-                                      class={tabs.cardQuote}
-                                    >
-                                      <span>{t("tabs.finding.source")}</span>
-                                      <q>{f.citations[0].quote}</q>
-                                    </p>{/if}
-                                </div>{/if}
-                            </div>{/each}{:else if pending === 0}<div
-                            class={tabs.empty}
-                          >
-                            <ShieldCheck size={28}></ShieldCheck>
-                            <h3>
-                              {filter === "all"
-                                ? t("hearing.emptyTitle")
-                                : t("hearing.emptyFilterTitle")}
-                            </h3>
-                            <p>
-                              {filter === "all"
-                                ? t("hearing.emptyText")
-                                : t("hearing.emptyFilterText")}
-                            </p>
-                          </div>{/if}
-                      </div>
-                    </section>
-                  </div>
-                  <p class={tabs.footnote}>
-                    {t("hearing.bottomNote")}
-                  </p>
-                </div>
-              {/if}
+                  />{/key}{/if}
+              {#if tab === "evidence"}{#key caseId}<EvidenceWorkspace
+                    {caseId}
+                    speakers={session?.speakers ?? {}}
+                    onAsk={ask}
+                    {openHearing}
+                  ></EvidenceWorkspace>{/key}{/if}
               {#if tab === "documents"}{#key caseId}<Documents
                     {caseId}
                     documents={detail.documents}
                     run={action}
                     {busy}
                   ></Documents>{/key}{/if}
-              {#if tab === "references"}{#key caseId}<References
-                    {caseId}
-                    configured={!!caps?.legal.configured}
-                  ></References>{/key}{/if}
               {#if tab === "settings"}{#key caseId}<SessionSettings
                     {detail}
                     {busy}
@@ -1173,6 +836,28 @@
                     }}
                   ></SessionSettings>{/key}{/if}
             </div>
+            {#key caseId}<AssistantDock
+                caseId={detail.case.id}
+                {caps}
+                open={dockOpen}
+                onOpen={() => (dockOpen = true)}
+                onClose={() => {
+                  dockOpen = false;
+                }}
+                hearing={tab === "hearing" && hearing
+                  ? {
+                      id: hearing.id,
+                      title: hearing.title,
+                      live: liveHearing,
+                    }
+                  : null}
+                seed={dockSeed}
+                openHearing={(id) => {
+                  openHearing(id);
+                  if (window.matchMedia("(max-width: 640px)").matches)
+                    dockOpen = false;
+                }}
+              />{/key}
           {/if}{/if}
       </main>
     </div>{/if}{/if}

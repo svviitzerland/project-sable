@@ -600,9 +600,9 @@ export const en = {
     "Upload a prepared transcript or create a hearing for live audio and manual notes.",
 
   // Evidence map and search
-  "evidence.title": "Follow the evidence.",
+  "evidence.title": "Evidence connections",
   "evidence.lead":
-    "Ask the case a question. Trace each answer back to its sources and the connections between them.",
+    "How hearing statements and case documents relate. Differences come first so you can check them before the next hearing.",
   "evidence.finding": "Finding connections…",
   "evidence.find": "Find connections",
   "evidence.searching": "Searching the case…",
@@ -828,7 +828,7 @@ export const en = {
     "Each statement is checked against the sources: supported, differs from the source, needs context, or not enough evidence. Open a finding to see both quotes, then mark it reviewed with your note.",
   "tour.assistant.title": "5. Ask about the case",
   "tour.assistant.text":
-    "Ask questions in plain language. Answers cite exact passages from this case only.",
+    "Ask Jude is on every screen, including during a live hearing. Answers cite exact passages from this case only.",
   "tour.practice.title": "6. Rehearse",
   "tour.practice.text":
     "Practise as defense counsel, prosecutor or judge with conditions taken from the case. Practice never changes the evidence record.",
@@ -1195,6 +1195,84 @@ export const en = {
   "account.usageOf": "{used} of {limit}",
   "account.overLimit": "Over the plan limit",
   "account.changePlan": "Change plan",
+
+  // Assistant dock, hearing room and evidence list
+  "dock.bubble": "Ask Jude",
+  "dock.open": "Open the case assistant",
+  "dock.title": "Jude assistant",
+  "dock.following": "Following: {title}",
+  "dock.wholeCase": "Whole case",
+  "dock.history": "Earlier conversations",
+  "dock.new": "New conversation",
+  "dock.noHistory": "No earlier conversations yet.",
+  "dock.welcome": "What do you need to understand?",
+  "dock.welcomeHearing": "I am following this hearing.",
+  "dock.welcomeText":
+    "Ask anything. Every answer quotes the case file or testimony so you can check it.",
+  "dock.aiOff":
+    "AI replies are unavailable right now. You will still get the matching case excerpts.",
+  "dock.ask.caseSummary": "Summarize this case and what is still uncertain.",
+  "dock.ask.caseConflicts":
+    "Where do the witness statements differ from each other or from the file?",
+  "dock.ask.caseQuestions":
+    "Which questions should I prepare for the next hearing?",
+  "dock.ask.hearingConflicts":
+    "Which statements in this hearing contradict earlier testimony or the case file?",
+  "dock.ask.hearingSummary":
+    "Summarize what each witness said in this hearing.",
+  "dock.ask.hearingQuestions":
+    "Suggest three follow-up questions for the current witness.",
+  "dock.ask.liveConflicts":
+    "Has the witness just said anything that differs from earlier testimony or the file?",
+  "dock.ask.liveSummary": "Summarize the last few minutes of testimony.",
+  "dock.ask.liveQuestions": "What should I ask the witness next?",
+  "dock.ask.finding":
+    "Explain this finding and how I can test it in court: {title}",
+  "dock.ask.connection":
+    "Compare these two passages. Do they agree, differ, or need more context?",
+  "dock.thinking": "Reading the case…",
+  "dock.opening": "Opening…",
+  "dock.label": "Message to the assistant",
+  "dock.placeholder": "Ask about this case…",
+  "dock.placeholderHearing": "Ask about this hearing…",
+  "dock.send": "Send",
+  "dock.hint":
+    "Enter to send · Shift+Enter for a new line · Answers support your judgment, they do not replace it.",
+  "dock.toggleHearing": "Include or leave out this hearing",
+  "dock.attached": "Selected material",
+  "dock.removeAttached": "Remove the attached material",
+  "hearing.more": "More actions",
+  "hearing.waiting": "{count} statements have not been analyzed yet.",
+  "hearing.analyzeNow": "Analyze now",
+  "hearing.filter.all": "All",
+  "hearing.filter.conflicts": "Differences",
+  "hearing.filter.open": "To review",
+  "hearing.askConflicts": "Ask Jude about contradictions in this hearing",
+  "count.conflicts.one": "{count} difference",
+  "count.conflicts.other": "{count} differences",
+  "transcript.searchShort": "Search…",
+  "transcript.checking": "Checking against the file…",
+  "transcript.latest": "Latest",
+  "finding.askJude": "Ask Jude",
+  "finding.moreDetail": "Uncertainty and review",
+  "finding.addNote": "Add a note",
+  "finding.earlierTestimony": "Earlier testimony · {speaker} · {time}",
+  "audio.recordingFor": "Recording {time}",
+  "audio.noRecordings": "No recordings saved for this hearing.",
+  "evidence.filter": "Filter connections",
+  "evidence.stat.all": "All connections",
+  "evidence.stat.conflicts": "Differ",
+  "evidence.stat.supports": "Support",
+  "evidence.stat.context": "Need context",
+  "evidence.stat.open": "Not yet confirmed",
+  "evidence.searchList": "Search connections, names or quotes…",
+  "evidence.fromFinding": "From a hearing finding",
+  "evidence.confirmed": "Confirmed by you",
+  "evidence.showMore": "Show {count} more",
+  "evidence.noMatchTitle": "Nothing matches this filter.",
+  "evidence.noMatchText": "Choose another filter or clear the search.",
+  "finding.showMore": "Show more",
+  "finding.showLess": "Show less",
 } as const;
 
 export type MessageKey = keyof typeof en;

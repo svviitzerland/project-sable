@@ -32,7 +32,7 @@ const steps: { anchor?: string; title: MessageKey; text: MessageKey }[] = [
     text: "tour.evidence.text",
   },
   {
-    anchor: "tab-assistant",
+    anchor: "assistant",
     title: "tour.assistant.title",
     text: "tour.assistant.text",
   },
