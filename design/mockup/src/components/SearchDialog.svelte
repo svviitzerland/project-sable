@@ -3,7 +3,7 @@
   import type { Kind } from "../lib/kinds";
   import { fmtClock, l, t } from "../lib/i18n";
   import { go } from "../lib/router.svelte";
-  import { db, doc, findingsOfCase, hearing, hearingsOf, inspect, speaker, speakerName } from "../lib/store.svelte";
+  import { db, doc, findingsOfCase, hearing, hearingsOf, inspect, openFinding, speaker, speakerName } from "../lib/store.svelte";
   import KindIcon from "./KindIcon.svelte";
   import Overlay from "./Overlay.svelte";
 
@@ -24,7 +24,7 @@
         out.push({ group: t("nav.hearings"), kind: "hearing", title: `${t("common.hearingN", { n: h.number })} · ${l(h.title)}`, meta: t(`mode.${h.mode}`), run: () => go(`/case/${c.id}/hearings/${h.id}`) });
       }
       for (const f of findingsOfCase(c.id).filter((f) => `${l(f.title)} ${l(f.explanation)}`.toLowerCase().includes(q)).slice(0, 4)) {
-        out.push({ group: t("nav.findings"), kind: "finding", title: l(f.title), meta: t(`status.${f.status}`), run: () => inspect({ kind: "finding", id: f.id }) });
+        out.push({ group: t("nav.findings"), kind: "finding", title: l(f.title), meta: t(`status.${f.status}`), run: () => openFinding(f.id) });
       }
       const docIds = new Set(db.documents.filter((d) => d.caseId === c.id).map((d) => d.id));
       for (const p of db.passages.filter((p) => docIds.has(p.docId) && p.text.toLowerCase().includes(q)).slice(0, 4)) {

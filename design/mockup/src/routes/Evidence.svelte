@@ -1,18 +1,20 @@
 <script lang="ts">
   import KindIcon from "../components/KindIcon.svelte";
   import { LoaderCircle, MessageSquare, Search, Upload } from "@lucide/svelte";
-  import Connections from "../components/Connections.svelte";
   import { fmtDate, l, t } from "../lib/i18n";
-  import { go, href, route } from "../lib/router.svelte";
+  import { go, href, redirect, route } from "../lib/router.svelte";
   import { uploadDocument } from "../lib/services";
-  import { doc, docsOf, findingsCiting, inspect, openAssistant, passagesOf, passagesOfCase, toast } from "../lib/store.svelte";
+  import { doc, docsOf, findingsCiting, findingsPath, inspect, openAssistant, passagesOf, passagesOfCase, toast } from "../lib/store.svelte";
 
   let { caseId }: { caseId: string } = $props();
 
-  // Old "map" and "board" links land on Connections; the board itself now lives in Findings.
-  let view = $derived<"documents" | "connections">(
-    ["connections", "map", "board"].includes(route.query.view ?? "") ? "connections" : "documents",
-  );
+  // Bukti holds the case files only. Older links to its Connections, map or board views land on
+  // the Keterkaitan page, which now stands on its own.
+  $effect(() => {
+    if (!["connections", "map", "board"].includes(route.query.view ?? "")) return;
+    const of = route.query.of ?? route.query.start;
+    redirect(`/case/${caseId}/connections${of ? `?of=${of}` : ""}`);
+  });
   let query = $state("");
   let uploading = $state(false);
 
@@ -41,7 +43,7 @@
   <header class="page-head">
     <div>
       <h1>{t("ev.title")}</h1>
-      <p>{view === "connections" ? t("cx.lead") : t("ev.lead")}</p>
+      <p>{t("ev.lead")}</p>
     </div>
     <div class="toolbar">
       <label class="btn">
@@ -52,23 +54,14 @@
   </header>
 
   <div class="viewbar">
-    <div class="seg" role="tablist" aria-label={t("ev.title")}>
-      <button role="tab" aria-selected={view === "documents"} onclick={() => go(`/case/${caseId}/evidence`)}><KindIcon kind="document" size={15} />{t("ev.documents")} <span class="badge">{docs.length}</span></button>
-      <button role="tab" aria-selected={view === "connections"} onclick={() => go(`/case/${caseId}/evidence?view=connections`)}><KindIcon kind="connection" size={15} />{t("cx.title")}</button>
+    <div class="search grow">
+      <Search size={16} />
+      <label class="sr-only" for="ev-search">{t("ev.search")}</label>
+      <input id="ev-search" class="field" type="search" placeholder={t("ev.search")} bind:value={query} />
     </div>
-    {#if view === "documents"}
-      <div class="search grow">
-        <Search size={16} />
-        <label class="sr-only" for="ev-search">{t("ev.search")}</label>
-        <input id="ev-search" class="field" type="search" placeholder={t("ev.search")} bind:value={query} />
-      </div>
-      <button class="btn" disabled={!query.trim()} onclick={() => openAssistant({ kind: "evidence" }, query, undefined, true)}><MessageSquare size={16} />{t("ev.askInstead")}</button>
-    {/if}
+    <button class="btn" disabled={!query.trim()} onclick={() => openAssistant({ kind: "evidence" }, query, undefined, true)}><MessageSquare size={16} />{t("ev.askInstead")}</button>
   </div>
 
-  {#if view === "connections"}
-    <Connections {caseId} of={route.query.of ?? route.query.start} />
-  {:else}
     {#if query.trim().length >= 2}
       <section class="results card" aria-live="polite">
         <h2 class="t-label">{results.length ? t("ev.results", { n: results.length }) : t("ev.noResults")}</h2>
@@ -100,24 +93,21 @@
       {#each docs as d (d.id)}
         {@const ps = passagesOf(d.id)}
         {@const cited = ps.filter((p) => findingsCiting(p.id).length).length}
-        <li>
-          <a class="doc card" href={href(`/case/${caseId}/evidence/doc/${d.id}`)}>
-            <span class="file"><KindIcon kind="document" size={20} /><span class="fmt">{d.file}</span></span>
-            <span class="doc-body">
-              <span class="doc-title">{d.title}</span>
-              <span class="xsmall muted">{l(d.kind)}</span>
-              <span class="doc-stats xsmall">
-                <span>{t("ev.pages", { n: d.pages })}</span>
-                <span>{t("ev.passages", { n: ps.length })}</span>
-                {#if cited}<span class="cited">{t("ev.cited", { n: cited })}</span>{/if}
-              </span>
+        <li class="doc card">
+          <span class="file"><KindIcon kind="document" size={20} /><span class="fmt">{d.file}</span></span>
+          <span class="doc-body">
+            <a class="doc-title" href={href(`/case/${caseId}/evidence/doc/${d.id}`)}>{d.title}</a>
+            <span class="xsmall muted">{l(d.kind)}</span>
+            <span class="doc-stats xsmall">
+              <span>{t("ev.pages", { n: d.pages })}</span>
+              <span>{t("ev.passages", { n: ps.length })}</span>
+              {#if cited}<a class="cited" href={href(findingsPath(caseId, { doc: d.id }))} title={t("fl.open")}>{t("ev.cited", { n: cited })}</a>{/if}
             </span>
-            <span class="xsmall muted added">{t("ev.added", { date: fmtDate(d.added) })} · {d.size}</span>
-          </a>
+          </span>
+          <span class="xsmall muted added">{t("ev.added", { date: fmtDate(d.added) })} · {d.size}</span>
         </li>
       {/each}
     </ul>
-  {/if}
 </div>
 
 <style>
@@ -186,16 +176,23 @@
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   }
   .doc {
+    position: relative;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     gap: 4px 12px;
     padding: 14px;
-    text-decoration: none;
     height: 100%;
   }
   .doc:hover {
     border-color: var(--line-strong);
     background: var(--surface-2);
+  }
+  /* The title's link covers the whole card; the cited count sits above it as its own link. */
+  .doc-title::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
   }
   .file {
     grid-row: span 2;
@@ -225,6 +222,7 @@
     font-weight: 600;
     color: var(--ink-strong);
     line-height: 1.35;
+    text-decoration: none;
   }
   .doc-stats {
     display: flex;
@@ -233,8 +231,16 @@
     margin-top: 4px;
   }
   .cited {
+    position: relative;
+    z-index: 1;
     color: var(--st-inconsistency-ink);
     font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    text-underline-offset: 3px;
+  }
+  .cited:hover {
+    text-decoration-color: currentColor;
   }
   .added {
     grid-column: 2;

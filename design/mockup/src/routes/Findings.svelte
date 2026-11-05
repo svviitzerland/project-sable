@@ -1,6 +1,6 @@
 <script lang="ts">
   import Mark from "../components/Mark.svelte";
-  import { LayoutDashboard, List, ListChecks, Search } from "@lucide/svelte";
+  import { LayoutDashboard, List, ListChecks, Search, X } from "@lucide/svelte";
   import { untrack } from "svelte";
   import AlertCard from "../components/AlertCard.svelte";
   import FindingDetail from "../components/FindingDetail.svelte";
@@ -8,12 +8,15 @@
   import { getBoard } from "../lib/board.svelte";
   import { l, t } from "../lib/i18n";
   import { go, route } from "../lib/router.svelte";
-  import { finding, findingsOfCase, hearing, hearingsOf, inspect, isMeaningful, setReviewed, statement, toastT, ui } from "../lib/store.svelte";
+  import { doc, finding, findingsOfCase, hearing, hearingsOf, inspect, isMeaningful, passage, setReviewed, statement, toastT, ui } from "../lib/store.svelte";
+  import type { Finding } from "../lib/types";
 
   /**
    * One queue for every hearing, split by what it asks of the lawyer: worth a look, already
    * checked, and others (supported or without enough evidence), which never ask for anything.
    * The board view is the lawyer's own arrangement of findings and what stands behind them.
+   * This is the one place findings are worked on: other pages link here, to one finding or to
+   * the findings of one hearing (?hearing=) or one document (?doc=).
    */
   let { caseId, selectedId }: { caseId: string; selectedId?: string } = $props();
 
@@ -21,7 +24,11 @@
   let width = $state(0);
   let wide = $derived(width >= 760);
   let query = $state("");
-  let hearingFilter = $state("");
+  // svelte-ignore state_referenced_locally
+  let hearingFilter = $state(route.query.hearing && hearing(route.query.hearing) ? route.query.hearing : "");
+  // svelte-ignore state_referenced_locally
+  let docFilter = $state(route.query.doc && doc(route.query.doc) ? route.query.doc : "");
+  const cites = (f: Finding, docId: string) => f.sources.some((x) => passage(x.passageId)?.docId === docId);
   // svelte-ignore state_referenced_locally
   let tab = $state<Tab>(route.query.tab === "checked" || route.query.tab === "others" ? route.query.tab : "attention");
 
@@ -33,16 +40,50 @@
     checked: all.filter((f) => isMeaningful(f) && f.reviewed),
     others: all.filter((f) => !isMeaningful(f)),
   });
+  const matches = (f: Finding, q: string) =>
+    !q.trim() || `${l(f.title)} ${statement(f.statementId)?.text ?? ""} ${f.note}`.toLowerCase().includes(q.trim().toLowerCase());
   let shown = $derived(
     groups[tab].filter((f) => {
       if (hearingFilter && f.hearingId !== hearingFilter) return false;
-      const q = query.trim().toLowerCase();
-      if (!q) return true;
-      return `${l(f.title)} ${statement(f.statementId)?.text ?? ""} ${f.note}`.toLowerCase().includes(q);
+      if (docFilter && !cites(f, docFilter)) return false;
+      return matches(f, query);
     }),
   );
   let queue = $derived(shown.map((f) => f.id));
   let selected = $derived(selectedId && finding(selectedId) ? selectedId : null);
+
+  // Links from other pages: a new ?hearing= or ?doc= narrows the list to it.
+  $effect(() => {
+    const only = route.query.hearing;
+    const fromDoc = route.query.doc;
+    untrack(() => {
+      if (only && hearing(only)) hearingFilter = only;
+      if (fromDoc && doc(fromDoc)) docFilter = fromDoc;
+    });
+  });
+
+  // A link straight to one finding shows it in its own group, even when another tab or a
+  // filter would hide it; narrow screens open it in the sheet, as a tap in the list would.
+  let openedFromLink = false;
+  $effect(() => {
+    const id = selectedId;
+    untrack(() => {
+      const f = finding(id);
+      if (!f || view === "board") return;
+      tab = !isMeaningful(f) ? "others" : f.reviewed ? "checked" : "attention";
+      if (hearingFilter && f.hearingId !== hearingFilter) hearingFilter = "";
+      if (docFilter && !cites(f, docFilter)) docFilter = "";
+      if (!matches(f, query)) query = "";
+    });
+  });
+  $effect(() => {
+    if (openedFromLink || !width) return;
+    openedFromLink = true;
+    const id = untrack(() => (!wide && view === "list" ? selected : null));
+    const list = untrack(() => queue);
+    // Once the change of page has settled, since changing page closes any open sheet.
+    if (id) setTimeout(() => inspect({ kind: "finding", id }, list), 0);
+  });
 
   // Wide screens keep the first item open beside the list.
   $effect(() => {
@@ -110,6 +151,12 @@
       <label class="sr-only" for="f-search">{t("fd.search")}</label>
       <input id="f-search" class="field" type="search" placeholder={t("fd.search")} bind:value={query} />
     </div>
+    {#if docFilter}
+      <span class="chip citing">
+        <span class="citing-text">{t("fd.citing", { title: doc(docFilter)?.title ?? "" })}</span>
+        <button class="btn btn-ghost btn-icon btn-sm" aria-label={t("fd.clearCiting")} onclick={() => (docFilter = "")}><X size={14} /></button>
+      </span>
+    {/if}
     <label class="sr-only" for="f-hearing">{t("fd.allHearings")}</label>
     <select id="f-hearing" class="field hearing-select" bind:value={hearingFilter}>
       <option value="">{t("fd.allHearings")}</option>
@@ -128,14 +175,14 @@
           <h2 class="group">{h ? `${t("common.hearingN", { n: h.number })} · ${l(h.title)}` : ""}</h2>
         {/if}
         <div class="item" class:selected={wide && selected === f.id}>
-          <AlertCard {f} mode="compact" onopen={() => open(f.id)} />
+          <AlertCard {f} onopen={() => open(f.id)} />
         </div>
       {:else}
         <div class="empty">
           <ListChecks size={22} />
           <p class="t-serif">{tab === "attention" ? t("attn.allChecked") : t("fd.emptyTitle")}</p>
-          {#if query || hearingFilter}
-            <button class="btn btn-sm" onclick={() => { query = ""; hearingFilter = ""; }}>{t("common.clearFilters")}</button>
+          {#if query || hearingFilter || docFilter}
+            <button class="btn btn-sm" onclick={() => { query = ""; hearingFilter = ""; docFilter = ""; }}>{t("common.clearFilters")}</button>
           {/if}
         </div>
       {/each}
@@ -157,6 +204,18 @@
 <style>
   .findings {
     max-width: 1500px;
+  }
+  .citing {
+    max-width: min(100%, 340px);
+    gap: 2px;
+    padding-right: 2px;
+    background: var(--surface);
+  }
+  .citing-text {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
   .filters {
     display: flex;

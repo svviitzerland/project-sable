@@ -14,6 +14,7 @@
     hearing,
     hearingsOf,
     inspect,
+    openFinding,
     legalRef,
     passage,
     speaker,
@@ -81,6 +82,7 @@
   function open(c: Citation) {
     if (c.kind === "document") go(`/case/${caseId}/evidence/doc/${c.id}`);
     else if (c.kind === "hearing") go(`/case/${caseId}/hearings/${c.id}`);
+    else if (c.kind === "finding") openFinding(c.id);
     else inspect({ kind: c.kind, id: c.id });
   }
 

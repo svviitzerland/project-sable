@@ -1,13 +1,13 @@
 <script lang="ts">
   import KindIcon from "../components/KindIcon.svelte";
   import { ArrowRight, ArrowUp, CalendarClock, FilePlus2, Mic, Upload } from "@lucide/svelte";
-  import AlertCard from "../components/AlertCard.svelte";
+  import FindingLink from "../components/FindingLink.svelte";
   import HearingRow from "../components/HearingRow.svelte";
   import Avatar from "../components/Avatar.svelte";
   import { fmtClock, fmtDate, l, t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
   import { roleTone } from "../lib/people";
-  import { go } from "../lib/router.svelte";
+  import { go, href } from "../lib/router.svelte";
   import { suggestionsFor } from "../lib/services";
   import {
     caseById,
@@ -15,9 +15,9 @@
     docsOf,
     findingsOf,
     findingsOfCase,
+    findingsPath,
     hearing,
     hearingsOf,
-    inspect,
     needsLook,
     openAssistant,
     passagesOfCase,
@@ -96,11 +96,12 @@
     <div class="grid">
       {#if liveH}
         {@const latest = statementsOf(liveH.id).at(-1)}
+        {@const liveOpen = findingsOf(liveH.id).filter(needsLook).length}
         <section class="card live-card span-all">
           <div class="live-head">
             <span class="live-state"><span class="live-dot"></span>{t("live.badge")} · <span class="tabular">{fmtClock(live.elapsed)}</span></span>
             <h2 class="t-serif">{t("ov.liveTitle", { n: liveH.number })}</h2>
-            <p class="small muted">{t("attn.listening")} · {findingsOf(liveH.id).filter(needsLook).length ? t("attn.count", { n: findingsOf(liveH.id).filter(needsLook).length }) : t("attn.none")}</p>
+            <p class="small muted">{t("attn.listening")} · {#if liveOpen}<a class="live-count" href={href(findingsPath(caseId, { hearing: liveH.id }))}>{t("attn.count", { n: liveOpen })}</a>{:else}{t("attn.none")}{/if}</p>
           </div>
           {#if live.partial || latest}
             {@const who = speaker(live.partial ? live.partialSpeaker : (latest?.speakerId ?? ""))}
@@ -123,9 +124,7 @@
         </header>
         {#if attention.length}
           <div class="list">
-            {#each attention.slice(0, 3) as f (f.id)}
-              <AlertCard {f} mode="compact" onopen={() => inspect({ kind: "finding", id: f.id }, attention.map((x) => x.id))} />
-            {/each}
+            {#each attention.slice(0, 3) as f (f.id)}<FindingLink {f} showHearing />{/each}
           </div>
           <button class="btn btn-primary" onclick={() => go(`/case/${caseId}/findings`)}>{t("ov.startReview")}<ArrowRight size={16} /></button>
         {:else}
@@ -355,7 +354,11 @@
   }
   .list {
     display: grid;
-    gap: 8px;
+    margin: 0 -10px;
+  }
+  .live-count {
+    color: var(--ink-strong);
+    font-weight: 600;
   }
   .review > .btn {
     justify-self: start;

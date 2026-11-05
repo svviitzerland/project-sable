@@ -1,10 +1,9 @@
 <script lang="ts">
   import { kindIcon } from "../lib/kinds";
-  import KindIcon from "./KindIcon.svelte";
   import { t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
   import { href, route } from "../lib/router.svelte";
-  import { findingsOfCase, hearing, needsLook, openAssistant, ui } from "../lib/store.svelte";
+  import { findingsOfCase, hearing, needsLook } from "../lib/store.svelte";
 
   let { caseId }: { caseId: string } = $props();
 
@@ -14,15 +13,16 @@
   let items = $derived([
     { key: "overview", icon: kindIcon.overview, label: t("nav.overview"), path: `/case/${caseId}` },
     { key: "hearings", icon: kindIcon.hearing, label: t("nav.hearings"), path: `/case/${caseId}/hearings` },
-    { key: "findings", icon: kindIcon.finding, label: t("nav.findings"), path: `/case/${caseId}/findings` },
     { key: "evidence", icon: kindIcon.document, label: t("nav.evidence"), path: `/case/${caseId}/evidence` },
+    { key: "findings", icon: kindIcon.finding, label: t("nav.findings"), path: `/case/${caseId}/findings` },
+    { key: "connections", icon: kindIcon.connection, label: t("nav.connections"), path: `/case/${caseId}/connections` },
   ]);
 </script>
 
-<!-- Phones: the four case sections plus the assistant sit under the thumb. -->
+<!-- Phones: the five case sections sit under the thumb; the assistant is in the top bar. -->
 <nav class="bottom" aria-label={t("nav.caseSections")}>
   {#each items as item (item.key)}
-    <a class="tab" href={href(item.path)} aria-current={section === item.key && !ui.assistantOpen ? "page" : undefined}>
+    <a class="tab" href={href(item.path)} aria-current={section === item.key ? "page" : undefined}>
       <span class="icon">
         <item.icon size={21} strokeWidth={1.75} />
         {#if item.key === "hearings" && liveHere}<span class="live-dot badge-pos"></span>{/if}
@@ -31,10 +31,6 @@
       <span class="label">{item.label}</span>
     </a>
   {/each}
-  <button class="tab" aria-pressed={ui.assistantOpen} onclick={() => (ui.assistantOpen ? (ui.assistantOpen = false) : openAssistant())}>
-    <span class="icon"><KindIcon kind="assistant" size={21} /></span>
-    <span class="label">{t("nav.assistant")}</span>
-  </button>
 </nav>
 
 <style>
@@ -62,12 +58,10 @@
     font-weight: 600;
     min-height: 44px;
   }
-  .tab[aria-current="page"],
-  .tab[aria-pressed="true"] {
+  .tab[aria-current="page"] {
     color: var(--ink-strong);
   }
-  .tab[aria-current="page"] .icon,
-  .tab[aria-pressed="true"] .icon {
+  .tab[aria-current="page"] .icon {
     background: var(--selected);
   }
   .icon {

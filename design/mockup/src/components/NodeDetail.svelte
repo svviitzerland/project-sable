@@ -26,7 +26,7 @@
   import type { InspectTarget, NodeRef } from "../lib/types";
   import RelationTag from "./RelationTag.svelte";
   import SpeakerTag from "./SpeakerTag.svelte";
-  import StatusChip from "./StatusChip.svelte";
+  import FindingLink from "./FindingLink.svelte";
 
   let { target }: { target: Exclude<InspectTarget, { kind: "finding" }> } = $props();
 
@@ -94,22 +94,15 @@
       <div class="actions">
         <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${d.caseId}/evidence/doc/${d.id}?p=${p.id}`); }}><KindIcon kind="document" size={14} />{t("fx.openDoc")}</button>
         <button class="btn btn-sm" onclick={() => openAssistant({ kind: "passage", id: p.id }, undefined, [{ kind: "passage", id: p.id }])}><MessageSquare size={14} />{t("fx.ask")}</button>
-        <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${d.caseId}/evidence?view=connections&of=passage:${p.id}`); }}><Waypoints size={14} />{t("fx.connections")}</button>
+        <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${d.caseId}/connections?of=passage:${p.id}`); }}><Waypoints size={14} />{t("fx.connections")}</button>
       </div>
       {@const citing = findingsCiting(p.id)}
       {#if citing.length}
         <section class="block">
           <h3 class="t-label">{t("ix.citedBy")} · {citing.length}</h3>
-          <ul class="conns">
-            {#each citing as f (f.id)}
-              <li>
-                <button class="conn" onclick={() => inspect({ kind: "finding", id: f.id })}>
-                  <StatusChip status={f.status} size="sm" />
-                  <span class="conn-text clamp-2">{l(f.title)}</span>
-                </button>
-              </li>
-            {/each}
-          </ul>
+          <div class="flinks">
+            {#each citing as f (f.id)}<FindingLink {f} showHearing />{/each}
+          </div>
         </section>
       {/if}
       {@render connectionList({ kind: "passage", id: p.id })}
@@ -127,14 +120,9 @@
       <div class="actions">
         <a class="btn btn-sm" href={href(`/case/${h.caseId}/hearings/${h.id}?s=${s.id}`)} onclick={() => (ui.inspector = null)}>{t("fx.openInHearing")}</a>
         <button class="btn btn-sm" aria-pressed={!!s.flagged} onclick={() => toggleFlag(s)}><Flag size={14} />{s.flagged ? t("live.unflag") : t("live.flag")}</button>
-        <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${h.caseId}/evidence?view=connections&of=statement:${s.id}`); }}><Waypoints size={14} />{t("fx.connections")}</button>
+        <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${h.caseId}/connections?of=statement:${s.id}`); }}><Waypoints size={14} />{t("fx.connections")}</button>
       </div>
-      {#if f}
-        <button class="conn" onclick={() => inspect({ kind: "finding", id: f.id })}>
-          <StatusChip status={f.status} size="sm" />
-          <span class="conn-text">{l(f.title)}</span>
-        </button>
-      {/if}
+      {#if f}<div class="flinks"><FindingLink {f} /></div>{/if}
       {@render connectionList({ kind: "statement", id: s.id })}
     {/if}
   {:else if target.kind === "connection"}
@@ -269,6 +257,10 @@
   .block {
     display: grid;
     gap: 8px;
+  }
+  .flinks {
+    display: grid;
+    margin: 0 -10px;
   }
   .conns {
     display: grid;

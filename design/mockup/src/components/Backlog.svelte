@@ -1,39 +1,34 @@
 <script lang="ts">
-  import Mark from "./Mark.svelte";
   import { Bookmark, Play, Scale } from "@lucide/svelte";
-  import { fmtClock, l, t } from "../lib/i18n";
+  import { fmtClock, t } from "../lib/i18n";
   import { roleTone } from "../lib/people";
   import { prefs } from "../lib/prefs.svelte";
   import { findingForStatement, inspect, isMeaningful, isShown, legalRef, speaker, speakerName } from "../lib/store.svelte";
   import type { Statement } from "../lib/types";
-  import AlertCard from "./AlertCard.svelte";
   import Avatar from "./Avatar.svelte";
+  import FindingLink from "./FindingLink.svelte";
   import Quote from "./Quote.svelte";
 
   /**
-   * The transcript as a story log: portrait, name, line. Only lines with a finding worth a look
-   * carry a marker, and that finding opens in place under the line.
+   * The transcript as a story log: portrait, name, line. A line with a finding carries a link to
+   * it; the finding itself is worked on in Temuan.
    */
   let {
     statements,
     currentId = null,
     highlightId = null,
-    expandedId = null,
     query = "",
     compact = false,
     showTime = true,
     onplay,
-    ontoggle,
   }: {
     statements: Statement[];
     currentId?: string | null;
     highlightId?: string | null;
-    expandedId?: string | null;
     query?: string;
     compact?: boolean;
     showTime?: boolean;
     onplay?: (seconds: number) => void;
-    ontoggle?: (findingId: string) => void;
   } = $props();
 </script>
 
@@ -74,16 +69,7 @@
             {#if ref && prefs.pasal}<button class="law" onclick={() => inspect({ kind: "legal", id: lid })}><Scale size={11} />{ref.article}</button>{/if}
           {/each}
         </p>
-        {#if shown}
-          {#if expandedId === shown.id}
-            <div class="inline-card"><AlertCard f={shown} mode="inline" onview={() => inspect({ kind: "finding", id: shown.id })} /></div>
-          {:else}
-            <button class="pill" class:loud={shown.status === "potential_inconsistency"} class:quiet={!isMeaningful(shown)} class:done={shown.reviewed} onclick={() => ontoggle?.(shown.id)}>
-              <span class="dot" aria-hidden="true"><Mark kind={shown.reviewed ? "done" : isMeaningful(shown) ? "look" : "quiet"} size={10} /></span>
-              <span class="pill-text">{t(`status.${shown.status}`)} · {l(shown.title)}</span>
-            </button>
-          {/if}
-        {/if}
+        {#if shown}<FindingLink f={shown} variant="pill" />{/if}
       </div>
     </li>
   {/each}
@@ -175,59 +161,5 @@
     font-size: 11.5px;
     font-weight: 600;
     vertical-align: 1px;
-  }
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    max-width: 100%;
-    width: fit-content;
-    padding: 4px 10px 4px 4px;
-    border-radius: var(--radius-pill);
-    background: color-mix(in srgb, var(--st-context-dot) 14%, var(--surface));
-    border: 1px solid color-mix(in srgb, var(--st-context-dot) 40%, var(--line));
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--ink-strong);
-    text-align: left;
-  }
-  .pill.loud {
-    background: color-mix(in srgb, var(--alert) 14%, var(--surface));
-    border-color: color-mix(in srgb, var(--alert) 50%, var(--line));
-  }
-  .pill.quiet,
-  .pill.done {
-    background: var(--surface);
-    border-color: var(--line);
-    font-weight: 500;
-    color: var(--muted);
-  }
-  .pill .dot {
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--st-context-dot);
-    color: #fff;
-    font-weight: 800;
-    font-size: 12px;
-  }
-  .pill.loud .dot {
-    background: var(--alert);
-  }
-  .pill.quiet .dot,
-  .pill.done .dot {
-    background: var(--line-strong);
-  }
-  .pill-text {
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .inline-card {
-    margin-top: 4px;
   }
 </style>

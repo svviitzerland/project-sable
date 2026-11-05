@@ -2,9 +2,10 @@
   import { ArrowRight, Pause, Play } from "@lucide/svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import { live, pause, resume } from "../lib/live.svelte";
-  import { go } from "../lib/router.svelte";
-  import { findingsOf, hearing, needsLook, speaker, statementsOf } from "../lib/store.svelte";
+  import { go, href } from "../lib/router.svelte";
+  import { findingsOf, findingsPath, hearing, needsLook, speaker, statementsOf } from "../lib/store.svelte";
   import Avatar from "./Avatar.svelte";
+  import Mark from "./Mark.svelte";
 
   let { phone }: { phone: boolean } = $props();
 
@@ -30,11 +31,11 @@
           <span class="snippet" aria-hidden="true">{live.partial || latest?.text || ""}</span>
         {/if}
       </span>
-      {#if attention}
-        <span class="badge badge-amber">! {t("attn.count", { n: attention })}</span>
-      {/if}
       <span class="go">{#if !phone}{t("hearings.returnLive")}{/if}<ArrowRight size={16} /></span>
     </button>
+    {#if attention}
+      <a class="badge badge-amber attn" href={href(findingsPath(h.caseId, { hearing: h.id }))} title={t("fl.all")}><Mark size={10} />{t("attn.count", { n: attention })}</a>
+    {/if}
     <button
       class="btn btn-ghost btn-icon pause"
       aria-label={live.status === "paused" ? t("live.resume") : t("live.pause")}
@@ -122,6 +123,13 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .attn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    text-decoration: none;
   }
   .go {
     display: inline-flex;

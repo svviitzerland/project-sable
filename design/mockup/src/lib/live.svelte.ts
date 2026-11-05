@@ -2,7 +2,7 @@ import { altScript, liveScript, type ScriptLine } from "./data";
 import { t } from "./i18n";
 import { prefs } from "./prefs.svelte";
 import { go, route } from "./router.svelte";
-import { db, hearing, inspect, speaker, toast, ui } from "./store.svelte";
+import { db, hearing, openFinding, speaker, toast, ui } from "./store.svelte";
 import type { Phase } from "./types";
 
 /**
@@ -140,7 +140,7 @@ async function analyze(id: string, line: ScriptLine, gen: number) {
   } else {
     toast(`${t("attn.title")} · ${t(`status.${line.finding.status}`)}`, {
       tone: "finding",
-      action: { label: t("toast.view"), run: () => inspect({ kind: "finding", id: findingId }) },
+      action: { label: t("toast.view"), run: () => openFinding(findingId) },
     });
   }
 }

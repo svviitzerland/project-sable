@@ -4,7 +4,7 @@
   import { fmtDate, l, t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
   import { go, href } from "../lib/router.svelte";
-  import { db, docsOf, findingsOfCase, hearing, hearingsOf, ui } from "../lib/store.svelte";
+  import { db, docsOf, findingsOfCase, findingsPath, hearing, hearingsOf, ui } from "../lib/store.svelte";
 
   let query = $state("");
   let visible = $derived(
@@ -41,21 +41,21 @@
       {@const docs = docsOf(c.id).length}
       {@const liveHere = hearing(live.hearingId)?.caseId === c.id && live.status !== "idle"}
       <li>
-        <a class="card case" href={href(`/case/${c.id}`)}>
+        <div class="card case">
           <span class="top">
             <span class="case-kind"><KindIcon kind="case" size={18} /><span class="tag">{t(`label.${c.label}`)}</span></span>
             {#if liveHere}<span class="live"><span class="live-dot"></span>{t("cases.liveNow")}</span>{/if}
           </span>
-          <span class="t-title name">{c.title}</span>
+          <a class="t-title name" href={href(`/case/${c.id}`)}>{c.title}</a>
           <span class="ref small muted">{c.reference || "—"}</span>
           <span class="summary small clamp-2">{l(c.summary)}</span>
           <span class="stats">
             <span class="stat"><KindIcon kind="hearing" size={15} />{t("common.hearings", { n: hs.length })}</span>
             <span class="stat"><KindIcon kind="document" size={15} />{t("common.documents", { n: docs })}</span>
-            {#if open}<span class="badge badge-amber stat"><KindIcon kind="finding" size={13} />{t("common.toReview", { n: open })}</span>{/if}
+            {#if open}<a class="badge badge-amber stat to-review" href={href(findingsPath(c.id))} title={t("fl.all")}><KindIcon kind="finding" size={13} />{t("common.toReview", { n: open })}</a>{/if}
           </span>
           <span class="xsmall muted">{t("cases.updated", { date: fmtDate(c.updated) })}</span>
-        </a>
+        </div>
       </li>
     {:else}
       <li class="muted">{t("cases.none")}</li>
@@ -86,6 +86,7 @@
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
   }
   .case {
+    position: relative;
     display: grid;
     gap: 8px;
     padding: 18px;
@@ -114,6 +115,20 @@
   }
   .name {
     font-size: 23px;
+    color: var(--ink-strong);
+    text-decoration: none;
+  }
+  /* The title's link covers the card; the review count is its own link into Temuan. */
+  .name::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  .to-review {
+    position: relative;
+    z-index: 1;
+    text-decoration: none;
   }
   .ref {
     margin-top: -6px;

@@ -35,7 +35,8 @@
       ],
       proposed: [
         L("Ringkasan perkara sebagai pusat: sidang langsung, antrean tinjauan, sidang berikutnya, bukti", "Case overview as the hub: live hearing, review queue, next hearing, evidence"),
-        L("Empat bagian: Ringkasan, Sidang, Temuan, Bukti; asisten menjadi lapisan", "Four sections: Overview, Hearings, Findings, Evidence; the assistant becomes a layer"),
+        L("Lima bagian menurut alur kerja: Sidang dan Bukti mengumpulkan, Temuan memproses, Keterkaitan menelusuri; asisten menjadi lapisan", "Five sections in the order work flows: Hearings and Evidence gather, Findings processes, Connections traces; the assistant becomes a layer"),
+        L("Temuan hanya diproses di Temuan; di bagian lain temuan berupa tautan ke sana", "Findings are processed only in Findings; everywhere else they are links into it"),
         L("Rail penuh → rail ikon → bilah bawah sesuai lebar layar", "Full rail → icon rail → bottom bar by screen width"),
         L("Pengaturan dan ekspor pindah ke menu perkara (⋯)", "Settings and export move into the case menu (⋯)"),
       ],
@@ -67,7 +68,7 @@
       ],
       proposed: [
         L("Bilah sidang langsung yang menetap di semua layar", "A persistent live bar on every screen"),
-        L("Urutan menurut relevansi: temuan yang paling perlu dicek di atas, lalu siapa yang sedang berbicara, lalu baris terakhir", "Ordered by relevance: the finding most worth a look on top, then who is speaking now, then the last lines"),
+        L("Urutan menurut relevansi: tautan ke temuan yang paling perlu dicek di atas, lalu siapa yang sedang berbicara, lalu baris terakhir", "Ordered by relevance: a link to the finding most worth a look on top, then who is speaking now, then the last lines"),
         L("Siluet kepala berbicara dengan gelombang suara saat bicara, tanpa denah tempat duduk; suara baru diberi nama dari kotak dialog", "A talking-head silhouette whose sound waves move while the person speaks, no seating chart; new voices are named from the dialogue box"),
         L("Mode ruang sidang: tema gelap rendah silau dan ukuran teks", "Courtroom mode: low-glare dark theme and text size"),
         L("Ikuti otomatis berhenti saat Anda menggulir; tombol pernyataan baru", "Auto-follow pauses when you scroll; a new-statements button"),
@@ -85,8 +86,8 @@
       proposed: [
         L("Pemutar dengan linimasa siapa berbicara kapan dan penanda temuan", "Player with a who-spoke-when timeline and finding markers"),
         L("Klik waktu pernyataan untuk memutar; ikuti pemutaran", "Click a statement's time to play it; follow playback"),
-        L("Tiga panel di layar lebar, tab di ponsel", "Three panes on wide screens, tabs on phones"),
-        L("Pintasan J/K/R/C dan spasi", "J/K/R/C and space shortcuts"),
+        L("Baris dengan temuan menautkan ke temuan itu di Temuan", "Lines with a finding link to it in Findings"),
+        L("Spasi untuk memutar dan menjeda", "Space to play and pause"),
       ],
       open: () => go("/case/c1/hearings/h2"),
     },
@@ -132,7 +133,7 @@
         L("Panel menempel di desktop, laci di tablet, lembar di ponsel", "Docked panel on desktop, drawer on tablet, sheet on phone"),
         L("Mengikuti konteks: sidang, temuan, atau bukti yang dibuka", "Follows context: the hearing, finding or evidence you have open"),
         L("Saran pertanyaan berubah sesuai konteks", "Suggested questions change with context"),
-        L("Kutipan [n] membuka pemeriksa tanpa meninggalkan halaman", "[n] citations open the inspector without leaving the page"),
+        L("Kutipan [n] membuka sumbernya; kutipan temuan membuka Temuan", "[n] citations open their source; finding citations open Findings"),
       ],
       open: () => {
         go("/case/c1");
@@ -140,7 +141,7 @@
       },
     },
     {
-      id: "findings", label: L("Temuan", "Findings"), kind: "core", x: 270, y: 470, w: 150,
+      id: "findings", label: L("Temuan", "Findings"), kind: "core", x: 470, y: 470, w: 150,
       today: [
         L("Empat status yang selalu tertulis, bukan hanya warna", "Four statuses, always written out, not color alone"),
         L("Kutipan persis, peninjau independen, ketidakpastian, langkah verifikasi", "Exact quotations, independent reviewer, uncertainty, verification steps"),
@@ -153,11 +154,12 @@
         L("Keterangan dan sumber berdampingan di layar lebar", "Testimony and source side by side on wide screens"),
         L("Berikutnya/sebelumnya di lembar penuh pada ponsel", "Next/previous in a full sheet on phones"),
         L("Papan temuan: papan yang diarahkan pengacara untuk temuan dan sumber di baliknya", "Findings board: a lawyer-driven board of findings and the sources behind them"),
+        L("Satu-satunya tempat temuan diproses; halaman lain menautkan ke satu temuan, satu sidang, atau satu dokumen di sini", "The only place findings are processed; other pages link here to one finding, one hearing or one document"),
       ],
       open: () => go("/case/c1/findings"),
     },
     {
-      id: "evidence", label: L("Bukti", "Evidence"), kind: "core", x: 560, y: 470, w: 150,
+      id: "evidence", label: L("Bukti", "Evidence"), kind: "core", x: 280, y: 470, w: 150,
       today: [
         L("Dokumen PDF/DOCX/TXT/MD hingga 25 MB, unduh asli, kutipan per halaman", "PDF/DOCX/TXT/MD documents up to 25 MB, original download, passages by page"),
         L("Peta bukti pernyataan ↔ kutipan dengan empat hubungan", "Evidence map of statements ↔ passages with four relations"),
@@ -165,12 +167,21 @@
         L("Pertanyaan bahasa alami dengan jawaban berkutipan", "Natural-language questions with cited answers"),
       ],
       proposed: [
-        L("Dokumen dan Keterkaitan sebagai dua tampilan", "Documents and Connections as two views"),
-        L("PDF asli lewat PDF.js dengan lapisan Jude: sorotan kutipan, tanda temuan, dan teks terpilih langsung ke asisten", "The original PDF via PDF.js with Jude's layer: highlighted citations, finding marks, and selected text straight to the assistant"),
-        L("Keterkaitan: pilih satu hal, lihat apa yang terkait, yang terkuat di atas, dengan jejak untuk kembali", "Connections: pick one thing, see what relates to it, strongest first, with a trail back"),
+        L("Hanya berkas perkara: dokumen sumber dan pembacanya", "Case files only: the source documents and their reader"),
+        L("PDF asli lewat PDF.js dengan lapisan Jude: sorotan kutipan, tanda temuan yang menautkan ke Temuan, dan teks terpilih langsung ke asisten", "The original PDF via PDF.js with Jude's layer: highlighted citations, finding marks that link into Findings, and selected text straight to the assistant"),
         L("Pertanyaan diteruskan ke asisten", "Questions hand off to the assistant"),
       ],
-      open: () => go("/case/c1/evidence?view=connections&of=statement:s208"),
+      open: () => go("/case/c1/evidence"),
+    },
+    {
+      id: "connections", label: L("Keterkaitan", "Connections"), kind: "core", x: 650, y: 470, w: 150,
+      today: [L("Peta bukti di dalam Bukti", "The evidence map inside Evidence")],
+      proposed: [
+        L("Halaman sendiri, terpisah dari Bukti", "Its own page, apart from Evidence"),
+        L("Pilih satu hal, lihat apa yang terkait, yang terkuat di atas, dengan jejak untuk kembali", "Pick one thing, see what relates to it, strongest first, with a trail back"),
+        L("Temuan tentang hal itu tampil sebagai tautan ke Temuan", "Findings about it show as links into Findings"),
+      ],
+      open: () => go("/case/c1/connections?of=statement:s208"),
     },
     {
       id: "practice", label: L("Latihan sidang", "Courtroom practice"), kind: "out", x: 110, y: 470, w: 170,
@@ -211,7 +222,7 @@
     {
       id: "finding", label: L("Temuan sidang", "Hearing finding"), kind: "object", x: 710, y: 600, w: 170,
       today: [L("Status, keterangan, sumber, verifikasi, pertanyaan, tinjauan", "Status, testimony, sources, verification, question, review")],
-      proposed: [L("Satu pemeriksa yang sama di mana pun temuan dibuka", "One inspector wherever a finding opens")],
+      proposed: [L("Dibuka dan diproses hanya di Temuan; di tempat lain berupa tautan", "Opened and processed only in Findings; a link everywhere else")],
       open: () => go("/case/c1/findings"),
     },
   ];
@@ -223,16 +234,17 @@
     { from: "case", to: "hearings" },
     { from: "case", to: "findings" },
     { from: "case", to: "evidence" },
+    { from: "case", to: "connections" },
     { from: "assistant", to: "hearings" },
     { from: "assistant", to: "findings" },
     { from: "assistant", to: "evidence" },
     { from: "hearings", to: "findings" },
-    { from: "hearings", to: "evidence" },
+    { from: "evidence", to: "findings" },
     { from: "hearings", to: "live" },
     { from: "live", to: "recorded", style: "pair" },
     { from: "doc", to: "evidence", style: "object" },
     { from: "statement", to: "hearings", style: "object" },
-    { from: "statement", to: "evidence", style: "object" },
+    { from: "statement", to: "connections", style: "object" },
     { from: "finding", to: "findings", style: "object" },
   ];
 

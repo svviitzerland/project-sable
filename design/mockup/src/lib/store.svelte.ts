@@ -1,6 +1,7 @@
 import * as seed from "./data";
 import { t, type Key, type Vars } from "./i18n";
 import { prefs } from "./prefs.svelte";
+import { go, route } from "./router.svelte";
 import type {
   ChatMessage,
   Citation,
@@ -225,7 +226,25 @@ export function renameSpeaker(id: string, label: string) {
   toastT("toast.speakerNamed");
 }
 
+/**
+ * Findings are worked on in one place, Temuan. Everywhere else a finding is a link that opens
+ * it there, selected; Temuan can also be opened filtered to one hearing or one document.
+ */
+export function findingPath(id: string) {
+  const f = finding(id);
+  const caseId = f ? hearing(f.hearingId)?.caseId : undefined;
+  return caseId ? `/case/${caseId}/findings/${id}` : "/cases";
+}
+export const findingsPath = (caseId: string, only: { hearing?: string; doc?: string } = {}) =>
+  `/case/${caseId}/findings${only.hearing ? `?hearing=${only.hearing}` : only.doc ? `?doc=${only.doc}` : ""}`;
+export function openFinding(id: string) {
+  ui.inspector = null;
+  go(findingPath(id));
+}
+
 export function inspect(target: InspectTarget, queue: string[] = []) {
+  // Outside Temuan a finding never opens in place: it opens in Temuan.
+  if (target.kind === "finding" && !(route.parts[0] === "case" && route.parts[2] === "findings")) return openFinding(target.id);
   ui.inspector = target;
   ui.inspectorQueue = queue;
 }

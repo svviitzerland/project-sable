@@ -3,8 +3,8 @@
   import {
     AArrowDown,
     AArrowUp,
+    ArrowRight,
     Bookmark,
-    ChevronDown,
     ChevronLeft,
     Ellipsis,
     MessageSquare,
@@ -18,12 +18,11 @@
     X,
   } from "@lucide/svelte";
   import { tick } from "svelte";
-  import { flip } from "svelte/animate";
-  import { fly, slide } from "svelte/transition";
-  import AlertCard from "../components/AlertCard.svelte";
+  import { fly } from "svelte/transition";
   import Avatar from "../components/Avatar.svelte";
   import Backlog from "../components/Backlog.svelte";
   import DialogueBox from "../components/DialogueBox.svelte";
+  import FindingLink from "../components/FindingLink.svelte";
   import Menu, { type MenuItem } from "../components/Menu.svelte";
   import Overlay from "../components/Overlay.svelte";
   import { fmtClock, fmtDate, l, t } from "../lib/i18n";
@@ -34,8 +33,8 @@
   import {
     findingForStatement,
     findingsOf,
+    findingsPath,
     hearing,
-    inspect,
     isMeaningful,
     needsLook,
     openAssistant,
@@ -50,8 +49,9 @@
 
   /**
    * Live recording, top to bottom in order of what matters: the finding most worth a look (only
-   * when there is one), what the person speaking is saying now, then the last few lines. Where
-   * people sit is not shown; who is talking is.
+   * when there is one), what the person speaking is saying now, then the last few lines. The
+   * hearing only gathers: findings are worked on in Temuan, so here they are links into it.
+   * Where people sit is not shown; who is talking is.
    */
   let { hearingId, phone }: { hearingId: string; phone: boolean } = $props();
 
@@ -60,7 +60,6 @@
   let statements = $derived(statementsOf(hearingId));
   let last = $derived(statements.at(-1));
   let showTranscript = $state(false);
-  let showRest = $state(false);
   let transcriptEl: HTMLElement | undefined = $state();
   const sizes = [14, 16, 19, 23];
   const motion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 1;
@@ -75,10 +74,7 @@
   let speaking = $derived(recording && live.status === "recording" && !!live.partial);
 
   // Most relevant first: what just arrived, then differences from a source, then the newest.
-  // "Later" moves a finding below the line; checking it removes it.
-  let snoozed = $state<string[]>([]);
-  const weight = (f: Finding) =>
-    (snoozed.includes(f.id) ? -10 : 0) + (f.isNew ? 4 : 0) + (f.status === "potential_inconsistency" ? 2 : 1);
+  const weight = (f: Finding) => (f.isNew ? 4 : 0) + (f.status === "potential_inconsistency" ? 2 : 1);
   let alerts = $derived(
     findingsOf(hearingId)
       .filter(needsLook)
@@ -86,8 +82,8 @@
       .sort((a, b) => b.w - a.w || b.at - a.at)
       .map((x) => x.f),
   );
-  let top = $derived(alerts[0] && !snoozed.includes(alerts[0].id) ? alerts[0] : undefined);
-  let rest = $derived(top ? alerts.slice(1) : alerts);
+  let top = $derived(alerts[0]);
+  let rest = $derived(alerts.slice(1));
   let currentFinding = $derived.by(() => {
     const f = current && !current.partial ? findingForStatement(current.id) : undefined;
     return f && isMeaningful(f) && !f.reviewed ? f : undefined;
@@ -107,18 +103,6 @@
     if (lastCount >= 0 && n > lastCount && alerts[0]) announce = `${t("attn.title")}: ${l(alerts[0].title)}`;
     lastCount = n;
   });
-
-  function later(id: string) {
-    const f = alerts.find((x) => x.id === id);
-    if (f) f.isNew = false;
-    if (!snoozed.includes(id)) snoozed = [...snoozed, id];
-  }
-
-  function view(id: string) {
-    const f = alerts.find((x) => x.id === id);
-    if (f) f.isNew = false;
-    inspect({ kind: "finding", id }, alerts.map((x) => x.id));
-  }
 
   function markMoment() {
     if (last && !last.flagged) last.flagged = true;
@@ -205,29 +189,20 @@
         {#if top}
           {#key top.id}
             <div in:fly={{ y: -14, duration: 280 * motion }}>
-              <AlertCard f={top} mode={top.isNew ? "hero" : "card"} brief now onview={() => view(top!.id)} onlater={() => later(top!.id)} />
+              <FindingLink f={top} variant="lead" />
             </div>
           {/key}
-        {:else if !alerts.length}
-          <p class="calm"><span class="breath" aria-hidden="true"></span>{t("attn.calm")}</p>
-        {/if}
-        {#if rest.length}
-          <button class="more" class:open={showRest} aria-expanded={showRest} onclick={() => (showRest = !showRest)}>
-            <span class="pips" aria-hidden="true">
-              {#each rest.slice(0, 3) as f (f.id)}<span class="pip" class:loud={f.status === "potential_inconsistency"}><Mark size={10} /></span>{/each}
-            </span>
-            <span class="more-label">{top ? t("live.moreToCheck", { n: rest.length }) : t("live.laterCount", { n: rest.length })}</span>
-            <span class="chev" aria-hidden="true"><ChevronDown size={16} /></span>
-          </button>
-          {#if showRest}
-            <div class="rest" transition:slide={{ duration: 220 * motion }}>
-              {#each rest as f (f.id)}
-                <div animate:flip={{ duration: 220 * motion }}>
-                  <AlertCard {f} mode="compact" onopen={() => view(f.id)} />
-                </div>
-              {/each}
-            </div>
+          {#if rest.length}
+            <a class="more" href={href(findingsPath(h.caseId, { hearing: hearingId }))}>
+              <span class="pips" aria-hidden="true">
+                {#each rest.slice(0, 3) as f (f.id)}<span class="pip" class:loud={f.status === "potential_inconsistency"}><Mark size={10} /></span>{/each}
+              </span>
+              <span class="more-label">{t("live.moreToCheck", { n: rest.length })}</span>
+              <span class="more-go"><span class="more-go-text">{t("fl.all")}</span><ArrowRight size={14} /></span>
+            </a>
           {/if}
+        {:else}
+          <p class="calm"><span class="breath" aria-hidden="true"></span>{t("attn.calm")}</p>
         {/if}
       </section>
 
@@ -258,7 +233,7 @@
             <h2 class="t-label">{t("live.justNow")}</h2>
             <button class="link-btn" onclick={openTranscript}><ScrollText size={14} />{t("live.fullTranscript")}</button>
           </div>
-          <Backlog statements={recent} compact showTime={false} ontoggle={(id) => view(id)} />
+          <Backlog statements={recent} compact showTime={false} />
         </section>
       {/if}
     </div>
@@ -272,7 +247,7 @@
     <button class="btn btn-ghost btn-icon" aria-label={t("common.close")} onclick={() => (showTranscript = false)}><X size={18} /></button>
   </div>
   <div class="sheet-body scroll-y" bind:this={transcriptEl}>
-    <Backlog {statements} ontoggle={(id) => view(id)} />
+    <Backlog {statements} />
   </div>
 </Overlay>
 
@@ -413,7 +388,7 @@
     color: var(--ink-strong);
     font-size: 13.5px;
     font-weight: 600;
-    text-align: left;
+    text-decoration: none;
   }
   .more:hover {
     border-color: var(--line-strong);
@@ -441,17 +416,18 @@
     flex: 1;
     margin-left: 6px;
   }
-  .chev {
-    display: grid;
-    color: var(--muted);
-    transition: transform 0.2s ease;
-  }
-  .more.open .chev {
-    transform: rotate(180deg);
-  }
-  .rest {
-    display: grid;
+  .more-go {
+    display: inline-flex;
+    align-items: center;
     gap: 6px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .more:hover .more-go {
+    color: var(--ink-strong);
+  }
+  .phone .more-go-text {
+    display: none;
   }
   .now {
     display: grid;
@@ -542,9 +518,6 @@
   @media (prefers-reduced-motion: reduce) {
     .breath {
       animation: none;
-    }
-    .chev {
-      transition: none;
     }
   }
 </style>

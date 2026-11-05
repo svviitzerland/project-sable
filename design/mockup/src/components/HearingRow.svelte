@@ -4,7 +4,7 @@
   import { fmtClock, fmtDate, fmtDuration, l, t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
   import { href } from "../lib/router.svelte";
-  import { findingsOf, isMeaningful, participantsOf, statementsOf, ui } from "../lib/store.svelte";
+  import { findingsOf, findingsPath, isMeaningful, participantsOf, statementsOf, ui } from "../lib/store.svelte";
   import Avatar from "./Avatar.svelte";
   import KindIcon from "./KindIcon.svelte";
   import type { Hearing } from "../lib/types";
@@ -57,7 +57,7 @@
     {:else if isLiveNow}
       <a class="btn btn-sm btn-live" href={href(`/case/${h.caseId}/hearings/${h.id}`)}>{t("hearings.returnLive")}<ArrowRight size={14} /></a>
     {:else if open}
-      <span class="attn"><span class="bang" aria-hidden="true"><Mark size={10} /></span>{t("attn.count", { n: open })}</span>
+      <a class="attn" href={href(findingsPath(h.caseId, { hearing: h.id }))} title={t("fl.all")}><span class="bang" aria-hidden="true"><Mark size={10} /></span>{t("attn.count", { n: open })}</a>
     {/if}
     {#if cast.length && !compact}
       <span class="cast" aria-hidden="true">{#each cast as sp (sp.id)}<Avatar id={sp.id} size="xs" />{/each}</span>
@@ -155,6 +155,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    text-decoration: none;
     padding: 3px 10px 3px 4px;
     border-radius: var(--radius-pill);
     background: color-mix(in srgb, var(--alert) 12%, var(--surface));

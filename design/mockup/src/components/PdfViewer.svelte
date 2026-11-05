@@ -5,7 +5,7 @@
   import { onMount } from "svelte";
   import { t } from "../lib/i18n";
   import { go } from "../lib/router.svelte";
-  import { connectionsFor, findingsCiting, inspect, isMeaningful, openAssistant, passagesOf, toastT } from "../lib/store.svelte";
+  import { connectionsFor, findingsCiting, findingsPath, inspect, isMeaningful, openAssistant, openFinding, passagesOf, toastT } from "../lib/store.svelte";
   import type { CaseDocument, Passage } from "../lib/types";
   import KindIcon from "./KindIcon.svelte";
 
@@ -188,7 +188,7 @@
   function onLayerClick(event: MouseEvent) {
     const el = (event.target as HTMLElement).closest("[data-pid], [data-fid]") as HTMLElement | null;
     if (!el || window.getSelection()?.toString()) return;
-    if (el.dataset.fid) inspect({ kind: "finding", id: el.dataset.fid });
+    if (el.dataset.fid) openFinding(el.dataset.fid);
     else if (el.dataset.pid) inspect({ kind: "passage", id: el.dataset.pid });
   }
 
@@ -310,8 +310,8 @@
           <button class="btn btn-sm btn-primary" onclick={ask}><KindIcon kind="assistant" size={14} />{t("pdf.ask")}</button>
           <button class="btn btn-sm" onclick={copyCite}><Copy size={14} />{t("pdf.copy")}</button>
           {#if sel.pid}
-            <button class="btn btn-sm" onclick={() => go(`/case/${caseId}/evidence?view=connections&of=passage:${sel!.pid}`)}><Waypoints size={14} />{t("fx.connections")}</button>
-            <button class="btn btn-sm" onclick={() => go(`/case/${caseId}/findings?view=board&start=passage:${sel!.pid}`)}><LayoutDashboard size={14} />{t("fx.board")}</button>
+            <button class="btn btn-sm" onclick={() => go(`/case/${caseId}/connections?of=passage:${sel!.pid}`)}><Waypoints size={14} />{t("fx.connections")}</button>
+            <button class="btn btn-sm" onclick={() => go(`${findingsPath(caseId)}?view=board&start=passage:${sel!.pid}`)}><LayoutDashboard size={14} />{t("fx.board")}</button>
           {/if}
         </div>
       {/if}

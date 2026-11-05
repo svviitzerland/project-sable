@@ -5,13 +5,14 @@
   import { candidatesFor, keyOf, parseKey, type BoardRef, type Candidate } from "../lib/board.svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import { shortName } from "../lib/people";
-  import { go } from "../lib/router.svelte";
+  import { go, href } from "../lib/router.svelte";
   import {
     connection,
     doc,
     finding,
     findingForStatement,
     findingsCiting,
+    findingsPath,
     hearing,
     inspect,
     isMeaningful,
@@ -23,6 +24,7 @@
     statement,
   } from "../lib/store.svelte";
   import type { Relation } from "../lib/types";
+  import FindingLink from "./FindingLink.svelte";
   import Overlay from "./Overlay.svelte";
   import Quote from "./Quote.svelte";
   import RelationTag from "./RelationTag.svelte";
@@ -74,7 +76,7 @@
 
   function show(ref: BoardRef) {
     picker = false;
-    go(`/case/${caseId}/evidence?view=connections&of=${keyOf(ref)}`);
+    go(`/case/${caseId}/connections?of=${keyOf(ref)}`);
   }
 
   function openRef(ref: BoardRef) {
@@ -117,7 +119,7 @@
     return describe(ref).text;
   }
 
-  // Findings already raised about the subject, shown as plain notes rather than as connections.
+  // Findings already raised about the subject: links into Temuan, not connections.
   let notes = $derived.by(() => {
     if (!subject) return [];
     if (subject.kind === "statement") {
@@ -200,15 +202,15 @@
         {:else}
           <blockquote class="quote" class:doc-text={subject.kind === "passage"}>“{s.text}”</blockquote>
         {/if}
-        {#each notes as f (f.id)}
-          <button class="note" class:loud={f.status === "potential_inconsistency"} onclick={() => inspect({ kind: "finding", id: f.id })}>
-            {t("cx.hasFinding", { title: l(f.title) })}
-          </button>
-        {/each}
+        {#if notes.length}
+          <div class="notes">
+            {#each notes as f (f.id)}<FindingLink {f} />{/each}
+          </div>
+        {/if}
         <div class="subject-actions">
           <button class="btn btn-sm" onclick={() => openRef(subject!)}><ExternalLink size={14} />{t("attn.open")}</button>
           <button class="btn btn-sm" onclick={() => openAssistant({ kind: "evidence" }, undefined, [{ kind: subject!.kind, id: subject!.id }])}><MessageSquare size={14} />{t("top.ask")}</button>
-          <button class="btn btn-sm" onclick={() => go(`/case/${caseId}/findings?view=board&start=${keyOf(subject!)}`)}><LayoutDashboard size={14} />{t("fx.board")}</button>
+          <a class="btn btn-sm" href={href(`${findingsPath(caseId)}?view=board&start=${keyOf(subject!)}`)}><LayoutDashboard size={14} />{t("fx.board")}</a>
         </div>
       </article>
 
@@ -387,18 +389,10 @@
   .passages .tabular {
     color: var(--muted);
   }
-  .note {
-    padding: 8px 10px;
-    border-radius: var(--radius-control);
-    background: var(--st-context-bg, var(--sunken));
+  .notes {
+    display: grid;
     border: 1px solid var(--line);
-    font-size: 13px;
-    text-align: left;
-    color: var(--ink-strong);
-  }
-  .note.loud {
-    background: color-mix(in srgb, var(--alert) 12%, var(--surface));
-    border-color: color-mix(in srgb, var(--alert) 35%, var(--line));
+    border-radius: var(--radius-control);
   }
   .subject-actions {
     display: flex;
@@ -500,9 +494,6 @@
     line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-  .layout:not(.wide) .note {
-    padding: 6px 10px;
   }
   .maybe-head {
     margin-top: 6px;

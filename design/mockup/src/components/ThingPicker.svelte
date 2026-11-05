@@ -58,12 +58,12 @@
 
 {#if quick.length && tab !== "document"}
   <section class="quick">
-    <h3 class="t-label">{t("board.quick")}</h3>
+    <h3 class="t-label">{t("cx.startHere")}</h3>
     {#each quick as f (f.id)}
       {@const s = statement(f.statementId)}
       {#if s}
         <button class="row" onclick={() => onpick({ kind: "statement", id: s.id })}>
-          <StatusChip status={f.status} size="sm" />
+          <Avatar id={s.speakerId} size="xs" />
           <span class="clamp-2">“<Quote text={s.text} mark={f.said} />”</span>
         </button>
       {/if}

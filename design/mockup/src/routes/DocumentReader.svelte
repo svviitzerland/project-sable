@@ -3,7 +3,7 @@
   import { ChevronLeft, Download, MessageSquare } from "@lucide/svelte";
   import { tick } from "svelte";
   import PdfViewer from "../components/PdfViewer.svelte";
-  import StatusChip from "../components/StatusChip.svelte";
+  import FindingLink from "../components/FindingLink.svelte";
   import { fmtDate, l, t } from "../lib/i18n";
   import { href, route } from "../lib/router.svelte";
   import { connectionsFor, doc, findingsCiting, inspect, openAssistant, passagesOf, toastT } from "../lib/store.svelte";
@@ -83,10 +83,8 @@
                 </button>
                 {#if cites.length || links.length}
                   <div class="refs">
-                    {#each cites as f (f.id)}
-                      <button class="ref" onclick={() => inspect({ kind: "finding", id: f.id })}><StatusChip status={f.status} size="sm" /></button>
-                    {/each}
-                    {#if links.length}<span class="xsmall muted">{t("ix.connections")}: {links.length}</span>{/if}
+                    {#each cites as f (f.id)}<FindingLink {f} variant="pill" />{/each}
+                    {#if links.length}<a class="xsmall muted" href={href(`/case/${caseId}/connections?of=passage:${p.id}`)}>{t("ix.connections")}: {links.length}</a>{/if}
                   </div>
                 {/if}
               </div>
@@ -231,9 +229,6 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-  }
-  .ref {
-    border-radius: 4px;
   }
   .doc-title {
     display: flex;

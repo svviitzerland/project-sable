@@ -24,6 +24,11 @@ export function go(path: string) {
 
 export const href = (path: string) => `#${path}`;
 
+/** Swaps the current address for another, so old links land on their new page without a back step. */
+export function redirect(path: string) {
+  location.replace(`#${path}`);
+}
+
 /** The responsive preview embeds the app with ?embed, which hides the mockup controls. */
 export const embedded =
   typeof window !== "undefined" && new URLSearchParams(location.search).has("embed");

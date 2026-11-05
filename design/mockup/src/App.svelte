@@ -16,6 +16,7 @@
   import { caseById, hearing, openAssistant, ui } from "./lib/store.svelte";
   import Canvas from "./routes/Canvas.svelte";
   import CaseOverview from "./routes/CaseOverview.svelte";
+  import ConnectionsPage from "./routes/ConnectionsPage.svelte";
   import Cases from "./routes/Cases.svelte";
   import DocumentReader from "./routes/DocumentReader.svelte";
   import Evidence from "./routes/Evidence.svelte";
@@ -112,7 +113,7 @@
     if (ui.modal || searchOpen) return;
     if (pendingG && caseId) {
       pendingG = false;
-      const target = { o: "", h: "/hearings", f: "/findings", e: "/evidence" }[event.key.toLowerCase()];
+      const target = { o: "", h: "/hearings", e: "/evidence", f: "/findings", c: "/connections" }[event.key.toLowerCase()];
       if (target !== undefined) {
         event.preventDefault();
         go(`/case/${caseId}${target}`);
@@ -174,6 +175,8 @@
               <DocumentReader {caseId} docId={route.parts[4]} />
             {:else if section === "evidence"}
               <Evidence {caseId} />
+            {:else if section === "connections"}
+              <ConnectionsPage {caseId} />
             {:else}
               <CaseOverview {caseId} />
             {/if}

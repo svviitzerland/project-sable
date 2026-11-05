@@ -13,10 +13,10 @@
     { path: "/case/c1/hearings/h3", label: "Live hearing" },
     { path: "/case/c1/hearings/h2", label: "Recorded hearing (review)" },
     { path: "/case/c1/findings", label: "Findings queue" },
-    { path: "/case/c1/evidence", label: "Evidence · documents" },
-    { path: "/case/c1/findings?view=board&start=finding:f1", label: "Findings · board" },
-    { path: "/case/c1/evidence?view=connections&of=statement:s208", label: "Evidence · connections" },
+    { path: "/case/c1/evidence", label: "Evidence · case files" },
     { path: "/case/c1/evidence/doc/d3", label: "Document reader" },
+    { path: "/case/c1/findings?view=board&start=finding:f1", label: "Findings · board" },
+    { path: "/case/c1/connections?of=statement:s208", label: "Connections" },
     { path: "/case/c3", label: "Empty case" },
     { path: "/map", label: "Feature map" },
   ];

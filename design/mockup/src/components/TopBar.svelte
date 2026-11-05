@@ -27,6 +27,7 @@
     hearings: "nav.hearings",
     findings: "nav.findings",
     evidence: "nav.evidence",
+    connections: "nav.connections",
   } as const;
 
   let crumbs = $derived.by(() => {
@@ -34,7 +35,7 @@
     if (!record) return out;
     out.push({ label: record.title, path: `/case/${record.id}`, kind: "case" });
     const section = (route.parts[2] ?? "overview") as keyof typeof sectionKey;
-    const sectionKind: Record<string, Kind> = { hearings: "hearing", findings: "finding", evidence: "document" };
+    const sectionKind: Record<string, Kind> = { hearings: "hearing", findings: "finding", evidence: "document", connections: "connection" };
     if (section !== "overview" && sectionKey[section]) {
       out.push({ label: t(sectionKey[section]), path: `/case/${record.id}/${section}`, kind: sectionKind[section] ?? "case" });
     }
@@ -102,10 +103,10 @@
       <Search size={17} />
       {#if !phone}<span class="search-label">{t("top.searchPlaceholder")}</span><span class="kbd">/</span>{/if}
     </button>
-    {#if record && !phone}
-      <button class="btn" aria-pressed={ui.assistantOpen} onclick={() => (ui.assistantOpen ? (ui.assistantOpen = false) : openAssistant())}>
-        <MessageSquare size={16} />
-        <span>{t("nav.assistant")}</span>
+    {#if record}
+      <button class="btn" class:btn-ghost={phone} class:btn-icon={phone} aria-pressed={ui.assistantOpen} aria-label={phone ? t("nav.assistant") : undefined} onclick={() => (ui.assistantOpen ? (ui.assistantOpen = false) : openAssistant())}>
+        <MessageSquare size={phone ? 18 : 16} />
+        {#if !phone}<span>{t("nav.assistant")}</span>{/if}
       </button>
     {/if}
     <Menu label={t("top.caseMenu")} items={menuItems}>
