@@ -11,6 +11,8 @@
   import Overlay from "./Overlay.svelte";
 
   let modal = $derived(ui.modal);
+  // Questions asked in this session count toward the plan's monthly questions.
+  let asked = $derived(db.threads.filter((x) => !x.sample).flatMap((x) => x.messages).filter((m) => m.role === "user").length);
   const close = () => (ui.modal = null);
 
   let titles = $derived.by(() => {
@@ -202,8 +204,8 @@
             </div>
             <div class="meter">
               <span class="small">{t("acc.questions")}</span>
-              <span class="tabular small muted">{t("acc.usageOf", { used: 41 + ui.chat.filter((m) => m.role === "user").length, limit: 300 })}</span>
-              <span class="bar"><span style="width:{Math.min(100, ((41 + ui.chat.length) / 300) * 100)}%"></span></span>
+              <span class="tabular small muted">{t("acc.usageOf", { used: 41 + asked, limit: 300 })}</span>
+              <span class="bar"><span style="width:{Math.min(100, ((41 + asked) / 300) * 100)}%"></span></span>
             </div>
           </section>
           <section class="section">

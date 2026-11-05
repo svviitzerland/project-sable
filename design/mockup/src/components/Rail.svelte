@@ -6,7 +6,7 @@
   import { live } from "../lib/live.svelte";
   import { prefs } from "../lib/prefs.svelte";
   import { href, route } from "../lib/router.svelte";
-  import { caseById, db, docsOf, findingsOfCase, hearing, needsLook, openAssistant, ui } from "../lib/store.svelte";
+  import { caseById, db, docsOf, findingsOfCase, hearing, needsLook, ui } from "../lib/store.svelte";
 
   let { caseId, collapsed, canCollapse }: { caseId: string | null; collapsed: boolean; canCollapse: boolean } = $props();
 
@@ -65,11 +65,11 @@
         </li>
       {/each}
       <li>
-        <button class="item" aria-pressed={ui.assistantOpen} onclick={() => (ui.assistantOpen ? (ui.assistantOpen = false) : openAssistant())} title={collapsed ? t("nav.assistant") : undefined}>
+        <!-- The assistant's own page: every conversation and the context each question used. -->
+        <a class="item" href={href(`/case/${caseId}/assistant`)} aria-current={section === "assistant" ? "page" : undefined} title={collapsed ? t("nav.assistant") : undefined}>
           <span class="icon"><KindIcon kind="assistant" size={19} /></span>
           <span class="label">{t("nav.assistant")}</span>
-          {#if !collapsed}<span class="kbd-hint" aria-hidden="true">A</span>{/if}
-        </button>
+        </a>
       </li>
     </ul>
   {:else}
@@ -232,8 +232,7 @@
     background: var(--nav-hover);
     color: var(--nav-ink);
   }
-  .item[aria-current="page"],
-  .item[aria-pressed="true"] {
+  .item[aria-current="page"] {
     background: var(--nav-ink);
     color: var(--nav);
   }
@@ -279,14 +278,6 @@
     position: absolute;
     top: 9px;
     right: 11px;
-  }
-  .kbd-hint {
-    font-size: 10px;
-    font-weight: 600;
-    opacity: 0.6;
-    border: 1px solid currentColor;
-    border-radius: 3px;
-    padding: 0 4px;
   }
   .spacer {
     flex: 1;

@@ -18,7 +18,7 @@ import type { Citation, L10n } from "./types";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-type Topic = "summary" | "differences" | "questions" | "times" | "keys" | "truck" | "legal" | "finding" | "search";
+export type Topic = "summary" | "differences" | "questions" | "times" | "keys" | "truck" | "legal" | "finding" | "search";
 
 export interface Suggestion {
   topic: Topic;
@@ -227,6 +227,11 @@ export async function ask(
   const base = topic === "finding" && ctx.kind === "finding" ? findingReply(ctx.id) : canned[topic]!;
   const legal = withLegal && prefs.pasal ? [...new Set([...base.legal, ...legalHits])] : [];
   return { ...structuredClone(base), legal, mode: "ai" };
+}
+
+/** A canned answer, for the synthetic sample conversations. */
+export function sampleReply(topic: Topic): Omit<Reply, "mode"> {
+  return structuredClone(canned[topic] ?? canned.summary!);
 }
 
 /** Upload → transcription → analysis, ending in a new recorded hearing. */

@@ -13,9 +13,11 @@
   import { isLive, live, startEngine } from "./lib/live.svelte";
   import { prefs } from "./lib/prefs.svelte";
   import { embedded, go, redirect, route } from "./lib/router.svelte";
-  import { caseById, hearing, openAssistant, ui } from "./lib/store.svelte";
+  import { caseById, db, hearing, openAssistant, ui } from "./lib/store.svelte";
+  import { ensureSamples } from "./lib/threads.svelte";
   import Canvas from "./routes/Canvas.svelte";
   import CaseOverview from "./routes/CaseOverview.svelte";
+  import AssistantPage from "./routes/AssistantPage.svelte";
   import ConnectionsPage from "./routes/ConnectionsPage.svelte";
   import Cases from "./routes/Cases.svelte";
   import DocumentReader from "./routes/DocumentReader.svelte";
@@ -67,6 +69,16 @@
   let currentHearing = $derived(section === "hearings" && sub ? hearing(sub) : undefined);
   let onLivePage = $derived(!!currentHearing && currentHearing.id === live.hearingId);
   let showLiveBar = $derived(isLive() && !onLivePage && hearing(live.hearingId)?.caseId === caseId && !!caseId);
+
+  // The demo case's sample conversations (again after a data reset).
+  $effect(() => {
+    void db.threads;
+    if (caseId) ensureSamples(caseId);
+  });
+  // The assistant's own page needs no panel beside it.
+  $effect(() => {
+    if (section === "assistant") ui.assistantOpen = false;
+  });
 
   // The assistant follows what the person is looking at.
   $effect(() => {
@@ -196,6 +208,8 @@
               <Documents {caseId} />
             {:else if section === "evidence"}
               <!-- An old address, redirected above. -->
+            {:else if section === "assistant"}
+              <AssistantPage {caseId} threadId={sub} />
             {:else if section === "connections"}
               <ConnectionsPage {caseId} />
             {:else}

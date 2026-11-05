@@ -154,6 +154,12 @@ export type InspectTarget =
 
 export type Citation = { kind: "passage" | "statement" | "finding" | "document" | "hearing"; id: string };
 
+/** What a question is asked with: the whole case, a page, or a piece of the record. */
+export type ContextRef =
+  | { kind: "case" }
+  | { kind: "documents" }
+  | { kind: "hearing" | "finding" | "document" | "passage" | "statement" | "connection"; id: string };
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -161,5 +167,17 @@ export interface ChatMessage {
   citations?: Citation[];
   legal?: string[];
   mode?: "ai" | "sources-only";
-  context?: string;
+  /** On a question: every context it was asked with, kept so the history shows them. */
+  contexts?: ContextRef[];
+}
+
+/** One conversation with the case assistant. */
+export interface Thread {
+  id: string;
+  caseId: string;
+  title: L10n | string;
+  updated: number;
+  messages: ChatMessage[];
+  /** A synthetic sample conversation, labelled as such. */
+  sample?: boolean;
 }

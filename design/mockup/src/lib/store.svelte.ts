@@ -3,14 +3,15 @@ import { t, type Key, type Vars } from "./i18n";
 import { prefs } from "./prefs.svelte";
 import { go, route } from "./router.svelte";
 import type {
-  ChatMessage,
   Citation,
   Connection,
+  ContextRef,
   Finding,
   InspectTarget,
   NodeRef,
   Speaker,
   Statement,
+  Thread,
 } from "./types";
 
 function fresh() {
@@ -24,6 +25,9 @@ function fresh() {
     connections: structuredClone(seed.connections),
     speakers: structuredClone(seed.speakers),
     legal: structuredClone(seed.legal),
+    threads: [] as Thread[],
+    /** Cases whose sample conversations have been added. */
+    threadsSeeded: [] as string[],
   };
 }
 
@@ -58,9 +62,10 @@ export type AssistantContext =
 export const ui = $state({
   assistantOpen: false,
   assistantContext: { kind: "case" } as AssistantContext,
-  chat: [] as ChatMessage[],
+  /** The conversation the assistant panel continues; null starts a new one on the next question. */
+  threadId: null as string | null,
   chatBusy: false,
-  chatRefs: [] as Citation[],
+  chatRefs: [] as ContextRef[],
   chatLegal: true,
   chatDraft: "",
   chatAutoSend: false,
@@ -88,7 +93,7 @@ export function dismissToast(id: number) {
 
 export function resetData() {
   Object.assign(db, fresh());
-  ui.chat = [];
+  ui.threadId = null;
   ui.chatRefs = [];
   ui.inspector = null;
 }

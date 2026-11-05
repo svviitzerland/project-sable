@@ -134,6 +134,8 @@
         L("Mengikuti konteks: sidang, temuan, atau dokumen yang dibuka", "Follows context: the hearing, finding or documents you have open"),
         L("Saran pertanyaan berubah sesuai konteks", "Suggested questions change with context"),
         L("Kutipan [n] membuka sumbernya; kutipan temuan membuka Temuan", "[n] citations open their source; finding citations open Findings"),
+        L("Halaman sendiri berisi riwayat percakapan, dengan konteks yang dipakai setiap pertanyaan", "A page of its own with the conversation history and the contexts each question used"),
+        L("Satu pertanyaan bisa menggabungkan beberapa konteks: sidang, dokumen, temuan, seluruh perkara", "One question can combine contexts: hearings, documents, findings, the whole case"),
       ],
       open: () => {
         go("/case/c1");
