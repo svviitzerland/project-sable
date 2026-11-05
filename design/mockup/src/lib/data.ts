@@ -1,3 +1,11 @@
+// Synthetic originals, generated for the mockup and labelled as such on every page.
+import d1Pdf from "../assets/docs/d1.pdf?url";
+import d2Pdf from "../assets/docs/d2.pdf?url";
+import d3Pdf from "../assets/docs/d3.pdf?url";
+import d4Pdf from "../assets/docs/d4.pdf?url";
+import d5Pdf from "../assets/docs/d5.pdf?url";
+import d6Pdf from "../assets/docs/d6.pdf?url";
+import d7Pdf from "../assets/docs/d7.pdf?url";
 import type {
   CaseDocument,
   CaseRecord,
@@ -599,13 +607,13 @@ export const findings: Finding[] = [
 ];
 
 export const documents: CaseDocument[] = [
-  { id: "d1", caseId: "c1", title: "BAP Saksi Rina Hartati", kind: { id: "Berita acara pemeriksaan", en: "Witness examination record (BAP)" }, pages: 6, file: "PDF", size: "412 KB", added: "2026-10-10" },
-  { id: "d2", caseId: "c1", title: "BAP Saksi Dimas Prasetyo", kind: { id: "Berita acara pemeriksaan", en: "Witness examination record (BAP)" }, pages: 5, file: "PDF", size: "388 KB", added: "2026-10-10" },
-  { id: "d3", caseId: "c1", title: "Laporan Log Akses Gerbang & CCTV", kind: { id: "Laporan digital forensik", en: "Digital forensics report" }, pages: 12, file: "PDF", size: "2.1 MB", added: "2026-10-12" },
-  { id: "d4", caseId: "c1", title: "Surat Dakwaan PDM-112/2026", kind: { id: "Surat dakwaan", en: "Indictment" }, pages: 9, file: "DOCX", size: "96 KB", added: "2026-10-06" },
-  { id: "d5", caseId: "c1", title: "Berita Acara Stock Opname Gudang B", kind: { id: "Berita acara", en: "Official record" }, pages: 4, file: "PDF", size: "640 KB", added: "2026-10-12" },
-  { id: "d6", caseId: "c2", title: "Laporan Polisi LP/B/0451/2026", kind: { id: "Laporan polisi", en: "Police report" }, pages: 3, file: "PDF", size: "210 KB", added: "2026-10-28" },
-  { id: "d7", caseId: "c2", title: "Tangkapan Layar Grup Arisan", kind: { id: "Bukti elektronik", en: "Electronic evidence" }, pages: 14, file: "PDF", size: "5.4 MB", added: "2026-10-29" },
+  { id: "d1", caseId: "c1", title: "BAP Saksi Rina Hartati", kind: { id: "Berita acara pemeriksaan", en: "Witness examination record (BAP)" }, pages: 6, file: "PDF", size: "412 KB", added: "2026-10-10" , pdf: d1Pdf },
+  { id: "d2", caseId: "c1", title: "BAP Saksi Dimas Prasetyo", kind: { id: "Berita acara pemeriksaan", en: "Witness examination record (BAP)" }, pages: 5, file: "PDF", size: "388 KB", added: "2026-10-10" , pdf: d2Pdf },
+  { id: "d3", caseId: "c1", title: "Laporan Log Akses Gerbang & CCTV", kind: { id: "Laporan digital forensik", en: "Digital forensics report" }, pages: 12, file: "PDF", size: "2.1 MB", added: "2026-10-12" , pdf: d3Pdf },
+  { id: "d4", caseId: "c1", title: "Surat Dakwaan PDM-112/2026", kind: { id: "Surat dakwaan", en: "Indictment" }, pages: 9, file: "DOCX", size: "96 KB", added: "2026-10-06" , pdf: d4Pdf },
+  { id: "d5", caseId: "c1", title: "Berita Acara Stock Opname Gudang B", kind: { id: "Berita acara", en: "Official record" }, pages: 4, file: "PDF", size: "640 KB", added: "2026-10-12" , pdf: d5Pdf },
+  { id: "d6", caseId: "c2", title: "Laporan Polisi LP/B/0451/2026", kind: { id: "Laporan polisi", en: "Police report" }, pages: 3, file: "PDF", size: "210 KB", added: "2026-10-28" , pdf: d6Pdf },
+  { id: "d7", caseId: "c2", title: "Tangkapan Layar Grup Arisan", kind: { id: "Bukti elektronik", en: "Electronic evidence" }, pages: 14, file: "PDF", size: "5.4 MB", added: "2026-10-29" , pdf: d7Pdf, scanned: true },
 ];
 
 export const passages: Passage[] = [

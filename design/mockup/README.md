@@ -34,7 +34,8 @@ The visual system is the repository's `DESIGN.md` ("The Editorial Case File"). D
 | `#/case/c1/findings?view=board` | Findings board, a lawyer-driven board of findings and their sources |
 | `#/case/c1/evidence` | Documents |
 | `#/case/c1/evidence?view=connections&of=statement:s208` | Connections for one statement, strongest first |
-| `#/case/c1/evidence/doc/d3` | Document reader |
+| `#/case/c1/evidence/doc/d1?p=d1p4` | Document viewer: the original PDF rendered by PDF.js, with cited passages highlighted, finding marks in the margin and a toolbar for selected text; `d3` has tables, a CCTV still, a chart and a formula, `d4` is a DOCX shown as its converted PDF |
+| `#/case/c2/evidence/doc/d7` | A screenshot-only exhibit: no text layer, so citations use OCR text and are marked per page |
 | `#/case/c3` | Empty case |
 | `#/map` | Feature map: the sketch redrawn, each node listing today's features (from this repo) and what the mockup proposes |
 | `#/moodboard` | Tokens, type, statuses, core objects, responsive and adaptive rules |
@@ -53,6 +54,7 @@ Keyboard: `/` search, `A` assistant, `G` then `O`/`H`/`F`/`E` to switch section,
 - **Findings as a queue and a board.** All findings across hearings, filtered by status and hearing, with the same inspector everywhere. The board view lets the lawyer start from a finding (or a statement or document), pin what Jude suggests behind it, and arrange the cards; nothing appears on the board unless they pin it.
 - **One icon per kind of thing.** A case is a folder, a hearing a talking head, a document or passage a page, a finding the "!" mark, a legal reference the scales, a connection the waypoints. A line from a hearing shows the talking head of the person who said it, and a hearing row leads with the voice heard most (the person speaking, while live). The same icons appear in navigation, breadcrumbs, lists, search, the assistant's citations, the inspector and the landing; `#/moodboard` lists them.
 - **Written records look written.** Document pages, passages and legal text are set in a typed-record face (Courier Prime); everything someone said stays in Manrope, and Caslon Display is kept for headings, finding titles and suggested questions. A finding's two sides, search results, citations, the board and Connections therefore show at a glance which text was spoken and which was written.
+- **Documents as filed.** The viewer renders the original PDF with PDF.js (the same library the product uses to extract text), so tables, images, figures, math and scans look exactly as filed. Jude's layer sits on top: cited passages are highlighted, each finding gets a mark in the margin, and any selected text can go to the assistant with its page, be copied as a citation, or open its connections. An Original | Text switch reflows the extracted text for small screens.
 - **Connections in Evidence.** Pick one statement, passage or document and see what else in the case may relate to it, ranked: confirmed links before suggestions, differences before support. Each row can become the next starting point, and a trail steps back.
 - **Container-driven layout.** Panes respond to the width they actually get, so docking the assistant turns three panes into two. Navigation is a full rail (≥1024px), an icon rail (720–1023px) or a bottom bar (<720px). Coarse pointers get 44px targets.
 
@@ -62,5 +64,6 @@ Keyboard: `/` search, `A` assistant, `G` then `O`/`H`/`F`/`E` to switch section,
 - `src/lib/services.ts`, `src/lib/live.svelte.ts`: the simulated services and the live transcription engine.
 - `src/lib/store.svelte.ts`, `src/lib/prefs.svelte.ts`, `src/lib/router.svelte.ts`, `src/lib/i18n.ts`: state, mockup preferences, hash routing and bilingual copy (`[Indonesian, English]` pairs).
 - `src/lib/kinds.ts` and `src/components/KindIcon.svelte`: the icon for each kind of thing; statements resolve to their speaker's talking head.
+- `src/components/PdfViewer.svelte`: PDF.js viewer plus Jude's layer. `src/assets/docs/`: the synthetic sample PDFs, rebuilt with `node scripts/make-sample-pdfs.cjs` (needs Playwright with Chromium) from the passages in `src/lib/data.ts`.
 - `src/lib/board.svelte.ts`: what relates to what (shared by the findings board and Connections) and the board's state.
 - `src/routes/`: screens. `src/components/`: shell, inspectors, assistant, talking-head portraits and dialogue box, attention cards, transcript log, timeline, board, connections and dialogs.

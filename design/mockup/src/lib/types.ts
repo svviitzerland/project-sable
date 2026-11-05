@@ -82,6 +82,10 @@ export interface CaseDocument {
   file: "PDF" | "DOCX" | "TXT";
   size: string;
   added: string;
+  /** The original as a PDF for the viewer (a DOCX is shown as its converted PDF). */
+  pdf?: string;
+  /** Pages are pictures (scans, screenshots): search and citations use OCR text. */
+  scanned?: boolean;
 }
 
 export interface Passage {

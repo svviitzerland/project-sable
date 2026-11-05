@@ -166,7 +166,7 @@
       ],
       proposed: [
         L("Dokumen dan Keterkaitan sebagai dua tampilan", "Documents and Connections as two views"),
-        L("Pembaca dokumen dengan indeks halaman dan kutipan yang dirujuk", "Document reader with a page index and cited passages"),
+        L("PDF asli lewat PDF.js dengan lapisan Jude: sorotan kutipan, tanda temuan, dan teks terpilih langsung ke asisten", "The original PDF via PDF.js with Jude's layer: highlighted citations, finding marks, and selected text straight to the assistant"),
         L("Keterkaitan: pilih satu hal, lihat apa yang terkait, yang terkuat di atas, dengan jejak untuk kembali", "Connections: pick one thing, see what relates to it, strongest first, with a trail back"),
         L("Pertanyaan diteruskan ke asisten", "Questions hand off to the assistant"),
       ],

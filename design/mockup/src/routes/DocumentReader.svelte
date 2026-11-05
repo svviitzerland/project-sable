@@ -2,6 +2,7 @@
   import KindIcon from "../components/KindIcon.svelte";
   import { ChevronLeft, Download, MessageSquare } from "@lucide/svelte";
   import { tick } from "svelte";
+  import PdfViewer from "../components/PdfViewer.svelte";
   import StatusChip from "../components/StatusChip.svelte";
   import { fmtDate, l, t } from "../lib/i18n";
   import { href, route } from "../lib/router.svelte";
@@ -14,6 +15,8 @@
   let pages = $derived(Array.from({ length: d?.pages ?? 0 }, (_, i) => i + 1));
   let focus = $derived(route.query.p ?? null);
   let reader: HTMLElement | undefined = $state();
+  // The original is the record; the extracted text reflows for small screens.
+  let mode = $state<"pdf" | "text">("pdf");
 
   $effect(() => {
     const id = focus;
@@ -35,11 +38,21 @@
         <p>{l(d.kind)} · {t("ev.pages", { n: d.pages })} · {d.file} · {d.size} · {t("ev.added", { date: fmtDate(d.added) })}</p>
       </div>
       <div class="toolbar">
+        {#if d.pdf}
+          <div class="seg" role="tablist" aria-label={t("pdf.viewLabel")}>
+            <button role="tab" aria-selected={mode === "pdf"} onclick={() => (mode = "pdf")}>{t("pdf.original")}</button>
+            <button role="tab" aria-selected={mode === "text"} onclick={() => (mode = "text")}>{t("pdf.text")}</button>
+          </div>
+        {/if}
         <button class="btn" onclick={() => openAssistant({ kind: "evidence" }, undefined, [{ kind: "document", id: d.id }])}><MessageSquare size={16} />{t("fx.ask")}</button>
         <button class="btn" onclick={() => toastT("toast.download")}><Download size={16} />{t("ev.download")}</button>
       </div>
     </header>
 
+    {#if d.pdf && mode === "pdf"}
+      {#key d.id}<PdfViewer {caseId} {d} focus={focus} />{/key}
+    {:else}
+    <p class="notice small text-only">{d.pdf ? t("pdf.extracted") : t("pdf.textOnly")}</p>
     <div class="layout">
       <nav class="index" aria-label={t("ev.reader")}>
         {#each pages as page (page)}
@@ -82,10 +95,14 @@
         {/each}
       </div>
     </div>
+    {/if}
   </div>
 {/if}
 
 <style>
+  .text-only {
+    margin: 0 0 12px;
+  }
   .back {
     display: inline-flex;
     align-items: center;
