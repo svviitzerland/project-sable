@@ -285,15 +285,6 @@ select.field { appearance: none; padding-right: 32px; background-image: linear-g
 [data-tone="defendant"] { --tone: var(--role-defendant); --tone-soft: var(--role-defendant-soft); }
 [data-tone="unknown"] { --tone: var(--role-unknown); --tone-soft: var(--role-unknown-soft); }
 
-@keyframes voice-ring {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tone) 55%, transparent), 0 0 0 3px var(--tone); }
-  70% { box-shadow: 0 0 0 12px transparent, 0 0 0 3px var(--tone); }
-  100% { box-shadow: 0 0 0 0 transparent, 0 0 0 3px var(--tone); }
-}
-@keyframes eq {
-  0%, 100% { transform: scaleY(0.3); }
-  50% { transform: scaleY(1); }
-}
 @keyframes alert-in {
   0% { opacity: 0; transform: translateY(14px) scale(0.98); }
   60% { opacity: 1; transform: translateY(-2px) scale(1.01); }

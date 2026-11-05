@@ -68,7 +68,7 @@
       proposed: [
         L("Bilah sidang langsung yang menetap di semua layar", "A persistent live bar on every screen"),
         L("Urutan menurut relevansi: temuan yang paling perlu dicek di atas, lalu siapa yang sedang berbicara, lalu baris terakhir", "Ordered by relevance: the finding most worth a look on top, then who is speaking now, then the last lines"),
-        L("Potret pembicara dengan cincin suara, tanpa denah tempat duduk; suara baru diberi nama dari kotak dialog", "Speaker portrait with a voice ring, no seating chart; new voices are named from the dialogue box"),
+        L("Siluet kepala berbicara dengan gelombang suara saat bicara, tanpa denah tempat duduk; suara baru diberi nama dari kotak dialog", "A talking-head silhouette whose sound waves move while the person speaks, no seating chart; new voices are named from the dialogue box"),
         L("Mode ruang sidang: tema gelap rendah silau dan ukuran teks", "Courtroom mode: low-glare dark theme and text size"),
         L("Ikuti otomatis berhenti saat Anda menggulir; tombol pernyataan baru", "Auto-follow pauses when you scroll; a new-statements button"),
         L("Tandai pernyataan; pasal yang disebut menjadi tautan", "Flag statements; mentioned articles become links"),

@@ -4,6 +4,7 @@
   import caseFiles from "../../../../apps/web/static/images/jude-case-files.webp";
   import ivoryPaper from "../../../../apps/web/static/images/ivory-paper.webp";
   import cloth from "../assets/case-cloth.webp";
+  import Avatar from "../components/Avatar.svelte";
   import { samplePage } from "../lib/data";
   import { t, type Key } from "../lib/i18n";
   import { prefs } from "../lib/prefs.svelte";
@@ -242,11 +243,11 @@
           <div class="plate">
             <div class="vignette listen paper">
               <div class="v-line quiet">
-                <span class="v-face" data-tone="judge">HK</span>
+                <Avatar id="hk" size="md" />
                 <div><span class="v-name">{t("role.judge")}</span><p>{t("lp.v1.judge")}</p></div>
               </div>
               <div class="v-line now">
-                <span class="v-face speaking" data-tone="witness">RH</span>
+                <Avatar id="rina" size="lg" speaking still />
                 <div>
                   <span class="v-name">Saksi Rina Hartati <span class="v-listening">{t("live.listeningShort")}</span></span>
                   <p class="v-said">{t("lp.g.statement")}</p>
@@ -1118,26 +1119,6 @@
   }
   .v-line.quiet {
     opacity: 0.62;
-  }
-  .v-face {
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--tone-soft, #eee);
-    color: var(--tone, #333);
-    font-size: 13px;
-    font-weight: 700;
-  }
-  .v-face.speaking {
-    width: 52px;
-    height: 52px;
-    font-size: 15px;
-    box-shadow:
-      0 0 0 3px var(--lp-paper),
-      0 0 0 5px var(--tone, #333);
   }
   .v-name {
     display: flex;

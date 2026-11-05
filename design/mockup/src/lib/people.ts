@@ -3,14 +3,6 @@ import type { Role, Speaker } from "./types";
 /** Color family per role; associate judges share the bench color. */
 export const roleTone = (role: Role | undefined) => (role === "judge_member" ? "judge" : (role ?? "unknown"));
 
-/** Two letters for a portrait: names for people, initials of the title for roles. */
-export function initials(sp: Speaker | undefined) {
-  if (!sp || !sp.label) return "?";
-  const label = sp.label.replace(/^(Saksi|Terdakwa|Ahli)\s+/i, "");
-  const words = label.split(/\s+/).filter(Boolean);
-  return ((words[0]?.[0] ?? "") + (words[1]?.[0] ?? "")).toUpperCase() || "?";
-}
-
 /** Short name for captions: the person's first name, or the role title. */
 export function shortName(sp: Speaker | undefined) {
   if (!sp?.label) return "";
