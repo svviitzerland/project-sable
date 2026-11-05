@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { AudioLines, FileText, ListChecks, MessageSquareQuote, Search } from "@lucide/svelte";
+  import { Search } from "@lucide/svelte";
+  import type { Kind } from "../lib/kinds";
   import { fmtClock, l, t } from "../lib/i18n";
   import { go } from "../lib/router.svelte";
   import { db, doc, findingsOfCase, hearing, hearingsOf, inspect, speaker, speakerName } from "../lib/store.svelte";
+  import KindIcon from "./KindIcon.svelte";
   import Overlay from "./Overlay.svelte";
 
   let { open, caseId, onclose }: { open: boolean; caseId: string | null; onclose: () => void } = $props();
@@ -10,7 +12,7 @@
   let query = $state("");
   let active = $state(0);
 
-  type Hit = { group: string; icon: typeof Search; title: string; meta: string; run: () => void };
+  type Hit = { group: string; kind: Kind; speakerId?: string; title: string; meta: string; run: () => void };
 
   let hits = $derived.by<Hit[]>(() => {
     const q = query.trim().toLowerCase();
@@ -19,20 +21,20 @@
     const cases = caseId ? db.cases.filter((c) => c.id === caseId) : db.cases;
     for (const c of cases) {
       for (const h of hearingsOf(c.id).filter((h) => l(h.title).toLowerCase().includes(q)).slice(0, 4)) {
-        out.push({ group: t("nav.hearings"), icon: AudioLines, title: `${t("common.hearingN", { n: h.number })} · ${l(h.title)}`, meta: t(`mode.${h.mode}`), run: () => go(`/case/${c.id}/hearings/${h.id}`) });
+        out.push({ group: t("nav.hearings"), kind: "hearing", title: `${t("common.hearingN", { n: h.number })} · ${l(h.title)}`, meta: t(`mode.${h.mode}`), run: () => go(`/case/${c.id}/hearings/${h.id}`) });
       }
       for (const f of findingsOfCase(c.id).filter((f) => `${l(f.title)} ${l(f.explanation)}`.toLowerCase().includes(q)).slice(0, 4)) {
-        out.push({ group: t("nav.findings"), icon: ListChecks, title: l(f.title), meta: t(`status.${f.status}`), run: () => inspect({ kind: "finding", id: f.id }) });
+        out.push({ group: t("nav.findings"), kind: "finding", title: l(f.title), meta: t(`status.${f.status}`), run: () => inspect({ kind: "finding", id: f.id }) });
       }
       const docIds = new Set(db.documents.filter((d) => d.caseId === c.id).map((d) => d.id));
       for (const p of db.passages.filter((p) => docIds.has(p.docId) && p.text.toLowerCase().includes(q)).slice(0, 4)) {
         const d = doc(p.docId);
-        out.push({ group: t("nav.evidence"), icon: FileText, title: p.text, meta: `${d?.title} · ${t("common.page", { n: p.page })}`, run: () => inspect({ kind: "passage", id: p.id }) });
+        out.push({ group: t("nav.evidence"), kind: "passage", title: p.text, meta: `${d?.title} · ${t("common.page", { n: p.page })}`, run: () => inspect({ kind: "passage", id: p.id }) });
       }
       const hearingIds = new Set(hearingsOf(c.id).map((h) => h.id));
       for (const s of db.statements.filter((s) => hearingIds.has(s.hearingId) && s.text.toLowerCase().includes(q)).slice(0, 5)) {
         const h = hearing(s.hearingId);
-        out.push({ group: t("hv.transcript"), icon: MessageSquareQuote, title: s.text, meta: `${h ? t("common.hearingN", { n: h.number }) : ""} · ${fmtClock(s.t)} · ${speakerName(speaker(s.speakerId))}`, run: () => inspect({ kind: "statement", id: s.id }) });
+        out.push({ group: t("hv.transcript"), kind: "statement", speakerId: s.speakerId, title: s.text, meta: `${h ? t("common.hearingN", { n: h.number }) : ""} · ${fmtClock(s.t)} · ${speakerName(speaker(s.speakerId))}`, run: () => inspect({ kind: "statement", id: s.id }) });
       }
     }
     return out;
@@ -97,7 +99,7 @@
       {/if}
       <li id="hit-{i}" role="option" aria-selected={i === active}>
         <button class="hit" class:active={i === active} onclick={() => choose(hit)} onmouseenter={() => (active = i)} tabindex="-1">
-          <hit.icon size={16} />
+          <KindIcon kind={hit.kind} speakerId={hit.speakerId} size={18} />
           <span class="hit-body">
             <span class="hit-title clamp-2">{m.before}<mark>{m.hit}</mark>{m.after}</span>
             <span class="xsmall muted">{hit.meta}</span>

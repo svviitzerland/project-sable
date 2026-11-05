@@ -1,11 +1,26 @@
 <script lang="ts">
   import FindingRow from "../components/FindingRow.svelte";
+  import KindIcon from "../components/KindIcon.svelte";
+  import type { Kind } from "../lib/kinds";
   import RelationTag from "../components/RelationTag.svelte";
   import SpeakerTag from "../components/SpeakerTag.svelte";
   import StatusChip from "../components/StatusChip.svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import { doc, finding, inspect, statement } from "../lib/store.svelte";
   import type { L10n } from "../lib/types";
+
+  // The icon vocabulary: one icon per kind of thing, wherever it appears.
+  const kindRows: { kind: Kind; speaker?: string; label: string; where: string }[] = [
+    { kind: "case", label: "Case", where: "Case list, the case card in the rail, breadcrumbs" },
+    { kind: "hearing", label: "Hearing", where: "Navigation, hearing lists before anyone has spoken, search, assistant references, breadcrumbs" },
+    { kind: "statement", speaker: "rina", label: "Hearing statement: its speaker's own talking head", where: "Transcripts, hearing rows, quotes in findings, search, citations, connections, the board" },
+    { kind: "document", label: "Document or one of its passages", where: "Navigation (Evidence), document cards, the reader, sources in findings, citations" },
+    { kind: "finding", label: "Finding", where: "Navigation, attention counts, finding lists, toasts" },
+    { kind: "legal", label: "Legal reference (Pasal.id)", where: "Article chips in transcripts, the assistant, the inspector" },
+    { kind: "connection", label: "Connection", where: "Evidence → Connections, the inspector" },
+    { kind: "board", label: "Findings board", where: "Findings → Board" },
+    { kind: "assistant", label: "Assistant", where: "Navigation and every ask action" },
+  ];
 
   const L = (id: string, en: string): L10n => ({ id, en });
 
@@ -91,25 +106,38 @@
     <div class="objects">
       {#if d}
         <div class="object card">
-          <span class="t-label">Case document</span>
+          <span class="t-label obj-kind"><KindIcon kind="document" size={14} />Case document</span>
           <strong>{d.title}</strong>
           <span class="small muted">{l(d.kind)} · {t("ev.pages", { n: d.pages })} · {d.file}</span>
         </div>
       {/if}
       {#if s}
         <div class="object card">
-          <span class="t-label">Hearing statement</span>
+          <span class="t-label obj-kind"><KindIcon kind="statement" speakerId={s.speakerId} size={16} />Hearing statement</span>
           <div class="st"><span class="tabular xsmall muted">{fmtClock(s.t)}</span><SpeakerTag id={s.speakerId} /></div>
           <p>{s.text}</p>
         </div>
       {/if}
       {#if f}
         <div class="object card flush">
-          <span class="t-label pad">Hearing finding</span>
+          <span class="t-label pad obj-kind"><KindIcon kind="finding" size={14} />Hearing finding</span>
           <FindingRow {f} onclick={() => inspect({ kind: "finding", id: f.id })} />
         </div>
       {/if}
     </div>
+  </section>
+
+  <section class="block">
+    <h2>Icons: one per kind of thing</h2>
+    <p class="small muted">Each kind keeps the same icon on every page so it is recognisable at a glance. A line from a hearing shows the talking head of the person who said it.</p>
+    <ul class="kinds">
+      {#each kindRows as k (k.kind)}
+        <li>
+          <span class="kind-icon"><KindIcon kind={k.kind} speakerId={k.speaker} size={k.speaker ? 26 : 20} /></span>
+          <span class="kind-text"><strong>{k.label}</strong><span class="xsmall muted">{k.where}</span></span>
+        </li>
+      {/each}
+    </ul>
   </section>
 
   <section class="block">
@@ -219,6 +247,39 @@
   .type > div {
     display: grid;
     gap: 4px;
+  }
+  .obj-kind {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .kinds {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0 24px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .kinds li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+  }
+  .kind-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    color: var(--ink-strong);
+  }
+  .kind-text {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
   }
   .objects {
     display: grid;

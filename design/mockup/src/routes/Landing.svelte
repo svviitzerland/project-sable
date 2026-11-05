@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { ArrowRight, Check, FileText, Menu as MenuIcon, RotateCcw, Scale, X } from "@lucide/svelte";
+  import { ArrowRight, Check, Menu as MenuIcon, RotateCcw, X } from "@lucide/svelte";
   import { onMount, tick } from "svelte";
   import caseFiles from "../../../../apps/web/static/images/jude-case-files.webp";
   import ivoryPaper from "../../../../apps/web/static/images/ivory-paper.webp";
   import cloth from "../assets/case-cloth.webp";
   import Avatar from "../components/Avatar.svelte";
+  import KindIcon from "../components/KindIcon.svelte";
   import { samplePage } from "../lib/data";
   import { t, type Key } from "../lib/i18n";
   import { prefs } from "../lib/prefs.svelte";
@@ -89,10 +90,10 @@
   }
 
   // Most of a hearing stays quiet; one line comes forward with its source.
-  const quietLines: { who: Key; text: Key; matches: boolean }[] = [
-    { who: "role.judge", text: "lp.t1", matches: true },
-    { who: "role.witness", text: "lp.t2", matches: true },
-    { who: "role.prosecutor", text: "lp.t3", matches: false },
+  const quietLines: { who: Key; speaker: string; text: Key; matches: boolean }[] = [
+    { who: "role.judge", speaker: "hk", text: "lp.t1", matches: true },
+    { who: "role.witness", speaker: "rina", text: "lp.t2", matches: true },
+    { who: "role.prosecutor", speaker: "pu", text: "lp.t3", matches: false },
   ];
   let raised = $derived(around(t("lp.t4"), t("lp.t4Mark")));
 
@@ -176,7 +177,7 @@
             <h2 class="side-label">{t("lp.testimony")}</h2>
             <blockquote class="quote">“{t("lp.quote1")} <span class="hl one">{t("lp.time1")}</span>”</blockquote>
             <button class="source" onclick={() => go("/case/c1/findings/f1")}>
-              <FileText size={15} />{t("lp.transcript")} · <span class="tabular">00:14:32</span>
+              <KindIcon kind="hearing" size={15} />{t("lp.transcript")} · <span class="tabular">00:14:32</span>
             </button>
           </div>
           <div class="finding">
@@ -188,7 +189,7 @@
             <h2 class="side-label">{t("lp.earlier")}</h2>
             <blockquote class="quote">“{t("lp.quote2")} <span class="hl two">{t("lp.time2")}</span>”</blockquote>
             <button class="source" onclick={() => go("/case/c1/findings/f1")}>
-              <FileText size={15} />{t("lp.witnessStatement")} · {t("common.page", { n: 4 })}
+              <KindIcon kind="document" size={15} />{t("lp.witnessStatement")} · {t("common.page", { n: 4 })}
             </button>
           </div>
         </div>
@@ -213,13 +214,13 @@
           {/each}
         </svg>
         <article class="slip statement">
-          <p class="slip-meta">{t("lp.g.statementMeta")}</p>
+          <p class="slip-meta"><Avatar id="rina" size="xxs" />{t("lp.g.statementMeta")}</p>
           <p class="statement-text">“{t("lp.g.statement")}”</p>
         </article>
         {#each slips as s, i (s.id)}
           {@const parts = around(t(s.text), s.mark ? t(s.mark) : "")}
           <article class="slip source-slip {s.id}" style:--d="{i * 70}ms">
-            <p class="slip-meta">{#if s.id === "law"}<Scale size={13} />{:else}<FileText size={13} />{/if}{t(s.meta)}</p>
+            <p class="slip-meta">{#if s.id === "shift"}<Avatar id="rina" size="xxs" />{:else}<KindIcon kind={s.id === "law" ? "legal" : "document"} size={13} />{/if}{t(s.meta)}</p>
             <p class="slip-text">{parts[0]}{#if parts[1]}<mark>{parts[1]}</mark>{/if}{parts[2]}</p>
             <p class="slip-rel" data-rel={s.rel}>{t(`rel.${s.rel}`)}</p>
           </article>
@@ -266,10 +267,10 @@
             <div class="vignette reading paper">
               <p class="v-head">{t("lp.v2.title")}</p>
               <ul>
-                <li><FileText size={15} /><span>{t("lp.v2.d1")}</span><span class="v-pages">{t("lp.v2.pages", { n: 6 })}</span><span class="v-state"><Check size={13} />{t("lp.v2.read")}</span></li>
-                <li><FileText size={15} /><span>{t("lp.v2.d2")}</span><span class="v-pages">{t("lp.v2.pages", { n: 12 })}</span><span class="v-state"><Check size={13} />{t("lp.v2.read")}</span></li>
-                <li><FileText size={15} /><span>{t("lp.v2.d3")}</span><span class="v-pages">{t("lp.v2.pages", { n: 9 })}</span><span class="v-state"><Check size={13} />{t("lp.v2.read")}</span></li>
-                <li><Scale size={15} /><span>{t("lp.v2.d4")}</span><span class="v-pages">Pasal.id</span><span class="v-state"><Check size={13} />{t("lp.v2.referenced")}</span></li>
+                <li><KindIcon kind="document" size={15} /><span>{t("lp.v2.d1")}</span><span class="v-pages">{t("lp.v2.pages", { n: 6 })}</span><span class="v-state"><Check size={13} />{t("lp.v2.read")}</span></li>
+                <li><KindIcon kind="document" size={15} /><span>{t("lp.v2.d2")}</span><span class="v-pages">{t("lp.v2.pages", { n: 12 })}</span><span class="v-state"><Check size={13} />{t("lp.v2.read")}</span></li>
+                <li><KindIcon kind="document" size={15} /><span>{t("lp.v2.d3")}</span><span class="v-pages">{t("lp.v2.pages", { n: 9 })}</span><span class="v-state"><Check size={13} />{t("lp.v2.read")}</span></li>
+                <li><KindIcon kind="legal" size={15} /><span>{t("lp.v2.d4")}</span><span class="v-pages">Pasal.id</span><span class="v-state"><Check size={13} />{t("lp.v2.referenced")}</span></li>
               </ul>
               <span class="v-sample">{t("lp.sample")}</span>
             </div>
@@ -307,19 +308,19 @@
       <ol class="t-list">
         {#each quietLines as line (line.text)}
           <li class="t-row">
-            <span class="t-who">{t(line.who)}</span>
+            <span class="t-who"><Avatar id={line.speaker} size="xxs" />{t(line.who)}</span>
             <p class="t-text">{t(line.text)}</p>
             {#if line.matches}<span class="t-ok"><Check size={13} />{t("lp.tMatches")}</span>{:else}<span></span>{/if}
           </li>
         {/each}
         <li class="t-row raised">
-          <span class="t-who">{t("role.witness")}</span>
+          <span class="t-who"><Avatar id="rina" size="xxs" />{t("role.witness")}</span>
           <p class="t-text">{raised[0]}<mark>{raised[1]}</mark>{raised[2]}</p>
           <span class="pill small">{t("status.potential_inconsistency")}</span>
           <p class="t-note">{t("lp.tNote")}</p>
         </li>
         <li class="t-row">
-          <span class="t-who">{t("role.witness")}</span>
+          <span class="t-who"><Avatar id="rina" size="xxs" />{t("role.witness")}</span>
           <p class="t-text">{t("lp.t5")}</p>
           <span></span>
         </li>
@@ -1236,6 +1237,9 @@
     border-top: 0;
   }
   .t-who {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-size: 13px;
     font-weight: 600;
     color: var(--lp-muted);

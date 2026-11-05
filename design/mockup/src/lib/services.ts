@@ -198,7 +198,8 @@ function findingReply(id: string): Omit<Reply, "mode"> {
       en: `This finding compares the testimony [1] with ${f.sources.length} source passage${f.sources.length === 1 ? "" : "s"} ${refs}.${extraEn}\n\nWhat you need to decide: whether both refer to the same event. Jude does not judge the witness's honesty.`,
     },
     citations,
-    legal: f.legal ?? [],
+    // A plain copy: the finding lives in reactive state, which structuredClone cannot copy.
+    legal: [...(f.legal ?? [])],
   };
 }
 

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Check, Compass, Eraser, ExternalLink, FileText, GripVertical, LayoutDashboard, MessageSquare, Plus, X } from "@lucide/svelte";
+  import KindIcon from "./KindIcon.svelte";
+  import { Check, Compass, Eraser, ExternalLink, GripVertical, LayoutDashboard, MessageSquare, Plus, X } from "@lucide/svelte";
   import { untrack } from "svelte";
   import {
     CARD_H,
@@ -35,7 +36,6 @@
     statement,
   } from "../lib/store.svelte";
   import type { Citation, Status } from "../lib/types";
-  import Avatar from "./Avatar.svelte";
   import Overlay from "./Overlay.svelte";
   import Quote from "./Quote.svelte";
   import RelationTag from "./RelationTag.svelte";
@@ -162,7 +162,7 @@
   <li class="cand" class:pinned={isPinned}>
     <button class="cand-main" onclick={() => open(c.ref)}>
       <span class="cand-meta">
-        {#if i.status}<StatusChip status={i.status} size="sm" />{:else if i.speakerId}<Avatar id={i.speakerId} size="xs" />{:else}<FileText size={13} />{/if}
+        {#if i.status}<StatusChip status={i.status} size="sm" />{:else}<KindIcon kind={c.ref.kind} speakerId={i.speakerId} size={c.ref.kind === "statement" ? 20 : 14} />{/if}
         <span class="clamp-2">{i.meta}</span>
       </span>
       {#if i.status}
@@ -279,7 +279,7 @@
                   role="presentation"
                 >
                   <GripVertical size={14} class="grip" />
-                  {#if i.status}<StatusChip status={i.status} size="sm" />{:else if i.speakerId}<Avatar id={i.speakerId} size="xs" />{:else}<FileText size={13} />{/if}
+                  {#if i.status}<StatusChip status={i.status} size="sm" />{:else}<KindIcon kind={card.kind} speakerId={i.speakerId} size={card.kind === "statement" ? 20 : 14} />{/if}
                   <span class="bcard-meta">{i.meta}</span>
                   {#if isDriver}<span class="driver-tag">{t("board.driver")}</span>{/if}
                 </header>
@@ -310,7 +310,7 @@
           {@const link = board.links.find((x) => x.to === card.key || x.from === card.key)}
           <article class="scard" class:driver={isDriver}>
             <div class="scard-meta">
-              {#if i.status}<StatusChip status={i.status} size="sm" />{:else if i.speakerId}<Avatar id={i.speakerId} size="xs" />{:else}<FileText size={13} />{/if}
+              {#if i.status}<StatusChip status={i.status} size="sm" />{:else}<KindIcon kind={card.kind} speakerId={i.speakerId} size={card.kind === "statement" ? 20 : 14} />{/if}
               <span class="clamp-2">{i.meta}</span>
               {#if isDriver}<span class="driver-tag">{t("board.driver")}</span>{:else if link}<RelationTag relation={link.relation} reviewed={linkConfirmed(link)} />{/if}
             </div>

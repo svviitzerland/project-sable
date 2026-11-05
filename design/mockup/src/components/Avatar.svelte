@@ -17,7 +17,7 @@
     badge = false,
   }: {
     id: string;
-    size?: "xs" | "sm" | "md" | "lg" | "xl";
+    size?: "xxs" | "xs" | "sm" | "md" | "lg" | "xl";
     speaking?: boolean;
     still?: boolean;
     dim?: boolean;
@@ -46,7 +46,7 @@
           class="head"
           d="M2 52 C2 44 7 40.5 13 38.5 C14.5 36 13.5 33.5 12 31 C9.5 27 9 21 11 16.5 C13.5 10.5 19 7.5 24.5 8 C29.5 8.5 32 12.5 32 17.5 C32 19 32.6 20.2 33.6 21.8 C34.2 22.8 33.8 23.6 32.6 23.9 C32.2 24.6 32.4 25.3 32.6 26 C32.4 26.6 31.8 26.9 31.6 27.2 C32 27.8 32 28.5 31.6 29 C31.4 30.6 30.6 31.8 28.6 32.2 C27.4 32.4 26.6 33 26.4 34.4 L26.4 37.6 C32 38.6 39 40.5 41 52 Z"
         />
-        {#if size !== "xs"}
+        {#if size !== "xs" && size !== "xxs"}
           <path class="wave w1" d="M36.6 23.2 A4.8 4.8 0 0 1 36.6 29.6" />
           <path class="wave w2" d="M39.6 20.6 A8.4 8.4 0 0 1 39.6 32.2" />
           {#if size !== "sm"}<path class="wave w3" d="M42.4 18 A12 12 0 0 1 42.4 34.8" />{/if}
@@ -72,6 +72,7 @@
       filter 0.2s ease,
       box-shadow 0.2s ease;
   }
+  .xxs { --s: 18px; }
   .xs { --s: 22px; }
   .sm { --s: 30px; }
   .md { --s: 44px; }

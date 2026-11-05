@@ -1,14 +1,7 @@
 <script lang="ts">
-  import {
-    AudioLines,
-    FolderOpen,
-    House,
-    ListChecks,
-    MessageSquare,
-    PanelLeftClose,
-    PanelLeftOpen,
-    Waypoints,
-  } from "@lucide/svelte";
+  import { PanelLeftClose, PanelLeftOpen } from "@lucide/svelte";
+  import { kindIcon } from "../lib/kinds";
+  import KindIcon from "./KindIcon.svelte";
   import { t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
   import { prefs } from "../lib/prefs.svelte";
@@ -25,10 +18,10 @@
   let items = $derived(
     caseId
       ? [
-          { key: "overview", icon: House, label: t("nav.overview"), path: `/case/${caseId}`, badge: "" },
-          { key: "hearings", icon: AudioLines, label: t("nav.hearings"), path: `/case/${caseId}/hearings`, badge: "" },
-          { key: "findings", icon: ListChecks, label: t("nav.findings"), path: `/case/${caseId}/findings`, badge: toReview ? String(toReview) : "" },
-          { key: "evidence", icon: Waypoints, label: t("nav.evidence"), path: `/case/${caseId}/evidence`, badge: String(docsOf(caseId).length || "") },
+          { key: "overview", icon: kindIcon.overview, label: t("nav.overview"), path: `/case/${caseId}`, badge: "" },
+          { key: "hearings", icon: kindIcon.hearing, label: t("nav.hearings"), path: `/case/${caseId}/hearings`, badge: "" },
+          { key: "findings", icon: kindIcon.finding, label: t("nav.findings"), path: `/case/${caseId}/findings`, badge: toReview ? String(toReview) : "" },
+          { key: "evidence", icon: kindIcon.document, label: t("nav.evidence"), path: `/case/${caseId}/evidence`, badge: String(docsOf(caseId).length || "") },
         ]
       : [],
   );
@@ -41,7 +34,7 @@
 
   {#if record}
     <a class="case" href={href("/cases")} title={t("top.backToCases")}>
-      <span class="avatar" aria-hidden="true">{record.title.replace(/^Perkara\s+/, "").charAt(0)}</span>
+      <span class="avatar" aria-hidden="true"><KindIcon kind="case" size={18} /></span>
       {#if !collapsed}
         <span class="case-text">
           <span class="case-title">{record.title}</span>
@@ -72,7 +65,7 @@
       {/each}
       <li>
         <button class="item" aria-pressed={ui.assistantOpen} onclick={() => (ui.assistantOpen ? (ui.assistantOpen = false) : openAssistant())} title={collapsed ? t("nav.assistant") : undefined}>
-          <span class="icon"><MessageSquare size={19} strokeWidth={1.75} /></span>
+          <span class="icon"><KindIcon kind="assistant" size={19} /></span>
           <span class="label">{t("nav.assistant")}</span>
           {#if !collapsed}<span class="kbd-hint" aria-hidden="true">A</span>{/if}
         </button>
@@ -82,7 +75,7 @@
     <ul class="items">
       <li>
         <a class="item" href={href("/cases")} aria-current={section === "cases" ? "page" : undefined} title={collapsed ? t("nav.cases") : undefined}>
-          <span class="icon"><FolderOpen size={19} strokeWidth={1.75} /></span>
+          <span class="icon"><KindIcon kind="case" size={19} /></span>
           <span class="label">{t("nav.cases")}</span>
           {#if !collapsed}<span class="count">{db.cases.length}</span>{/if}
         </a>

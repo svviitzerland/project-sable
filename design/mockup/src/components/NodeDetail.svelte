@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ArrowDownUp, BookOpen, Check, ExternalLink, Flag, MessageSquare, RotateCcw, Scale, Waypoints } from "@lucide/svelte";
+  import KindIcon from "./KindIcon.svelte";
+  import { ArrowDownUp, Check, ExternalLink, Flag, MessageSquare, RotateCcw, Waypoints } from "@lucide/svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import { go, href } from "../lib/router.svelte";
   import {
@@ -36,11 +37,11 @@
     if (ref.kind === "statement") {
       const s = statement(ref.id);
       const h = hearing(s?.hearingId);
-      return { title: s?.text ?? "", meta: h && s ? `${t("common.hearingN", { n: h.number })} · ${fmtClock(s.t)}` : "" };
+      return { kind: "statement" as const, speakerId: s?.speakerId, title: s?.text ?? "", meta: h && s ? `${t("common.hearingN", { n: h.number })} · ${fmtClock(s.t)}` : "" };
     }
     const p = passage(ref.id);
     const d = p ? doc(p.docId) : undefined;
-    return { title: p?.text ?? "", meta: d && p ? `${d.title} · ${t("common.page", { n: p.page })}` : "" };
+    return { kind: "passage" as const, speakerId: undefined, title: p?.text ?? "", meta: d && p ? `${d.title} · ${t("common.page", { n: p.page })}` : "" };
   }
 
   const other = (c: { from: NodeRef; to: NodeRef }, self: NodeRef) =>
@@ -64,7 +65,7 @@
                 <span class="tag" class:tag-sand={!c.reviewed}>{c.reviewed ? t("ix.confirmed") : t("ix.suggested")}</span>
               </span>
               <span class="conn-text clamp-2">{o.title}</span>
-              <span class="xsmall muted">{o.meta}</span>
+              <span class="xsmall muted kind-line"><KindIcon kind={o.kind} speakerId={o.speakerId} size={14} />{o.meta}</span>
             </button>
           </li>
         {/each}
@@ -81,7 +82,7 @@
       {@const all = passagesOf(d.id)}
       {@const i = all.findIndex((x) => x.id === p.id)}
       <header class="head">
-        <span class="t-label">{t("ix.passage")}</span>
+        <span class="t-label kind-line"><KindIcon kind="passage" size={14} />{t("ix.passage")}</span>
         <h2 class="t-serif">{d.title}</h2>
         <p class="small muted">{l(d.kind)} · {t("common.page", { n: p.page })}</p>
       </header>
@@ -91,7 +92,7 @@
         {#if all[i + 1]}<p class="ctx">{all[i + 1].text}</p>{/if}
       </div>
       <div class="actions">
-        <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${d.caseId}/evidence/doc/${d.id}?p=${p.id}`); }}><BookOpen size={14} />{t("fx.openDoc")}</button>
+        <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${d.caseId}/evidence/doc/${d.id}?p=${p.id}`); }}><KindIcon kind="document" size={14} />{t("fx.openDoc")}</button>
         <button class="btn btn-sm" onclick={() => openAssistant({ kind: "passage", id: p.id }, undefined, [{ kind: "passage", id: p.id }])}><MessageSquare size={14} />{t("fx.ask")}</button>
         <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${d.caseId}/evidence?view=connections&of=passage:${p.id}`); }}><Waypoints size={14} />{t("fx.connections")}</button>
       </div>
@@ -119,7 +120,7 @@
     {#if s && h}
       {@const f = findingForStatement(s.id)}
       <header class="head">
-        <span class="t-label">{t("ix.statement")}</span>
+        <span class="t-label kind-line"><KindIcon kind="hearing" size={14} />{t("ix.statement")}</span>
         <div class="who"><SpeakerTag id={s.speakerId} /> <span class="muted small tabular">{t("common.hearingN", { n: h.number })} · {fmtClock(s.t)}</span></div>
       </header>
       <blockquote class="quote t-serif">“{s.text}”</blockquote>
@@ -142,7 +143,7 @@
       {@const a = nodeLabel(c.from)}
       {@const b = nodeLabel(c.to)}
       <header class="head">
-        <span class="t-label">{t("ix.connection")}</span>
+        <span class="t-label kind-line"><KindIcon kind="connection" size={14} />{t("ix.connection")}</span>
         <div class="row">
           <RelationTag relation={c.relation} reviewed={c.reviewed} />
           <span class="tag" class:tag-sand={!c.reviewed}>{c.reviewed ? t("ix.confirmed") : t("ix.suggested")}</span>
@@ -150,12 +151,12 @@
         </div>
       </header>
       <button class="end" onclick={() => inspect(c.from.kind === "statement" ? { kind: "statement", id: c.from.id } : { kind: "passage", id: c.from.id })}>
-        <span class="xsmall muted">{t("ix.from")} · {a.meta}</span>
+        <span class="xsmall muted kind-line"><KindIcon kind={a.kind} speakerId={a.speakerId} size={14} />{t("ix.from")} · {a.meta}</span>
         <span class="end-text">{a.title}</span>
       </button>
       <div class="joint" aria-hidden="true"><ArrowDownUp size={16} /></div>
       <button class="end" onclick={() => inspect(c.to.kind === "statement" ? { kind: "statement", id: c.to.id } : { kind: "passage", id: c.to.id })}>
-        <span class="xsmall muted">{t("ix.to")} · {b.meta}</span>
+        <span class="xsmall muted kind-line"><KindIcon kind={b.kind} speakerId={b.speakerId} size={14} />{t("ix.to")} · {b.meta}</span>
         <span class="end-text">{b.title}</span>
       </button>
       <section class="block">
@@ -180,7 +181,7 @@
     {#if ref}
       {@const mentions = db.statements.filter((s) => s.legal?.includes(ref.id))}
       <header class="head">
-        <span class="t-label">{t("ix.legal")} · Pasal.id</span>
+        <span class="t-label kind-line"><KindIcon kind="legal" size={14} />{t("ix.legal")} · Pasal.id</span>
         <h2 class="t-serif">{ref.article || ref.type}</h2>
         <p class="small">{ref.regulation}</p>
       </header>
@@ -188,7 +189,7 @@
         <span class="tag tag-sand">{t("ix.legalMock")}</span>
         <p>{l(ref.summary)}</p>
       </div>
-      <p class="notice"><Scale size={14} />{t("ix.legalVerify")}</p>
+      <p class="notice"><KindIcon kind="legal" size={14} />{t("ix.legalVerify")}</p>
       <div class="actions">
         <button class="btn btn-sm" onclick={() => toastT("toast.pasal")}><ExternalLink size={14} />{t("ix.legalOpen")}</button>
       </div>
@@ -200,7 +201,7 @@
               {@const h = hearing(s.hearingId)}
               <li>
                 <button class="conn" onclick={() => inspect({ kind: "statement", id: s.id })}>
-                  <span class="xsmall muted">{h ? t("common.hearingN", { n: h.number }) : ""} · {fmtClock(s.t)}</span>
+                  <span class="xsmall muted kind-line"><KindIcon kind="statement" speakerId={s.speakerId} size={14} />{h ? t("common.hearingN", { n: h.number }) : ""} · {fmtClock(s.t)}</span>
                   <span class="conn-text clamp-2">{s.text}</span>
                 </button>
               </li>
@@ -221,6 +222,11 @@
   }
   .head {
     display: grid;
+    gap: 6px;
+  }
+  .kind-line {
+    display: flex;
+    align-items: center;
     gap: 6px;
   }
   .head h2 {

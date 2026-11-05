@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Check, FileText, Search } from "@lucide/svelte";
+  import KindIcon from "./KindIcon.svelte";
+  import { Check, Search } from "@lucide/svelte";
   import type { BoardRef } from "../lib/board.svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import {
@@ -73,7 +74,7 @@
 {#if kinds.length > 1}
   <div class="seg tabs" role="tablist">
     {#each kinds as k (k)}
-      <button role="tab" aria-selected={tab === k} onclick={() => (tab = k)}>{t(tabLabel[k])}</button>
+      <button role="tab" aria-selected={tab === k} onclick={() => (tab = k)}><KindIcon kind={k === "statement" ? "hearing" : k} size={15} />{t(tabLabel[k])}</button>
     {/each}
   </div>
 {/if}
@@ -123,7 +124,7 @@
       <li class="doc">
         <div class="doc-head">
           <button class="row grow" onclick={() => (openDoc = openDoc === d.id ? null : d.id)} aria-expanded={openDoc === d.id}>
-            <FileText size={16} />
+            <KindIcon kind="document" size={16} />
             <span class="text"><strong>{d.title}</strong><span class="xsmall muted">{l(d.kind)} · {t("ev.passages", { n: passagesOf(d.id).length })}</span></span>
           </button>
           <button class="btn btn-sm" onclick={() => onpick({ kind: "document", id: d.id })}>{t("board.wholeDoc")}</button>

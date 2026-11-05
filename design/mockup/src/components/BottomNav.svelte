@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { AudioLines, House, ListChecks, MessageSquare, Waypoints } from "@lucide/svelte";
+  import { kindIcon } from "../lib/kinds";
+  import KindIcon from "./KindIcon.svelte";
   import { t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
   import { href, route } from "../lib/router.svelte";
@@ -11,10 +12,10 @@
   let toReview = $derived(findingsOfCase(caseId).filter(needsLook).length);
   let liveHere = $derived(hearing(live.hearingId)?.caseId === caseId && live.status !== "idle");
   let items = $derived([
-    { key: "overview", icon: House, label: t("nav.overview"), path: `/case/${caseId}` },
-    { key: "hearings", icon: AudioLines, label: t("nav.hearings"), path: `/case/${caseId}/hearings` },
-    { key: "findings", icon: ListChecks, label: t("nav.findings"), path: `/case/${caseId}/findings` },
-    { key: "evidence", icon: Waypoints, label: t("nav.evidence"), path: `/case/${caseId}/evidence` },
+    { key: "overview", icon: kindIcon.overview, label: t("nav.overview"), path: `/case/${caseId}` },
+    { key: "hearings", icon: kindIcon.hearing, label: t("nav.hearings"), path: `/case/${caseId}/hearings` },
+    { key: "findings", icon: kindIcon.finding, label: t("nav.findings"), path: `/case/${caseId}/findings` },
+    { key: "evidence", icon: kindIcon.document, label: t("nav.evidence"), path: `/case/${caseId}/evidence` },
   ]);
 </script>
 
@@ -31,7 +32,7 @@
     </a>
   {/each}
   <button class="tab" aria-pressed={ui.assistantOpen} onclick={() => (ui.assistantOpen ? (ui.assistantOpen = false) : openAssistant())}>
-    <span class="icon"><MessageSquare size={21} strokeWidth={1.75} /></span>
+    <span class="icon"><KindIcon kind="assistant" size={21} /></span>
     <span class="label">{t("nav.assistant")}</span>
   </button>
 </nav>

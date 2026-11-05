@@ -1,15 +1,5 @@
 <script lang="ts">
-  import {
-    ArrowUp,
-    AudioLines,
-    FileText,
-    ListChecks,
-    Paperclip,
-    Quote,
-    Scale,
-    SquarePen,
-    X,
-  } from "@lucide/svelte";
+  import { ArrowUp, Paperclip, SquarePen, X } from "@lucide/svelte";
   import { tick } from "svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import { prefs } from "../lib/prefs.svelte";
@@ -31,7 +21,9 @@
     statement,
     ui,
   } from "../lib/store.svelte";
+  import type { Kind } from "../lib/kinds";
   import type { Citation } from "../lib/types";
+  import KindIcon from "./KindIcon.svelte";
   import Overlay from "./Overlay.svelte";
   import Rich from "./Rich.svelte";
   import StatusChip from "./StatusChip.svelte";
@@ -58,29 +50,32 @@
     if (c.kind === "connection") return `${t("ix.connection")} · ${connection(c.id)?.relation ?? ""}`;
     return t("as.contextCase");
   });
+  const contextKinds: Record<string, Kind> = { case: "case", hearing: "hearing", finding: "finding", evidence: "document", passage: "passage", connection: "connection" };
+  let contextKind = $derived(contextKinds[ui.assistantContext.kind] ?? "case");
 
   function citeLabel(c: Citation) {
     if (c.kind === "passage") {
       const p = passage(c.id);
       const d = p ? doc(p.docId) : undefined;
-      return { icon: FileText, title: d ? `${d.title} · ${t("common.page", { n: p!.page })}` : c.id, quote: p?.text ?? "" };
+      return { kind: "passage" as Kind, speakerId: undefined, title: d ? `${d.title} · ${t("common.page", { n: p!.page })}` : c.id, quote: p?.text ?? "" };
     }
     if (c.kind === "statement") {
       const s = statement(c.id);
       const h = hearing(s?.hearingId);
       return {
-        icon: AudioLines,
+        kind: "statement" as Kind,
+        speakerId: s?.speakerId,
         title: s && h ? `${t("common.hearingN", { n: h.number })} · ${fmtClock(s.t)} · ${speakerName(speaker(s.speakerId))}` : c.id,
         quote: s?.text ?? "",
       };
     }
-    if (c.kind === "document") return { icon: FileText, title: doc(c.id)?.title ?? c.id, quote: "" };
+    if (c.kind === "document") return { kind: "document" as Kind, speakerId: undefined, title: doc(c.id)?.title ?? c.id, quote: "" };
     if (c.kind === "hearing") {
       const h = hearing(c.id);
-      return { icon: AudioLines, title: h ? `${t("common.hearingN", { n: h.number })} · ${l(h.title)}` : c.id, quote: "" };
+      return { kind: "hearing" as Kind, speakerId: undefined, title: h ? `${t("common.hearingN", { n: h.number })} · ${l(h.title)}` : c.id, quote: "" };
     }
     const f = finding(c.id);
-    return { icon: ListChecks, title: f ? l(f.title) : c.id, quote: "" };
+    return { kind: "finding" as Kind, speakerId: undefined, title: f ? l(f.title) : c.id, quote: "" };
   }
 
   function open(c: Citation) {
@@ -156,7 +151,7 @@
       <h2>{t("as.title")}</h2>
       <div class="ctx">
         <span class="xsmall muted">{t("as.context")}:</span>
-        <span class="ctx-chip" title={t("as.contextHint")}>{contextLabel}</span>
+        <span class="ctx-chip" title={t("as.contextHint")}><KindIcon kind={contextKind} size={12} />{contextLabel}</span>
         {#if ui.assistantContext.kind !== "case"}
           <button class="ctx-x" aria-label={t("as.contextCase")} onclick={() => (ui.assistantContext = { kind: "case" })}><X size={12} /></button>
         {/if}
@@ -207,7 +202,7 @@
                     <button class="source" onclick={() => open(c)}>
                       <span class="num">{i + 1}</span>
                       <span class="source-body">
-                        <span class="source-title"><info.icon size={13} />{info.title}</span>
+                        <span class="source-title"><KindIcon kind={info.kind} speakerId={info.speakerId} size={13} />{info.title}</span>
                         {#if info.quote}<span class="source-quote clamp-2">“{info.quote}”</span>{/if}
                       </span>
                     </button>
@@ -225,7 +220,7 @@
                 {@const ref = legalRef(lid)}
                 {#if ref}
                   <button class="source" onclick={() => inspect({ kind: "legal", id: lid })}>
-                    <span class="num"><Scale size={12} /></span>
+                    <span class="num"><KindIcon kind="legal" size={12} /></span>
                     <span class="source-body">
                       <span class="source-title">{ref.article ? `${ref.article} · ` : ""}{ref.regulation.replace(/ tentang .*/, "")}</span>
                       <span class="source-quote clamp-2">{l(ref.summary)}</span>
@@ -255,7 +250,7 @@
       <div class="refs">
         {#each ui.chatRefs as r (r.kind + r.id)}
           <span class="ref">
-            <Quote size={12} />
+            <KindIcon kind={r.kind} speakerId={r.kind === "statement" ? statement(r.id)?.speakerId : undefined} size={12} />
             <span class="ref-label">{refLabel(r)}</span>
             <button aria-label={t("as.removeRef", { label: refLabel(r) })} onclick={() => toggleRef(r)}><X size={12} /></button>
           </span>
@@ -279,7 +274,7 @@
         aria-pressed={ui.chatLegal && prefs.pasal}
         disabled={!prefs.pasal}
         title={prefs.pasal ? t("as.legalToggle") : t("as.legalOff")}
-        onclick={() => (ui.chatLegal = !ui.chatLegal)}><Scale size={14} />Pasal.id</button
+        onclick={() => (ui.chatLegal = !ui.chatLegal)}><KindIcon kind="legal" size={14} />Pasal.id</button
       >
       <span class="grow"></span>
       <button class="btn btn-primary btn-icon send" aria-label={t("as.send")} disabled={!ui.chatDraft.trim() || ui.chatBusy} onclick={() => send()}><ArrowUp size={18} /></button>
@@ -290,11 +285,11 @@
         <div class="picker-list scroll-y">
           {#each docsOf(caseId) as d (d.id)}
             {@const c = { kind: "document" as const, id: d.id }}
-            <label class="pick"><input type="checkbox" checked={hasRef(c)} onchange={() => toggleRef(c)} /><FileText size={14} />{d.title}</label>
+            <label class="pick"><input type="checkbox" checked={hasRef(c)} onchange={() => toggleRef(c)} /><KindIcon kind="document" size={14} />{d.title}</label>
           {/each}
           {#each hearingsOf(caseId).filter((h) => h.mode !== "scheduled") as h (h.id)}
             {@const c = { kind: "hearing" as const, id: h.id }}
-            <label class="pick"><input type="checkbox" checked={hasRef(c)} onchange={() => toggleRef(c)} /><AudioLines size={14} />{t("common.hearingN", { n: h.number })} · {l(h.title)}</label>
+            <label class="pick"><input type="checkbox" checked={hasRef(c)} onchange={() => toggleRef(c)} /><KindIcon kind="hearing" size={14} />{t("common.hearingN", { n: h.number })} · {l(h.title)}</label>
           {/each}
           {#each findingsOfCase(caseId).filter((f) => !f.reviewed).slice(0, 5) as f (f.id)}
             {@const c = { kind: "finding" as const, id: f.id }}

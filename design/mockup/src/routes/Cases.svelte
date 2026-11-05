@@ -1,4 +1,5 @@
 <script lang="ts">
+  import KindIcon from "../components/KindIcon.svelte";
   import { ArrowRight, FlaskConical, Plus, Search } from "@lucide/svelte";
   import { fmtDate, l, t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
@@ -42,16 +43,16 @@
       <li>
         <a class="card case" href={href(`/case/${c.id}`)}>
           <span class="top">
-            <span class="tag">{t(`label.${c.label}`)}</span>
+            <span class="case-kind"><KindIcon kind="case" size={18} /><span class="tag">{t(`label.${c.label}`)}</span></span>
             {#if liveHere}<span class="live"><span class="live-dot"></span>{t("cases.liveNow")}</span>{/if}
           </span>
           <span class="t-title name">{c.title}</span>
           <span class="ref small muted">{c.reference || "—"}</span>
           <span class="summary small clamp-2">{l(c.summary)}</span>
           <span class="stats">
-            <span>{t("common.hearings", { n: hs.length })}</span>
-            <span>{t("common.documents", { n: docs })}</span>
-            {#if open}<span class="badge badge-amber">{t("common.toReview", { n: open })}</span>{/if}
+            <span class="stat"><KindIcon kind="hearing" size={15} />{t("common.hearings", { n: hs.length })}</span>
+            <span class="stat"><KindIcon kind="document" size={15} />{t("common.documents", { n: docs })}</span>
+            {#if open}<span class="badge badge-amber stat"><KindIcon kind="finding" size={13} />{t("common.toReview", { n: open })}</span>{/if}
           </span>
           <span class="xsmall muted">{t("cases.updated", { date: fmtDate(c.updated) })}</span>
         </a>
@@ -119,6 +120,20 @@
   }
   .summary {
     color: var(--ink);
+  }
+  .case-kind {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+  }
+  .stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stats :global(svg) {
+    color: var(--muted);
   }
   .stats {
     display: flex;

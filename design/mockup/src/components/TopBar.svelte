@@ -1,4 +1,6 @@
 <script lang="ts">
+  import KindIcon from "./KindIcon.svelte";
+  import type { Kind } from "../lib/kinds";
   import {
     ChevronLeft,
     ChevronRight,
@@ -28,23 +30,24 @@
   } as const;
 
   let crumbs = $derived.by(() => {
-    const out: { label: string; path?: string }[] = [];
+    const out: { label: string; path?: string; kind: Kind }[] = [];
     if (!record) return out;
-    out.push({ label: record.title, path: `/case/${record.id}` });
+    out.push({ label: record.title, path: `/case/${record.id}`, kind: "case" });
     const section = (route.parts[2] ?? "overview") as keyof typeof sectionKey;
+    const sectionKind: Record<string, Kind> = { hearings: "hearing", findings: "finding", evidence: "document" };
     if (section !== "overview" && sectionKey[section]) {
-      out.push({ label: t(sectionKey[section]), path: `/case/${record.id}/${section}` });
+      out.push({ label: t(sectionKey[section]), path: `/case/${record.id}/${section}`, kind: sectionKind[section] ?? "case" });
     }
     const sub = route.parts[3];
     if (section === "hearings" && sub) {
       const h = hearing(sub);
-      if (h) out.push({ label: `${t("common.hearingN", { n: h.number })} · ${l(h.title)}` });
+      if (h) out.push({ label: `${t("common.hearingN", { n: h.number })} · ${l(h.title)}`, kind: "hearing" });
     } else if (section === "findings" && sub) {
       const f = finding(sub);
-      if (f) out.push({ label: l(f.title) });
+      if (f) out.push({ label: l(f.title), kind: "finding" });
     } else if (section === "evidence" && sub === "doc" && route.parts[4]) {
       const d = doc(route.parts[4]);
-      if (d) out.push({ label: d.title });
+      if (d) out.push({ label: d.title, kind: "document" });
     }
     return out;
   });
@@ -86,9 +89,9 @@
       {#each crumbs as crumb, i (i)}
         {#if i > 0}<ChevronRight size={14} class="sep" aria-hidden="true" />{/if}
         {#if crumb.path && i < crumbs.length - 1}
-          <a class="crumb" href={href(crumb.path)}>{crumb.label}</a>
+          <a class="crumb" href={href(crumb.path)}><KindIcon kind={crumb.kind} size={14} /><span class="crumb-text">{crumb.label}</span></a>
         {:else}
-          <span class="crumb current" aria-current="page">{crumb.label}</span>
+          <span class="crumb current" aria-current="page"><KindIcon kind={crumb.kind} size={14} /><span class="crumb-text">{crumb.label}</span></span>
         {/if}
       {/each}
     </nav>
@@ -143,12 +146,22 @@
     color: var(--muted);
   }
   .crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
     color: var(--muted);
     text-decoration: none;
+    max-width: 34ch;
+  }
+  .crumb :global(svg) {
+    flex-shrink: 0;
+  }
+  .crumb-text {
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 34ch;
   }
   a.crumb:hover {
     color: var(--ink-strong);

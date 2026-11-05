@@ -1,4 +1,5 @@
 <script lang="ts">
+  import KindIcon from "../components/KindIcon.svelte";
   import { ChevronLeft, Download, MessageSquare } from "@lucide/svelte";
   import { tick } from "svelte";
   import StatusChip from "../components/StatusChip.svelte";
@@ -30,7 +31,7 @@
     <a class="back" href={href(`/case/${caseId}/evidence`)}><ChevronLeft size={16} />{t("ev.allDocuments")}</a>
     <header class="page-head">
       <div>
-        <h1>{d.title}</h1>
+        <h1 class="doc-title"><span class="doc-icon"><KindIcon kind="document" size={24} /></span>{d.title}</h1>
         <p>{l(d.kind)} · {t("ev.pages", { n: d.pages })} · {d.file} · {d.size} · {t("ev.added", { date: fmtDate(d.added) })}</p>
       </div>
       <div class="toolbar">
@@ -216,5 +217,15 @@
   }
   .ref {
     border-radius: 4px;
+  }
+  .doc-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .doc-icon {
+    display: grid;
+    flex-shrink: 0;
+    color: var(--muted);
   }
 </style>

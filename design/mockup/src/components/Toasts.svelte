@@ -1,4 +1,5 @@
 <script lang="ts">
+  import KindIcon from "./KindIcon.svelte";
   import { X } from "@lucide/svelte";
   import { fly } from "svelte/transition";
   import { t } from "../lib/i18n";
@@ -8,6 +9,7 @@
 <div class="toasts" role="status" aria-live="polite">
   {#each ui.toasts as toast (toast.id)}
     <div class="toast" class:finding={toast.tone === "finding"} transition:fly={{ y: 12, duration: 180 }}>
+      {#if toast.tone === "finding"}<span class="kind" aria-hidden="true"><KindIcon kind="finding" size={16} /></span>{/if}
       <span class="text">{toast.text}</span>
       {#if toast.action}
         <button
@@ -58,6 +60,10 @@
     background: var(--surface);
     color: var(--ink-strong);
     border: 1px solid color-mix(in srgb, var(--alert) 45%, var(--line-strong));
+  }
+  .kind {
+    display: grid;
+    color: var(--alert);
   }
   .text {
     flex: 1;

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { FileText, LoaderCircle, MessageSquare, Search, Upload, Waypoints } from "@lucide/svelte";
+  import KindIcon from "../components/KindIcon.svelte";
+  import { LoaderCircle, MessageSquare, Search, Upload } from "@lucide/svelte";
   import Connections from "../components/Connections.svelte";
   import { fmtDate, l, t } from "../lib/i18n";
   import { go, href, route } from "../lib/router.svelte";
@@ -52,8 +53,8 @@
 
   <div class="viewbar">
     <div class="seg" role="tablist" aria-label={t("ev.title")}>
-      <button role="tab" aria-selected={view === "documents"} onclick={() => go(`/case/${caseId}/evidence`)}><FileText size={15} />{t("ev.documents")} <span class="badge">{docs.length}</span></button>
-      <button role="tab" aria-selected={view === "connections"} onclick={() => go(`/case/${caseId}/evidence?view=connections`)}><Waypoints size={15} />{t("cx.title")}</button>
+      <button role="tab" aria-selected={view === "documents"} onclick={() => go(`/case/${caseId}/evidence`)}><KindIcon kind="document" size={15} />{t("ev.documents")} <span class="badge">{docs.length}</span></button>
+      <button role="tab" aria-selected={view === "connections"} onclick={() => go(`/case/${caseId}/evidence?view=connections`)}><KindIcon kind="connection" size={15} />{t("cx.title")}</button>
     </div>
     {#if view === "documents"}
       <div class="search grow">
@@ -101,7 +102,7 @@
         {@const cited = ps.filter((p) => findingsCiting(p.id).length).length}
         <li>
           <a class="doc card" href={href(`/case/${caseId}/evidence/doc/${d.id}`)}>
-            <span class="file">{d.file}</span>
+            <span class="file"><KindIcon kind="document" size={20} /><span class="fmt">{d.file}</span></span>
             <span class="doc-body">
               <span class="doc-title">{d.title}</span>
               <span class="xsmall muted">{l(d.kind)}</span>
@@ -200,13 +201,19 @@
     grid-row: span 2;
     display: grid;
     place-items: center;
+    align-content: center;
+    gap: 2px;
     width: 40px;
     height: 48px;
     border-radius: 4px;
     border: 1px solid var(--line-strong);
     background: var(--surface-2);
-    font-size: 10px;
+    color: var(--ink);
+  }
+  .fmt {
+    font-size: 9px;
     font-weight: 700;
+    letter-spacing: 0.03em;
     color: var(--muted);
   }
   .doc-body {

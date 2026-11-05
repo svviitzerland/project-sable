@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ArrowRight, ArrowUp, AudioLines, CalendarClock, FilePlus2, FileText, Mic, Upload } from "@lucide/svelte";
+  import KindIcon from "../components/KindIcon.svelte";
+  import { ArrowRight, ArrowUp, CalendarClock, FilePlus2, Mic, Upload } from "@lucide/svelte";
   import AlertCard from "../components/AlertCard.svelte";
   import HearingRow from "../components/HearingRow.svelte";
   import Avatar from "../components/Avatar.svelte";
@@ -76,14 +77,14 @@
       <ul class="start-rows">
         <li>
           <button onclick={() => go(`/case/${caseId}/evidence`)}>
-            <span class="start-icon"><FileText size={20} /></span>
+            <span class="start-icon"><KindIcon kind="document" size={20} /></span>
             <span><strong>{t("ov.addDocs")}</strong><span class="small muted">{t("ov.addDocsText")}</span></span>
             <ArrowRight size={18} />
           </button>
         </li>
         <li>
           <button onclick={() => (ui.modal = { kind: "newHearing" })}>
-            <span class="start-icon"><AudioLines size={20} /></span>
+            <span class="start-icon"><KindIcon kind="hearing" size={20} /></span>
             <span><strong>{t("ov.addHearing")}</strong><span class="small muted">{t("ov.addHearingText")}</span></span>
             <ArrowRight size={18} />
           </button>
@@ -117,7 +118,7 @@
 
       <section class="card review">
         <header class="card-head">
-          <h2>{t("attn.title")}</h2>
+          <h2><KindIcon kind="finding" size={16} />{t("attn.title")}</h2>
           {#if attention.length}<span class="badge badge-amber">{attention.length}</span>{/if}
         </header>
         {#if attention.length}
@@ -133,7 +134,7 @@
       </section>
 
       <section class="card next">
-        <header class="card-head"><h2>{t("ov.next")}</h2></header>
+        <header class="card-head"><h2><KindIcon kind="hearing" size={16} />{t("ov.next")}</h2></header>
         {#if c.nextHearing}
           <div class="next-row">
             <span class="cal">
@@ -155,7 +156,7 @@
 
       <section class="card hearings">
         <header class="card-head">
-          <h2>{t("nav.hearings")}</h2>
+          <h2><KindIcon kind="hearing" size={16} />{t("nav.hearings")}</h2>
           <a class="link-btn" href={`#/case/${caseId}/hearings`}>{t("ov.allHearings")}<ArrowRight size={14} /></a>
         </header>
         <div>
@@ -169,20 +170,20 @@
 
       <section class="card evidence">
         <header class="card-head">
-          <h2>{t("nav.evidence")}</h2>
+          <h2><KindIcon kind="document" size={16} />{t("nav.evidence")}</h2>
           <a class="link-btn" href={`#/case/${caseId}/evidence`}>{t("ov.openEvidence")}<ArrowRight size={14} /></a>
         </header>
         <p class="small">{t("ov.evidenceText", { docs: docs.length, passages: passagesOfCase(caseId).length, links: links.length })}</p>
         {#if suggested}<p class="notice notice-sand">{t("ov.suggestedLinks", { n: suggested })}</p>{/if}
         <ul class="docs">
           {#each docs.slice(0, 4) as d (d.id)}
-            <li><a href={`#/case/${caseId}/evidence/doc/${d.id}`}><FileText size={14} /><span>{d.title}</span><span class="xsmall muted">{t("ev.pages", { n: d.pages })}</span></a></li>
+            <li><a href={`#/case/${caseId}/evidence/doc/${d.id}`}><KindIcon kind="document" size={14} /><span>{d.title}</span><span class="xsmall muted">{t("ev.pages", { n: d.pages })}</span></a></li>
           {/each}
         </ul>
       </section>
 
       <section class="card ask">
-        <header class="card-head"><h2>{t("ov.ask")}</h2></header>
+        <header class="card-head"><h2><KindIcon kind="assistant" size={16} />{t("ov.ask")}</h2></header>
         <form class="ask-form" onsubmit={(e) => { e.preventDefault(); ask(); }}>
           <label class="sr-only" for="ov-ask">{t("ov.ask")}</label>
           <input id="ov-ask" class="field" placeholder={t("ov.askPlaceholder")} bind:value={question} />
@@ -284,9 +285,15 @@
     gap: 10px;
   }
   .card-head h2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-size: 14px;
     font-weight: 600;
     color: var(--ink-strong);
+  }
+  .card-head h2 :global(svg) {
+    color: var(--muted);
   }
   .big {
     font-family: var(--font-serif);

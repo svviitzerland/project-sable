@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ChevronRight, Compass, ExternalLink, FileText, LayoutDashboard, MessageSquare, Waypoints, X } from "@lucide/svelte";
+  import KindIcon from "./KindIcon.svelte";
+  import { ChevronRight, Compass, ExternalLink, LayoutDashboard, MessageSquare, Waypoints, X } from "@lucide/svelte";
   import { untrack } from "svelte";
   import { candidatesFor, keyOf, parseKey, type BoardRef, type Candidate } from "../lib/board.svelte";
   import { fmtClock, l, t } from "../lib/i18n";
@@ -22,7 +23,6 @@
     statement,
   } from "../lib/store.svelte";
   import type { Relation } from "../lib/types";
-  import Avatar from "./Avatar.svelte";
   import Overlay from "./Overlay.svelte";
   import Quote from "./Quote.svelte";
   import RelationTag from "./RelationTag.svelte";
@@ -136,7 +136,7 @@
     {#if rank !== null}<span class="rank tabular" aria-label={t("cx.rank", { n: rank })}>{rank}</span>{:else}<span class="rank"></span>{/if}
     <div class="row-main">
       <div class="meta">
-        {#if d.speakerId}<Avatar id={d.speakerId} size="xs" />{:else}<FileText size={14} />{/if}
+        <KindIcon kind={c.ref.kind} speakerId={d.speakerId} size={c.ref.kind === "statement" ? 20 : 15} />
         <span>{d.meta}</span>
       </div>
       <p class="text"><Quote text={d.text} mark={c.mark} /></p>
@@ -184,7 +184,7 @@
     <div class="layout" class:wide>
       <article class="subject" aria-label={s.kind}>
         <p class="meta">
-          {#if s.speakerId}<Avatar id={s.speakerId} size="sm" />{:else}<FileText size={16} />{/if}
+          <KindIcon kind={subject.kind} speakerId={s.speakerId} size={subject.kind === "statement" ? 28 : 17} />
           <span><strong>{s.kind}</strong>{s.meta ? ` · ${s.meta}` : ""}</span>
         </p>
         {#if subject.kind === "document"}

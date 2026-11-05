@@ -1,4 +1,5 @@
 <script lang="ts">
+  import KindIcon from "./KindIcon.svelte";
   import Mark from "./Mark.svelte";
   import { Check, ChevronRight, Copy, RotateCcw } from "@lucide/svelte";
   import { fmtClock, l, t } from "../lib/i18n";
@@ -68,13 +69,13 @@
     {#if st}
       <div class="compare">
         <div class="side said">
-          <span class="label">{now ? t("attn.saidNow") : t("attn.said")}</span>
+          <span class="label"><KindIcon kind="statement" speakerId={st.speakerId} size={16} />{now ? t("attn.saidNow") : t("attn.said")}</span>
           <p class="quote">“<Quote text={st.text} mark={f.said} around={brief ? 4 : 0} />”</p>
-          {#if mode !== "inline"}<SpeakerTag id={st.speakerId} compact />{/if}
+          {#if mode !== "inline"}<SpeakerTag id={st.speakerId} compact plain />{/if}
         </div>
         {#if p && d}
           <div class="side source">
-            <span class="label">{t("attn.inSource", { doc: d.title, page: p.page })}</span>
+            <span class="label"><KindIcon kind="passage" size={13} />{t("attn.inSource", { doc: d.title, page: p.page })}</span>
             <p class="quote">“<Quote text={p.text} mark={source.match} around={brief ? 4 : 0} />”</p>
             {#if f.sources.length > 1}<span class="xsmall muted">{t("attn.more", { n: f.sources.length - 1 })}</span>{/if}
           </div>
@@ -197,6 +198,9 @@
     min-width: 0;
   }
   .label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 11px;
     font-weight: 700;
     color: var(--muted);

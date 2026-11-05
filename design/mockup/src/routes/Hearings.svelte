@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { AudioLines, Mic, Plus, Search, ShieldCheck } from "@lucide/svelte";
+  import KindIcon from "../components/KindIcon.svelte";
+  import { Mic, Plus, Search, ShieldCheck } from "@lucide/svelte";
   import HearingRow from "../components/HearingRow.svelte";
   import { l, t } from "../lib/i18n";
   import { findingsOf, hearingsOf, statementsOf, ui } from "../lib/store.svelte";
@@ -40,7 +41,7 @@
 
   {#if all.length === 0}
     <section class="empty">
-      <span class="empty-icon"><AudioLines size={22} /></span>
+      <span class="empty-icon"><KindIcon kind="hearing" size={22} /></span>
       <h2 class="t-serif">{t("hearings.emptyTitle")}</h2>
       <p class="muted">{t("hearings.emptyText")}</p>
       <button class="btn btn-primary" onclick={() => (ui.modal = { kind: "newHearing" })}><Plus size={16} />{t("hearings.new")}</button>

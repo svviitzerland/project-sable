@@ -1,11 +1,12 @@
 <script lang="ts">
   import Mark from "./Mark.svelte";
-  import { ArrowRight, AudioLines, CalendarClock, FileText, Mic } from "@lucide/svelte";
+  import { ArrowRight, Mic } from "@lucide/svelte";
   import { fmtClock, fmtDate, fmtDuration, l, t } from "../lib/i18n";
   import { live } from "../lib/live.svelte";
   import { href } from "../lib/router.svelte";
   import { findingsOf, isMeaningful, participantsOf, statementsOf, ui } from "../lib/store.svelte";
   import Avatar from "./Avatar.svelte";
+  import KindIcon from "./KindIcon.svelte";
   import type { Hearing } from "../lib/types";
 
   let { h, compact = false, match = "" }: { h: Hearing; compact?: boolean; match?: string } = $props();
@@ -15,12 +16,22 @@
   let cast = $derived(h.mode === "scheduled" ? [] : participantsOf(h.id).filter((sp) => statementsOf(h.id).some((s) => s.speakerId === sp.id)).slice(0, 5));
   let count = $derived(statementsOf(h.id).length);
   let isLiveNow = $derived(h.mode === "live" && live.hearingId === h.id && live.status !== "idle");
-  const icons = { live: Mic, recorded: AudioLines, imported: FileText, scheduled: CalendarClock };
-  let Icon = $derived(icons[h.mode]);
+  // A hearing is shown by a talking head: the person speaking now while live, otherwise the voice
+  // heard most (the bench aside). Before anyone has spoken, the generic hearing icon.
+  let lead = $derived.by(() => {
+    if (isLiveNow) return live.partial ? live.partialSpeaker : (statementsOf(h.id).at(-1)?.speakerId ?? "");
+    const talk = new Map<string, number>();
+    for (const s of statementsOf(h.id)) talk.set(s.speakerId, (talk.get(s.speakerId) ?? 0) + s.text.length);
+    const ranked = [...talk.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
+    const bench = new Set(participantsOf(h.id).filter((sp) => sp.role === "judge" || sp.role === "judge_member").map((sp) => sp.id));
+    return ranked.find((id) => !bench.has(id)) ?? ranked[0] ?? "";
+  });
 </script>
 
 <div class="hrow" class:compact class:live={isLiveNow}>
-  <span class="icon" class:live-icon={isLiveNow} aria-hidden="true"><Icon size={18} strokeWidth={1.75} /></span>
+  <span class="icon" class:live-icon={isLiveNow} class:person={!!lead} aria-hidden="true">
+    {#if lead}<Avatar id={lead} size="sm" speaking={isLiveNow && !!live.partial && live.status === "recording"} />{:else}<KindIcon kind="hearing" size={18} />{/if}
+  </span>
   <a class="main" href={href(`/case/${h.caseId}/hearings/${h.id}`)}>
     <span class="title">
       <span class="num">{t("common.hearingN", { n: h.number })}</span>
@@ -75,6 +86,9 @@
     border-radius: 50%;
     background: var(--sunken);
     color: var(--muted);
+  }
+  .icon.person {
+    background: transparent;
   }
   .live-icon {
     background: var(--live-soft);

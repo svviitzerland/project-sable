@@ -1,17 +1,6 @@
 <script lang="ts">
-  import {
-    BookOpen,
-    Check,
-    ChevronLeft,
-    ChevronRight,
-    Copy,
-    LayoutDashboard,
-    MessageSquare,
-    NotebookPen,
-    Play,
-    RotateCcw,
-    Scale,
-  } from "@lucide/svelte";
+  import KindIcon from "./KindIcon.svelte";
+  import { Check, ChevronLeft, ChevronRight, Copy, LayoutDashboard, MessageSquare, NotebookPen, Play, RotateCcw } from "@lucide/svelte";
   import { untrack } from "svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import { prefs } from "../lib/prefs.svelte";
@@ -104,10 +93,10 @@
 
     <section class="compare">
       <div class="side said">
-        <span class="label">{t("attn.said")}</span>
+        <span class="label"><KindIcon kind="statement" speakerId={st.speakerId} size={16} />{t("attn.said")}</span>
         <p class="quote">“<Quote text={st.text} mark={f.said} />”</p>
         <div class="who">
-          <SpeakerTag id={st.speakerId} compact />
+          <SpeakerTag id={st.speakerId} compact plain />
           <span class="muted xsmall tabular">{t("common.hearingN", { n: h.number })} · {fmtClock(st.t)}</span>
         </div>
         <div class="side-actions">
@@ -117,7 +106,7 @@
       </div>
       {#if p && d && source}
         <div class="side source">
-          <span class="label">{t("attn.inSource", { doc: d.title, page: p.page })}</span>
+          <span class="label"><KindIcon kind="passage" size={13} />{t("attn.inSource", { doc: d.title, page: p.page })}</span>
           {#if f.sources.length > 1}
             <div class="pills" role="tablist" aria-label={t("fx.source")}>
               {#each f.sources as s, i (s.passageId)}
@@ -130,7 +119,7 @@
           {/if}
           <p class="quote">“<Quote text={p.text} mark={source.match} />”</p>
           <div class="side-actions">
-            <button class="link-btn" onclick={() => { ui.inspector = null; go(`/case/${h!.caseId}/evidence/doc/${d!.id}?p=${p!.id}`); }}><BookOpen size={13} />{t("fx.openDoc")}</button>
+            <button class="link-btn" onclick={() => { ui.inspector = null; go(`/case/${h!.caseId}/evidence/doc/${d!.id}?p=${p!.id}`); }}><KindIcon kind="document" size={13} />{t("fx.openDoc")}</button>
           </div>
         </div>
       {/if}
@@ -187,7 +176,7 @@
               {@const ref = legalRef(lid)}
               {#if ref}
                 <button class="legal-chip" onclick={() => inspect({ kind: "legal", id: lid })}>
-                  <Scale size={14} /><span>{#if ref.article}<strong>{ref.article}</strong> · {/if}{ref.regulation.replace(/ tentang .*/, "")}</span>
+                  <KindIcon kind="legal" size={14} /><span>{#if ref.article}<strong>{ref.article}</strong> · {/if}{ref.regulation.replace(/ tentang .*/, "")}</span>
                 </button>
               {/if}
             {/each}
@@ -255,6 +244,9 @@
     border-color: color-mix(in srgb, var(--alert) 30%, var(--line));
   }
   .label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 11px;
     font-weight: 700;
     color: var(--muted);
