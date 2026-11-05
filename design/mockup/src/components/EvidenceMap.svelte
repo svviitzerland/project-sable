@@ -1,13 +1,27 @@
 <script lang="ts">
-  import { ArrowLeft, Maximize2, Minus, Plus, Search } from "@lucide/svelte";
+  import { ArrowLeft, ArrowRight, Maximize2, Minus, Plus, Search } from "@lucide/svelte";
   import { untrack } from "svelte";
   import { idOf, kindOf, relations, whereOf, type EvidenceKind, type Pairing } from "../lib/evidence.svelte";
   import { fmtClock, l, t } from "../lib/i18n";
   import type { Kind } from "../lib/kinds";
   import { PanZoom, type Bounds } from "../lib/panzoom.svelte";
   import { shortName } from "../lib/people";
-  import { go } from "../lib/router.svelte";
-  import { docsOf, finding, findingsOfCase, hearingsOf, passage, passagesOf, speaker, speakerName, statement, statementsOf } from "../lib/store.svelte";
+  import { go, href } from "../lib/router.svelte";
+  import {
+    doc,
+    docsOf,
+    finding,
+    findingPath,
+    findingsOfCase,
+    hearing,
+    hearingsOf,
+    passage,
+    passagesOf,
+    speaker,
+    speakerName,
+    statement,
+    statementsOf,
+  } from "../lib/store.svelte";
   import type { Relation, Status } from "../lib/types";
   import KindIcon from "./KindIcon.svelte";
 
@@ -56,6 +70,18 @@
   const HEAD_H = 58;
   const MID = 0.7;
   const NEAR = 0.9;
+  // In a group: the chosen card opens to this width and is framed no smaller than READ_K; a line
+  // that skips a band keeps a lane (LANE wide, LANE_CLEAR from cards, LANE_GAP from other lanes)
+  // and bends into it BEND before the band; lines share a card's side at PORT_STEP apart.
+  const FOCUS_W = 320;
+  const READ_K = 0.8;
+  const LANE = 4;
+  const LANE_CLEAR = 18;
+  const LANE_GAP = 12;
+  const BEND = 8;
+  const PORT_INSET = 12;
+  const PORT_STEP = 14;
+  const PORT_STEP_WIDE = 24;
   const motionOk = typeof matchMedia === "function" && !matchMedia("(prefers-reduced-motion: reduce)").matches;
   const statusRelation: Record<Status, Relation> = {
     potential_inconsistency: "conflicts",
@@ -146,35 +172,131 @@
     return { columns, cells, width: Math.max(x - COL_GAP + PAD, 1), height: bottom + PAD };
   });
 
+  // The chosen piece of evidence opens up in its group to show all of it (its height is measured
+  // from what it holds); the rest of the group keeps the compact cards.
+  let focus = $derived(grouped && picked.length === 1 && layout.cells.has(picked[0]) ? picked[0] : undefined);
+  let focusCell = $derived(focus ? layout.cells.get(focus) : undefined);
+  let focusH = $state(0);
+  const sizeOf = (key: string) => (key === focus ? { w: FOCUS_W, h: Math.max(FULL_H, focusH || FULL_H * 2) } : { w: COL_W, h: FULL_H });
+
+  interface Arranged {
+    poses: Map<string, Pose>;
+    heads: { kind: EvidenceKind; x: number; y: number; n: number }[];
+    bounds: Bounds;
+    rows: boolean;
+    /** The band each card sits in, and each band's span across (x for columns, y for rows). */
+    band: Map<string, number>;
+    spans: { at: number; size: number }[];
+    /** For a line that skips bands: where it crosses each band it passes through. */
+    lanes: Map<string, Map<number, number>>;
+  }
+
+  /** Places items along a line in their order, each clear of the next, as near their ideal places as can be. */
+  function pack<T extends { ideal: number; size: number }>(list: T[], gap: (a: T, b: T) => number) {
+    const runs: { first: number; offs: number[]; at: number }[] = [];
+    list.forEach((it, i) => {
+      let cur = { first: i, offs: [0], at: it.ideal };
+      while (runs.length) {
+        const prev = runs[runs.length - 1];
+        const last = prev.first + prev.offs.length - 1;
+        const lastOff = prev.offs[prev.offs.length - 1];
+        const need = list[last].size / 2 + gap(list[last], list[cur.first]) + list[cur.first].size / 2;
+        if (cur.at - (prev.at + lastOff) >= need) break;
+        // Touching: one run, placed where its items' ideal places average out.
+        prev.offs.push(...cur.offs.map((o) => lastOff + need + o));
+        prev.at = prev.offs.reduce((s, o, k) => s + list[prev.first + k].ideal - o, 0) / prev.offs.length;
+        runs.pop();
+        cur = prev;
+      }
+      runs.push(cur);
+    });
+    return runs.flatMap((r) => r.offs.map((o) => r.at + o));
+  }
+
   // The group: its evidence by kind (lines, findings, passages) around where it sits on the
-  // overview, as columns or as rows, whichever this view shows larger.
-  function arrange(bands: Cell[][], rows: boolean, cx: number, cy: number) {
-    const poses = new Map<string, Pose>();
-    const heads: { kind: EvidenceKind; x: number; y: number; n: number }[] = [];
-    if (rows) {
-      const tall = bands.length * FULL_H + (bands.length - 1) * GROUP_BAND_GAP;
-      bands.forEach((band, i) => {
-        const wide = band.length * COL_W + (band.length - 1) * GROUP_SIDE_GAP;
-        const y = cy - tall / 2 + i * (FULL_H + GROUP_BAND_GAP);
-        band.forEach((c, j) => poses.set(c.key, { x: cx - wide / 2 + j * (COL_W + GROUP_SIDE_GAP), y, w: COL_W, h: FULL_H, o: 1 }));
-        heads.push({ kind: band[0].kind, x: cx - wide / 2, y, n: band.length });
-      });
-    } else {
-      bands.forEach((band, i) => {
-        const x = cx + (i - (bands.length - 1) / 2) * (COL_W + GROUP_COL_GAP) - COL_W / 2;
-        const tall = band.length * FULL_H + (band.length - 1) * GROUP_ROW_GAP;
-        band.forEach((c, j) => poses.set(c.key, { x, y: cy - tall / 2 + j * (FULL_H + GROUP_ROW_GAP), w: COL_W, h: FULL_H, o: 1 }));
-        heads.push({ kind: band[0].kind, x, y: cy - tall / 2, n: band.length });
-      });
+  // overview, as columns or as rows, whichever this view shows larger. Where a line skips a band
+  // (a line from a hearing to a passage, past the findings) the band keeps a lane for it between
+  // its cards, and the cards make room, so no line runs over a card.
+  function arrange(bands: Cell[][], rows: boolean, cx: number, cy: number, links: Pairing[]): Arranged {
+    const band = new Map<string, number>();
+    bands.forEach((b, i) => b.forEach((c) => band.set(c.key, i)));
+    // Across: from band to band. Along: within a band.
+    const across = (k: string) => (rows ? sizeOf(k).h : sizeOf(k).w);
+    const along = (k: string) => (rows ? sizeOf(k).w : sizeOf(k).h);
+    const bandGap = rows ? GROUP_BAND_GAP : GROUP_COL_GAP;
+    const cardGap = rows ? GROUP_SIDE_GAP : GROUP_ROW_GAP;
+    const sizes = bands.map((b) => Math.max(...b.map((c) => across(c.key))));
+    const spans: { at: number; size: number }[] = [];
+    let at = (rows ? cy : cx) - (sizes.reduce((s, x) => s + x, 0) + (bands.length - 1) * bandGap) / 2;
+    for (const size of sizes) {
+      spans.push({ at, size });
+      at += size + bandGap;
     }
+    // First each band stacked about the middle.
+    const centre = new Map<string, number>();
+    for (const b of bands) {
+      let c0 = (rows ? cx : cy) - (b.reduce((s, c) => s + along(c.key), 0) + (b.length - 1) * cardGap) / 2;
+      for (const c of b) {
+        centre.set(c.key, c0 + along(c.key) / 2);
+        c0 += along(c.key) + cardGap;
+      }
+    }
+    // Then a lane where each skipping line would cross a band, and the band packed around it.
+    type Item = { key: string; ideal: number; size: number; lane: boolean };
+    const items: Item[][] = bands.map((b) => b.map((c) => ({ key: c.key, ideal: centre.get(c.key)!, size: along(c.key), lane: false })));
+    const mid = (i: number) => spans[i].at + spans[i].size / 2;
+    for (const pr of links) {
+      const ia = band.get(pr.a);
+      const ib = band.get(pr.b);
+      if (ia === undefined || ib === undefined || Math.abs(ia - ib) < 2) continue;
+      const [lo, hi, from, to] = ia < ib ? [ia, ib, pr.a, pr.b] : [ib, ia, pr.b, pr.a];
+      for (let i = lo + 1; i < hi; i++) {
+        const f = (mid(i) - mid(lo)) / (mid(hi) - mid(lo));
+        items[i].push({ key: pr.key, ideal: centre.get(from)! + (centre.get(to)! - centre.get(from)!) * f, size: LANE, lane: true });
+      }
+    }
+    const lanes = new Map<string, Map<number, number>>();
+    items.forEach((list, i) => {
+      if (!list.some((it) => it.lane)) return;
+      list.sort((x, y) => x.ideal - y.ideal);
+      const placed = pack(list, (x, y) => (x.lane && y.lane ? LANE_GAP : x.lane || y.lane ? LANE_CLEAR : cardGap));
+      list.forEach((it, j) => {
+        if (it.lane) lanes.set(it.key, (lanes.get(it.key) ?? new Map<number, number>()).set(i, placed[j]));
+        else centre.set(it.key, placed[j]);
+      });
+    });
+    // Each card centred in its band.
+    const poses = new Map<string, Pose>();
+    bands.forEach((b, i) => {
+      for (const c of b) {
+        const { w, h } = sizeOf(c.key);
+        const a = spans[i].at + (spans[i].size - (rows ? h : w)) / 2;
+        const s = centre.get(c.key)! - (rows ? w : h) / 2;
+        poses.set(c.key, rows ? { x: s, y: a, w, h, o: 1 } : { x: a, y: s, w, h, o: 1 });
+      }
+    });
+    // A band's type tag sits above its column, or left of its row, clear of the lanes through it.
+    const heads = bands.map((b, i) => {
+      const through = [...lanes.values()].flatMap((l) => (l.has(i) ? [l.get(i)! - LANE_CLEAR] : []));
+      const start = Math.min(...b.map((c) => (rows ? poses.get(c.key)!.x : poses.get(c.key)!.y)), ...through);
+      return rows ? { kind: b[0].kind, x: start, y: mid(i), n: b.length } : { kind: b[0].kind, x: spans[i].at, y: start, n: b.length };
+    });
     const all = [...poses.values()];
-    const bounds: Bounds = {
-      x0: Math.min(...all.map((p) => p.x)) - 24,
-      y0: Math.min(...all.map((p) => p.y)) - 52,
-      x1: Math.max(...all.map((p) => p.x + p.w)) + 24,
-      y1: Math.max(...all.map((p) => p.y + p.h)) + 24,
-    };
-    return { poses, heads, bounds, rows };
+    const laneEnds = [...lanes.values()].flatMap((l) => [...l.values()].map((v) => v + LANE_CLEAR));
+    const bounds: Bounds = rows
+      ? {
+          x0: Math.min(...heads.map((h) => h.x)) - 150,
+          y0: Math.min(...all.map((q) => q.y)) - 24,
+          x1: Math.max(...all.map((q) => q.x + q.w), ...laneEnds) + 24,
+          y1: Math.max(...all.map((q) => q.y + q.h)) + 24,
+        }
+      : {
+          x0: Math.min(...all.map((q) => q.x)) - 24,
+          y0: Math.min(...heads.map((h) => h.y)) - 52,
+          x1: Math.max(...all.map((q) => q.x + q.w)) + 24,
+          y1: Math.max(...all.map((q) => q.y + q.h), ...laneEnds) + 24,
+        };
+    return { poses, heads, bounds, rows, band, spans, lanes };
   }
   let gathered = $derived.by(() => {
     if (!grouped) return null;
@@ -195,8 +317,8 @@
     }
     const cx = (Math.min(...cells.map((c) => c.x)) + Math.max(...cells.map((c) => c.x + c.w))) / 2;
     const cy = (Math.min(...cells.map((c) => c.y)) + Math.max(...cells.map((c) => c.y + c.h))) / 2;
-    const cols = arrange(bands, false, cx, cy);
-    const rows = arrange(bands, true, cx, cy);
+    const cols = arrange(bands, false, cx, cy, shown);
+    const rows = arrange(bands, true, cx, cy, shown);
     const fit = (b: Bounds) => Math.min((pz.vw - 56) / (b.x1 - b.x0), (pz.vh - 56) / (b.y1 - b.y0));
     return fit(rows.bounds) > fit(cols.bounds) * 1.05 ? rows : cols;
   });
@@ -264,13 +386,23 @@
   }
   const showAll = () => pz.flyTo(grouped && gathered ? pz.frame(gathered.bounds, 0.3, 1.2) : overview());
 
-  // The camera follows the selection: the gathered group, or the whole case.
+  // The camera follows the selection: the gathered group, or the whole case. A group too big to
+  // read whole is framed around the open card instead, at a zoom where it reads.
+  function groupView() {
+    const g = gathered!;
+    const f = pz.frame(g.bounds, 0.3, 1.2);
+    const q = focus ? g.poses.get(focus) : undefined;
+    if (!q || f.k >= READ_K) return f;
+    return pz.frame({ x0: q.x - 140, y0: q.y - 90, x1: q.x + q.w + 140, y1: q.y + q.h + 50 }, READ_K, 1.2);
+  }
   $effect(() => {
     const key = selected;
+    const tall = focusH;
     if (!pz.vw || !pz.vh) return;
     untrack(() => {
       void key;
-      pz.flyTo(gathered ? pz.frame(gathered.bounds, 0.3, 1.2) : overview(), 640);
+      void tall;
+      pz.flyTo(gathered ? groupView() : overview(), 640);
     });
   });
 
@@ -323,6 +455,170 @@
   }
   const seen = (pr: Pairing) => Math.min(poseOf(pr.a)?.o ?? 0, poseOf(pr.b)?.o ?? 0);
 
+  type Side = "l" | "r" | "t" | "b";
+  interface Leg {
+    pr: Pairing;
+    kind: "stack" | "bow" | "cross" | "skip";
+    ends: { key: string; side: Side; toward: number }[];
+  }
+
+  // In a group every line leaves its card at a point of its own along a side, in the order the
+  // lines head off, so none start on top of one another; a line that skips a band runs through the
+  // lane kept for it there, clear of the cards.
+  let routes = $derived.by(() => {
+    const out = new Map<string, { d: string; skip: boolean }>();
+    const g = gathered;
+    if (!g) return out;
+    const settle = p >= 1 ? 1 : ease(p);
+    const midX = (q: Pose) => q.x + q.w / 2;
+    const midY = (q: Pose) => q.y + q.h / 2;
+    const along = (q: Pose) => (g.rows ? midX(q) : midY(q));
+    const legs: Leg[] = [];
+    for (const pr of shown) {
+      const ia = g.band.get(pr.a);
+      const ib = g.band.get(pr.b);
+      const a = poseOf(pr.a);
+      const b = poseOf(pr.b);
+      if (ia === undefined || ib === undefined || !a || !b) continue;
+      const [lo, hi, ql, qh] = ia <= ib ? [pr.a, pr.b, a, b] : [pr.b, pr.a, b, a];
+      if (Math.abs(ia - ib) >= 2) {
+        const lane = g.lanes.get(pr.key);
+        if (!lane) continue;
+        const first = Math.min(ia, ib) + 1;
+        const last = Math.max(ia, ib) - 1;
+        legs.push({
+          pr,
+          kind: "skip",
+          ends: [
+            { key: lo, side: g.rows ? "b" : "r", toward: lane.get(first)! },
+            { key: hi, side: g.rows ? "t" : "l", toward: lane.get(last)! },
+          ],
+        });
+        continue;
+      }
+      if (ia === ib) {
+        const [p0, p1] = [along(a), along(b)].sort((x, y) => x - y);
+        const between = [...g.band].some(([k, i]) => {
+          if (i !== ia || k === pr.a || k === pr.b) return false;
+          const q = poseOf(k);
+          return !!q && along(q) > p0 && along(q) < p1;
+        });
+        if (between) {
+          // Round the outside of the group, clear of the cards between them.
+          const side: Side = g.rows ? (midY(a) < (g.bounds.y0 + g.bounds.y1) / 2 ? "t" : "b") : midX(a) < (g.bounds.x0 + g.bounds.x1) / 2 ? "l" : "r";
+          legs.push({ pr, kind: "bow", ends: [{ key: pr.a, side, toward: along(b) }, { key: pr.b, side, toward: along(a) }] });
+          continue;
+        }
+        if (!g.rows) {
+          legs.push({ pr, kind: "stack", ends: [] });
+          continue;
+        }
+      }
+      // Neighbouring bands, once in order: the sides that face across the gap between them.
+      if (ia !== ib && (g.rows ? ql.y + ql.h <= qh.y : ql.x + ql.w <= qh.x)) {
+        legs.push(
+          g.rows
+            ? { pr, kind: "cross", ends: [{ key: lo, side: "b", toward: midX(qh) }, { key: hi, side: "t", toward: midX(ql) }] }
+            : { pr, kind: "cross", ends: [{ key: lo, side: "r", toward: midY(qh) }, { key: hi, side: "l", toward: midY(ql) }] },
+        );
+        continue;
+      }
+      // Still on their way, or side by side in a row: the sides they face each other with now.
+      const overlapX = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+      const overlapY = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+      if (!(overlapX > 0 && overlapY <= 0) && -overlapX >= -overlapY) {
+        const [l, r, qa, qb] = a.x <= b.x ? [pr.a, pr.b, a, b] : [pr.b, pr.a, b, a];
+        legs.push({ pr, kind: "cross", ends: [{ key: l, side: "r", toward: midY(qb) }, { key: r, side: "l", toward: midY(qa) }] });
+      } else {
+        const [u, v, qa, qb] = a.y <= b.y ? [pr.a, pr.b, a, b] : [pr.b, pr.a, b, a];
+        legs.push({ pr, kind: "cross", ends: [{ key: u, side: "b", toward: midX(qb) }, { key: v, side: "t", toward: midX(qa) }] });
+      }
+    }
+    // The lines on one side of a card share it out, in the order they head off.
+    const sides = new Map<string, { leg: Leg; end: number }[]>();
+    for (const leg of legs) {
+      leg.ends.forEach((e, end) => {
+        const k = `${e.key} ${e.side}`;
+        sides.set(k, [...(sides.get(k) ?? []), { leg, end }]);
+      });
+    }
+    const offset = new Map<string, number>();
+    for (const [k, list] of sides) {
+      const [key, side] = k.split(" ");
+      const q = poseOf(key)!;
+      const upright = side === "l" || side === "r";
+      list.sort((x, y) => x.leg.ends[x.end].toward - y.leg.ends[y.end].toward);
+      const step = list.length > 1 ? Math.min(upright ? PORT_STEP : PORT_STEP_WIDE, ((upright ? q.h : q.w) - 2 * PORT_INSET) / (list.length - 1)) : 0;
+      list.forEach((it, i) => offset.set(`${it.leg.pr.key} ${it.end}`, (i - (list.length - 1) / 2) * step * settle));
+    }
+    const port = (leg: Leg, end: number): [number, number] => {
+      const e = leg.ends[end];
+      const q = poseOf(e.key)!;
+      const o = offset.get(`${leg.pr.key} ${end}`) ?? 0;
+      if (e.side === "l") return [q.x, midY(q) + o];
+      if (e.side === "r") return [q.x + q.w, midY(q) + o];
+      if (e.side === "t") return [midX(q) + o, q.y];
+      return [midX(q) + o, q.y + q.h];
+    };
+    for (const leg of legs) {
+      const { pr } = leg;
+      if (leg.kind === "stack") {
+        out.set(pr.key, { d: path(pr), skip: false });
+        continue;
+      }
+      const [x0, y0] = port(leg, 0);
+      const [x1, y1] = port(leg, 1);
+      const side = leg.ends[0].side;
+      let d = `M${x0},${y0}`;
+      if (leg.kind === "cross" && side === "r") {
+        const dx = Math.max(36, (x1 - x0) * 0.5);
+        d += ` C${x0 + dx},${y0} ${x1 - dx},${y1} ${x1},${y1}`;
+      } else if (leg.kind === "cross") {
+        const dy = Math.max(30, (y1 - y0) * 0.5);
+        d += ` C${x0},${y0 + dy} ${x1},${y1 - dy} ${x1},${y1}`;
+      } else if (leg.kind === "bow") {
+        const a = poseOf(pr.a)!;
+        const b = poseOf(pr.b)!;
+        if (side === "l" || side === "r") {
+          const bow = 44 + Math.abs(y1 - y0) * 0.18;
+          const sx = side === "l" ? Math.min(a.x, b.x) - bow : Math.max(a.x + a.w, b.x + b.w) + bow;
+          d += ` C${sx},${y0} ${sx},${y1} ${x1},${y1}`;
+        } else {
+          const bow = 44 + Math.abs(x1 - x0) * 0.18;
+          const sy = side === "t" ? Math.min(a.y, b.y) - bow : Math.max(a.y + a.h, b.y + b.h) + bow;
+          d += ` C${x0},${sy} ${x1},${sy} ${x1},${y1}`;
+        }
+      } else {
+        // Through each band it skips, in its lane: it bends into the lane in the gap before the
+        // band, runs straight across, and bends out again.
+        const lane = g.lanes.get(pr.key)!;
+        let px = x0;
+        let py = y0;
+        for (let i = g.band.get(leg.ends[0].key)! + 1; i < g.band.get(leg.ends[1].key)!; i++) {
+          const c = lane.get(i)!;
+          const { at, size } = g.spans[i];
+          if (g.rows) {
+            const k = (at - BEND - py) / 2;
+            d += ` C${px},${py + k} ${c},${at - BEND - k} ${c},${at - BEND} L${c},${at + size + BEND}`;
+            px = c;
+            py = at + size + BEND;
+          } else {
+            const k = (at - BEND - px) / 2;
+            d += ` C${px + k},${py} ${at - BEND - k},${c} ${at - BEND},${c} L${at + size + BEND},${c}`;
+            px = at + size + BEND;
+            py = c;
+          }
+        }
+        d += g.rows ? ` C${px},${(py + y1) / 2} ${x1},${(py + y1) / 2} ${x1},${y1}` : ` C${(px + x1) / 2},${py} ${(px + x1) / 2},${y1} ${x1},${y1}`;
+      }
+      out.set(pr.key, { d, skip: leg.kind === "skip" });
+    }
+    return out;
+  });
+  // A line that skips a band appears as the cards settle, since its lane is where they end up.
+  let skipFade = $derived(p >= 1 ? 1 : Math.max(0, (p - 0.7) / 0.3));
+  const routeOf = (pr: Pairing) => (grouped ? routes.get(pr.key) : undefined);
+
   function describe(c: Cell) {
     if (c.kind === "statement") {
       const s = statement(c.id);
@@ -336,6 +632,54 @@
     const f = finding(c.id);
     const s = f ? statement(f.statementId) : undefined;
     return { meta: f ? t(`status.${f.status}`) : "", glyph: s ? fmtClock(s.t) : "", text: l(f?.title), speakerId: undefined, icon: "finding" as Kind };
+  }
+  /** All of one piece of evidence, for the open card: who or where, the words, and where to see it. */
+  function detail(c: Cell) {
+    const n = shownBy.get(c.key)?.length ?? 0;
+    if (c.kind === "statement") {
+      const s = statement(c.id);
+      const h = hearing(s?.hearingId);
+      return {
+        icon: "statement" as Kind,
+        speakerId: s?.speakerId,
+        n,
+        title: speakerName(speaker(s?.speakerId ?? "")),
+        sub: s && h ? `${t("common.hearingN", { n: h.number })} · ${fmtClock(s.t)}` : "",
+        heading: "",
+        text: s?.text ?? "",
+        open: t("fx.openInHearing"),
+        href: s ? href(`/case/${caseId}/hearings/${s.hearingId}?s=${s.id}`) : "",
+      };
+    }
+    if (c.kind === "passage") {
+      const pa = passage(c.id);
+      return {
+        icon: "passage" as Kind,
+        speakerId: undefined,
+        n,
+        title: pa ? (doc(pa.docId)?.title ?? "") : "",
+        sub: pa ? t("common.page", { n: pa.page }) : "",
+        heading: "",
+        text: pa?.text ?? "",
+        open: t("fx.openDoc"),
+        href: pa ? href(`/case/${caseId}/documents/${pa.docId}?p=${pa.id}`) : "",
+      };
+    }
+    // A finding is worked on in Temuan only: here it reads in full and links there.
+    const f = finding(c.id);
+    const s = f ? statement(f.statementId) : undefined;
+    const h = hearing(f?.hearingId);
+    return {
+      icon: "finding" as Kind,
+      speakerId: undefined,
+      n,
+      title: f ? t(`status.${f.status}`) : "",
+      sub: s && h ? `${t("common.hearingN", { n: h.number })} · ${fmtClock(s.t)}` : "",
+      heading: l(f?.title),
+      text: l(f?.explanation),
+      open: t("fl.open"),
+      href: f ? href(findingPath(f.id)) : "",
+    };
   }
   function relOf(c: Cell): Relation | undefined {
     if (c.kind === "finding") {
@@ -353,7 +697,7 @@
   let active = $state<string | null>(null);
   let hovered = $state<string | null>(null);
   let keyed = $state<string | null>(null);
-  const buttons: Record<string, HTMLButtonElement> = {};
+  const buttons: Record<string, HTMLElement> = {};
   const visible = (k: string) => (to.get(k)?.o ?? 0) > 0.5;
   let firstKey = $derived([...layout.cells.values()].find((c) => visible(c.key) && (c.full || grouped))?.key ?? null);
   let tabKey = $derived(active && visible(active) ? active : (picked.find(visible) ?? firstKey));
@@ -420,9 +764,23 @@
   );
   let liftedKeys = $derived(new Set(lifted.map((pr) => pr.key)));
   let peek = $derived(!grouped && preview && pz.k < NEAR ? layout.cells.get(preview) : undefined);
-  const typeName: Record<EvidenceKind, Parameters<typeof t>[0]> = { statement: "nav.hearings", finding: "nav.findings", passage: "nav.documents" };
+  let tagW = $state<Record<string, number>>({});
+  const typeName: Record<EvidenceKind, Parameters<typeof t>[0]> ={ statement: "nav.hearings", finding: "nav.findings", passage: "nav.documents" };
   const typeIcon: Record<EvidenceKind, Kind> = { statement: "hearing", finding: "finding", passage: "document" };
 </script>
+
+{#snippet opened(c: Cell)}
+  {@const d = detail(c)}
+  <span class="o-head">
+    <KindIcon kind={d.icon} speakerId={d.speakerId} size={c.kind === "statement" ? 26 : 17} />
+    <span class="o-title">{d.title}</span>
+    {#if d.n}<span class="n tabular">{d.n}</span>{/if}
+  </span>
+  {#if d.sub}<span class="o-sub tabular">{d.sub}</span>{/if}
+  {#if d.heading}<span class="o-heading">{d.heading}</span>{/if}
+  {#if d.text}<span class="o-text" class:doc-text={c.kind === "passage"}>{d.text}</span>{/if}
+  {#if d.href}<a class="link-btn o-go" href={d.href}>{d.open}<ArrowRight size={13} aria-hidden="true" /></a>{/if}
+{/snippet}
 
 <div class="map-wrap">
   <div class="bar">
@@ -469,8 +827,15 @@
         <svg class="edges" width={layout.width} height={layout.height} aria-hidden="true">
           {#each shown as pr (pr.key)}
             {@const o = seen(pr)}
+            {@const r = routeOf(pr)}
             {#if o > 0.02 && !liftedKeys.has(pr.key)}
-              <path d={path(pr)} data-rel={pr.relation} class:suggested={!pr.confirmed} class:dim={!grouped && !!preview} style:opacity={grouped ? o : undefined} />
+              <path
+                d={r?.d ?? path(pr)}
+                data-rel={pr.relation}
+                class:suggested={!pr.confirmed}
+                class:dim={!grouped && !!preview}
+                style:opacity={grouped ? o * (r?.skip ? skipFade : 1) : undefined}
+              />
             {/if}
           {/each}
         </svg>
@@ -481,13 +846,18 @@
             {@const own = shownBy.get(c.key)}
             {@const card = c.full || (grouped && (ps?.o ?? 0) > 0.5)}
             {#if ps}
-              <button
+              <!-- The chosen piece of evidence is open: a group of its own, holding a link, not a button. -->
+              {@const open = c.key === focus}
+              <svelte:element
+                this={open ? "div" : "button"}
                 class="cell"
-                class:thin={!card}
+                class:thin={!card && !open}
+                class:open
                 class:finding={c.kind === "finding"}
                 class:subject={picked.includes(c.key)}
                 class:previewed={preview === c.key}
-                data-rel={card ? relOf(c) : undefined}
+                data-rel={card || open ? relOf(c) : undefined}
+                role={open ? "group" : undefined}
                 style:transform="translate({ps.x}px, {ps.y}px)"
                 style:width="{ps.w}px"
                 style:height="{ps.h}px"
@@ -498,8 +868,8 @@
                 aria-label={label(c)}
                 aria-current={picked.includes(c.key) ? "true" : undefined}
                 bind:this={buttons[c.key]}
-                onclick={() => choose(c)}
-                onkeydown={(e) => oncellkey(e, c)}
+                onclick={open ? undefined : () => choose(c)}
+                onkeydown={(e: KeyboardEvent) => oncellkey(e, c)}
                 onfocus={() => {
                   active = c.key;
                   keyed = c.key;
@@ -507,10 +877,12 @@
                   if (tp) pz.reveal({ x0: tp.x, y0: tp.y, x1: tp.x + tp.w, y1: tp.y + tp.h }, MID);
                 }}
                 onblur={() => keyed === c.key && (keyed = null)}
-                onpointerenter={(e) => e.pointerType === "mouse" && !pz.dragged && (hovered = c.key)}
+                onpointerenter={(e: PointerEvent) => e.pointerType === "mouse" && !pz.dragged && (hovered = c.key)}
                 onpointerleave={() => hovered === c.key && (hovered = null)}
               >
-                {#if card}
+                {#if open}
+                  {@render opened(c)}
+                {:else if card}
                   <span class="glyph tabular" aria-hidden="true"><KindIcon kind={d.icon} speakerId={d.speakerId} size={c.kind === "statement" ? 30 : 22} /><span>{d.glyph}</span></span>
                   <span class="meta">
                     <KindIcon kind={d.icon} speakerId={d.speakerId} size={c.kind === "statement" ? 19 : 13} />
@@ -521,20 +893,36 @@
                 {:else}
                   <span class="line" class:doc-text={c.kind === "passage"}>{d.text}</span>
                 {/if}
-              </button>
+              </svelte:element>
             {/if}
           {/each}
         {/each}
         <svg class="edges lifted" width={layout.width} height={layout.height} aria-hidden="true">
           {#each lifted as pr (pr.key)}
-            <path d={path(pr)} data-rel={pr.relation} class:suggested={!pr.confirmed} />
+            {@const r = routeOf(pr)}
+            <path d={r?.d ?? path(pr)} data-rel={pr.relation} class:suggested={!pr.confirmed} style:opacity={r?.skip && skipFade < 1 ? skipFade : undefined} />
           {/each}
         </svg>
       </div>
+      {#if focusCell}
+        <!-- Measures the open card at its width, so the group can make room for all of it. -->
+        <div class="cell open measure" aria-hidden="true" inert style:width="{FOCUS_W}px" bind:clientHeight={focusH}>
+          {@render opened(focusCell)}
+        </div>
+      {/if}
 
       {#if grouped && gathered}
         {#each gathered.heads as h (h.kind)}
-          <span class="type-tag" style:left="{pz.sx(h.x)}px" style:top="{pz.sy(h.y) - 34}px" style:opacity={p}>
+          <!-- Left of a row only where there is room for it (on a phone the panel below lists the kinds). -->
+          {@const fits = !gathered.rows || pz.sx(h.x) - 16 - (tagW[h.kind] ?? 0) >= 0}
+          <span
+            class="type-tag"
+            class:side={gathered.rows}
+            bind:offsetWidth={tagW[h.kind]}
+            style:left="{pz.sx(h.x)}px"
+            style:top="{gathered.rows ? pz.sy(h.y) : pz.sy(h.y) - 34}px"
+            style:opacity={fits ? p : 0}
+          >
             <KindIcon kind={typeIcon[h.kind]} size={14} />{t(typeName[h.kind])} <span class="tabular count">{h.n}</span>
           </span>
         {/each}
@@ -863,6 +1251,57 @@
   .far .cell[data-rel="supports"] {
     background: color-mix(in srgb, var(--rel-supports) 20%, var(--surface));
   }
+  /* The open card: all of the chosen piece of evidence, readable at any zoom the group is shown at. */
+  .cell.open,
+  .far .cell.open {
+    align-content: start;
+    gap: 6px;
+    padding: 12px 14px 8px;
+    cursor: default;
+  }
+  .o-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-size: 13.5px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--ink-strong);
+  }
+  .o-title {
+    flex: 1;
+    min-width: 0;
+  }
+  .o-sub {
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--muted);
+  }
+  .o-heading {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    line-height: 1.28;
+    color: var(--ink-strong);
+  }
+  .o-text {
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+  .o-text.doc-text {
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .o-go {
+    justify-self: start;
+    font-size: 12.5px;
+  }
+  .measure {
+    visibility: hidden;
+    pointer-events: none;
+    left: -10000px;
+  }
 
   .heads {
     position: absolute;
@@ -962,6 +1401,10 @@
   .type-tag .count {
     color: var(--muted);
     font-weight: 500;
+  }
+  /* In rows the tag sits left of its row, out of the gaps the lines cross. */
+  .type-tag.side {
+    transform: translate(calc(-100% - 12px), -50%);
   }
   .peek {
     position: absolute;
