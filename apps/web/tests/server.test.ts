@@ -1312,24 +1312,25 @@ test("analysis screens with one cheap call, reviews only inconsistencies indepen
       };
     }) as never,
   };
-  // An invented quote is withheld after one call; the reviewer is never paid for.
+  // An invented quote gets one repair call, then the statement is quietly left out;
+  // the reviewer is never paid for.
   screenQuote = "pukul 21.00";
   const invented = await say("Saya tiba pukul sembilan malam.");
   await investigate(rt, invented.id);
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 2);
   assert.equal(calls[0].model, rt.config.bedrockModel);
-  assert.equal(
-    (await rt.db.one("segments", "id=?", [invented.id]))?.analysis_state,
-    "failed",
-  );
+  assert.match(calls[1].role, /does not occur in its source/);
+  const left = await rt.db.one("segments", "id=?", [invented.id]);
+  assert.equal(left?.analysis_state, "skipped");
+  assert.equal(left?.analysis_error, null);
   // A verified conflict goes to the review model, which never sees the screen's answer.
   screenQuote = "pukul 22.30";
   const unconfirmed = await say("Saya tiba pukul sembilan malam, Yang Mulia.");
   await investigate(rt, unconfirmed.id);
-  assert.equal(calls.length, 3);
-  assert.equal(calls[2].model, rt.config.bedrockReviewModel);
+  assert.equal(calls.length, 4);
+  assert.equal(calls[3].model, rt.config.bedrockReviewModel);
   assert.equal(
-    JSON.stringify(calls[2].payload).includes("Waktu tiba berbeda"),
+    JSON.stringify(calls[3].payload).includes("Waktu tiba berbeda"),
     false,
   );
   let finding = (await a.json(base)).findings.find(

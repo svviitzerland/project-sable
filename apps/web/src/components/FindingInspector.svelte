@@ -87,16 +87,6 @@
     </figure>
   {/if}
 
-  <p class={styles.explain} data-full={full || undefined}>
-    {finding.explanation}
-  </p>
-  {#if finding.explanation.length > 320}<button
-      class={styles.link}
-      aria-expanded={full}
-      onclick={() => (full = !full)}
-      >{full ? t("finding.showLess") : t("finding.showMore")}</button
-    >{/if}
-
   <div class={styles.block}>
     <h4>{t("common.atSource")}</h4>
     {#if finding.citations.length > 1}<div class={styles.tabs}>
@@ -154,10 +144,15 @@
     {:else}<p class={styles.quiet}>{t("finding.noCitation")}</p>{/if}
   </div>
 
-  <div class={styles.block}>
-    <h4>{t("common.whatToVerify")}</h4>
-    <p>{finding.verification}</p>
-  </div>
+  <p class={styles.explain} data-full={full || undefined}>
+    {finding.explanation}
+  </p>
+  {#if finding.explanation.length > 260}<button
+      class={styles.link}
+      aria-expanded={full}
+      onclick={() => (full = !full)}
+      >{full ? t("finding.showLess") : t("finding.showMore")}</button
+    >{/if}
 
   <div class={`${styles.block} ${styles.ask}`}>
     <h4>{t("common.questionToConsider")}</h4>
@@ -193,6 +188,10 @@
       <ChevronDown size={14}></ChevronDown>
     </summary>
     <div>
+      {#if finding.verification}<p>
+          <strong>{t("common.whatToVerify")}:</strong>
+          {finding.verification}
+        </p>{/if}
       {#if finding.uncertainty}<p>
           <strong>{t("finding.uncertainty")}:</strong>
           {finding.uncertainty}

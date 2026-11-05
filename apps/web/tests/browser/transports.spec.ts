@@ -178,7 +178,8 @@ test("large direct uploads and speech rotation save finalized testimony", async 
       .click();
     // Starting opens a small modal: language, the judge's permission, recording.
     await page
-      .getByRole("button", { name: "Start microphone", exact: true })
+      .getByRole("button", { name: "Record hearing", exact: true })
+      .first()
       .click();
     const modal = page.getByRole("dialog", { name: "Record this hearing" });
     await expect(
@@ -193,9 +194,9 @@ test("large direct uploads and speech rotation save finalized testimony", async 
     await expect.poll(() => connections.length).toBe(2);
     await expect.poll(() => binary.includes(1)).toBe(true);
     expect(stops).toEqual([0]);
-    await page.getByRole("button", { name: "Stop", exact: false }).click();
+    await page.getByRole("button", { name: "Finish", exact: true }).click();
     await expect(
-      page.getByRole("button", { name: "Start microphone", exact: true }),
+      page.getByRole("button", { name: "Record hearing", exact: true }).first(),
     ).toBeVisible();
     expect(stops).toEqual([0, 1]);
     // Each connection opens with its own presigned (SigV4) URL from the server.

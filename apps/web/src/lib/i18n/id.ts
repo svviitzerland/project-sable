@@ -342,10 +342,10 @@ export const id: Messages = {
   "hearing.examining": "Memeriksa keterangan untuk mencari temuan…",
   "hearing.mode.imported": "Temuan impor · verifikasi sumber",
   "hearing.mode.ai": "AI · divalidasi dengan sumber",
-  "hearing.emptyTitle": "Telusuri buktinya.",
+  "hearing.emptyTitle": "Belum ada sorotan.",
   "hearing.emptyFilterTitle": "Tidak ada temuan di tampilan ini.",
   "hearing.emptyText":
-    "Temuan muncul di sini saat pernyataan final diperiksa. Rekam audio atau tambahkan pernyataan transkrip.",
+    "Saat saksi berbicara, Jude membandingkan setiap keterangan dengan berkas perkara dan keterangan sebelumnya. Perbedaan akan muncul di sini.",
   "hearing.emptyFilterText":
     "Pilih saringan lain untuk melihat bagian catatan lainnya.",
   "hearing.inspector": "Pemeriksa temuan dan sumber",
@@ -465,11 +465,11 @@ export const id: Messages = {
   "audio.recognitionLanguage": "Bahasa pengenalan suara",
   "audio.permission":
     "Majelis Hakim telah mengizinkan perekaman, dan saya berwenang mengirim audio ini untuk ditranskripsikan.",
-  "audio.start": "Nyalakan mikrofon",
+  "audio.start": "Rekam sidang",
   "audio.prepared": "Pilih file audio",
   "audio.cancel": "Batalkan koneksi",
   "audio.finishing": "Menyelesaikan transkrip…",
-  "audio.stop": "Hentikan rekaman",
+  "audio.stop": "Selesai",
   "audio.unavailable":
     "Transkripsi audio tidak tersedia. Kembali ke Semua sidang untuk mengunggah transkrip.",
   "audio.keepRecording": "Simpan rekaman audio sesi ini",
@@ -546,7 +546,7 @@ export const id: Messages = {
   "transcript.noMatchText":
     "Coba frasa lain atau hapus saringan pembicara. Saringan tidak mengubah catatan sidang.",
   "transcript.readyText": "Rekam audio atau tambahkan pernyataan di bawah.",
-  "transcript.listening": "Mendengarkan · sementara",
+  "transcript.listening": "Sedang berbicara",
 
   // Daftar sidang
   "library.converting": "Mengonversi transkrip…",
@@ -1269,7 +1269,7 @@ export const id: Messages = {
   "finding.moreDetail": "Ketidakpastian dan tinjauan",
   "finding.addNote": "Tambah catatan",
   "finding.earlierTestimony": "Keterangan sebelumnya · {speaker} · {time}",
-  "audio.recordingFor": "Merekam {time}",
+  "audio.recordingFor": "Merekam · {time}",
   "audio.noRecordings": "Belum ada rekaman untuk sidang ini.",
   "evidence.filter": "Saring keterkaitan",
   "evidence.stat.all": "Semua keterkaitan",
@@ -1285,4 +1285,22 @@ export const id: Messages = {
   "evidence.noMatchText": "Pilih saringan lain atau hapus pencarian.",
   "finding.showMore": "Selengkapnya",
   "finding.showLess": "Ringkas",
+  "hearing.liveTag": "LIVE",
+  "hearing.panes": "Tampilan sidang",
+  "hearing.highlights": "Sorotan Jude",
+  "hearing.new": "Baru",
+  "hearing.hero.title": "Siap mencatat sidang",
+  "hearing.hero.text":
+    "Tekan mulai saat sidang dibuka. Jude menuliskan setiap keterangan dan langsung memeriksanya dengan berkas perkara dan keterangan sebelumnya.",
+  "hearing.hero.step1": "Rekam jalannya sidang",
+  "hearing.hero.step2": "Jude menulis dan memeriksa setiap keterangan",
+  "hearing.hero.step3": "Tinjau perbedaan yang disorot",
+  "hearing.quick.conflicts": "Ada kontradiksi?",
+  "hearing.quick.questions": "Apa yang perlu ditanyakan?",
+  "hearing.quick.summary": "Ringkas",
+  "transcript.notChecked": "Tidak dapat diperiksa.",
+  "transcript.waitingSpeech":
+    "Mendengarkan… ucapan muncul di sini saat diucapkan.",
+  "library.defaultTitle": "Sidang {date}",
+  "library.startNew": "Mulai sidang baru",
 };

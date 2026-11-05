@@ -58,6 +58,11 @@
     choose("file");
   }
 
+  /** The empty hearing's main call to action. */
+  export function startMic() {
+    choose("mic");
+  }
+
   /** Menu entry: list saved hearing recordings. */
   export function openRecordings() {
     recordingsOpen = true;

@@ -80,6 +80,20 @@
 
   const input = { current: null as HTMLInputElement | null };
 
+  /** A new hearing is ready to create in one click: today's date and a default title. */
+  function openNew() {
+    const today = new Date();
+    date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    title = t("library.defaultTitle", {
+      date: formatDate(today, {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }),
+    });
+    creating = true;
+  }
+
   let hearingQuery = $state("");
 
   let reviewOnly = $state(false);
@@ -178,11 +192,7 @@
         {t("tabs.library.import")}
         <ChevronDown size={15} class={styles.chevron}></ChevronDown>
       </button>
-      <button
-        class={ui.primary}
-        onclick={() => (creating = true)}
-        disabled={!!busy}
-      >
+      <button class={ui.primary} onclick={openNew} disabled={!!busy}>
         <Plus size={16}></Plus>
         {t("library.new")}
       </button>
@@ -476,6 +486,10 @@
         <h3>{t("library.firstTitle")}</h3>
         <p>{t("library.firstText")}</p>
         <div class={styles.emptyActions}>
+          <button class={ui.primary} onclick={openNew}>
+            <Plus size={16}></Plus>
+            {t("library.startNew")}
+          </button>
           <button
             class={ui.secondary}
             onclick={() => {

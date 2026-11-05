@@ -16,6 +16,13 @@ Make the workspace much easier to use during a hearing, with the AI as the main 
 - **Speech batching.** Finalized Transcribe results are held in the browser until a pause (2.5 s), a finished sentence of 18+ words, 30 s or 220 words, then saved as one batch. This removes the two-word statements that each triggered a save and an analysis call.
 - **Analysis.** Courtesy and procedure turns skip the model. Earlier statements in the case are offered as citable `statement:<id>` sources, so a witness who said "jam 8" and later "jam 9" is flagged. The screen and the independent reviewer now treat different concrete values for the same specific (time, place, weapon type, quantity, people, order) as a potential inconsistency rather than "context needed". The sources endpoint and `.jude` import/export support testimony citations.
 
+## Follow-up the same day
+
+- Hearing room redesigned again for live use: LIVE stage header, conversation-style transcript with avatars, a one-click empty state, a Jude highlights panel with segmented filters and quick questions, and a phone pane switch.
+- Spoken text no longer vanishes between the end of speech and the saved statement: saved batches stay on the live line until the transcript has reloaded.
+- A citation mismatch no longer shows a red English error under a statement. Differences and support get one repair call; anything else, opinions included, is skipped quietly.
+- New hearings get today's date and a default title, so starting takes one click.
+
 ## Verification
 
 - `pnpm lint`, `pnpm typecheck`, `pnpm test` (new tests: courtesy skip, earlier-testimony citation with reviewer passages and archive round trip, speech batching rules).

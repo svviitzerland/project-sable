@@ -1,8 +1,7 @@
 <script lang="ts">
   import { t, tp } from "../lib/i18n/index.svelte";
-  import { ArrowDown, AudioLines, RefreshCw, Search } from "@lucide/svelte";
+  import { ArrowDown, Search, X } from "@lucide/svelte";
   import {
-    userFacingError,
     speakerName,
     statusLabel,
     timestamp,
@@ -24,6 +23,7 @@
     findings,
     onRename,
     selectedSegment = null,
+    recording = false,
   }: {
     segments: Segment[];
     speakers: Record<string, string>;
@@ -33,11 +33,14 @@
     findings: Finding[];
     onRename?: (speaker: string, label: string) => Promise<unknown>;
     selectedSegment?: string | null;
+    /** The microphone is on: show the listening line even in silence. */
+    recording?: boolean;
   } = $props();
 
   let renaming = $state<string | null>(null);
   let renameValue = $state("");
   let query = $state("");
+  let searching = $state(false);
   /** Follow new statements while the reader is at the bottom. */
   let atBottom = $state(true);
 
@@ -49,6 +52,7 @@
     "reviewing",
     "synthesizing",
   ]);
+  const tones = 6;
 
   let term = $derived(query.trim().toLocaleLowerCase());
   let visibleSegments = $derived(
@@ -59,6 +63,24 @@
   let findingBySegment = $derived(
     new Map(findings.map((f) => [f.segment_id, f])),
   );
+  /** Speakers get a stable colour in order of first appearance. */
+  let toneOf = $derived(
+    new Map(
+      [...new Set(segments.map((s) => s.speaker))].map((key, index) => [
+        key,
+        index % tones,
+      ]),
+    ),
+  );
+
+  function initials(name: string) {
+    const words = name
+      .replace(/[^\p{L}\p{N} ]/gu, " ")
+      .trim()
+      .split(/\s+/);
+    const last = words.at(-1) ?? "";
+    return (/^\d+$/.test(last) ? last : last.slice(0, 1)).toUpperCase() || "?";
+  }
 
   const scroller = { current: null as HTMLDivElement | null };
 
@@ -69,7 +91,7 @@
   }
 
   $effect(() => {
-    void [segments.length, partial];
+    void [segments.length, partial, recording];
     return untrack(() => {
       if (atBottom && !term) requestAnimationFrame(toBottom);
     });
@@ -96,22 +118,47 @@
   });
 </script>
 
-<div class={styles.colHead}>
+<div class={styles.panelHead}>
   <h2 id="transcript-heading">
     {t("hearing.transcript")}
     <small>{tp("count.statements", segments.length)}</small>
   </h2>
-  <label class={styles.search}>
-    <Search size={14}></Search>
-    <span class={ui.srOnly}>{t("transcript.search")}</span>
-    <input
-      type="search"
-      placeholder={t("transcript.searchShort")}
-      bind:value={query}
-    />
-  </label>
+  {#if searching}
+    <label class={styles.search}>
+      <Search size={14}></Search>
+      <span class={ui.srOnly}>{t("transcript.search")}</span>
+      <!-- svelte-ignore a11y_autofocus (Opened on request by the search button.) -->
+      <input
+        type="search"
+        autofocus
+        placeholder={t("transcript.searchShort")}
+        bind:value={query}
+        onkeydown={(e) => {
+          if (e.key === "Escape") {
+            query = "";
+            searching = false;
+          }
+        }}
+      />
+      <button
+        class={styles.clear}
+        aria-label={t("transcript.clear")}
+        onclick={() => {
+          query = "";
+          searching = false;
+        }}><X size={14}></X></button
+      >
+    </label>
+  {:else}
+    <button
+      class={styles.iconSmall}
+      aria-label={t("transcript.search")}
+      title={t("transcript.search")}
+      onclick={() => (searching = true)}><Search size={16}></Search></button
+    >
+  {/if}
 </div>
-{#if term}<p class={styles.quiet} role="status">
+{#if term}<p class={styles.searchNote} role="status">
     {t("transcript.shownOf", {
       shown: visibleSegments.length,
       total: segments.length,
@@ -119,37 +166,44 @@
   </p>{/if}
 <div
   bind:this={scroller.current}
-  class={styles.scroll}
+  class={styles.stream}
   onscroll={(e) => {
     const el = e.currentTarget;
     atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
   }}
 >
-  {#if visibleSegments.length}{#each visibleSegments as s (s.id)}{@const finding =
-        findingBySegment.get(s.id)}
-      <article
-        id={`line-${s.id}`}
-        class={styles.line}
-        data-selected={selectedSegment === s.id || undefined}
-        data-status={finding?.status}
+  {#each visibleSegments as s, index (s.id)}{@const finding =
+      findingBySegment.get(s.id)}{@const name = speakerName(
+      s.speaker,
+      speakers,
+    )}{@const grouped =
+      !term && index > 0 && visibleSegments[index - 1].speaker === s.speaker}
+    <article
+      id={`line-${s.id}`}
+      class={styles.turn}
+      data-grouped={grouped || undefined}
+      data-selected={selectedSegment === s.id || undefined}
+      data-status={finding?.status}
+    >
+      <span
+        class={styles.avatar}
+        data-tone={toneOf.get(s.speaker)}
+        aria-hidden="true">{grouped ? "" : initials(name)}</span
       >
-        <div class={styles.lineHead}>
-          {#if onRename}<button
-              class={styles.speaker}
-              title={t("transcript.renameSpeaker")}
-              onclick={() => {
-                renaming = s.speaker;
-                renameValue = speakers[s.speaker] ?? "";
-              }}>{speakerName(s.speaker, speakers)}</button
-            >{:else}<strong class={styles.speaker}
-              >{speakerName(s.speaker, speakers)}</strong
-            >{/if}
-          <time>
-            {s.origin === "imported" && !s.start && !s.end
-              ? ""
-              : timestamp(s.start)}
-          </time>
-        </div>
+      <div class={styles.turnBody}>
+        {#if !grouped}<div class={styles.turnHead}>
+            {#if onRename}<button
+                class={styles.speaker}
+                title={t("transcript.renameSpeaker")}
+                onclick={() => {
+                  renaming = s.speaker;
+                  renameValue = speakers[s.speaker] ?? "";
+                }}>{name}</button
+              >{:else}<strong class={styles.speaker}>{name}</strong>{/if}
+            {#if s.origin !== "imported" || s.start || s.end}<time
+                >{timestamp(s.start)}</time
+              >{/if}
+          </div>{/if}
         <p><TranscriptText text={s.text} {term}></TranscriptText></p>
         {#if finding}<button
             class={styles.flag}
@@ -157,30 +211,36 @@
             onclick={() => select(s.id)}
           >
             <i aria-hidden="true"></i>
-            {statusLabel(finding.status)}: {finding.title}
+            <span>{statusLabel(finding.status)} · {finding.title}</span>
           </button>{:else if working.has(s.analysis_state)}<span
             class={styles.working}>{t("transcript.checking")}</span
+          >{:else if s.analysis_state === "failed"}<span class={styles.working}
+            >{t("transcript.notChecked")}
+            <button onclick={() => onRetry(s.id)}
+              >{t("transcript.retry")}</button
+            ></span
           >{/if}
-        {#if s.analysis_error && s.analysis_state === "failed"}<div
-            class={styles.lineError}
-          >
-            <span>{userFacingError(s.analysis_error)}</span>
-            <button onclick={() => onRetry(s.id)}>
-              <RefreshCw size={12}></RefreshCw>
-              {t("transcript.retry")}
-            </button>
-          </div>{/if}
-      </article>{/each}{:else if !partial}<div class={styles.empty}>
-      <AudioLines size={24}></AudioLines>
-      <h3>
-        {term ? t("transcript.noMatchTitle") : t("transcript.readyTitle")}
-      </h3>
-      <p>{term ? t("transcript.noMatchText") : t("transcript.readyText")}</p>
-    </div>{/if}
-  {#if partial && !term}<div class={styles.partial} aria-live="polite">
-      <span>{t("transcript.listening")}</span>
-      <p>{partial}</p>
-    </div>{/if}
+      </div>
+    </article>
+  {:else}
+    {#if term}<div class={styles.empty}>
+        <h3>{t("transcript.noMatchTitle")}</h3>
+        <p>{t("transcript.noMatchText")}</p>
+      </div>{/if}
+  {/each}
+  {#if (partial || recording) && !term}
+    <div class={styles.live} aria-live="polite">
+      <span class={styles.avatar} data-live aria-hidden="true"
+        ><i></i><i></i><i></i></span
+      >
+      <div class={styles.turnBody}>
+        <div class={styles.turnHead}>
+          <strong class={styles.speaker}>{t("transcript.listening")}</strong>
+        </div>
+        <p>{partial || t("transcript.waitingSpeech")}</p>
+      </div>
+    </div>
+  {/if}
 </div>
 {#if !atBottom && !term}<button class={styles.jump} onclick={toBottom}>
     <ArrowDown size={14}></ArrowDown>

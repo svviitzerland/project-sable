@@ -36,7 +36,7 @@ async function openSeededHearing(page: Page) {
 }
 
 const findingsColumn = (page: Page) =>
-  page.getByRole("region", { name: /^Findings/ });
+  page.getByRole("region", { name: /^Jude highlights/ });
 
 /** A finding card's header button in the findings column. */
 const findingHeader = (page: Page, title: string | RegExp) =>
@@ -107,8 +107,12 @@ test("complete case workflow, imports, evidence, reviews and responsive navigati
   await expect(findingsColumn(page).locator("article")).toHaveCount(1);
   await expect(findingHeader(page, /Door status conflicts/)).toBeVisible();
   const transcript = page.getByRole("region", { name: /^Transcript/ });
-  const transcriptSearch = page.getByLabel("Search this transcript");
   await expect(transcript.locator("article")).toHaveCount(SEED.segments);
+  // Search opens from the transcript header.
+  await transcript
+    .getByRole("button", { name: "Search this transcript" })
+    .click();
+  const transcriptSearch = transcript.getByRole("searchbox");
   await transcriptSearch.fill("9:30");
   await expect(transcript.locator("article")).toHaveCount(1);
   await expect(transcript.locator("mark")).toHaveText("9:30");
@@ -397,6 +401,11 @@ test("complete case workflow, imports, evidence, reviews and responsive navigati
     page.getByRole("button", { name: "Open case navigation" }),
   ).toBeFocused();
   await openSeededHearing(page);
+  // Phones show one pane at a time; switch to the highlights.
+  await page
+    .getByRole("group", { name: "Hearing view" })
+    .getByRole("button", { name: /^Jude highlights/ })
+    .click();
   await findingHeader(page, /Both accounts name the supervisor/).click();
   await expect(
     findingHeader(page, /Both accounts name the supervisor/),

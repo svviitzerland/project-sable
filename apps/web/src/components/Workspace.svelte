@@ -140,6 +140,7 @@
       partial = text;
     },
     () => void refresh(),
+    () => refresh(),
   );
 
   // Desktop sidebar: a slim rail that expands on hover or focus, or stays pinned open.

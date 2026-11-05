@@ -35,6 +35,8 @@ export class SpeechConnection {
   private heldSince = 0;
   private idle: ReturnType<typeof setTimeout> | undefined;
   private live = "";
+  /** Saved batches stay on screen until the transcript has reloaded with them. */
+  private saving: string[] = [];
   onopen: (() => void) | null = null;
   onmessage: ((event: { data: string }) => void) | null = null;
   onerror: (() => void) | null = null;
@@ -44,6 +46,7 @@ export class SpeechConnection {
     private credentials: SpeechCredentials,
     private partial: (text: string) => void,
     private saved: (turns: SavedTurn[]) => void = () => undefined,
+    private settle: () => Promise<unknown> = async () => undefined,
   ) {
     this.socket = new WebSocket(credentials.url);
     this.socket.binaryType = "arraybuffer";
@@ -100,7 +103,11 @@ export class SpeechConnection {
   }
   /** The live line shows held text plus what is being said now. */
   private show() {
-    this.partial([batchText(this.held), this.live].filter(Boolean).join(" "));
+    this.partial(
+      [...this.saving, batchText(this.held), this.live]
+        .filter(Boolean)
+        .join(" "),
+    );
   }
   private hold(results: BatchResult[]) {
     if (!this.held.length) this.heldSince = Date.now();
@@ -127,6 +134,13 @@ export class SpeechConnection {
   }
   private queue(results: BatchResult[]) {
     const batch = { sequence: ++this.sequence, results };
+    const text = batchText(results);
+    this.saving.push(text);
+    const release = () => {
+      const index = this.saving.indexOf(text);
+      if (index >= 0) this.saving.splice(index, 1);
+      this.show();
+    };
     this.saves = this.saves.then(async () => {
       let last: unknown;
       for (let attempt = 0; attempt < 3; attempt++)
@@ -135,8 +149,10 @@ export class SpeechConnection {
             `/cases/${this.caseId}/audio-sessions/${this.credentials.id}/transcripts`,
             { method: "POST", body: JSON.stringify(batch) },
           );
-          this.show();
           if (result?.segments?.length) this.saved(result.segments);
+          // Keep the words visible until the transcript shows them.
+          await this.settle().catch(() => undefined);
+          release();
           return;
         } catch (error) {
           last = error;
@@ -147,12 +163,13 @@ export class SpeechConnection {
         }
       throw last;
     });
-    void this.saves.catch(() =>
+    void this.saves.catch(() => {
+      release();
       this.emit({
         type: "error",
         message: t("audio.error.saveFinal"),
-      }),
-    );
+      });
+    });
   }
   /** After the end-of-stream frame, Transcribe sends final results and closes. */
   private finish() {

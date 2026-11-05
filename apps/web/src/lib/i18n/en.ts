@@ -339,10 +339,10 @@ export const en = {
   "hearing.examining": "Examining testimony for findings…",
   "hearing.mode.imported": "Imported finding · verify sources",
   "hearing.mode.ai": "AI · source-validated",
-  "hearing.emptyTitle": "Follow the evidence.",
+  "hearing.emptyTitle": "No highlights yet.",
   "hearing.emptyFilterTitle": "No findings in this view.",
   "hearing.emptyText":
-    "Findings appear here as finalized statements are examined. Record audio or add a transcript statement.",
+    "While witnesses speak, Jude compares every statement with the case file and earlier testimony. Differences appear here.",
   "hearing.emptyFilterText":
     "Choose another filter to see the rest of the record.",
   "hearing.inspector": "Finding and source inspector",
@@ -462,11 +462,11 @@ export const en = {
   "audio.recognitionLanguage": "Recognition language",
   "audio.permission":
     "The presiding judge allowed recording, and I may send this audio for transcription.",
-  "audio.start": "Start microphone",
+  "audio.start": "Record hearing",
   "audio.prepared": "Choose audio file",
   "audio.cancel": "Cancel connection",
   "audio.finishing": "Finishing transcript…",
-  "audio.stop": "Stop recording",
+  "audio.stop": "Finish",
   "audio.unavailable":
     "Audio transcription is unavailable. Return to All hearings to upload a transcript instead.",
   "audio.keepRecording": "Keep an audio recording of this session",
@@ -543,7 +543,7 @@ export const en = {
   "transcript.noMatchText":
     "Try another phrase or clear the speaker filter. Filters do not change the hearing record.",
   "transcript.readyText": "Capture audio below or add a statement below.",
-  "transcript.listening": "Listening · provisional",
+  "transcript.listening": "Speaking now",
 
   // Hearing library
   "library.converting": "Converting transcript…",
@@ -1257,7 +1257,7 @@ export const en = {
   "finding.moreDetail": "Uncertainty and review",
   "finding.addNote": "Add a note",
   "finding.earlierTestimony": "Earlier testimony · {speaker} · {time}",
-  "audio.recordingFor": "Recording {time}",
+  "audio.recordingFor": "Recording · {time}",
   "audio.noRecordings": "No recordings saved for this hearing.",
   "evidence.filter": "Filter connections",
   "evidence.stat.all": "All connections",
@@ -1273,6 +1273,23 @@ export const en = {
   "evidence.noMatchText": "Choose another filter or clear the search.",
   "finding.showMore": "Show more",
   "finding.showLess": "Show less",
+  "hearing.liveTag": "LIVE",
+  "hearing.panes": "Hearing view",
+  "hearing.highlights": "Jude highlights",
+  "hearing.new": "New",
+  "hearing.hero.title": "Ready to record the hearing",
+  "hearing.hero.text":
+    "Press start when the session begins. Jude writes down every statement and checks it against the case file and earlier testimony as you go.",
+  "hearing.hero.step1": "Record the session",
+  "hearing.hero.step2": "Jude transcribes and checks each statement",
+  "hearing.hero.step3": "Review the highlighted differences",
+  "hearing.quick.conflicts": "Any contradictions?",
+  "hearing.quick.questions": "What should I ask?",
+  "hearing.quick.summary": "Summarize",
+  "transcript.notChecked": "Not checked.",
+  "transcript.waitingSpeech": "Listening… speech appears here as it is spoken.",
+  "library.defaultTitle": "Hearing {date}",
+  "library.startNew": "Start a new hearing",
 } as const;
 
 export type MessageKey = keyof typeof en;

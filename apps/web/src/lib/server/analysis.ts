@@ -76,9 +76,12 @@ const FACT_RULES =
   "Concrete specifics are the facts that matter: time of day, date, duration, place, object or weapon type, colour, quantity, the people present, and the order of events. When the testimony and a source state DIFFERENT values for the SAME specific (for example 'jam 8 pagi' versus 'jam 9 pagi', 'pistol' versus 'AK-47' or 'senapan', 'dua orang' versus 'tiga orang', 'di kamar' versus 'di ruang TV'), that is a potential_inconsistency even when the wording is otherwise different and even when an innocent explanation (memory, estimate, transcription) is possible: list that explanation as uncertainty instead of downgrading the status. A handgun and a rifle are different weapon types. A source of kind earlier_testimony is the same witness's (or another person's) earlier statement in the record: a conflict with it is a potential inconsistency within the testimony and must cite that earlier statement. Only a genuine paraphrase with the same values, or a difference about a clearly different event, moment or object, is not a conflict.";
 
 export const SCREEN_ROLE =
-  "Evidence screen. First decide whether the testimony makes a checkable factual assertion; questions, greetings, procedure and fragments are not checkable (use preceding_context to read short answers, so 'Jam sembilan' answering 'Jam berapa Saudara datang?' asserts an arrival time). Turns by the judge (Hakim), prosecutor (Penuntut Umum, JPU) or counsel (Penasihat Hukum) are usually questions, summaries put to the witness, or procedure even without a question mark: they are not checkable unless the speaker states a fact as their own evidence. Never describe a different turn from preceding_context as this testimony. If checkable, compare it with every source and return a calibrated finding: supported only with a supporting quote, potential_inconsistency only with a conflicting quote, context_needed when sources are related but do not settle the specific, insufficient_evidence when they say nothing about it. " +
+  "Evidence screen. First decide whether the testimony makes a checkable factual assertion; questions, greetings, procedure, fragments, opinions, feelings and general remarks are not checkable (use preceding_context to read short answers, so 'Jam sembilan' answering 'Jam berapa Saudara datang?' asserts an arrival time). Turns by the judge (Hakim), prosecutor (Penuntut Umum, JPU) or counsel (Penasihat Hukum) are usually questions, summaries put to the witness, or procedure even without a question mark: they are not checkable unless the speaker states a fact as their own evidence. Never describe a different turn from preceding_context as this testimony. If checkable, compare it with every source and return a calibrated finding: supported only with a supporting quote, potential_inconsistency only with a conflicting quote, context_needed when sources are related but do not settle the specific, insufficient_evidence when they say nothing about it. " +
   FACT_RULES +
   " Name the differing values in the title (for example 'Waktu kedatangan: jam 9 di sidang, jam 8 di BAP'). Give a concrete verification step and one neutral follow-up question.";
+
+const SCREEN_REPAIR =
+  " Your previous answer quoted text that does not occur in its source. Copy every quote character for character as a short contiguous span of that source's text, with the chunk_id of the same source. If no quote supports the status, choose a weaker status.";
 
 export const REVIEW_ROLE =
   "Independent reviewer. You have not seen any earlier assessment. passages_to_compare lists the source passages to check against the testimony. Decide whether they genuinely conflict with the testimony: conflict_confirmed=true when they state different values for the same specific fact; false only when the values actually agree, the difference is purely wording, or the passages plainly concern a different event, moment or object. " +
@@ -86,7 +89,7 @@ export const REVIEW_ROLE =
   " List alternative explanations and missing context. Do not judge credibility.";
 
 const COURTESY = new Set(
-  "ya iya yah baik oke ok silakan silahkan terima kasih mohon izin maaf sebentar yang mulia majelis hakim pak bu ibu bapak saudara saudari sekalian cukup lanjut lanjutkan hm hmm eh em nah thank you yes okay please go ahead your honour honor".split(
+  "ya iya yah he eh ehm oh ah mm heeh baik oke ok silakan silahkan terima kasih mohon izin maaf sebentar yang mulia majelis hakim pak bu ibu bapak saudara saudari sekalian cukup lanjut lanjutkan hm hmm eh em nah thank you yes okay please go ahead your honour honor".split(
     " ",
   ),
 );
@@ -258,22 +261,42 @@ async function runInvestigation(rt: Runtime, id: string) {
       })),
     };
     await analysisState(rt, id, "analyzing");
-    const screen = await structured(
-      rt,
-      SCREEN_ROLE,
-      packet,
-      conclusionSchema.extend({ checkable: z.boolean() }),
-    );
+    const screenSchema = conclusionSchema.extend({ checkable: z.boolean() });
+    const asConclusion = (value: z.output<typeof screenSchema>) =>
+      conclusionSchema.parse(
+        Object.fromEntries(
+          Object.entries(value).filter(([key]) => key !== "checkable"),
+        ),
+      );
+    const screen = await structured(rt, SCREEN_ROLE, packet, screenSchema);
     if (!screen.checkable) {
       await analysisState(rt, id, "skipped");
       return;
     }
-    conclusion = conclusionSchema.parse(
-      Object.fromEntries(
-        Object.entries(screen).filter(([key]) => key !== "checkable"),
-      ),
-    );
-    conclusion = verifiedConclusion(conclusion, sources);
+    try {
+      conclusion = verifiedConclusion(asConclusion(screen), sources);
+    } catch (error) {
+      if (!(error instanceof ProviderError)) throw error;
+      // A quote that does not match is never shown. Only a difference or support is
+      // worth one repair call; a weaker result is quietly left out.
+      if (!["potential_inconsistency", "supported"].includes(screen.status)) {
+        await analysisState(rt, id, "skipped");
+        return;
+      }
+      const repaired = await structured(
+        rt,
+        SCREEN_ROLE + SCREEN_REPAIR,
+        packet,
+        screenSchema,
+      );
+      try {
+        if (!repaired.checkable) throw new ProviderError("Not checkable.");
+        conclusion = verifiedConclusion(asConclusion(repaired), sources);
+      } catch {
+        await analysisState(rt, id, "skipped");
+        return;
+      }
+    }
     let legalNote = "";
     if (conclusion.status !== "insufficient_evidence" && rt.config.pasalKey)
       try {

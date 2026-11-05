@@ -265,12 +265,14 @@
 {#if !open}
   <button
     class={styles.bubble}
+    data-compact={hearing ? true : undefined}
+    title={t("dock.bubble")}
     data-tour="assistant"
     aria-label={t("dock.open")}
     onclick={onOpen}
   >
     <Sparkles size={20}></Sparkles>
-    <span>{t("dock.bubble")}</span>
+    {#if !hearing}<span>{t("dock.bubble")}</span>{/if}
     {#if hearing?.live}<i class={styles.liveDot} aria-hidden="true"></i>{/if}
   </button>
 {:else}

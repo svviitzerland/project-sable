@@ -31,6 +31,17 @@
 :global([data-workspace][data-workspace]) .bubble:hover {
   background: #2a5440 !important;
 }
+:global([data-workspace][data-workspace]) .bubble[data-compact] {
+  justify-content: center;
+  width: 56px;
+  min-height: 56px;
+  padding: 0;
+}
+:global([data-workspace][data-workspace]) .bubble[data-compact] .liveDot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
 :global([data-workspace][data-workspace]) .liveDot {
   width: 8px;
   height: 8px;

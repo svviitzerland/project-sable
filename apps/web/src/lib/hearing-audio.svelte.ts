@@ -84,6 +84,8 @@ export function createHearingAudio(
   hearingId: () => string | null,
   onPartial: (text: string) => void,
   onRecorded: () => void = () => undefined,
+  /** Reloads the transcript; live text stays on screen until this resolves. */
+  onSaved: () => Promise<unknown> = async () => undefined,
 ) {
   let status = $state<"idle" | "connecting" | "recording" | "stopping">("idle");
   const setStatus = (value: typeof status) => {
@@ -257,6 +259,7 @@ export function createHearingAudio(
               if (clip) identify(turn.id, clip);
             }
           },
+          onSaved,
         );
         s.ws = ws;
         clearTimeout(s.timeout);

@@ -2,12 +2,12 @@
   import { t, tp } from "../lib/i18n/index.svelte";
   import {
     ArrowLeft,
-    Check,
     Download,
     Ellipsis,
     FileAudio,
     FilePlus2,
     Headphones,
+    Mic,
     ShieldCheck,
     Sparkles,
   } from "@lucide/svelte";
@@ -27,7 +27,7 @@
   import Transcript from "./Transcript.svelte";
   import ManualTranscript from "./ManualTranscript.svelte";
   import FindingInspector from "./FindingInspector.svelte";
-  import Skeleton from "./Skeleton.svelte";
+  import { untrack } from "svelte";
 
   let {
     caseId,
@@ -57,12 +57,14 @@
     refresh: () => void;
   } = $props();
 
-  type Filter = "all" | "conflicts" | "open";
+  type Filter = "conflicts" | "all" | "open";
 
   let filter = $state<Filter>("all");
   let selected = $state<string | null>(null);
   let menuOpen = $state(false);
   let manualOpen = $state(false);
+  /** Phones show one pane at a time. */
+  let pane = $state<"transcript" | "findings">("transcript");
   let capture = $state<HearingAudio>();
 
   const working = [
@@ -82,7 +84,7 @@
   let findings = $derived(
     detail.findings.filter((f) => segmentMap.has(f.segment_id)),
   );
-  // Conflicts first, then newest: what needs attention is at the top.
+  // Differences first, then newest: what needs attention is at the top.
   let ordered = $derived(
     findings
       .slice()
@@ -111,16 +113,19 @@
   );
   let waiting = $derived(
     segments.filter((s) =>
-      ["pending", "unavailable", "failed", "interrupted"].includes(
-        s.analysis_state,
-      ),
+      ["pending", "interrupted"].includes(s.analysis_state),
     ).length,
   );
   let selectedFinding = $derived(findings.find((f) => f.id === selected));
-  let live = $derived(audio.status !== "idle" || hearing.status === "live");
+  let recording = $derived(audio.status !== "idle");
+  let live = $derived(recording || hearing.status === "live");
+
+  // Findings that arrive while this hearing is open are marked as new.
+  const seen = new Set(untrack(() => findings.map((f) => f.id)));
 
   function choose(id: string) {
     selected = selected === id ? null : id;
+    pane = "findings";
     if (selected)
       requestAnimationFrame(() =>
         document
@@ -136,6 +141,10 @@
         method: "POST",
       }),
     );
+  }
+
+  function ask(text: string) {
+    onAsk({ text, references: [], send: true });
   }
 </script>
 
@@ -158,27 +167,26 @@
     {t("hearing.all")}
   </button>
 
-  <header class={styles.top}>
+  <header class={styles.stage} data-live={live || undefined}>
     <div class={styles.titleBlock}>
+      {#if live}<span class={styles.liveTag}
+          ><i aria-hidden="true"></i>{t("hearing.liveTag")}</span
+        >{/if}
       <h1>{hearing.title}</h1>
       <p class={styles.meta}>
-        <i class={styles.dot} data-live={live} data-on={connected}></i>
-        <span
-          >{live
-            ? t("hearing.state.live")
-            : hearing.status === "complete"
+        <span>{tp("count.statements", segments.length)}</span>
+        <span aria-hidden="true">·</span>
+        <span class={conflicts.length ? styles.warm : ""}
+          >{tp("count.conflicts", conflicts.length)}</span
+        >
+        {#if !live}<span aria-hidden="true">·</span>
+          <span
+            >{hearing.status === "complete"
               ? t("hearing.state.complete")
               : t("hearing.state.ready")}</span
-        >
-        <span aria-hidden="true">·</span>
-        <span>{tp("count.statements", segments.length)}</span>
-        {#if conflicts.length}<span aria-hidden="true">·</span>
-          <strong class={styles.warm}
-            >{tp("count.conflicts", conflicts.length)}</strong
           >{/if}
-        {#if examining}<span aria-hidden="true">·</span>
-          <span class={styles.pulse}>{tp("count.examining", examining)}</span
-          >{/if}
+        {#if !connected}<span aria-hidden="true">·</span>
+          <span>{t("hearing.checking")}</span>{/if}
       </p>
     </div>
     <div class={styles.controls}>
@@ -207,7 +215,7 @@
           <div class={styles.menu} role="menu">
             <button
               role="menuitem"
-              disabled={!caps?.speech.configured || audio.status !== "idle"}
+              disabled={!caps?.speech.configured || recording}
               onclick={() => {
                 menuOpen = false;
                 capture?.chooseFile();
@@ -261,65 +269,109 @@
     </div>
   </header>
 
-  {#if waiting > 0 && !examining && caps?.analysis.configured}
-    <div class={styles.banner}>
-      <span>{t("hearing.waiting", { count: waiting })}</span>
-      <button disabled={busy} onclick={analyze}>
-        <ShieldCheck size={14}></ShieldCheck>
-        {t("hearing.analyzeNow")}
-      </button>
-    </div>
-  {:else if !caps?.analysis.configured}
-    <p class={styles.quiet}>{t("hearing.analysisUnavailable")}</p>
-  {/if}
+  <div class={styles.switch} role="group" aria-label={t("hearing.panes")}>
+    <button
+      aria-pressed={pane === "transcript"}
+      onclick={() => (pane = "transcript")}>{t("hearing.transcript")}</button
+    >
+    <button
+      aria-pressed={pane === "findings"}
+      onclick={() => (pane = "findings")}
+      >{t("hearing.highlights")}
+      {#if conflicts.length}<b>{conflicts.length}</b>{/if}</button
+    >
+  </div>
 
-  <div class={styles.grid}>
-    <section class={styles.transcript} aria-labelledby="transcript-heading">
-      <Transcript
-        {segments}
-        {speakers}
-        {partial}
-        {findings}
-        selectedSegment={selectedFinding?.segment_id ?? null}
-        onRename={(speaker, label) =>
-          action(() =>
-            api(`/cases/${caseId}/speakers`, {
-              method: "PATCH",
-              body: JSON.stringify({ speaker, label }),
-            }),
-          )}
-        onRetry={(id) =>
-          action(() =>
-            api(`/cases/${caseId}/transcripts/${id}/retry`, {
-              method: "POST",
-            }),
-          )}
-        select={(id) => {
-          const f = findings.find((f) => f.segment_id === id);
-          if (f) {
-            filter = "all";
-            selected = null;
-            choose(f.id);
-          }
-        }}
-      />
+  <div class={styles.grid} data-pane={pane}>
+    <section class={styles.panel} aria-labelledby="transcript-heading">
+      {#if !segments.length && !partial && !recording}
+        <div class={styles.hero}>
+          <span class={styles.heroIcon} aria-hidden="true"
+            ><Mic size={28}></Mic></span
+          >
+          <h2 id="transcript-heading">{t("hearing.hero.title")}</h2>
+          <p>{t("hearing.hero.text")}</p>
+          <button
+            class={styles.heroButton}
+            disabled={!caps?.speech.configured}
+            onclick={() => capture?.startMic()}
+          >
+            <Mic size={18}></Mic>
+            {t("audio.start")}
+          </button>
+          <div class={styles.heroAlt}>
+            <button
+              disabled={!caps?.speech.configured}
+              onclick={() => capture?.chooseFile()}
+              >{t("audio.prepared")}</button
+            >
+            <span aria-hidden="true">·</span>
+            <button onclick={() => (manualOpen = true)}
+              >{t("manual.add")}</button
+            >
+          </div>
+          {#if !caps?.speech.configured}<p class={styles.quiet}>
+              {t("audio.unavailable")}
+            </p>{/if}
+          <ol class={styles.steps}>
+            <li><b>1</b>{t("hearing.hero.step1")}</li>
+            <li><b>2</b>{t("hearing.hero.step2")}</li>
+            <li><b>3</b>{t("hearing.hero.step3")}</li>
+          </ol>
+        </div>
+      {:else}
+        <Transcript
+          {segments}
+          {speakers}
+          {partial}
+          {findings}
+          {recording}
+          selectedSegment={selectedFinding?.segment_id ?? null}
+          onRename={(speaker, label) =>
+            action(() =>
+              api(`/cases/${caseId}/speakers`, {
+                method: "PATCH",
+                body: JSON.stringify({ speaker, label }),
+              }),
+            )}
+          onRetry={(id) =>
+            action(() =>
+              api(`/cases/${caseId}/transcripts/${id}/retry`, {
+                method: "POST",
+              }),
+            )}
+          select={(id) => {
+            const f = findings.find((f) => f.segment_id === id);
+            if (f) {
+              filter = "all";
+              selected = null;
+              choose(f.id);
+            }
+          }}
+        />
+      {/if}
     </section>
 
-    <section class={styles.findings} aria-labelledby="findings-heading">
-      <div class={styles.colHead}>
+    <section
+      class={`${styles.panel} ${styles.highlights}`}
+      aria-labelledby="findings-heading"
+    >
+      <div class={styles.panelHead}>
         <h2 id="findings-heading">
-          {t("hearing.findings")}
-          {#if findings.length}<small
-              >{t("hearing.reviewedOf", {
-                done: findings.length - open.length,
-                total: findings.length,
-              })}</small
-            >{/if}
+          <Sparkles size={16}></Sparkles>
+          {t("hearing.highlights")}
         </h2>
+        {#if findings.length}<small
+            >{t("hearing.reviewedOf", {
+              done: findings.length - open.length,
+              total: findings.length,
+            })}</small
+          >{/if}
       </div>
+
       {#if findings.length}
         <div
-          class={styles.filters}
+          class={styles.segmented}
           role="group"
           aria-label={t("hearing.filter")}
         >
@@ -341,36 +393,50 @@
           >
         </div>
       {/if}
-      <div class={styles.findingList}>
-        {#if examining > 0 && !visible.length}<Skeleton
-            variant="rows"
-            count={2}
-            label={t("hearing.examining")}
-          />{/if}
+
+      {#if !caps?.analysis.configured}<p class={styles.examining} data-idle>
+          {t("hearing.analysisUnavailable")}
+        </p>{:else if examining > 0}<p class={styles.examining} role="status">
+          <i aria-hidden="true"></i>{tp("count.examining", examining)}
+        </p>{:else if waiting > 0 && !live && caps?.analysis.configured}<p
+          class={styles.examining}
+          data-idle
+        >
+          {t("hearing.waiting", { count: waiting })}
+          <button disabled={busy} onclick={analyze}
+            >{t("hearing.analyzeNow")}</button
+          >
+        </p>{/if}
+
+      <div class={styles.feed}>
         {#each visible as f (f.id)}{@const statement = segmentMap.get(
             f.segment_id,
           )}{@const expanded = selected === f.id}
           <article
-            class={styles.finding}
+            class={styles.card}
             id={`finding-${f.id}`}
             data-status={f.status}
             data-open={expanded || undefined}
             data-reviewed={f.reviewed || undefined}
           >
             <button
-              class={styles.findingHead}
+              class={styles.cardHead}
               aria-expanded={expanded}
               onclick={() => choose(f.id)}
             >
-              <span class={styles.pill} data-status={f.status}
-                >{statusLabel(f.status)}</span
-              >
-              {#if f.reviewed}<span class={styles.done}
-                  ><Check size={12}></Check>
-                  {t("common.reviewed")}</span
-                >{/if}
+              <span class={styles.cardTop}>
+                <span class={styles.pill} data-status={f.status}
+                  >{statusLabel(f.status)}</span
+                >
+                {#if !seen.has(f.id)}<span class={styles.new}
+                    >{t("hearing.new")}</span
+                  >{/if}
+                {#if f.reviewed}<span class={styles.done}
+                    >{t("common.reviewed")}</span
+                  >{/if}
+              </span>
               <strong>{f.title}</strong>
-              {#if statement && !expanded}<small
+              {#if statement}<small
                   >{speakerName(statement.speaker, speakers)} · {timestamp(
                     statement.start,
                   )}</small
@@ -401,7 +467,9 @@
           </article>
         {:else}
           {#if examining === 0}<div class={styles.empty}>
-              <ShieldCheck size={24}></ShieldCheck>
+              <span class={styles.emptyIcon} aria-hidden="true"
+                ><ShieldCheck size={22}></ShieldCheck></span
+              >
               <h3>
                 {filter === "all"
                   ? t("hearing.emptyTitle")
@@ -415,21 +483,36 @@
             </div>{/if}
         {/each}
       </div>
-      <button
-        class={styles.askBar}
-        onclick={() =>
-          onAsk({
-            text: t("dock.ask.hearingConflicts"),
-            references: [],
-            send: true,
-          })}
-      >
-        <Sparkles size={15}></Sparkles>
-        {t("hearing.askConflicts")}
-      </button>
+
+      <div class={styles.quick}>
+        <button
+          onclick={() =>
+            ask(
+              live
+                ? t("dock.ask.liveConflicts")
+                : t("dock.ask.hearingConflicts"),
+            )}
+        >
+          <Sparkles size={14}></Sparkles>
+          {t("hearing.quick.conflicts")}
+        </button>
+        <button
+          onclick={() =>
+            ask(
+              live
+                ? t("dock.ask.liveQuestions")
+                : t("dock.ask.hearingQuestions"),
+            )}>{t("hearing.quick.questions")}</button
+        >
+        <button
+          onclick={() =>
+            ask(
+              live ? t("dock.ask.liveSummary") : t("dock.ask.hearingSummary"),
+            )}>{t("hearing.quick.summary")}</button
+        >
+      </div>
     </section>
   </div>
-  <p class={styles.footnote}>{t("hearing.bottomNote")}</p>
 </div>
 
 <ManualTranscript
