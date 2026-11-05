@@ -13,67 +13,52 @@ test("case assistant and AI-only courtroom practice with coaching and debrief", 
     "witness-statement.txt",
     "Synthetic witness statement. The witness says she arrived at the warehouse at nine in the morning and saw the receipt on the desk.",
   );
-  await page.getByRole("tab", { name: "Evidence", exact: true }).click();
-  await page
-    .getByRole("button", { name: "witness-statement.txt", exact: false })
-    .first()
-    .click();
-  await page.getByRole("button", { name: "Discuss with assistant" }).click();
+  // The case assistant is a floating panel available on every case screen.
+  await page.getByRole("button", { name: "Open the case assistant" }).click();
+  const dock = page.getByRole("region", { name: "Jude assistant" });
+  const composer = dock.getByLabel("Message to the assistant", {
+    exact: true,
+  });
+  const send = dock.getByRole("button", { name: "Send", exact: true });
+  const replies = dock.locator("article");
+  await expect(dock.getByText("Whole case", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("tab", { name: "Case assistant", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
-  await expect(
-    page.getByRole("button", {
-      name: "Remove source: Selected evidence passage",
-    }),
+    dock.getByText("AI replies are unavailable right now.", { exact: false }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Sources (1)" }).click();
-  await expect(
-    page.getByLabel("Selected evidence passage", { exact: true }),
-  ).toBeChecked();
-  await page
-    .getByLabel("Ask about this case", { exact: true })
-    .fill("What does the statement say about arrival time?");
+  await composer.fill("What does the statement say about arrival time?");
   // Hold the reply: the user's own bubble appears first, then the answer.
   let releaseReply = () => {};
   const replyHeld = new Promise<void>((resolve) => (releaseReply = resolve));
+  const sentBodies: { legal_query?: string }[] = [];
   await page.route(
     "**/dialogues/*/messages",
     async (route) => {
+      sentBodies.push(route.request().postDataJSON());
       await replyHeld;
       await route.continue();
     },
     { times: 1 },
   );
-  await page.getByRole("button", { name: "Send message" }).click();
+  await send.click();
   await expect(
-    page
-      .getByRole("log")
-      .locator("article")
-      .filter({ hasText: "What does the statement say about arrival time?" }),
+    dock.getByText("What does the statement say about arrival time?"),
   ).toBeVisible();
-  await expect(page.getByRole("log").locator("article")).toHaveCount(1);
+  await expect(replies).toHaveCount(0);
   releaseReply();
   await expect(
-    page.getByText("AI replies are unavailable", { exact: false }),
+    replies.getByText("AI replies are unavailable", { exact: false }),
   ).toBeVisible();
-  await page
-    .getByRole("group", { name: "Sources cited" })
+  expect(sentBodies[0]?.legal_query).toBe("");
+  await replies
     .first()
-    .getByRole("button")
+    .getByRole("button", { name: /witness-statement\.txt/ })
     .first()
     .click();
   await expect(
-    page.getByRole("link", { name: "Open original", exact: true }).first(),
+    dock.getByRole("link", { name: "Open original", exact: true }).first(),
   ).toBeVisible();
-  await expect(
-    page.getByRole("log").locator("blockquote").first(),
-  ).toBeVisible();
-  await page.getByRole("button", { name: /^Sources/ }).click();
-  await expect(page.getByLabel("Legal search terms")).toBeDisabled();
-  await page
-    .getByLabel("Ask about this case", { exact: true })
-    .fill("What other context is available?");
+  await expect(dock.locator("q").first()).toBeVisible();
+  await composer.fill("What other context is available?");
   await page.route(
     "**/dialogues/*/messages",
     (route) =>
@@ -85,34 +70,28 @@ test("case assistant and AI-only courtroom practice with coaching and debrief", 
       }),
     { times: 1 },
   );
-  await page.getByRole("button", { name: "Send message" }).click();
+  await send.click();
   await expect(
-    page
+    dock
       .getByRole("alert")
       .filter({ hasText: "Provider temporarily unavailable" }),
   ).toBeVisible();
-  await expect(
-    page.getByLabel("Ask about this case", { exact: true }),
-  ).toHaveValue("What other context is available?");
-  await expect(page.getByRole("log").locator("article")).toHaveCount(2);
-  await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.getByRole("log").locator("article")).toHaveCount(4);
-  const download = page.waitForEvent("download");
-  await page.getByRole("link", { name: "Export conversation" }).click();
-  expect((await download).suggestedFilename()).toMatch(/\.json$/);
+  await expect(composer).toHaveValue("What other context is available?");
+  await expect(replies).toHaveCount(1);
+  await send.click();
+  await expect(replies).toHaveCount(2);
+  await expect(dock.getByRole("alert")).toHaveCount(0);
   await page.reload();
-  await page.getByRole("tab", { name: "Case assistant", exact: true }).click();
-  await expect(page.getByRole("log").locator("article")).toHaveCount(4);
-  await page.getByRole("button", { name: "New conversation" }).click();
-  await expect(
-    page.getByRole("textbox", { name: "Ask about this case", exact: true }),
-  ).toBeFocused();
-  await expect(page.getByRole("log").locator("article")).toHaveCount(0);
-  await page.getByRole("button", { name: /^History/ }).click();
-  await page
+  await page.getByRole("button", { name: "Open the case assistant" }).click();
+  await expect(replies).toHaveCount(2);
+  await dock.getByRole("button", { name: "New conversation" }).click();
+  await expect(composer).toBeFocused();
+  await expect(replies).toHaveCount(0);
+  await dock.getByRole("button", { name: "Earlier conversations" }).click();
+  await dock
     .getByRole("button", { name: "What does the statement say", exact: false })
     .click();
-  await expect(page.getByRole("log").locator("article")).toHaveCount(4);
+  await expect(replies).toHaveCount(2);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(
@@ -120,6 +99,8 @@ test("case assistant and AI-only courtroom practice with coaching and debrief", 
     ),
   ).toBe(true);
   await page.setViewportSize({ width: 1440, height: 1100 });
+  await dock.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(dock).toHaveCount(0);
   await page
     .getByRole("tab", { name: "Courtroom practice", exact: true })
     .click();

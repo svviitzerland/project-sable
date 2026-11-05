@@ -23,7 +23,8 @@ export async function register(page: Page) {
 export async function createCase(page: Page, title: string) {
   await page.getByRole("button", { name: "New case", exact: true }).click();
   await page.getByRole("button", { name: /Start a blank case/ }).click();
-  await page.getByLabel("Case title").fill(title);
+  // Scope to the modal: the Settings tab behind it has its own "Case title" field.
+  await page.getByRole("dialog").getByLabel("Case title").fill(title);
   await page.getByRole("button", { name: "Create case", exact: true }).click();
   await expect(
     page.getByRole("heading", { level: 1, name: title, exact: true }),

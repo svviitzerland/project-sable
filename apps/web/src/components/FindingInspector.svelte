@@ -47,6 +47,7 @@
   let note = $state(untrack(() => finding.note));
   let noteOpen = $state(untrack(() => !!finding.note));
   let full = $state(false);
+  let copyError = $state("");
 
   let citation = $derived(finding.citations[citationIndex]);
   let quoteAt = $derived(
@@ -168,8 +169,10 @@
           try {
             await navigator.clipboard.writeText(finding.question);
             copied = true;
+            copyError = "";
           } catch {
             copied = false;
+            copyError = t("finding.clipboardError");
           }
         }}
       >
@@ -181,6 +184,7 @@
           {t("finding.askJude")}
         </button>{/if}
     </div>
+    {#if copyError}<p role="alert" class={styles.alert}>{copyError}</p>{/if}
   </div>
 
   <details class={styles.more}>

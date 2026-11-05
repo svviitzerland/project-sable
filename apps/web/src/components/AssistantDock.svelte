@@ -339,7 +339,12 @@
     {/if}
 
     <div class={styles.log} bind:this={log.current} aria-live="polite">
-      {#if !messages.length && !pendingText}
+      {#if !loaded && !active && !pendingText}
+        <div class={styles.thinking} role="status">
+          <span></span><span></span><span></span>
+          {t("dock.opening")}
+        </div>
+      {:else if !messages.length && !pendingText}
         <div class={styles.welcome}>
           <h3>
             {hearing && followHearing

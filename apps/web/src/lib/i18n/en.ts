@@ -951,7 +951,7 @@ export const en = {
   // Case tabs redesign
   "tabs.evidence.askHint":
     "Answers quote the case file. Open any source to read it in full.",
-  "tabs.evidence.loadFailed": "The evidence map could not be loaded.",
+  "tabs.evidence.loadFailed": "Evidence connections could not be loaded.",
   "tabs.evidence.view": "Evidence view",
   "tabs.evidence.linkHeading": "Your own link",
   "tabs.library.import": "Import transcript",

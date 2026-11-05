@@ -50,15 +50,15 @@ test("case setup, case search and mobile conversations keep the next action clea
   await expect(page.getByRole("tabpanel")).not.toContainText(
     /Bedrock|backend|configured|deployment|Connections/,
   );
-  await page.getByRole("tab", { name: "Case assistant", exact: true }).click();
-  await page
-    .getByLabel("Ask about this case", { exact: true })
-    .fill("What time did the witness arrive?");
-  await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.getByRole("log").locator("article")).toHaveCount(2);
-  await expect(page.getByRole("tabpanel")).not.toContainText(
-    /Bedrock|backend|configured|deployment/,
-  );
+  // The case assistant floats over every case screen.
+  await page.getByRole("button", { name: "Open the case assistant" }).click();
+  const dock = page.getByRole("region", { name: "Jude assistant" });
+  const message = dock.getByLabel("Message to the assistant", { exact: true });
+  await expect(message).toBeFocused();
+  await message.fill("What time did the witness arrive?");
+  await dock.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(dock.locator("article")).toHaveCount(1);
+  await expect(dock).not.toContainText(/Bedrock|backend|configured|deployment/);
   await page.route(
     "**/api/v1/cases/*/dialogues/*/messages",
     (route) =>
@@ -71,32 +71,30 @@ test("case setup, case search and mobile conversations keep the next action clea
       }),
     { times: 1 },
   );
-  await page
-    .getByLabel("Ask about this case", { exact: true })
-    .fill("Which account should I compare?");
-  await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.getByRole("alert")).toContainText(
+  await message.fill("Which account should I compare?");
+  await dock.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(dock.getByRole("alert")).toContainText(
     "Reference: support-example",
   );
-  await expect(page.getByRole("alert")).not.toContainText(
+  await expect(dock.getByRole("alert")).not.toContainText(
     /Bedrock|HTTP|instance role/,
   );
-  await expect(
-    page.getByLabel("Ask about this case", { exact: true }),
-  ).toHaveValue("Which account should I compare?");
+  await expect(message).toHaveValue("Which account should I compare?");
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(
-    page.getByRole("complementary", { name: "Saved conversations" }),
-  ).toBeHidden();
-  const history = page.getByRole("button", { name: /^History/ });
+  const history = dock.getByRole("button", { name: "Earlier conversations" });
+  await expect(history).toHaveAttribute("aria-expanded", "false");
   await history.click();
+  await expect(history).toHaveAttribute("aria-expanded", "true");
   await expect(
-    page.getByRole("complementary", { name: "Saved conversations" }),
+    dock.getByRole("button", {
+      name: "What time did the witness arrive?",
+      exact: true,
+    }),
   ).toBeVisible();
   await history.click();
-  await page
-    .getByLabel("Ask about this case", { exact: true })
-    .scrollIntoViewIfNeeded();
+  await expect(history).toHaveAttribute("aria-expanded", "false");
+  await message.scrollIntoViewIfNeeded();
+  await expect(message).toBeInViewport();
   await page.screenshot({ path: info.outputPath("assistant-mobile.png") });
   expect(
     await page.evaluate(

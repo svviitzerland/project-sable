@@ -152,7 +152,13 @@
       if (!term) return true;
       const a = nodes.get(e.source_id),
         b = nodes.get(e.target_id);
-      return [e.explanation, a?.text, b?.text, a?.label, b?.label]
+      return [
+        e.explanation,
+        e.source_quote || a?.text,
+        e.target_quote || b?.text,
+        title(a),
+        title(b),
+      ]
         .join(" ")
         .toLocaleLowerCase()
         .includes(term);

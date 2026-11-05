@@ -957,7 +957,7 @@ export const id: Messages = {
   // Case tabs redesign
   "tabs.evidence.askHint":
     "Jawaban mengutip berkas perkara. Buka sumbernya untuk membaca teks lengkap.",
-  "tabs.evidence.loadFailed": "Peta bukti belum dapat dimuat.",
+  "tabs.evidence.loadFailed": "Keterkaitan bukti tidak dapat dimuat.",
   "tabs.evidence.view": "Tampilan bukti",
   "tabs.evidence.linkHeading": "Tautan Anda sendiri",
   "tabs.library.import": "Impor transkrip",

@@ -45,16 +45,24 @@ test("skeletons cover delayed workspace, sources, hearings and replies without f
   ).toBeVisible();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await register(page);
-  const releaseGraph = await hold(page, "**/api/v1/cases/*/graph");
   await page.getByRole("button", { name: "Open the demo case" }).click();
   await expect(
-    page.getByRole("status", { name: "Loading evidence map…" }),
+    page.getByRole("tab", { name: "Hearings", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  const releaseGraph = await hold(page, "**/api/v1/cases/*/graph");
+  await page.getByRole("tab", { name: "Evidence", exact: true }).click();
+  await expect(
+    page.getByRole("status", { name: "Loading evidence…" }),
   ).toBeVisible();
+  await expect(page.getByText("No connections yet.")).toHaveCount(0);
   await page.screenshot({ path: info.outputPath("evidence-loading.png") });
   await releaseGraph();
   await expect(
-    page.getByRole("status", { name: "Loading evidence map…" }),
+    page.getByRole("status", { name: "Loading evidence…" }),
   ).toHaveCount(0);
+  await expect(
+    page.getByRole("group", { name: "Filter connections" }),
+  ).toBeVisible();
 
   const releaseCases = await hold(page, "**/api/v1/cases");
   await page.reload({ waitUntil: "domcontentloaded" });
@@ -111,37 +119,31 @@ test("skeletons cover delayed workspace, sources, hearings and replies without f
   await releaseHearing();
   await expect(page.getByLabel("Imported hearing title")).toBeVisible();
 
-  const releaseConversation = await hold(
-    page,
-    "**/api/v1/cases/*/assistant/context",
-  );
-  await page.getByRole("tab", { name: "Case assistant", exact: true }).click();
-  await expect(
-    page.getByRole("status", { name: "Opening this case’s conversations…" }),
-  ).toBeVisible();
-  await page.screenshot({ path: info.outputPath("conversation-loading.png") });
-  await releaseConversation();
-  await page
-    .getByLabel("Ask about this case", { exact: true })
+  // The assistant floats over every case screen; its reply shows a skeleton, not an empty log.
+  await page.getByRole("button", { name: "Open the case assistant" }).click();
+  const dock = page.getByRole("region", { name: "Jude assistant" });
+  await expect(dock).toBeVisible();
+  await dock
+    .getByLabel("Message to the assistant", { exact: true })
     .fill("What does the witness say?");
   const releaseReply = await hold(
     page,
     "**/api/v1/cases/*/dialogues/*/messages",
   );
-  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await dock.getByRole("button", { name: "Send", exact: true }).click();
+  const skeleton = dock
+    .getByRole("status")
+    .filter({ hasText: "Reading the case…" });
+  await expect(skeleton).toBeVisible();
+  await expect(dock.getByText("What does the witness say?")).toBeVisible();
   await expect(
-    page.getByRole("status", { name: "Reading the case…" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", {
-      name: "Start with what you need to understand.",
-    }),
+    dock.getByRole("heading", { name: "What do you need to understand?" }),
   ).toHaveCount(0);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  const skeleton = page.getByRole("status", { name: "Reading the case…" });
   expect(
     await skeleton
-      .locator('[aria-hidden="true"]')
+      .locator("span")
+      .first()
       .evaluate((el) => getComputedStyle(el).animationName),
   ).toBe("none");
   await page.setViewportSize({ width: 390, height: 844 });
@@ -152,7 +154,7 @@ test("skeletons cover delayed workspace, sources, hearings and replies without f
     ),
   ).toBe(true);
   await releaseReply();
-  await expect(page.getByRole("log").locator("article")).toHaveCount(2);
+  await expect(dock.locator("article")).toHaveCount(1);
   await expect(skeleton).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -171,15 +173,24 @@ test("failed evidence loads replace skeletons with a working retry", async ({
     { times: 1 },
   );
   await page.getByRole("button", { name: "Open the demo case" }).click();
+  await page.getByRole("tab", { name: "Evidence", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText(
     "Evidence temporarily unavailable.",
   );
   await expect(
-    page.getByRole("status", { name: "Loading evidence map…" }),
+    page.getByRole("status", { name: "Loading evidence…" }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: "Retry loading evidence" }).click();
   await expect(
-    page.getByRole("button", { name: "Evidence map", exact: true }),
+    page.getByRole("heading", {
+      name: "Evidence connections could not be loaded.",
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole("tabpanel")
+    .getByRole("button", { name: "Try again", exact: true })
+    .click();
+  await expect(
+    page.getByRole("group", { name: "Filter connections" }),
   ).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
