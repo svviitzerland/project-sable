@@ -25,7 +25,6 @@
   import HearingLive from "./routes/HearingLive.svelte";
   import HearingReview from "./routes/HearingReview.svelte";
   import Hearings from "./routes/Hearings.svelte";
-  import Landing from "./routes/Landing.svelte";
   import Moodboard from "./routes/Moodboard.svelte";
 
   startEngine();
@@ -58,6 +57,9 @@
     root.lang = prefs.lang;
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "night" ? "#09110d" : "#183b2d");
   });
+
+  // The landing is its own world (smooth scrolling, its scenes and textures): loaded only when visited.
+  const landing = () => import("./routes/Landing.svelte");
 
   let caseId = $derived(route.parts[0] === "case" && caseById(route.parts[1]) ? route.parts[1] : null);
   let section = $derived(route.parts[2] ?? "overview");
@@ -157,7 +159,9 @@
 {#if route.parts[0] === "canvas"}
   <Canvas />
 {:else if route.parts.length === 0}
-  <Landing />
+  {#await landing() then { default: Landing }}
+    <Landing />
+  {/await}
   <Toasts />
   {#if !embedded}<MockToolbar {phone} offsetRight={0} />{/if}
 {:else}
