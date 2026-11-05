@@ -1,12 +1,11 @@
 <script lang="ts">
   import { ArrowRight, Check, Menu as MenuIcon, RotateCcw, X } from "@lucide/svelte";
+  import Lenis from "lenis";
+  import "lenis/dist/lenis.css";
   import { onMount, tick } from "svelte";
-  import caseFiles from "../../../../apps/web/static/images/jude-case-files.webp";
-  import ivoryPaper from "../../../../apps/web/static/images/ivory-paper.webp";
-  import cloth from "../assets/case-cloth.webp";
   import Avatar from "../components/Avatar.svelte";
   import KindIcon from "../components/KindIcon.svelte";
-  import { samplePage } from "../lib/data";
+  import { cases, samplePage } from "../lib/data";
   import { t, type Key } from "../lib/i18n";
   import { prefs } from "../lib/prefs.svelte";
   import { go, href } from "../lib/router.svelte";
@@ -30,6 +29,10 @@
   let hidden = $state(false);
   let scrolly = $state(false);
   let pinned = $state(false);
+  // Narrow but tall enough: only the showpiece pins, header above and model below in one screen.
+  let showPin = $state(false);
+  // Smooths wheel and trackpad scrolling so scrubbed scenes glide between steps; touch stays native.
+  let lenis: Lenis | null = null;
 
   async function replay() {
     if (!motionOk || !sheet) return;
@@ -42,7 +45,8 @@
   function scrollToId(id: string) {
     menuOpen = false;
     const el = document.getElementById(id);
-    el?.scrollIntoView({ behavior: motionOk ? "smooth" : "auto", block: "start" });
+    if (el && lenis) lenis.scrollTo(el);
+    else el?.scrollIntoView({ behavior: motionOk ? "smooth" : "auto", block: "start" });
     el?.focus({ preventScroll: true });
   }
 
@@ -59,6 +63,7 @@
    * so measuring them never feeds back into their own motion.
    */
   const PIN_QUERY = "(min-width: 900px) and (min-height: 700px)";
+  const SHOW_PIN_QUERY = "(max-width: 899px) and (min-height: 560px)";
   const tracks: Record<string, [name: string, from: number, to: number][]> = {
     hero: [["hv", 0, 1]],
     gather: [
@@ -100,12 +105,26 @@
       ["cs", 0.1, 0.6],
       ["ck", 0.55, 0.85],
     ],
+    // The showpiece: the file turns into view, opens, comes apart, is threaded, then closes again.
+    show: [
+      ["si", -0.3, 0.08],
+      ["op", 0.08, 0.24],
+      ["ex", 0.26, 0.5],
+      ["tg", 0.42, 0.52],
+      ["th", 0.46, 0.6],
+      ["fs", 0.5, 0.58],
+      ["rex", 0.7, 0.84],
+      ["cl", 0.8, 0.92],
+      ["ld", 0.86, 0.98],
+      ["orb", -0.3, 1],
+    ],
   };
   const unit = (x: number) => Math.min(1, Math.max(0, x));
   const easeOut = (x: number) => 1 - (1 - x) ** 3;
 
   function scenes(el: HTMLElement) {
     const pinQuery = matchMedia(PIN_QUERY);
+    const showQuery = matchMedia(SHOW_PIN_QUERY);
     const stages = [...el.querySelectorAll<HTMLElement>("[data-scene]")];
     const risers = [...el.querySelectorAll<HTMLElement>("[data-rise]")];
     const last = new Map<string, string>();
@@ -128,7 +147,8 @@
         let at: number;
         if (name === "hero") at = unit(-box.top / box.height);
         else if (name === "closing") at = unit((vh - box.top) / (vh * 0.8));
-        else if (pinned) at = -box.top / Math.max(1, box.height - vh);
+        else if (pinned || (name === "show" && showPin)) at = -box.top / Math.max(1, box.height - vh);
+        else if (name === "show") at = (vh * 0.75 - box.top) / box.height;
         else return;
         for (const [track, from, to] of tracks[name] ?? []) write(s, `${i}${track}`, track, easeOut(unit((at - from) / (to - from))));
       });
@@ -139,19 +159,28 @@
     };
     const onPinChange = () => {
       pinned = pinQuery.matches;
+      showPin = showQuery.matches;
       void tick().then(update);
     };
     pinned = pinQuery.matches;
+    showPin = showQuery.matches;
     scrolly = true;
     void tick().then(update);
     addEventListener("scroll", request, { passive: true });
     addEventListener("resize", request);
     pinQuery.addEventListener("change", onPinChange);
+    showQuery.addEventListener("change", onPinChange);
+    // Smoothed scrolling sets the scroll position and the scenes in the same frame.
+    lenis = new Lenis({ autoRaf: true, lerp: 0.11 });
+    lenis.on("scroll", update);
     return () => {
       cancelAnimationFrame(frame);
       removeEventListener("scroll", request);
       removeEventListener("resize", request);
       pinQuery.removeEventListener("change", onPinChange);
+      showQuery.removeEventListener("change", onPinChange);
+      lenis?.destroy();
+      lenis = null;
     };
   }
 
@@ -190,6 +219,10 @@
     { who: "role.prosecutor", speaker: "pu", text: "lp.t3", matches: false },
   ];
   let raised = $derived(around(t("lp.t4"), t("lp.t4Mark")));
+  const demoCase = cases.find((c) => c.id === "c1");
+  const citedItem = samplePage.items.find((item) => item.mark);
+  const bapCited = citedItem ? around(citedItem.a, citedItem.mark) : null;
+  let logCited = $derived(around(t("lp.g.log"), t("lp.g.logMark")));
 
   const slips = [
     { id: "bap", meta: "lp.g.bapMeta", text: "lp.g.bap", mark: "lp.g.bapMark", rel: "conflicts", reviewed: true },
@@ -208,7 +241,7 @@
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && menuOpen && closeMenu()} />
 
-<div class="lp" bind:this={root} class:scrolly class:pinned style:--lp-case-files="url({caseFiles})" style:--lp-ivory="url({ivoryPaper})" style:--lp-cloth="url({cloth})">
+<div class="lp" bind:this={root} class:scrolly class:pinned class:show-pin={showPin}>
   <button class="skip" onclick={() => scrollToId("lp-main")}>{t("lp.skip")}</button>
 
   <header class="cover" data-scene="hero">
@@ -324,6 +357,79 @@
             {/each}
           </div>
           <p class="legend">{t("lp.g.legend")} · {t("lp.sample")}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="showcase" aria-labelledby="lp-show-title">
+      <div class="scene show-scene" data-scene="show">
+        <div class="stage show-stage">
+          <header class="show-head">
+            <h2 class="headline" id="lp-show-title">{t("lp.show.title1")}<br />{t("lp.show.title2")}</h2>
+            <p>{t("lp.show.lead")}</p>
+            <p class="show-cue">{t("lp.show.cue")}</p>
+            <p class="show-sample">{t("lp.sample")}</p>
+          </header>
+          <ul class="show-legend" aria-hidden="true">
+            <li style:--k="0"><KindIcon kind="document" size={13} />{t("lp.g.bapMeta")}</li>
+            <li style:--k="1"><KindIcon kind="hearing" size={13} />{t("lp.g.statementMeta")}</li>
+            <li style:--k="2"><KindIcon kind="document" size={13} />{t("lp.g.logMeta")}</li>
+            <li style:--k="3"><KindIcon kind="legal" size={13} />{t("lp.g.lawMeta")}</li>
+          </ul>
+          <p class="sr-only">{t("lp.show.alt")}</p>
+          <div class="model-wrap" aria-hidden="true">
+            <div class="model">
+              <div class="m-shadow"></div>
+              <div class="leaf cover-back"></div>
+              <div class="leaf sheet-page law-page" style:--i="1">
+                <p class="mp-head">{t("lp.v2.d4")}</p>
+                <p class="mp-typed">{t("lp.g.law")}</p>
+                <span class="mp-lines"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+                <span class="m-tag"><KindIcon kind="legal" size={13} />{t("lp.g.lawMeta")}</span>
+              </div>
+              <div class="leaf sheet-page log-page" style:--i="2">
+                <p class="mp-head">{t("lp.v2.d2")}</p>
+                <span class="mp-lines"><i></i><i></i><i></i></span>
+                <p class="mp-cited mp-typed">{logCited[0]}<mark>{logCited[1]}</mark>{logCited[2]}</p>
+                <span class="m-pin"></span>
+                <span class="m-tag"><KindIcon kind="document" size={13} />{t("lp.g.logMeta")}</span>
+              </div>
+              <div class="leaf sheet-page talk-page" style:--i="3">
+                <p class="mp-meta"><KindIcon kind="hearing" size={12} />{t("lp.g.statementMeta")}</p>
+                <span class="mp-wave">{#each [3, 6, 4, 9, 5, 8, 3, 7, 10, 6, 4, 8, 5, 9, 3, 6, 8, 4, 7, 5, 9, 4, 6, 3] as h, i (i)}<i style:--h={h}></i>{/each}</span>
+                <p class="mp-quiet"><Avatar id="hk" size="xxs" />{t("lp.t1")}</p>
+                <p class="mp-cited mp-spoken"><Avatar id="rina" size="xxs" />{raised[0]}<mark>{raised[1]}</mark>{raised[2]}</p>
+                <span class="m-pin"></span>
+                <span class="m-tag"><KindIcon kind="hearing" size={13} />{t("lp.g.statementMeta")}</span>
+              </div>
+              <div class="leaf sheet-page bap-page" style:--i="4">
+                <p class="mp-folio">{samplePage.folio}</p>
+                {#each samplePage.heading as line (line)}<p class="mp-heading">{line}</p>{/each}
+                <span class="mp-lines"><i></i><i></i><i></i></span>
+                {#if bapCited}
+                  <p class="mp-cited mp-typed"><u>{samplePage.labels.a}:</u> {bapCited[0]}<mark>{bapCited[1]}</mark>{bapCited[2]}</p>
+                {/if}
+                <span class="m-pin"></span>
+                <span class="m-tag"><KindIcon kind="document" size={13} />{t("lp.g.bapMeta")}</span>
+              </div>
+              <div class="leaf cover-front">
+                <div class="face face-out">
+                  <div class="file-label paper">
+                    <span class="file-kind">{t("lp.show.file")}</span>
+                    <span class="file-title">{demoCase?.title}</span>
+                    <span class="file-ref tabular">{demoCase?.reference}</span>
+                  </div>
+                </div>
+                <div class="face face-in"></div>
+              </div>
+              <div class="m-thread"></div>
+              <div class="leaf m-slip paper">
+                <span class="m-pin"></span>
+                <span class="pill small">{t("status.potential_inconsistency")}</span>
+                <p>{t("lp.v3.title")}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -529,6 +635,11 @@
 </div>
 
 <style>
+  /*
+   * Images (cloth, paper, the case-file photograph, and gradients) never go through var(), not even
+   * a colour in the same shorthand: an image behind var() is resolved again whenever the element's
+   * style is, and the scroll scenes restyle their surfaces every frame, re-rastering them each time.
+   */
   .lp {
     --lp-bg: #faf7f0;
     --lp-ink: #14281f;
@@ -582,7 +693,7 @@
   }
   .paper {
     background-color: var(--lp-paper);
-    background-image: var(--lp-ivory);
+    background-image: url("../../../../apps/web/static/images/ivory-paper.webp");
     background-size: 600px 600px;
     color: #111c16;
   }
@@ -609,7 +720,11 @@
     display: flex;
     flex-direction: column;
     border-radius: 28px 28px 0 0;
-    background: var(--lp-forest-deep) var(--lp-case-files) center bottom / cover no-repeat;
+    background-color: var(--lp-forest-deep);
+    background-image: url("../../../../apps/web/static/images/jude-case-files.webp");
+    background-position: center bottom;
+    background-size: cover;
+    background-repeat: no-repeat;
     color: var(--lp-cream);
     padding: 0 max(5%, 28px);
     overflow: hidden;
@@ -816,7 +931,8 @@
     font-family: var(--lp-doc);
   }
   .hl {
-    background: linear-gradient(var(--lp-amber-wash), var(--lp-amber-wash)) no-repeat 0 88% / 100% 0.55em;
+    /* --lp-amber-wash, written out: a gradient is an image, so no var() (see the note at the top). */
+    background: linear-gradient(rgb(233 191 124 / 0.42), rgb(233 191 124 / 0.42)) no-repeat 0 88% / 100% 0.55em;
     padding: 0 2px;
   }
   .source {
@@ -1054,12 +1170,14 @@
     padding: 1.15cqi 1.35cqi;
     border-radius: 6px;
     background-color: var(--lp-paper);
-    background-image: var(--lp-ivory);
+    background-image: url("../../../../apps/web/static/images/ivory-paper.webp");
     background-size: 600px 600px;
     box-shadow:
       0 1px 0 rgb(17 28 22 / 0.06),
       0 10px 24px rgb(20 40 30 / 0.1);
     transform: rotate(var(--fr, 0deg));
+    /* A transparent edge lets the browser smooth the outline of a turned slip. */
+    outline: 1px solid transparent;
   }
   .slip-meta {
     display: flex;
@@ -1081,8 +1199,8 @@
   .slip mark,
   .t-text mark,
   .page-sheet mark {
-    /* A gradient, so a scene can lay the mark across the phrase. */
-    background: linear-gradient(var(--lp-amber-wash), var(--lp-amber-wash)) no-repeat 0 0 / 100% 100%;
+    /* A gradient, so a scene can lay the mark across the phrase; --lp-amber-wash, written out. */
+    background: linear-gradient(rgb(233 191 124 / 0.42), rgb(233 191 124 / 0.42)) no-repeat 0 0 / 100% 100%;
     color: inherit;
     padding: 0 2px;
     border-radius: 2px;
@@ -1191,7 +1309,9 @@
     padding: 56px clamp(20px, 4vw, 64px) 0;
     border-radius: 22px;
     overflow: hidden;
-    background: var(--lp-forest-deep) var(--lp-cloth) repeat;
+    background-color: var(--lp-forest-deep);
+    background-image: url("../assets/case-cloth.webp");
+    background-repeat: repeat;
     background-size: 1300px auto;
   }
   .vignette {
@@ -1526,7 +1646,9 @@
     padding: 0 max(5%, 28px);
     border-radius: 28px;
     overflow: hidden;
-    background: var(--lp-forest-deep) var(--lp-cloth) repeat;
+    background-color: var(--lp-forest-deep);
+    background-image: url("../assets/case-cloth.webp");
+    background-repeat: repeat;
     background-size: 1300px auto;
     color: var(--lp-cream);
   }
@@ -1715,7 +1837,9 @@
     display: block;
     grid-area: 1 / 2;
     border-radius: 22px;
-    background: var(--lp-forest-deep) var(--lp-cloth) repeat;
+    background-color: var(--lp-forest-deep);
+    background-image: url("../assets/case-cloth.webp");
+    background-repeat: repeat;
     background-size: 1300px auto;
   }
   .pinned .steps {
@@ -1837,6 +1961,369 @@
     transform-origin: left center;
   }
 
+  /*
+   * The showpiece: the case file as a 3D object on a cloth stage. It turns into view, the cover
+   * swings open, the documents lift apart with standing labels, one amber thread runs through the
+   * cited line of each and up to the finding, then everything settles back with the finding on the
+   * closed cover. Static (no script, reduced motion): the opened, threaded view.
+   */
+  .showcase {
+    padding: 0 14px;
+  }
+  .show-scene {
+    --open: calc(var(--op, 1) * (1 - var(--cl, 0)));
+    border-radius: 28px;
+    background-color: var(--lp-forest-deep);
+    background-image: url("../assets/case-cloth.webp");
+    background-repeat: repeat;
+    background-size: 1300px auto;
+    color: var(--lp-cream);
+    overflow: clip;
+  }
+  .show-stage {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: center;
+    gap: 24px clamp(24px, 4vw, 64px);
+    padding: clamp(56px, 8vw, 96px) max(5%, 28px);
+    background: radial-gradient(ellipse 55% 60% at 70% 55%, rgb(246 240 228 / 0.09), transparent 70%);
+  }
+  .show-head {
+    display: grid;
+    gap: 18px;
+    max-width: 30em;
+  }
+  .show-head .headline {
+    font-size: clamp(40px, 3.6vw, 56px);
+    color: var(--lp-cream);
+  }
+  .show-head p {
+    font-size: 17px;
+    color: rgb(246 240 228 / 0.82);
+  }
+  .show-cue {
+    display: none;
+  }
+  .scrolly .show-cue {
+    display: block;
+    font-size: 13.5px !important;
+    font-weight: 600;
+    color: var(--lp-accent) !important;
+    opacity: calc(1 - var(--op, 1));
+  }
+  .show-head .show-sample {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: rgb(246 240 228 / 0.6);
+  }
+  .model-wrap {
+    --u: clamp(210px, 18vw, 280px);
+    position: relative;
+    display: grid;
+    place-items: center;
+    height: calc(var(--u) * 2.2);
+    perspective: 1700px;
+    perspective-origin: 50% 15%;
+  }
+  .model {
+    --rx: calc(18 + 40 * var(--si, 1));
+    --rz: calc(-10 - 24 * var(--si, 1) + 8 * var(--orb, 1));
+    --exn: calc(var(--ex, 1) * (1 - var(--rex, 0)));
+    --gap: calc(4px + (var(--u) * 0.25 - 4px) * var(--exn));
+    position: relative;
+    width: var(--u);
+    height: calc(var(--u) * 1.3);
+    transform-style: preserve-3d;
+    /* Slides right as the cover opens, so the open spread stays clear of the text. */
+    --mx: calc(var(--u) * (0.12 + 0.3 * var(--open)));
+    --my: calc(var(--u) * 0.36 + (1 - var(--si, 1)) * 110px);
+    transform: translate(var(--mx), var(--my)) rotateX(calc(var(--rx) * 1deg)) rotateZ(calc(var(--rz) * 1deg));
+  }
+  .leaf {
+    position: absolute;
+    inset: 0;
+    border-radius: 3px;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    outline: 1px solid transparent;
+  }
+  .m-shadow {
+    position: absolute;
+    inset: calc(var(--u) * -0.16);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgb(2 10 6 / 0.6), transparent);
+    transform: translateZ(-2px) scale(calc(1 + 0.3 * var(--exn)));
+    opacity: calc(0.75 - 0.25 * var(--exn));
+  }
+  .cover-back,
+  .cover-front {
+    inset: calc(var(--u) * -0.05);
+    border-radius: 6px;
+  }
+  .cover-back,
+  .face-out {
+    background-color: var(--lp-forest);
+    background-image: url("../assets/case-cloth.webp");
+    background-repeat: repeat;
+    background-size: 900px auto;
+    box-shadow: inset 0 0 0 1px rgb(246 240 228 / 0.1);
+  }
+  .cover-back {
+    transform: translateZ(-1px);
+  }
+  .cover-front {
+    transform-origin: 0 50%;
+    transform: translateZ(22px) rotateY(calc(var(--open) * -178deg));
+  }
+  .face {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    backface-visibility: hidden;
+  }
+  .face-in {
+    transform: rotateY(180deg);
+    background-color: #e6dcc6;
+    background-image: url("../../../../apps/web/static/images/ivory-paper.webp");
+    background-size: 600px 600px;
+    box-shadow: inset 0 0 calc(var(--u) * 0.08) rgb(60 45 20 / 0.18);
+  }
+  .file-label {
+    position: absolute;
+    left: 15%;
+    right: 15%;
+    top: 30%;
+    display: grid;
+    gap: calc(var(--u) * 0.02);
+    padding: calc(var(--u) * 0.06) calc(var(--u) * 0.05);
+    border-radius: 3px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgb(3 14 9 / 0.3);
+  }
+  .file-kind {
+    font-family: var(--lp-doc);
+    font-size: calc(var(--u) * 0.03);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--lp-muted);
+  }
+  .file-title {
+    font-family: "Rufina", Georgia, serif;
+    font-size: calc(var(--u) * 0.062);
+    line-height: 1.12;
+    color: var(--lp-forest);
+  }
+  .file-ref {
+    font-size: calc(var(--u) * 0.03);
+    color: var(--lp-muted);
+  }
+  .sheet-page {
+    padding: calc(var(--u) * 0.085) calc(var(--u) * 0.09);
+    background-color: var(--lp-paper);
+    background-image: url("../../../../apps/web/static/images/ivory-paper.webp");
+    background-size: 600px 600px;
+    color: #1d2a22;
+    font-size: calc(var(--u) * 0.036);
+    line-height: 1.5;
+    transform: translateZ(calc(var(--gap) * var(--i)));
+    box-shadow:
+      0 1px 0 rgb(17 28 22 / 0.08),
+      0 calc(var(--u) * 0.03 * var(--exn)) calc(var(--u) * 0.1) rgb(3 14 9 / calc(0.16 + 0.22 * var(--exn)));
+  }
+  .mp-head,
+  .mp-heading {
+    font-family: var(--lp-doc);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: calc(var(--u) * 0.032);
+  }
+  .mp-head {
+    margin-bottom: calc(var(--u) * 0.04);
+  }
+  .mp-heading {
+    text-align: center;
+  }
+  .mp-heading + .mp-heading {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .mp-folio {
+    position: absolute;
+    top: calc(var(--u) * 0.04);
+    right: calc(var(--u) * 0.06);
+    font-family: var(--lp-doc);
+    font-size: calc(var(--u) * 0.028);
+    color: var(--lp-muted);
+  }
+  .mp-typed {
+    font-family: var(--lp-doc);
+    font-size: calc(var(--u) * 0.033);
+  }
+  .mp-lines {
+    display: grid;
+    gap: calc(var(--u) * 0.03);
+    margin: calc(var(--u) * 0.05) 0;
+  }
+  .mp-lines i {
+    height: calc(var(--u) * 0.012);
+    border-radius: 2px;
+    background: rgb(17 28 22 / 0.13);
+  }
+  .mp-lines i:nth-child(3n) {
+    width: 70%;
+  }
+  .mp-lines i:nth-child(3n + 2) {
+    width: 88%;
+  }
+  .mp-cited {
+    position: absolute;
+    left: calc(var(--u) * 0.09);
+    right: calc(var(--u) * 0.26);
+    top: calc(var(--u) * 0.66);
+  }
+  .mp-cited mark {
+    background: var(--lp-amber-wash);
+    color: inherit;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+  .mp-meta,
+  .mp-quiet,
+  .mp-spoken {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .mp-meta {
+    align-items: center;
+    font-weight: 600;
+    font-size: calc(var(--u) * 0.03);
+    color: var(--lp-muted);
+  }
+  .mp-wave {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--u) * 0.008);
+    height: calc(var(--u) * 0.12);
+    margin: calc(var(--u) * 0.04) 0 calc(var(--u) * 0.05);
+  }
+  .mp-wave i {
+    flex: 1;
+    height: calc(var(--h) * 9%);
+    border-radius: 2px;
+    background: rgb(22 56 43 / 0.42);
+  }
+  .mp-quiet {
+    font-size: calc(var(--u) * 0.032);
+    color: #56635a;
+  }
+  .mp-spoken {
+    font-family: "Caslon Display", Georgia, serif;
+    font-size: calc(var(--u) * 0.048);
+    line-height: 1.25;
+    color: var(--lp-ink);
+  }
+  .m-pin {
+    position: absolute;
+    left: calc(var(--u) * 0.762);
+    top: calc(var(--u) * 0.732);
+    width: calc(var(--u) * 0.036);
+    height: calc(var(--u) * 0.036);
+    border-radius: 50%;
+    background: var(--lp-rel-conflicts);
+    box-shadow: 0 0 0 calc(var(--u) * 0.008) rgb(255 253 248 / 0.9);
+  }
+  .m-thread {
+    position: absolute;
+    left: calc(var(--u) * 0.78 - 1px);
+    top: calc(var(--u) * 0.75);
+    width: 2px;
+    height: calc(var(--gap) * 3.6);
+    background: var(--lp-rel-conflicts);
+    transform-origin: 50% 0;
+    transform: translateZ(calc(var(--gap) * 2)) rotateX(90deg) scaleY(calc(var(--th, 1) * (1 - var(--rex, 0))));
+    opacity: calc(var(--th, 1) * (1 - var(--rex, 0)));
+  }
+  .m-slip {
+    inset: auto;
+    left: calc(var(--u) * 0.28);
+    top: calc(var(--u) * 0.67);
+    width: calc(var(--u) * 0.62);
+    display: grid;
+    justify-items: start;
+    gap: calc(var(--u) * 0.03);
+    padding: calc(var(--u) * 0.08) calc(var(--u) * 0.06) calc(var(--u) * 0.06);
+    border-radius: 4px;
+    font-family: "Caslon Display", Georgia, serif;
+    font-size: calc(var(--u) * 0.05);
+    line-height: 1.2;
+    transform: translate(calc(var(--u) * 0.34 * var(--ld, 0)), calc(var(--u) * 0.4 * var(--ld, 0)))
+      translateZ(max(calc(var(--gap) * 5.6), 26px)) rotateZ(calc(-5deg * var(--ld, 0)));
+    opacity: var(--fs, 1);
+    box-shadow: 0 calc(var(--u) * 0.03) calc(var(--u) * 0.08) rgb(3 14 9 / 0.32);
+  }
+  .m-slip .m-pin {
+    left: calc(var(--u) * 0.482);
+    top: calc(var(--u) * 0.062);
+  }
+  .m-slip .pill {
+    font-family: "Manrope", sans-serif;
+  }
+  .m-tag {
+    position: absolute;
+    /* On the left edge, the part of each page the page above leaves in view; it stands over the open cover. */
+    right: calc(100% + var(--u) * 0.03);
+    top: calc(var(--u) * 0.98);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 30px;
+    background: rgb(250 247 240 / 0.95);
+    color: var(--lp-ink);
+    font: 600 12.5px / 1.3 "Manrope", sans-serif;
+    white-space: nowrap;
+    box-shadow: 0 6px 18px rgb(3 14 9 / 0.28);
+    transform-origin: 100% 100%;
+    transform: rotateZ(calc(var(--rz) * -1deg)) rotateX(calc(var(--rx) * -1deg));
+    opacity: calc(var(--tg, 1) * (1 - var(--rex, 0)));
+  }
+  .show-legend {
+    display: none;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    justify-items: start;
+    gap: 8px;
+  }
+  .show-legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 30px;
+    background: rgb(250 247 240 / 0.95);
+    color: var(--lp-ink);
+    font: 600 12.5px / 1.3 "Manrope", sans-serif;
+    box-shadow: 0 6px 18px rgb(3 14 9 / 0.28);
+  }
+  .scrolly .show-legend li {
+    /* One after another as the pages part, all together as they settle. */
+    opacity: calc(clamp(0, var(--tg, 1) * 1.6 - var(--k) * 0.2, 1) * (1 - var(--rex, 0)));
+    translate: 0 calc((1 - clamp(0, var(--tg, 1) * 1.6 - var(--k) * 0.2, 1)) * 8px);
+  }
+  .pinned .show-scene {
+    height: 340vh;
+  }
+  .pinned .show-stage {
+    padding-block: 0;
+  }
+  .pinned .model {
+    will-change: transform;
+  }
+
   /* Narrow or short screens: no pinning; each piece moves with its own pass through the view. */
   .scrolly:not(.pinned) .slip[data-rise] {
     opacity: calc(0.15 + 0.85 * var(--p, 1));
@@ -1940,6 +2427,66 @@
     }
   }
   @media (max-width: 899px) {
+    .show-stage {
+      grid-template-columns: 1fr;
+      padding: 56px 24px 64px;
+    }
+    .model-wrap {
+      --u: min(50vw, 40vh, 240px);
+      height: calc(var(--u) * 2.4);
+    }
+    /* Too narrow for labels beside the pages: the sources are listed above the file instead. */
+    .m-tag {
+      display: none;
+    }
+    .show-legend {
+      display: grid;
+    }
+    .model {
+      --mx: calc(var(--u) * 0.08 * var(--open));
+      --my: calc(var(--u) * 0.42 + (1 - var(--si, 1)) * 80px);
+    }
+    /* The finding is set down on the closed cover, inside the frame. */
+    .m-slip {
+      translate: calc(var(--u) * -0.3 * var(--ld, 0)) calc(var(--u) * 0.06 * var(--ld, 0));
+    }
+    /* Pinned on a phone: the copy yields to the open file and returns when it closes. */
+    .show-pin .show-scene {
+      height: 300svh;
+    }
+    .show-pin .show-stage {
+      position: sticky;
+      top: 0;
+      height: 100svh;
+      grid-template-rows: auto minmax(0, 1fr);
+      align-items: start;
+      gap: 12px;
+      padding: 44px 22px 20px;
+    }
+    .show-pin .show-head,
+    .show-pin .show-legend {
+      grid-area: 1 / 1;
+    }
+    .show-pin .show-head > :not(.show-sample) {
+      opacity: calc(1 - var(--open));
+      translate: 0 calc(var(--open) * -18px);
+    }
+    .show-pin .show-sample {
+      position: absolute;
+      left: 22px;
+      bottom: 20px;
+    }
+    .show-pin .model-wrap {
+      --u: min(47vw, 30svh, 280px);
+      grid-area: 2 / 1;
+      align-self: stretch;
+      height: auto;
+      min-height: 0;
+    }
+    .show-pin .model {
+      --my: calc(var(--u) * -0.06 + (1 - var(--si, 1)) * 80px);
+      will-change: transform;
+    }
     .desk {
       aspect-ratio: auto;
       display: grid;

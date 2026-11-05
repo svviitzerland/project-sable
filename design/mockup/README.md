@@ -14,7 +14,7 @@ pnpm install
 pnpm dev          # http://localhost:5173, also reachable from phones on the same network
 ```
 
-`pnpm build` writes a static site to `dist/` (relative paths, hash routing, so any static server or sub-path works) and `pnpm preview` serves it on port 4173. `pnpm check` runs svelte-check. Fonts come from `apps/web/static/fonts`, except Courier Prime (`@fontsource/courier-prime`), which sets written records; the landing page also uses the case-file photograph and ivory paper texture from `apps/web/static/images`, plus a cloth tile cut from that photograph (`src/assets/case-cloth.webp`, origin in its sidecar).
+`pnpm build` writes a static site to `dist/` (relative paths, hash routing, so any static server or sub-path works) and `pnpm preview` serves it on port 4173. `pnpm check` runs svelte-check. Fonts come from `apps/web/static/fonts`, except Courier Prime (`@fontsource/courier-prime`), which sets written records; the landing page also uses the case-file photograph and ivory paper texture from `apps/web/static/images`, plus a cloth tile cut from that photograph (`src/assets/case-cloth.webp`, origin in its sidecar). Lenis (`lenis`) smooths wheel and trackpad scrolling on the landing so its scrubbed scenes glide; touch scrolling stays native.
 
 The visual system is the repository's `DESIGN.md` ("The Editorial Case File"). Design work on the mockup goes through the Impeccable skill (`bunx impeccable install`, see `AGENTS.md`), which reads `PRODUCT.md`, `DESIGN.md` and `.impeccable/`.
 
@@ -22,7 +22,7 @@ The visual system is the repository's `DESIGN.md` ("The Editorial Case File"). D
 
 | Route | Screen |
 |---|---|
-| `#/` | Landing page: the forest case-file cover and its testimony-to-source comparison, then scroll-driven scenes (the sources come out of the file, the steps change on one plate, one line of a hearing comes forward, the exact phrase is marked on its page) and the principles |
+| `#/` | Landing page: the forest case-file cover and its testimony-to-source comparison, then scroll-driven scenes (the sources come out of the file; a 3D case file that opens, comes apart, is threaded from the hearing to the finding and closes again; the steps change on one plate; one line of a hearing comes forward; the exact phrase is marked on its page) and the principles |
 | `#/cases` | Cases |
 | `#/case/c1` | Case overview: live hearing, review queue, next hearing, hearings, evidence, ask |
 | `#/case/c1/hearings` | Hearing library with one "New hearing" entry point (record live, upload audio, import transcript, schedule) |

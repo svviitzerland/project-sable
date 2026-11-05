@@ -627,6 +627,13 @@ const M = {
   "lp.v2.d4": ["Pasal 374 KUHP", "Article 374, Criminal Code"],
   "lp.v2.pages": ["{n} hal.", "{n} pp."],
   "lp.v3.title": ["Jam kedatangan saksi berbeda dengan BAP.", "The witness’s arrival time differs from her statement."],
+  // The showpiece: the case file, opened and threaded.
+  "lp.show.title1": ["Seluruh berkas perkara,", "The whole case file,"],
+  "lp.show.title2": ["dalam satu benang.", "on a single thread."],
+  "lp.show.lead": ["Setiap dokumen tetap utuh di tempatnya. Jude menarik benang dari kalimat di sidang ke baris berkas yang berbeda darinya.", "Every document stays whole, where it was filed. Jude draws the thread from a line spoken in court to the lines in the file that differ from it."],
+  "lp.show.cue": ["Gulir untuk membuka berkas", "Scroll to open the file"],
+  "lp.show.file": ["Berkas perkara", "Case file"],
+  "lp.show.alt": ["Ilustrasi: berkas perkara terbuka, dokumennya terangkat satu per satu dan dihubungkan oleh satu benang ke sebuah temuan, lalu tersusun kembali dengan temuan di sampulnya.", "Illustration: a case file opens, its documents lift apart and are joined by one thread to a finding, then settle back together with the finding on the cover."],
   "lp.v3.checked": ["Sebelum ditampilkan, Jude memeriksa", "Before showing it, Jude checked"],
   "lp.v3.alt": ["Penjelasan lain: saksi mungkin menyebut jam mulai berjaga, bukan jam tiba.", "Another reading: she may mean when her shift began, not when she arrived."],
   "lp.v3.context": ["Konteks yang kurang: catatan pergantian shift sore.", "Missing context: the evening shift handover log."],
