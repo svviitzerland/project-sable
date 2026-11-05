@@ -20,7 +20,7 @@
       ? [
           { key: "overview", icon: kindIcon.overview, label: t("nav.overview"), path: `/case/${caseId}`, badge: "" },
           { key: "hearings", icon: kindIcon.hearing, label: t("nav.hearings"), path: `/case/${caseId}/hearings`, badge: "" },
-          { key: "evidence", icon: kindIcon.document, label: t("nav.evidence"), path: `/case/${caseId}/evidence`, badge: String(docsOf(caseId).length || "") },
+          { key: "documents", icon: kindIcon.document, label: t("nav.documents"), path: `/case/${caseId}/documents`, badge: String(docsOf(caseId).length || "") },
           { key: "findings", icon: kindIcon.finding, label: t("nav.findings"), path: `/case/${caseId}/findings`, badge: toReview ? String(toReview) : "" },
           { key: "connections", icon: kindIcon.connection, label: t("nav.connections"), path: `/case/${caseId}/connections`, badge: "" },
         ]

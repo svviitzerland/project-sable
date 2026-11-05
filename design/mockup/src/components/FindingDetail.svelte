@@ -119,7 +119,7 @@
           {/if}
           <p class="quote doc-text">“<Quote text={p.text} mark={source.match} />”</p>
           <div class="side-actions">
-            <button class="link-btn" onclick={() => { ui.inspector = null; go(`/case/${h!.caseId}/evidence/doc/${d!.id}?p=${p!.id}`); }}><KindIcon kind="document" size={13} />{t("fx.openDoc")}</button>
+            <button class="link-btn" onclick={() => { ui.inspector = null; go(`/case/${h!.caseId}/documents/${d!.id}?p=${p!.id}`); }}><KindIcon kind="document" size={13} />{t("fx.openDoc")}</button>
           </div>
         </div>
       {/if}

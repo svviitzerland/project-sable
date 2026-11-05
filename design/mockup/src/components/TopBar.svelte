@@ -26,7 +26,7 @@
     overview: "nav.overview",
     hearings: "nav.hearings",
     findings: "nav.findings",
-    evidence: "nav.evidence",
+    documents: "nav.documents",
     connections: "nav.connections",
   } as const;
 
@@ -35,7 +35,7 @@
     if (!record) return out;
     out.push({ label: record.title, path: `/case/${record.id}`, kind: "case" });
     const section = (route.parts[2] ?? "overview") as keyof typeof sectionKey;
-    const sectionKind: Record<string, Kind> = { hearings: "hearing", findings: "finding", evidence: "document", connections: "connection" };
+    const sectionKind: Record<string, Kind> = { hearings: "hearing", findings: "finding", documents: "document", connections: "connection" };
     if (section !== "overview" && sectionKey[section]) {
       out.push({ label: t(sectionKey[section]), path: `/case/${record.id}/${section}`, kind: sectionKind[section] ?? "case" });
     }
@@ -46,8 +46,8 @@
     } else if (section === "findings" && sub) {
       const f = finding(sub);
       if (f) out.push({ label: l(f.title), kind: "finding" });
-    } else if (section === "evidence" && sub === "doc" && route.parts[4]) {
-      const d = doc(route.parts[4]);
+    } else if (section === "documents" && sub) {
+      const d = doc(sub);
       if (d) out.push({ label: d.title, kind: "document" });
     }
     return out;

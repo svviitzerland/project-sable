@@ -126,7 +126,7 @@ export function suggestionsFor(ctx: AssistantContext): Suggestion[] {
       { topic: "questions", text: { id: "Apa yang perlu ditanyakan ulang kepada saksi?", en: "What should be asked again?" } },
     ];
   }
-  if (ctx.kind === "evidence" || ctx.kind === "passage" || ctx.kind === "connection") {
+  if (ctx.kind === "documents" || ctx.kind === "passage" || ctx.kind === "connection") {
     return [
       { topic: "search", text: { id: "Kutipan mana yang menyebut Gerbang Timur?", en: "Which passages mention the East Gate?" } },
       { topic: "times", text: { id: "Susun linimasa malam 14 Maret dari dokumen.", en: "Build a timeline of 14 March from the documents." } },

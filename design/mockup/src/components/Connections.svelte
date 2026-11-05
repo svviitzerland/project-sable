@@ -80,7 +80,7 @@
   }
 
   function openRef(ref: BoardRef) {
-    if (ref.kind === "document") go(`/case/${caseId}/evidence/doc/${ref.id}`);
+    if (ref.kind === "document") go(`/case/${caseId}/documents/${ref.id}`);
     else inspect({ kind: ref.kind, id: ref.id });
   }
 
@@ -104,7 +104,7 @@
       return { kind: t("board.kind.finding"), meta: f ? t(`status.${f.status}`) : "", text: f ? l(f.title) : "" };
     }
     const d = doc(ref.id);
-    return { kind: t("board.kind.document"), meta: d ? `${l(d.kind)} · ${t("ev.pages", { n: d.pages })}` : "", text: d?.title ?? "" };
+    return { kind: t("board.kind.document"), meta: d ? `${l(d.kind)} · ${t("docs.pages", { n: d.pages })}` : "", text: d?.title ?? "" };
   }
 
   function crumb(ref: BoardRef) {
@@ -209,7 +209,7 @@
         {/if}
         <div class="subject-actions">
           <button class="btn btn-sm" onclick={() => openRef(subject!)}><ExternalLink size={14} />{t("attn.open")}</button>
-          <button class="btn btn-sm" onclick={() => openAssistant({ kind: "evidence" }, undefined, [{ kind: subject!.kind, id: subject!.id }])}><MessageSquare size={14} />{t("top.ask")}</button>
+          <button class="btn btn-sm" onclick={() => openAssistant({ kind: "documents" }, undefined, [{ kind: subject!.kind, id: subject!.id }])}><MessageSquare size={14} />{t("top.ask")}</button>
           <a class="btn btn-sm" href={href(`${findingsPath(caseId)}?view=board&start=${keyOf(subject!)}`)}><LayoutDashboard size={14} />{t("fx.board")}</a>
         </div>
       </article>

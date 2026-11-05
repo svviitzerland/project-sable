@@ -66,7 +66,7 @@
     <div class="hero-actions">
       <button class="btn btn-live" onclick={() => (ui.modal = { kind: "newHearing", flow: "live" })}><Mic size={16} />{t("ov.startLive")}</button>
       <button class="btn" onclick={() => (ui.modal = { kind: "newHearing", flow: "upload" })}><Upload size={16} />{t("ov.uploadAudio")}</button>
-      <button class="btn" onclick={() => go(`/case/${caseId}/evidence`)}><FilePlus2 size={16} />{t("ov.addDocuments")}</button>
+      <button class="btn" onclick={() => go(`/case/${caseId}/documents`)}><FilePlus2 size={16} />{t("ov.addDocuments")}</button>
     </div>
   </header>
 
@@ -76,7 +76,7 @@
       <p class="muted">{t("ov.emptyText")}</p>
       <ul class="start-rows">
         <li>
-          <button onclick={() => go(`/case/${caseId}/evidence`)}>
+          <button onclick={() => go(`/case/${caseId}/documents`)}>
             <span class="start-icon"><KindIcon kind="document" size={20} /></span>
             <span><strong>{t("ov.addDocs")}</strong><span class="small muted">{t("ov.addDocsText")}</span></span>
             <ArrowRight size={18} />
@@ -167,16 +167,16 @@
         </div>
       </section>
 
-      <section class="card evidence">
+      <section class="card documents">
         <header class="card-head">
-          <h2><KindIcon kind="document" size={16} />{t("nav.evidence")}</h2>
-          <a class="link-btn" href={`#/case/${caseId}/evidence`}>{t("ov.openEvidence")}<ArrowRight size={14} /></a>
+          <h2><KindIcon kind="document" size={16} />{t("nav.documents")}</h2>
+          <a class="link-btn" href={`#/case/${caseId}/documents`}>{t("ov.openDocuments")}<ArrowRight size={14} /></a>
         </header>
-        <p class="small">{t("ov.evidenceText", { docs: docs.length, passages: passagesOfCase(caseId).length, links: links.length })}</p>
+        <p class="small">{t("ov.documentsText", { docs: docs.length, passages: passagesOfCase(caseId).length, links: links.length })}</p>
         {#if suggested}<p class="notice notice-sand">{t("ov.suggestedLinks", { n: suggested })}</p>{/if}
         <ul class="docs">
           {#each docs.slice(0, 4) as d (d.id)}
-            <li><a href={`#/case/${caseId}/evidence/doc/${d.id}`}><KindIcon kind="document" size={14} /><span>{d.title}</span><span class="xsmall muted">{t("ev.pages", { n: d.pages })}</span></a></li>
+            <li><a href={`#/case/${caseId}/documents/${d.id}`}><KindIcon kind="document" size={14} /><span>{d.title}</span><span class="xsmall muted">{t("docs.pages", { n: d.pages })}</span></a></li>
           {/each}
         </ul>
       </section>

@@ -29,7 +29,7 @@
       const docIds = new Set(db.documents.filter((d) => d.caseId === c.id).map((d) => d.id));
       for (const p of db.passages.filter((p) => docIds.has(p.docId) && p.text.toLowerCase().includes(q)).slice(0, 4)) {
         const d = doc(p.docId);
-        out.push({ group: t("nav.evidence"), kind: "passage", title: p.text, meta: `${d?.title} · ${t("common.page", { n: p.page })}`, run: () => inspect({ kind: "passage", id: p.id }) });
+        out.push({ group: t("nav.documents"), kind: "passage", title: p.text, meta: `${d?.title} · ${t("common.page", { n: p.page })}`, run: () => inspect({ kind: "passage", id: p.id }) });
       }
       const hearingIds = new Set(hearingsOf(c.id).map((h) => h.id));
       for (const s of db.statements.filter((s) => hearingIds.has(s.hearingId) && s.text.toLowerCase().includes(q)).slice(0, 5)) {
@@ -107,7 +107,7 @@
         </button>
       </li>
     {:else}
-      {#if query.trim().length >= 2}<li class="empty small muted">{t("ev.noResults")}</li>{/if}
+      {#if query.trim().length >= 2}<li class="empty small muted">{t("docs.noResults")}</li>{/if}
     {/each}
   </ul>
 </Overlay>

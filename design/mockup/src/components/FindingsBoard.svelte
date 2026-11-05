@@ -92,7 +92,7 @@
       return { text: p?.text ?? "", meta: p ? `${doc(p.docId)?.title} · ${t("common.page", { n: p.page })}` : "", speakerId: undefined, said: undefined };
     }
     const d = doc(ref.id);
-    return { text: d ? `${l(d.kind)} · ${t("ev.pages", { n: d.pages })} · ${t("ev.passages", { n: passagesOf(d.id).length })}` : "", meta: d?.title ?? "", speakerId: undefined, said: undefined };
+    return { text: d ? `${l(d.kind)} · ${t("docs.pages", { n: d.pages })} · ${t("docs.passages", { n: passagesOf(d.id).length })}` : "", meta: d?.title ?? "", speakerId: undefined, said: undefined };
   }
 
   function open(ref: BoardRef) {

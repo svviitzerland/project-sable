@@ -43,15 +43,15 @@
       return h ? t("common.hearingN", { n: h.number }) : t("as.contextCase");
     }
     if (c.kind === "finding") return `${t("nav.findings")} · ${l(finding(c.id)?.title).slice(0, 38)}…`;
-    if (c.kind === "evidence") return t("nav.evidence");
+    if (c.kind === "documents") return t("nav.documents");
     if (c.kind === "passage") {
       const p = passage(c.id);
-      return p ? `${doc(p.docId)?.title} · ${t("common.page", { n: p.page })}` : t("nav.evidence");
+      return p ? `${doc(p.docId)?.title} · ${t("common.page", { n: p.page })}` : t("nav.documents");
     }
     if (c.kind === "connection") return `${t("ix.connection")} · ${connection(c.id)?.relation ?? ""}`;
     return t("as.contextCase");
   });
-  const contextKinds: Record<string, Kind> = { case: "case", hearing: "hearing", finding: "finding", evidence: "document", passage: "passage", connection: "connection" };
+  const contextKinds: Record<string, Kind> = { case: "case", hearing: "hearing", finding: "finding", documents: "document", passage: "passage", connection: "connection" };
   let contextKind = $derived(contextKinds[ui.assistantContext.kind] ?? "case");
 
   function citeLabel(c: Citation) {
@@ -80,7 +80,7 @@
   }
 
   function open(c: Citation) {
-    if (c.kind === "document") go(`/case/${caseId}/evidence/doc/${c.id}`);
+    if (c.kind === "document") go(`/case/${caseId}/documents/${c.id}`);
     else if (c.kind === "hearing") go(`/case/${caseId}/hearings/${c.id}`);
     else if (c.kind === "finding") openFinding(c.id);
     else inspect({ kind: c.kind, id: c.id });

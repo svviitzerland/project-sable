@@ -2,19 +2,14 @@
   import KindIcon from "../components/KindIcon.svelte";
   import { LoaderCircle, MessageSquare, Search, Upload } from "@lucide/svelte";
   import { fmtDate, l, t } from "../lib/i18n";
-  import { go, href, redirect, route } from "../lib/router.svelte";
+  import { go, href } from "../lib/router.svelte";
   import { uploadDocument } from "../lib/services";
   import { doc, docsOf, findingsCiting, findingsPath, inspect, openAssistant, passagesOf, passagesOfCase, toast } from "../lib/store.svelte";
 
   let { caseId }: { caseId: string } = $props();
 
-  // Bukti holds the case files only. Older links to its Connections, map or board views land on
-  // the Keterkaitan page, which now stands on its own.
-  $effect(() => {
-    if (!["connections", "map", "board"].includes(route.query.view ?? "")) return;
-    const of = route.query.of ?? route.query.start;
-    redirect(`/case/${caseId}/connections${of ? `?of=${of}` : ""}`);
-  });
+  // Dokumen holds the case files only: the sources that hearings are checked against. What Jude
+  // finds in them is processed in Temuan, and how they relate is traced in Keterkaitan.
   let query = $state("");
   let uploading = $state(false);
 
@@ -29,7 +24,7 @@
     uploading = true;
     const id = await uploadDocument(caseId, name);
     uploading = false;
-    toast(t("ev.uploaded"), { action: { label: t("common.open"), run: () => go(`/case/${caseId}/evidence/doc/${id}`) } });
+    toast(t("docs.uploaded"), { action: { label: t("common.open"), run: () => go(`/case/${caseId}/documents/${id}`) } });
   }
 
   function mark(text: string) {
@@ -39,15 +34,15 @@
   }
 </script>
 
-<div class="page evidence">
+<div class="page documents">
   <header class="page-head">
     <div>
-      <h1>{t("ev.title")}</h1>
-      <p>{t("ev.lead")}</p>
+      <h1>{t("docs.title")}</h1>
+      <p>{t("docs.lead")}</p>
     </div>
     <div class="toolbar">
       <label class="btn">
-        {#if uploading}<LoaderCircle size={16} class="spin" />{t("ev.processing")}{:else}<Upload size={16} />{t("ev.upload")}{/if}
+        {#if uploading}<LoaderCircle size={16} class="spin" />{t("docs.processing")}{:else}<Upload size={16} />{t("docs.upload")}{/if}
         <input class="sr-only" type="file" multiple accept=".pdf,.docx,.txt,.md" onchange={(e) => upload((e.currentTarget as HTMLInputElement).files?.[0]?.name.replace(/\.[^.]+$/, "") ?? "")} />
       </label>
     </div>
@@ -56,15 +51,15 @@
   <div class="viewbar">
     <div class="search grow">
       <Search size={16} />
-      <label class="sr-only" for="ev-search">{t("ev.search")}</label>
-      <input id="ev-search" class="field" type="search" placeholder={t("ev.search")} bind:value={query} />
+      <label class="sr-only" for="ev-search">{t("docs.search")}</label>
+      <input id="ev-search" class="field" type="search" placeholder={t("docs.search")} bind:value={query} />
     </div>
-    <button class="btn" disabled={!query.trim()} onclick={() => openAssistant({ kind: "evidence" }, query, undefined, true)}><MessageSquare size={16} />{t("ev.askInstead")}</button>
+    <button class="btn" disabled={!query.trim()} onclick={() => openAssistant({ kind: "documents" }, query, undefined, true)}><MessageSquare size={16} />{t("docs.askInstead")}</button>
   </div>
 
     {#if query.trim().length >= 2}
       <section class="results card" aria-live="polite">
-        <h2 class="t-label">{results.length ? t("ev.results", { n: results.length }) : t("ev.noResults")}</h2>
+        <h2 class="t-label">{results.length ? t("docs.results", { n: results.length }) : t("docs.noResults")}</h2>
         <ul>
           {#each results as p (p.id)}
             {@const m = mark(p.text)}
@@ -80,13 +75,13 @@
     {/if}
     {#if docs.length === 0}
       <section class="empty">
-        <h2 class="t-serif">{t("ev.emptyTitle")}</h2>
-        <p class="muted">{t("ev.emptyText")}</p>
+        <h2 class="t-serif">{t("docs.emptyTitle")}</h2>
+        <p class="muted">{t("docs.emptyText")}</p>
       </section>
     {/if}
     <label class="drop">
       <Upload size={18} />
-      <span><strong>{t("ev.drop")}</strong><span class="xsmall muted"> · {t("ev.formats")}</span></span>
+      <span><strong>{t("docs.drop")}</strong><span class="xsmall muted"> · {t("docs.formats")}</span></span>
       <input class="sr-only" type="file" multiple accept=".pdf,.docx,.txt,.md" onchange={() => upload()} />
     </label>
     <ul class="docs">
@@ -96,22 +91,22 @@
         <li class="doc card">
           <span class="file"><KindIcon kind="document" size={20} /><span class="fmt">{d.file}</span></span>
           <span class="doc-body">
-            <a class="doc-title" href={href(`/case/${caseId}/evidence/doc/${d.id}`)}>{d.title}</a>
+            <a class="doc-title" href={href(`/case/${caseId}/documents/${d.id}`)}>{d.title}</a>
             <span class="xsmall muted">{l(d.kind)}</span>
             <span class="doc-stats xsmall">
-              <span>{t("ev.pages", { n: d.pages })}</span>
-              <span>{t("ev.passages", { n: ps.length })}</span>
-              {#if cited}<a class="cited" href={href(findingsPath(caseId, { doc: d.id }))} title={t("fl.open")}>{t("ev.cited", { n: cited })}</a>{/if}
+              <span>{t("docs.pages", { n: d.pages })}</span>
+              <span>{t("docs.passages", { n: ps.length })}</span>
+              {#if cited}<a class="cited" href={href(findingsPath(caseId, { doc: d.id }))} title={t("fl.open")}>{t("docs.cited", { n: cited })}</a>{/if}
             </span>
           </span>
-          <span class="xsmall muted added">{t("ev.added", { date: fmtDate(d.added) })} · {d.size}</span>
+          <span class="xsmall muted added">{t("docs.added", { date: fmtDate(d.added) })} · {d.size}</span>
         </li>
       {/each}
     </ul>
 </div>
 
 <style>
-  .evidence {
+  .documents {
     max-width: 1560px;
   }
   .toolbar :global(.spin) {

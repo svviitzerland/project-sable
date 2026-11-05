@@ -1,6 +1,6 @@
 # Jude UI mockup
 
-An interactive, UI-only prototype for brainstorming a responsive and adaptive Jude workspace. It reorganizes today's product around the information-architecture sketch (Case → Hearings, Findings, Evidence; Audio and Pasal.id as inputs; the case assistant as a layer; Live and Recorded hearing modes; Courtroom Practice left out as standalone/not needed).
+An interactive, UI-only prototype for brainstorming a responsive and adaptive Jude workspace. It reorganizes today's product around the information-architecture sketch (Case → Hearings, Findings, Evidence, which the mockup calls Documents; Audio and Pasal.id as inputs; the case assistant as a layer; Live and Recorded hearing modes; Courtroom Practice left out as standalone/not needed).
 
 Nothing here talks to a server. Every service is simulated in the browser: live transcription, analysis phases and findings, assistant replies with citations, Pasal.id results, audio upload and transcript import. All people, companies, case numbers and documents are synthetic, and legal entries are summaries labeled as mock Pasal.id metadata, not statute text. It is not deployed and nothing in `apps/web` depends on it.
 
@@ -24,7 +24,7 @@ The visual system is the repository's `DESIGN.md` ("The Editorial Case File"). D
 |---|---|
 | `#/` | Landing page: the forest case-file cover and its testimony-to-source comparison, then scroll-driven scenes (the sources come out of the file; a 3D case file that opens, comes apart, is threaded from the hearing to the finding and closes again; the steps change on one plate; one line of a hearing comes forward; the exact phrase is marked on its page) and the principles |
 | `#/cases` | Cases |
-| `#/case/c1` | Case overview: live hearing, review queue, next hearing, hearings, evidence, ask |
+| `#/case/c1` | Case overview: live hearing, review queue, next hearing, hearings, documents, ask |
 | `#/case/c1/hearings` | Hearing library with one "New hearing" entry point (record live, upload audio, import transcript, schedule) |
 | `#/case/c1/hearings/h3` | Live hearing (streams by itself on load) |
 | `#/case/c1/hearings/h4` | Scheduled hearing, not started yet |
@@ -33,10 +33,10 @@ The visual system is the repository's `DESIGN.md` ("The Editorial Case File"). D
 | `#/case/c1/findings` | Cross-hearing findings queue, the one place findings are worked on |
 | `#/case/c1/findings?hearing=h2`, `?doc=d1` | The findings of one hearing, or those citing one document (where links from other pages land) |
 | `#/case/c1/findings?view=board` | Findings board, a lawyer-driven board of findings and their sources |
-| `#/case/c1/evidence` | Evidence: the case files |
+| `#/case/c1/documents` | Documents: the case files (old `evidence` addresses redirect here) |
 | `#/case/c1/connections?of=statement:s208` | Connections for one statement, strongest first (old `evidence?view=connections` links redirect here) |
-| `#/case/c1/evidence/doc/d1?p=d1p4` | Document viewer: the original PDF rendered by PDF.js, with cited passages highlighted, finding marks in the margin and a toolbar for selected text; `d3` has tables, a CCTV still, a chart and a formula, `d4` is a DOCX shown as its converted PDF |
-| `#/case/c2/evidence/doc/d7` | A screenshot-only exhibit: no text layer, so citations use OCR text and are marked per page |
+| `#/case/c1/documents/d1?p=d1p4` | Document viewer: the original PDF rendered by PDF.js, with cited passages highlighted, finding marks in the margin and a toolbar for selected text; `d3` has tables, a CCTV still, a chart and a formula, `d4` is a DOCX shown as its converted PDF |
+| `#/case/c2/documents/d7` | A screenshot-only exhibit: no text layer, so citations use OCR text and are marked per page |
 | `#/case/c3` | Empty case |
 | `#/map` | Feature map: the sketch redrawn, each node listing today's features (from this repo) and what the mockup proposes |
 | `#/moodboard` | Tokens, type, statuses, core objects, responsive and adaptive rules |
@@ -44,12 +44,12 @@ The visual system is the repository's `DESIGN.md` ("The Editorial Case File"). D
 
 The **Mockup** button (bottom right) switches language (Bahasa Indonesia / English), theme (Paper, Night, System), density, simulated provider availability (AI, Pasal.id, transcription), live stream speed, and two design variants: a docked or overlay assistant, and whether findings that ask for nothing are shown. It can replay the live hearing or reset all data.
 
-Keyboard: `/` search, `A` assistant, `G` then `O`/`H`/`E`/`F`/`C` to switch section, in Findings `J`/`K` next/previous finding, `R` mark reviewed and `C` copy the suggested question, space to play in review mode, `?` for the list.
+Keyboard: `/` search, `A` assistant, `G` then `O`/`H`/`D`/`F`/`C` to switch section, in Findings `J`/`K` next/previous finding, `R` mark reviewed and `C` copy the suggested question, space to play in review mode, `?` for the list.
 
 ## Ideas being tested
 
-- **Five sections instead of seven tabs, in the order work flows.** Hearings and Evidence (the case files) gather; Findings processes what they hold; Connections traces how things relate. Pasal.id appears inside hearings, findings and the assistant, and settings/export move to the case menu.
-- **Findings are worked on in one place.** Checking, notes, suggested questions and the board live in Findings only. Every other page refers to a finding with a link that opens it there: the top of the live hearing, flagged transcript lines, the review rail, the overview, hearing rows, the live bar, case cards, Evidence's cited counts, the document viewer's marks, the inspector, Connections, search and the assistant's citations. Counts link to Findings filtered to that hearing or document.
+- **Five sections instead of seven tabs, in the order work flows.** Hearings and Documents (the case files) gather; Findings processes what they hold; Connections traces how things relate. Pasal.id appears inside hearings, findings and the assistant, and settings/export move to the case menu.
+- **Findings are worked on in one place.** Checking, notes, suggested questions and the board live in Findings only. Every other page refers to a finding with a link that opens it there: the top of the live hearing, flagged transcript lines, the review rail, the overview, hearing rows, the live bar, case cards, the cited counts in Documents, the document viewer's marks, the inspector, Connections, search and the assistant's citations. Counts link to Findings filtered to that hearing or document.
 - **The assistant as a layer.** It follows what is open (hearing, finding, passage or connection), changes its suggested questions with that context, and its `[n]` citations open their source in place (a cited finding opens in Findings). It docks at 1280px and wider, is a drawer on tablets and a full sheet on phones, where it sits in the top bar.
 - **Live and Recorded as separate modes.** The live screen reads top to bottom in order of relevance: a link to the finding most worth a look (only when there is one; the rest are one link away in Findings), what the person speaking is saying now (a talking-head silhouette in their role colour whose sound waves move while they speak, their name, the line as it is typed), then the last few lines. There is no seating chart; a voice nobody has named asks "Whose voice is this?" in the dialogue box. A courtroom mode switches to a low-glare theme, and a live bar stays on every other screen while recording. Ending the hearing turns it into a recorded hearing with a who-spoke-when timeline and finding markers.
 - **Only what matters comes forward.** In Findings, findings that differ from a source or need context show the two phrases highlighted side by side and a question to ask; findings that match their source stay out of the way under "Others".

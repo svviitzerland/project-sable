@@ -14,10 +14,10 @@
     { kind: "case", label: "Case", where: "Case list, the case card in the rail, breadcrumbs" },
     { kind: "hearing", label: "Hearing", where: "Navigation, hearing lists before anyone has spoken, search, assistant references, breadcrumbs" },
     { kind: "statement", speaker: "rina", label: "Hearing statement: its speaker's own talking head", where: "Transcripts, hearing rows, quotes in findings, search, citations, connections, the board" },
-    { kind: "document", label: "Document or one of its passages", where: "Navigation (Evidence), document cards, the reader, sources in findings, citations" },
+    { kind: "document", label: "Document or one of its passages", where: "Navigation (Documents), document cards, the reader, sources in findings, citations" },
     { kind: "finding", label: "Finding", where: "Navigation, attention counts, finding lists, toasts" },
     { kind: "legal", label: "Legal reference (Pasal.id)", where: "Article chips in transcripts, the assistant, the inspector" },
-    { kind: "connection", label: "Connection", where: "Evidence → Connections, the inspector" },
+    { kind: "connection", label: "Connection", where: "Connections, the inspector" },
     { kind: "board", label: "Findings board", where: "Findings → Board" },
     { kind: "assistant", label: "Assistant", where: "Navigation and every ask action" },
   ];
@@ -109,7 +109,7 @@
         <div class="object card">
           <span class="t-label obj-kind"><KindIcon kind="document" size={14} />Case document</span>
           <strong>{d.title}</strong>
-          <span class="small muted">{l(d.kind)} · {t("ev.pages", { n: d.pages })} · {d.file}</span>
+          <span class="small muted">{l(d.kind)} · {t("docs.pages", { n: d.pages })} · {d.file}</span>
         </div>
       {/if}
       {#if s}

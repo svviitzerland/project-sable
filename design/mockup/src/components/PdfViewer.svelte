@@ -216,7 +216,7 @@
   function ask() {
     if (!sel) return;
     const quote = sel.text.length > 220 ? sel.text.slice(0, 220) + "…" : sel.text;
-    openAssistant({ kind: "evidence" }, t("pdf.askQuestion", { quote, doc: d.title, page: sel.page }), [sel.pid ? { kind: "passage", id: sel.pid } : { kind: "document", id: d.id }], true);
+    openAssistant({ kind: "documents" }, t("pdf.askQuestion", { quote, doc: d.title, page: sel.page }), [sel.pid ? { kind: "passage", id: sel.pid } : { kind: "document", id: d.id }], true);
     sel = null;
   }
 
@@ -253,10 +253,10 @@
 <svelte:document onselectionchange={() => { if (window.getSelection()?.isCollapsed) sel = null; }} />
 
 <div class="viewer">
-  <nav class="rail" aria-label={t("ev.reader")}>
+  <nav class="rail" aria-label={t("docs.reader")}>
     {#each Array.from({ length: pageCount || d.pages }, (_, i) => i + 1) as n (n)}
       <button class="rail-item" aria-current={n === page ? "page" : undefined} onclick={() => viewer && (viewer.currentPageNumber = n)}>
-        <span>{t("ev.pageN", { n })}</span>
+        <span>{t("docs.pageN", { n })}</span>
         {#if cited.has(n)}<span class="pip" title={t("pdf.cited")}></span>{/if}
       </button>
     {/each}

@@ -79,7 +79,7 @@
   const shortcuts = [
     { keys: ["/"], label: "sc.search" },
     { keys: ["A"], label: "sc.assistant" },
-    { keys: ["G", "O · H · E · F · C"], label: "sc.go" },
+    { keys: ["G", "O · H · D · F · C"], label: "sc.go" },
     { keys: ["J", "K"], label: "sc.nextPrev" },
     { keys: ["R"], label: "sc.review" },
     { keys: ["C"], label: "sc.copy" },

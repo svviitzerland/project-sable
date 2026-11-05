@@ -51,7 +51,7 @@ export type AssistantContext =
   | { kind: "case" }
   | { kind: "hearing"; id: string }
   | { kind: "finding"; id: string }
-  | { kind: "evidence" }
+  | { kind: "documents" }
   | { kind: "passage"; id: string }
   | { kind: "connection"; id: string };
 

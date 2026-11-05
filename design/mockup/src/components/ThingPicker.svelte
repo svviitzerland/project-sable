@@ -22,7 +22,7 @@
 
   /**
    * Choose one thing in the case to start from: a finding, a hearing statement, or a document
-   * (whole, or one of its passages). Shared by the findings board and Evidence connections.
+   * (whole, or one of its passages). Shared by the findings board and Keterkaitan (connections).
    */
   type Kind = "finding" | "statement" | "document";
   let { caseId, kinds, onpick }: { caseId: string; kinds: Kind[]; onpick: (ref: BoardRef) => void } = $props();
@@ -125,7 +125,7 @@
         <div class="doc-head">
           <button class="row grow" onclick={() => (openDoc = openDoc === d.id ? null : d.id)} aria-expanded={openDoc === d.id}>
             <KindIcon kind="document" size={16} />
-            <span class="text"><strong>{d.title}</strong><span class="xsmall muted">{l(d.kind)} · {t("ev.passages", { n: passagesOf(d.id).length })}</span></span>
+            <span class="text"><strong>{d.title}</strong><span class="xsmall muted">{l(d.kind)} · {t("docs.passages", { n: passagesOf(d.id).length })}</span></span>
           </button>
           <button class="btn btn-sm" onclick={() => onpick({ kind: "document", id: d.id })}>{t("board.wholeDoc")}</button>
         </div>

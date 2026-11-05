@@ -13,7 +13,7 @@
   let items = $derived([
     { key: "overview", icon: kindIcon.overview, label: t("nav.overview"), path: `/case/${caseId}` },
     { key: "hearings", icon: kindIcon.hearing, label: t("nav.hearings"), path: `/case/${caseId}/hearings` },
-    { key: "evidence", icon: kindIcon.document, label: t("nav.evidence"), path: `/case/${caseId}/evidence` },
+    { key: "documents", icon: kindIcon.document, label: t("nav.documents"), path: `/case/${caseId}/documents` },
     { key: "findings", icon: kindIcon.finding, label: t("nav.findings"), path: `/case/${caseId}/findings` },
     { key: "connections", icon: kindIcon.connection, label: t("nav.connections"), path: `/case/${caseId}/connections` },
   ]);

@@ -31,11 +31,11 @@
 
 {#if d}
   <div class="page reader-page">
-    <a class="back" href={href(`/case/${caseId}/evidence`)}><ChevronLeft size={16} />{t("ev.allDocuments")}</a>
+    <a class="back" href={href(`/case/${caseId}/documents`)}><ChevronLeft size={16} />{t("docs.allDocuments")}</a>
     <header class="page-head">
       <div>
         <h1 class="doc-title"><span class="doc-icon"><KindIcon kind="document" size={24} /></span>{d.title}</h1>
-        <p>{l(d.kind)} · {t("ev.pages", { n: d.pages })} · {d.file} · {d.size} · {t("ev.added", { date: fmtDate(d.added) })}</p>
+        <p>{l(d.kind)} · {t("docs.pages", { n: d.pages })} · {d.file} · {d.size} · {t("docs.added", { date: fmtDate(d.added) })}</p>
       </div>
       <div class="toolbar">
         {#if d.pdf}
@@ -44,8 +44,8 @@
             <button role="tab" aria-selected={mode === "text"} onclick={() => (mode = "text")}>{t("pdf.text")}</button>
           </div>
         {/if}
-        <button class="btn" onclick={() => openAssistant({ kind: "evidence" }, undefined, [{ kind: "document", id: d.id }])}><MessageSquare size={16} />{t("fx.ask")}</button>
-        <button class="btn" onclick={() => toastT("toast.download")}><Download size={16} />{t("ev.download")}</button>
+        <button class="btn" onclick={() => openAssistant({ kind: "documents" }, undefined, [{ kind: "document", id: d.id }])}><MessageSquare size={16} />{t("fx.ask")}</button>
+        <button class="btn" onclick={() => toastT("toast.download")}><Download size={16} />{t("docs.download")}</button>
       </div>
     </header>
 
@@ -54,12 +54,12 @@
     {:else}
     <p class="notice small text-only">{d.pdf ? t("pdf.extracted") : t("pdf.textOnly")}</p>
     <div class="layout">
-      <nav class="index" aria-label={t("ev.reader")}>
+      <nav class="index" aria-label={t("docs.reader")}>
         {#each pages as page (page)}
           {@const n = passages.filter((p) => p.page === page)}
           {@const cited = n.some((p) => findingsCiting(p.id).length)}
           <button class="index-item" onclick={() => jump(page)}>
-            <span>{t("ev.pageN", { n: page })}</span>
+            <span>{t("docs.pageN", { n: page })}</span>
             {#if cited}<span class="pip" title={t("ix.citedBy")}></span>{/if}
           </button>
         {/each}
@@ -67,8 +67,8 @@
       <div class="sheets" bind:this={reader}>
         {#each pages as page (page)}
           {@const here = passages.filter((p) => p.page === page)}
-          <article class="sheet" data-page={page} aria-label={t("ev.pageN", { n: page })}>
-            <header class="sheet-head"><span>{d.title}</span><span class="tabular">{t("ev.pageN", { n: page })} / {d.pages}</span></header>
+          <article class="sheet" data-page={page} aria-label={t("docs.pageN", { n: page })}>
+            <header class="sheet-head"><span>{d.title}</span><span class="tabular">{t("docs.pageN", { n: page })} / {d.pages}</span></header>
             {#if here.length === 0}
               <div class="filler" aria-hidden="true">
                 {#each [92, 86, 95, 70, 88, 64] as w, i (i)}<span style:width="{w}%"></span>{/each}

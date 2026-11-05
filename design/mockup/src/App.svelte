@@ -12,14 +12,14 @@
   import { t } from "./lib/i18n";
   import { isLive, live, startEngine } from "./lib/live.svelte";
   import { prefs } from "./lib/prefs.svelte";
-  import { embedded, go, route } from "./lib/router.svelte";
+  import { embedded, go, redirect, route } from "./lib/router.svelte";
   import { caseById, hearing, openAssistant, ui } from "./lib/store.svelte";
   import Canvas from "./routes/Canvas.svelte";
   import CaseOverview from "./routes/CaseOverview.svelte";
   import ConnectionsPage from "./routes/ConnectionsPage.svelte";
   import Cases from "./routes/Cases.svelte";
   import DocumentReader from "./routes/DocumentReader.svelte";
-  import Evidence from "./routes/Evidence.svelte";
+  import Documents from "./routes/Documents.svelte";
   import FeatureMap from "./routes/FeatureMap.svelte";
   import Findings from "./routes/Findings.svelte";
   import HearingLive from "./routes/HearingLive.svelte";
@@ -74,8 +74,23 @@
     }
     if (section === "hearings" && sub) ui.assistantContext = { kind: "hearing", id: sub };
     else if (section === "findings" && sub) ui.assistantContext = { kind: "finding", id: sub };
-    else if (section === "evidence") ui.assistantContext = { kind: "evidence" };
+    else if (section === "documents") ui.assistantContext = { kind: "documents" };
     else ui.assistantContext = { kind: "case" };
+  });
+
+  // Old addresses: Bukti (evidence) is now Dokumen (documents), and its Connections, map and board
+  // views became Keterkaitan. Links into them land on their new page without a back step.
+  $effect(() => {
+    if (!caseId || section !== "evidence") return;
+    const q = route.query;
+    if (["connections", "map", "board"].includes(q.view ?? "")) {
+      const of = q.of ?? q.start;
+      redirect(`/case/${caseId}/connections${of ? `?of=${of}` : ""}`);
+      return;
+    }
+    const docId = sub === "doc" ? route.parts[4] : undefined;
+    const search = new URLSearchParams(q).toString();
+    redirect(`/case/${caseId}/documents${docId ? `/${docId}` : ""}${docId && search ? `?${search}` : ""}`);
   });
 
   let main: HTMLElement | undefined = $state();
@@ -113,7 +128,7 @@
     if (ui.modal || searchOpen) return;
     if (pendingG && caseId) {
       pendingG = false;
-      const target = { o: "", h: "/hearings", e: "/evidence", f: "/findings", c: "/connections" }[event.key.toLowerCase()];
+      const target = { o: "", h: "/hearings", d: "/documents", f: "/findings", c: "/connections" }[event.key.toLowerCase()];
       if (target !== undefined) {
         event.preventDefault();
         go(`/case/${caseId}${target}`);
@@ -171,10 +186,12 @@
               <Hearings {caseId} />
             {:else if section === "findings"}
               <Findings {caseId} selectedId={sub} />
-            {:else if section === "evidence" && sub === "doc" && route.parts[4]}
-              <DocumentReader {caseId} docId={route.parts[4]} />
+            {:else if section === "documents" && sub}
+              <DocumentReader {caseId} docId={sub} />
+            {:else if section === "documents"}
+              <Documents {caseId} />
             {:else if section === "evidence"}
-              <Evidence {caseId} />
+              <!-- An old address, redirected above. -->
             {:else if section === "connections"}
               <ConnectionsPage {caseId} />
             {:else}

@@ -92,7 +92,7 @@
         {#if all[i + 1]}<p class="ctx">{all[i + 1].text}</p>{/if}
       </div>
       <div class="actions">
-        <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${d.caseId}/evidence/doc/${d.id}?p=${p.id}`); }}><KindIcon kind="document" size={14} />{t("fx.openDoc")}</button>
+        <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${d.caseId}/documents/${d.id}?p=${p.id}`); }}><KindIcon kind="document" size={14} />{t("fx.openDoc")}</button>
         <button class="btn btn-sm" onclick={() => openAssistant({ kind: "passage", id: p.id }, undefined, [{ kind: "passage", id: p.id }])}><MessageSquare size={14} />{t("fx.ask")}</button>
         <button class="btn btn-sm" onclick={() => { ui.inspector = null; go(`/case/${d.caseId}/connections?of=passage:${p.id}`); }}><Waypoints size={14} />{t("fx.connections")}</button>
       </div>
