@@ -117,7 +117,7 @@
               {/each}
             </div>
           {/if}
-          <p class="quote">“<Quote text={p.text} mark={source.match} />”</p>
+          <p class="quote doc-text">“<Quote text={p.text} mark={source.match} />”</p>
           <div class="side-actions">
             <button class="link-btn" onclick={() => { ui.inspector = null; go(`/case/${h!.caseId}/evidence/doc/${d!.id}?p=${p!.id}`); }}><KindIcon kind="document" size={13} />{t("fx.openDoc")}</button>
           </div>
@@ -253,9 +253,8 @@
     letter-spacing: 0.02em;
   }
   .quote {
-    font-family: var(--font-serif);
-    font-size: 18px;
-    line-height: 1.4;
+    font-size: 16px;
+    line-height: 1.5;
     color: var(--ink-strong);
   }
   .who {

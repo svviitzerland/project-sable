@@ -64,7 +64,7 @@
                 <RelationTag relation={c.relation} reviewed={c.reviewed} />
                 <span class="tag" class:tag-sand={!c.reviewed}>{c.reviewed ? t("ix.confirmed") : t("ix.suggested")}</span>
               </span>
-              <span class="conn-text clamp-2">{o.title}</span>
+              <span class="conn-text clamp-2" class:doc-text={o.kind === "passage"}>{o.title}</span>
               <span class="xsmall muted kind-line"><KindIcon kind={o.kind} speakerId={o.speakerId} size={14} />{o.meta}</span>
             </button>
           </li>
@@ -123,7 +123,7 @@
         <span class="t-label kind-line"><KindIcon kind="hearing" size={14} />{t("ix.statement")}</span>
         <div class="who"><SpeakerTag id={s.speakerId} /> <span class="muted small tabular">{t("common.hearingN", { n: h.number })} · {fmtClock(s.t)}</span></div>
       </header>
-      <blockquote class="quote t-serif">“{s.text}”</blockquote>
+      <blockquote class="quote">“{s.text}”</blockquote>
       <div class="actions">
         <a class="btn btn-sm" href={href(`/case/${h.caseId}/hearings/${h.id}?s=${s.id}`)} onclick={() => (ui.inspector = null)}>{t("fx.openInHearing")}</a>
         <button class="btn btn-sm" aria-pressed={!!s.flagged} onclick={() => toggleFlag(s)}><Flag size={14} />{s.flagged ? t("live.unflag") : t("live.flag")}</button>
@@ -152,12 +152,12 @@
       </header>
       <button class="end" onclick={() => inspect(c.from.kind === "statement" ? { kind: "statement", id: c.from.id } : { kind: "passage", id: c.from.id })}>
         <span class="xsmall muted kind-line"><KindIcon kind={a.kind} speakerId={a.speakerId} size={14} />{t("ix.from")} · {a.meta}</span>
-        <span class="end-text">{a.title}</span>
+        <span class="end-text" class:doc-text={a.kind === "passage"}>{a.title}</span>
       </button>
       <div class="joint" aria-hidden="true"><ArrowDownUp size={16} /></div>
       <button class="end" onclick={() => inspect(c.to.kind === "statement" ? { kind: "statement", id: c.to.id } : { kind: "passage", id: c.to.id })}>
         <span class="xsmall muted kind-line"><KindIcon kind={b.kind} speakerId={b.speakerId} size={14} />{t("ix.to")} · {b.meta}</span>
-        <span class="end-text">{b.title}</span>
+        <span class="end-text" class:doc-text={b.kind === "passage"}>{b.title}</span>
       </button>
       <section class="block">
         <h3 class="t-label">{t("ix.why")}</h3>
@@ -247,6 +247,7 @@
     border: 1px solid var(--line);
     border-radius: var(--radius-control);
     background: var(--surface-2);
+    font-family: var(--font-doc);
     font-size: 13px;
     line-height: 1.65;
   }
@@ -255,8 +256,10 @@
     font-size: 12px;
   }
   .quote {
-    font-size: 21px;
-    line-height: 1.32;
+    font-size: 19px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--ink-strong);
   }
   .actions {
     display: flex;

@@ -187,7 +187,7 @@
           </div>
           <div class="side earlier">
             <h2 class="side-label">{t("lp.earlier")}</h2>
-            <blockquote class="quote">“{t("lp.quote2")} <span class="hl two">{t("lp.time2")}</span>”</blockquote>
+            <blockquote class="quote typed">“{t("lp.quote2")} <span class="hl two">{t("lp.time2")}</span>”</blockquote>
             <button class="source" onclick={() => go("/case/c1/findings/f1")}>
               <KindIcon kind="document" size={15} />{t("lp.witnessStatement")} · {t("common.page", { n: 4 })}
             </button>
@@ -221,7 +221,7 @@
           {@const parts = around(t(s.text), s.mark ? t(s.mark) : "")}
           <article class="slip source-slip {s.id}" style:--d="{i * 70}ms">
             <p class="slip-meta">{#if s.id === "shift"}<Avatar id="rina" size="xxs" />{:else}<KindIcon kind={s.id === "law" ? "legal" : "document"} size={13} />{/if}{t(s.meta)}</p>
-            <p class="slip-text">{parts[0]}{#if parts[1]}<mark>{parts[1]}</mark>{/if}{parts[2]}</p>
+            <p class="slip-text" class:typed={s.id !== "shift"}>{parts[0]}{#if parts[1]}<mark>{parts[1]}</mark>{/if}{parts[2]}</p>
             <p class="slip-rel" data-rel={s.rel}>{t(`rel.${s.rel}`)}</p>
           </article>
           <span class="wire-label" data-rel={s.rel} style:left="{wires[s.id].x}%" style:top="{wires[s.id].y}%">{t(`rel.${s.rel}`)}</span>
@@ -439,6 +439,8 @@
     --lp-rel-related: #8e9e91;
     --lp-rel-related-text: #546758;
     --lp-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    /* Written records are typed; spoken testimony keeps the display serif. */
+    --lp-doc: "Courier Prime", "Courier New", Courier, monospace;
     --lp-section: 84px;
     min-height: 100dvh;
     background: var(--lp-bg);
@@ -689,6 +691,15 @@
     font-size: clamp(27px, 2.65vw, 42px);
     line-height: 1.2;
     text-wrap: balance;
+  }
+  .quote.typed {
+    font-family: var(--lp-doc);
+    font-size: clamp(22px, 2.05vw, 32px);
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+  .typed {
+    font-family: var(--lp-doc);
   }
   .hl {
     background: linear-gradient(var(--lp-amber-wash), var(--lp-amber-wash)) no-repeat 0 88% / 100% 0.55em;
@@ -1295,9 +1306,9 @@
     --page-pad: clamp(28px, 5vw, 68px);
     position: relative;
     padding: clamp(36px, 5vw, 60px) var(--page-pad) 56px;
-    font-family: "Manrope", sans-serif;
+    font-family: var(--lp-doc);
     font-size: 14px;
-    line-height: 1.75;
+    line-height: 1.7;
     box-shadow:
       0 1px 0 rgb(17 28 22 / 0.06),
       0 24px 50px rgb(20 40 30 / 0.12);
@@ -1377,6 +1388,7 @@
     position: absolute;
     left: var(--page-pad);
     bottom: 18px;
+    font-family: "Manrope", sans-serif;
     font-size: 12px;
     font-weight: 600;
     color: var(--lp-muted);
@@ -1664,6 +1676,9 @@
     }
     .quote {
       font-size: 33px;
+    }
+    .quote.typed {
+      font-size: 25px;
     }
     .source {
       min-height: 44px;

@@ -203,7 +203,7 @@
                       <span class="num">{i + 1}</span>
                       <span class="source-body">
                         <span class="source-title"><KindIcon kind={info.kind} speakerId={info.speakerId} size={13} />{info.title}</span>
-                        {#if info.quote}<span class="source-quote clamp-2">“{info.quote}”</span>{/if}
+                        {#if info.quote}<span class="source-quote clamp-2" class:doc-text={info.kind === "passage"}>“{info.quote}”</span>{/if}
                       </span>
                     </button>
                   </li>
@@ -223,7 +223,7 @@
                     <span class="num"><KindIcon kind="legal" size={12} /></span>
                     <span class="source-body">
                       <span class="source-title">{ref.article ? `${ref.article} · ` : ""}{ref.regulation.replace(/ tentang .*/, "")}</span>
-                      <span class="source-quote clamp-2">{l(ref.summary)}</span>
+                      <span class="source-quote clamp-2 doc-text">{l(ref.summary)}</span>
                     </span>
                   </button>
                 {/if}

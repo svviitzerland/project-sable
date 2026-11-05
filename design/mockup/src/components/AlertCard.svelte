@@ -76,7 +76,7 @@
         {#if p && d}
           <div class="side source">
             <span class="label"><KindIcon kind="passage" size={13} />{t("attn.inSource", { doc: d.title, page: p.page })}</span>
-            <p class="quote">“<Quote text={p.text} mark={source.match} around={brief ? 4 : 0} />”</p>
+            <p class="quote doc-text">“<Quote text={p.text} mark={source.match} around={brief ? 4 : 0} />”</p>
             {#if f.sources.length > 1}<span class="xsmall muted">{t("attn.more", { n: f.sources.length - 1 })}</span>{/if}
           </div>
         {/if}

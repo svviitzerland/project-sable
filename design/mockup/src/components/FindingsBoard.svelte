@@ -168,7 +168,7 @@
       {#if i.status}
         <span class="cand-title clamp-2">{i.text}</span>
       {:else}
-        <span class="cand-text clamp-3"><Quote text={i.text} mark={c.mark ?? i.said} /></span>
+        <span class="cand-text clamp-3" class:doc-text={c.ref.kind === "passage"}><Quote text={i.text} mark={c.mark ?? i.said} /></span>
       {/if}
       <span class="cand-tags">
         <RelationTag relation={c.relation} reviewed={c.source === "words" ? false : undefined} />
@@ -288,7 +288,7 @@
                     <span class="bcard-title clamp-2">{i.text}</span>
                     {#if i.who}<span class="bcard-who">{i.who}</span>{/if}
                   {:else}
-                    <span class="clamp-3">{card.kind === "document" ? i.text : ""}{#if card.kind !== "document"}<Quote text={i.text} mark={i.said} />{/if}</span>
+                    <span class="clamp-3" class:doc-text={card.kind === "passage"}>{card.kind === "document" ? i.text : ""}{#if card.kind !== "document"}<Quote text={i.text} mark={i.said} />{/if}</span>
                   {/if}
                 </button>
                 <footer class="bcard-actions">
@@ -314,7 +314,7 @@
               <span class="clamp-2">{i.meta}</span>
               {#if isDriver}<span class="driver-tag">{t("board.driver")}</span>{:else if link}<RelationTag relation={link.relation} reviewed={linkConfirmed(link)} />{/if}
             </div>
-            <p class="scard-text" class:finding={card.kind === "finding"}>{#if card.kind === "finding" || card.kind === "document"}{i.text}{:else}<Quote text={i.text} mark={i.said} />{/if}</p>
+            <p class="scard-text" class:finding={card.kind === "finding"} class:doc-text={card.kind === "passage"}>{#if card.kind === "finding" || card.kind === "document"}{i.text}{:else}<Quote text={i.text} mark={i.said} />{/if}</p>
             {#if i.who}<p class="bcard-who">{i.who}</p>{/if}
             <div class="scard-actions">
               {#if !isDriver}<button class="mini" onclick={() => explore(card.key)}><Compass size={13} />{t("board.explore")}</button>{/if}

@@ -96,8 +96,9 @@
     <h2>Typography</h2>
     <div class="type">
       <div><span class="t-label">Rufina · case titles</span><p class="t-title" style="font-size:36px">Perkara Penggelapan Gudang Cakung</p></div>
-      <div><span class="t-label">Caslon Display · findings, quotes</span><p class="t-serif" style="font-size:25px">Jam kedatangan saksi berbeda dengan BAP dan log akses.</p></div>
-      <div><span class="t-label">Manrope · interface, testimony</span><p style="font-size:15px">Saya sampai di gudang jam setengah sepuluh malam, Pak. <span class="muted">· 00:14:32 · Saksi Rina Hartati</span></p></div>
+      <div><span class="t-label">Caslon Display · headings, finding titles, suggested questions</span><p class="t-serif" style="font-size:25px">Jam kedatangan saksi berbeda dengan BAP dan log akses.</p></div>
+      <div><span class="t-label">Manrope · interface, and everything someone said</span><p style="font-size:15px">Saya sampai di gudang jam setengah sepuluh malam, Pak. <span class="muted">· 00:14:32 · Saksi Rina Hartati</span></p></div>
+      <div><span class="t-label">Courier Prime · written records only: document pages, passages, legal text</span><p class="doc-text" style="font-size:15px">Pada hari Sabtu tanggal 14 Maret 2026 saya tiba di gudang sedikit setelah pukul 20.00 WIB. <span class="muted" style="font-family:var(--font-ui)">· BAP Saksi Rina Hartati, hal. 4</span></p></div>
     </div>
   </section>
 

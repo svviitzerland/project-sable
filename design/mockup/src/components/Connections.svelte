@@ -139,7 +139,7 @@
         <KindIcon kind={c.ref.kind} speakerId={d.speakerId} size={c.ref.kind === "statement" ? 20 : 15} />
         <span>{d.meta}</span>
       </div>
-      <p class="text"><Quote text={d.text} mark={c.mark} /></p>
+      <p class="text" class:doc-text={c.ref.kind === "passage"}><Quote text={d.text} mark={c.mark} /></p>
       <p class="why">
         <RelationTag relation={c.relation} reviewed={c.source === "words" ? false : ok} />
         {#if c.source !== "words"}<span>{ok ? t("cx.confirmed") : t("cx.suggested")}</span>{/if}
@@ -193,12 +193,12 @@
             <h3 class="small-head">{t("cx.passages")}</h3>
             <ul>
               {#each passagesOf(subject.id) as p (p.id)}
-                <li><button onclick={() => show({ kind: "passage", id: p.id })}><span class="tabular">{t("common.page", { n: p.page })}</span><span class="clamp-2">{p.text}</span></button></li>
+                <li><button onclick={() => show({ kind: "passage", id: p.id })}><span class="tabular">{t("common.page", { n: p.page })}</span><span class="clamp-2 doc-text">{p.text}</span></button></li>
               {/each}
             </ul>
           </div>
         {:else}
-          <blockquote class="t-serif quote">“{s.text}”</blockquote>
+          <blockquote class="quote" class:doc-text={subject.kind === "passage"}>“{s.text}”</blockquote>
         {/if}
         {#each notes as f (f.id)}
           <button class="note" class:loud={f.status === "potential_inconsistency"} onclick={() => inspect({ kind: "finding", id: f.id })}>
@@ -345,9 +345,14 @@
     color: var(--ink);
   }
   .quote {
-    font-size: 20px;
-    line-height: 1.4;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.45;
     margin: 0;
+    color: var(--ink-strong);
+  }
+  .quote.doc-text {
+    font-weight: 400;
   }
   .doc-title {
     font-size: 24px;

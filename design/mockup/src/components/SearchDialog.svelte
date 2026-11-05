@@ -101,7 +101,7 @@
         <button class="hit" class:active={i === active} onclick={() => choose(hit)} onmouseenter={() => (active = i)} tabindex="-1">
           <KindIcon kind={hit.kind} speakerId={hit.speakerId} size={18} />
           <span class="hit-body">
-            <span class="hit-title clamp-2">{m.before}<mark>{m.hit}</mark>{m.after}</span>
+            <span class="hit-title clamp-2" class:doc-text={hit.kind === "passage"}>{m.before}<mark>{m.hit}</mark>{m.after}</span>
             <span class="xsmall muted">{hit.meta}</span>
           </span>
         </button>

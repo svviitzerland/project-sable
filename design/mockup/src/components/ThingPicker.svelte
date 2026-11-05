@@ -135,7 +135,7 @@
               <li>
                 <button class="row" onclick={() => onpick({ kind: "passage", id: p.id })}>
                   <span class="xsmall muted tabular">{t("common.page", { n: p.page })}</span>
-                  <span class="clamp-2">{p.text}</span>
+                  <span class="clamp-2 doc-text">{p.text}</span>
                 </button>
               </li>
             {/each}

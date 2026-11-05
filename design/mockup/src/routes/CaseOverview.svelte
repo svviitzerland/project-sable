@@ -341,9 +341,9 @@
     color: var(--tone);
   }
   .live-quote {
-    font-family: var(--font-serif);
-    font-size: 18px;
-    color: var(--ink);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink-strong);
   }
   @container main (max-width: 640px) {
     .live-card {

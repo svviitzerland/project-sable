@@ -200,8 +200,8 @@
   }
   .passage-text {
     text-align: left;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 15px;
+    font-family: var(--font-doc);
+    font-size: 14.5px;
     line-height: 1.75;
     color: inherit;
   }

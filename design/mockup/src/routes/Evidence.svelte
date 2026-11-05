@@ -78,7 +78,7 @@
             <li>
               <button class="result" onclick={() => inspect({ kind: "passage", id: p.id })}>
                 <span class="xsmall muted">{doc(p.docId)?.title} · {t("common.page", { n: p.page })}</span>
-                <span class="small">{m[0]}<mark>{m[1]}</mark>{m[2]}</span>
+                <span class="small doc-text">{m[0]}<mark>{m[1]}</mark>{m[2]}</span>
               </button>
             </li>
           {/each}
