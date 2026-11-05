@@ -22,7 +22,7 @@ The visual system is the repository's `DESIGN.md` ("The Editorial Case File"). D
 
 | Route | Screen |
 |---|---|
-| `#/` | Landing page: the forest case-file cover, an animated testimony-to-source comparison, how it works, and the principles |
+| `#/` | Landing page: the forest case-file cover and its testimony-to-source comparison, then scroll-driven scenes (the sources come out of the file, the steps change on one plate, one line of a hearing comes forward, the exact phrase is marked on its page) and the principles |
 | `#/cases` | Cases |
 | `#/case/c1` | Case overview: live hearing, review queue, next hearing, hearings, evidence, ask |
 | `#/case/c1/hearings` | Hearing library with one "New hearing" entry point (record live, upload audio, import transcript, schedule) |

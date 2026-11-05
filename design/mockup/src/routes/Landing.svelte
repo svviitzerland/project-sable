@@ -14,19 +14,22 @@
   /**
    * The front door, in the Editorial Case File world: the forest case-file cover frames the
    * opening, ivory source paper carries every demonstration, and the page reads like a well-made
-   * brief, one idea per spread. Motion is finite: the comparison plays once (with a replay), the
-   * sources gather once. Reduced motion, or no script, shows the finished state.
+   * brief, one idea per spread. The comparison plays once (with a replay); after it, scrolling
+   * moves the story: the sources come out of the file one by one, the steps change on one plate,
+   * one line of the hearing comes forward, the exact phrase is marked on its page. Scrolling back
+   * plays each scene backwards. Reduced motion, or no script, shows the finished static page.
    */
   const motionOk = typeof matchMedia === "function" && !matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let menuOpen = $state(false);
   let menuButton: HTMLButtonElement | undefined = $state();
+  let root: HTMLElement | undefined = $state();
   let sheet: HTMLElement | undefined = $state();
-  let desk: HTMLElement | undefined = $state();
   let playing = $state(false);
   let offscreen = $state(false);
   let hidden = $state(false);
-  let gathered = $state(true);
+  let scrolly = $state(false);
+  let pinned = $state(false);
 
   async function replay() {
     if (!motionOk || !sheet) return;
@@ -48,6 +51,110 @@
     menuButton?.focus();
   }
 
+  /*
+   * Scroll-driven scenes. On wide, tall-enough screens each scene pins its stage while its own
+   * scroll length passes; that progress (below 0 while the stage is still arriving) drives the
+   * named tracks, written as CSS variables that the styles turn into movement. Elsewhere nothing
+   * pins: elements marked data-rise move with their own pass through the viewport, sideways only,
+   * so measuring them never feeds back into their own motion.
+   */
+  const PIN_QUERY = "(min-width: 900px) and (min-height: 700px)";
+  const tracks: Record<string, [name: string, from: number, to: number][]> = {
+    hero: [["hv", 0, 1]],
+    gather: [
+      ["g0", -0.3, -0.05],
+      ["g1", 0, 0.16],
+      ["w1", 0.12, 0.24],
+      ["g2", 0.2, 0.36],
+      ["w2", 0.32, 0.44],
+      ["g3", 0.4, 0.56],
+      ["w3", 0.52, 0.64],
+      ["g4", 0.6, 0.76],
+      ["w4", 0.72, 0.84],
+      ["gl", 0.84, 0.94],
+    ],
+    how: [
+      ["h1o", 0.27, 0.37],
+      ["h2", 0.29, 0.39],
+      ["h2o", 0.6, 0.7],
+      ["h3", 0.62, 0.72],
+      ["hp", 0, 1],
+    ],
+    signal: [
+      ["r1", -0.3, -0.12],
+      ["r2", -0.18, 0],
+      ["r3", -0.05, 0.12],
+      ["r4", 0.08, 0.24],
+      ["fw", 0.28, 0.48],
+      ["mk", 0.36, 0.54],
+      ["nt", 0.5, 0.68],
+      ["r5", 0.66, 0.82],
+    ],
+    page: [
+      ["pg", -0.35, 0.05],
+      ["hl", 0.12, 0.36],
+      ["nt", 0.36, 0.56],
+      ["rl", 0.52, 0.7],
+    ],
+    closing: [
+      ["cs", 0.1, 0.6],
+      ["ck", 0.55, 0.85],
+    ],
+  };
+  const unit = (x: number) => Math.min(1, Math.max(0, x));
+  const easeOut = (x: number) => 1 - (1 - x) ** 3;
+
+  function scenes(el: HTMLElement) {
+    const pinQuery = matchMedia(PIN_QUERY);
+    const stages = [...el.querySelectorAll<HTMLElement>("[data-scene]")];
+    const risers = [...el.querySelectorAll<HTMLElement>("[data-rise]")];
+    const last = new Map<string, string>();
+    let frame = 0;
+    const write = (node: HTMLElement, key: string, name: string, value: number) => {
+      const v = value.toFixed(3);
+      if (last.get(key) === v) return;
+      last.set(key, v);
+      node.style.setProperty(`--${name}`, v);
+    };
+    const update = () => {
+      frame = 0;
+      const vh = innerHeight;
+      // Every position is read before anything is written, so each frame lays out once.
+      const sceneBoxes = stages.map((s) => s.getBoundingClientRect());
+      const riseBoxes = pinned ? [] : risers.map((r) => r.getBoundingClientRect());
+      stages.forEach((s, i) => {
+        const name = s.dataset.scene ?? "";
+        const box = sceneBoxes[i];
+        let at: number;
+        if (name === "hero") at = unit(-box.top / box.height);
+        else if (name === "closing") at = unit((vh - box.top) / (vh * 0.8));
+        else if (pinned) at = -box.top / Math.max(1, box.height - vh);
+        else return;
+        for (const [track, from, to] of tracks[name] ?? []) write(s, `${i}${track}`, track, easeOut(unit((at - from) / (to - from))));
+      });
+      riseBoxes.forEach((box, i) => write(risers[i], `r${i}`, "p", easeOut(unit((vh - box.top) / (vh * 0.45)))));
+    };
+    const request = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    const onPinChange = () => {
+      pinned = pinQuery.matches;
+      void tick().then(update);
+    };
+    pinned = pinQuery.matches;
+    scrolly = true;
+    void tick().then(update);
+    addEventListener("scroll", request, { passive: true });
+    addEventListener("resize", request);
+    pinQuery.addEventListener("change", onPinChange);
+    return () => {
+      cancelAnimationFrame(frame);
+      removeEventListener("scroll", request);
+      removeEventListener("resize", request);
+      pinQuery.removeEventListener("change", onPinChange);
+    };
+  }
+
   onMount(() => {
     if (!motionOk) return;
     const watchers: IntersectionObserver[] = [];
@@ -60,26 +167,13 @@
       io.observe(sheet);
       watchers.push(io);
     }
-    // The sources gather once, the first time the desk comes into view on a wide screen.
-    if (desk && matchMedia("(min-width: 900px)").matches && desk.getBoundingClientRect().top > innerHeight) {
-      gathered = false;
-      const io = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.intersectionRatio >= 0.35) {
-            gathered = true;
-            io.disconnect();
-          }
-        },
-        { threshold: [0, 0.35] },
-      );
-      io.observe(desk);
-      watchers.push(io);
-    }
     const onVisibility = () => (hidden = document.hidden);
     document.addEventListener("visibilitychange", onVisibility);
+    const stopScenes = root ? scenes(root) : () => {};
     return () => {
       watchers.forEach((w) => w.disconnect());
       document.removeEventListener("visibilitychange", onVisibility);
+      stopScenes();
     };
   });
 
@@ -114,10 +208,10 @@
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && menuOpen && closeMenu()} />
 
-<div class="lp" style:--lp-case-files="url({caseFiles})" style:--lp-ivory="url({ivoryPaper})" style:--lp-cloth="url({cloth})">
+<div class="lp" bind:this={root} class:scrolly class:pinned style:--lp-case-files="url({caseFiles})" style:--lp-ivory="url({ivoryPaper})" style:--lp-cloth="url({cloth})">
   <button class="skip" onclick={() => scrollToId("lp-main")}>{t("lp.skip")}</button>
 
-  <header class="cover">
+  <header class="cover" data-scene="hero">
     <div class="frame">
       <nav class="nav" aria-label={t("lp.nav.label")}>
         <a class="wordmark" href={href("/")}>jude.</a>
@@ -207,41 +301,49 @@
     </section>
 
     <section class="gather wrap" aria-label={t("lp.g.label")}>
-      <div class="desk" class:scatter={!gathered} bind:this={desk}>
-        <svg class="wires" viewBox="0 0 1200 560" aria-hidden="true">
-          {#each slips as s (s.id)}
-            <path class="wire" class:suggested={!s.reviewed} data-rel={s.rel} d={wires[s.id].d} pathLength="1" />
-          {/each}
-        </svg>
-        <article class="slip statement">
-          <p class="slip-meta"><Avatar id="rina" size="xxs" />{t("lp.g.statementMeta")}</p>
-          <p class="statement-text">“{t("lp.g.statement")}”</p>
-        </article>
-        {#each slips as s, i (s.id)}
-          {@const parts = around(t(s.text), s.mark ? t(s.mark) : "")}
-          <article class="slip source-slip {s.id}" style:--d="{i * 70}ms">
-            <p class="slip-meta">{#if s.id === "shift"}<Avatar id="rina" size="xxs" />{:else}<KindIcon kind={s.id === "law" ? "legal" : "document"} size={13} />{/if}{t(s.meta)}</p>
-            <p class="slip-text" class:typed={s.id !== "shift"}>{parts[0]}{#if parts[1]}<mark>{parts[1]}</mark>{/if}{parts[2]}</p>
-            <p class="slip-rel" data-rel={s.rel}>{t(`rel.${s.rel}`)}</p>
-          </article>
-          <span class="wire-label" data-rel={s.rel} style:left="{wires[s.id].x}%" style:top="{wires[s.id].y}%">{t(`rel.${s.rel}`)}</span>
-        {/each}
+      <div class="scene gather-scene" data-scene="gather">
+        <div class="stage">
+          <div class="desk">
+            <svg class="wires" viewBox="0 0 1200 560" aria-hidden="true">
+              {#each slips as s (s.id)}
+                <path class="wire" class:suggested={!s.reviewed} data-rel={s.rel} data-slip={s.id} d={wires[s.id].d} pathLength="1" />
+              {/each}
+            </svg>
+            <article class="slip statement" data-rise>
+              <p class="slip-meta"><Avatar id="rina" size="xxs" />{t("lp.g.statementMeta")}</p>
+              <p class="statement-text">“{t("lp.g.statement")}”</p>
+            </article>
+            {#each slips as s (s.id)}
+              {@const parts = around(t(s.text), s.mark ? t(s.mark) : "")}
+              <article class="slip source-slip {s.id}" data-rise>
+                <p class="slip-meta">{#if s.id === "shift"}<Avatar id="rina" size="xxs" />{:else}<KindIcon kind={s.id === "law" ? "legal" : "document"} size={13} />{/if}{t(s.meta)}</p>
+                <p class="slip-text" class:typed={s.id !== "shift"}>{parts[0]}{#if parts[1]}<mark>{parts[1]}</mark>{/if}{parts[2]}</p>
+                <p class="slip-rel" data-rel={s.rel}>{t(`rel.${s.rel}`)}</p>
+              </article>
+              <span class="wire-label" data-rel={s.rel} data-slip={s.id} style:left="{wires[s.id].x}%" style:top="{wires[s.id].y}%">{t(`rel.${s.rel}`)}</span>
+            {/each}
+          </div>
+          <p class="legend">{t("lp.g.legend")} · {t("lp.sample")}</p>
+        </div>
       </div>
-      <p class="legend">{t("lp.g.legend")} · {t("lp.sample")}</p>
     </section>
 
     <section class="how wrap" id="lp-how" tabindex="-1" aria-labelledby="lp-how-title">
+      <div class="scene steps-scene" data-scene="how">
+        <div class="stage">
       <header class="section-head">
         <h2 class="headline" id="lp-how-title">{t("lp.howTitle1")}<br />{t("lp.howTitle2")}</h2>
         <p>{t("lp.howLead")}</p>
       </header>
+      <div class="steps-stage">
+      <div class="plate-bg" aria-hidden="true"></div>
       <ol class="steps">
         <li class="step">
           <div class="caption">
             <h3>{t("lp.s1.title")}</h3>
             <p>{t("lp.s1.text")}</p>
           </div>
-          <div class="plate">
+          <div class="plate" data-rise>
             <div class="vignette listen paper">
               <div class="v-line quiet">
                 <Avatar id="hk" size="md" />
@@ -263,7 +365,7 @@
             <h3>{t("lp.s2.title")}</h3>
             <p>{t("lp.s2.text")}</p>
           </div>
-          <div class="plate">
+          <div class="plate" data-rise>
             <div class="vignette reading paper">
               <p class="v-head">{t("lp.v2.title")}</p>
               <ul>
@@ -281,7 +383,7 @@
             <h3>{t("lp.s3.title")}</h3>
             <p>{t("lp.s3.text")}</p>
           </div>
-          <div class="plate">
+          <div class="plate" data-rise>
             <div class="vignette examine paper">
               <span class="pill">{t("status.potential_inconsistency")}</span>
               <p class="v-title">{t("lp.v3.title")}</p>
@@ -297,9 +399,15 @@
           </div>
         </li>
       </ol>
+      <div class="step-rule" aria-hidden="true"><span></span></div>
+      </div>
+        </div>
+      </div>
     </section>
 
     <section class="signal wrap" aria-labelledby="lp-signal-title">
+      <div class="scene signal-scene" data-scene="signal">
+        <div class="stage">
       <header class="section-head">
         <h2 class="headline" id="lp-signal-title">{t("lp.signalTitle")}</h2>
         <p>{t("lp.signalLead")}</p>
@@ -307,19 +415,19 @@
       <figure class="transcript paper">
       <ol class="t-list">
         {#each quietLines as line (line.text)}
-          <li class="t-row">
+          <li class="t-row" data-rise>
             <span class="t-who"><Avatar id={line.speaker} size="xxs" />{t(line.who)}</span>
             <p class="t-text">{t(line.text)}</p>
             {#if line.matches}<span class="t-ok"><Check size={13} />{t("lp.tMatches")}</span>{:else}<span></span>{/if}
           </li>
         {/each}
-        <li class="t-row raised">
+        <li class="t-row raised" data-rise>
           <span class="t-who"><Avatar id="rina" size="xxs" />{t("role.witness")}</span>
           <p class="t-text">{raised[0]}<mark>{raised[1]}</mark>{raised[2]}</p>
           <span class="pill small">{t("status.potential_inconsistency")}</span>
           <p class="t-note">{t("lp.tNote")}</p>
         </li>
-        <li class="t-row">
+        <li class="t-row" data-rise>
           <span class="t-who"><Avatar id="rina" size="xxs" />{t("role.witness")}</span>
           <p class="t-text">{t("lp.t5")}</p>
           <span></span>
@@ -327,6 +435,8 @@
       </ol>
       <figcaption class="panel-sample">{t("lp.sample")}</figcaption>
       </figure>
+        </div>
+      </div>
     </section>
 
     <section class="page-spread wrap" aria-labelledby="lp-page-title">
@@ -337,6 +447,8 @@
           <p class="quiet">{t("lp.pageOriginal")}</p>
         </div>
       </header>
+      <div class="scene page-scene" data-scene="page">
+        <div class="stage">
       <div class="page-row">
         <div class="page-sheet paper" aria-label={t("lp.sample")}>
           <p class="page-folio tabular">{samplePage.folio}</p>
@@ -349,7 +461,7 @@
                 <span class="page-n tabular">{item.n}.</span>
                 <div class="page-qa">
                   <p><span class="page-tag">{samplePage.labels.q}:</span> {item.q}</p>
-                  <p><span class="page-tag">{samplePage.labels.a}:</span> {parts[0]}{#if parts[1]}<mark>{parts[1]}</mark>{/if}{parts[2]}</p>
+                  <p><span class="page-tag">{samplePage.labels.a}:</span> {parts[0]}{#if parts[1]}<mark data-rise>{parts[1]}</mark>{/if}{parts[2]}</p>
                   {#if item.mark}
                     <aside class="margin-note in-margin">
                       <span class="pill small">{t("status.potential_inconsistency")}</span>
@@ -362,10 +474,12 @@
           </ol>
           <p class="page-sample">{t("lp.sample")}</p>
         </div>
-        <aside class="margin-note below-page">
+        <aside class="margin-note below-page" data-rise>
           <span class="pill small">{t("status.potential_inconsistency")}</span>
           <p>{t("lp.pageNote")}</p>
         </aside>
+      </div>
+        </div>
       </div>
     </section>
 
@@ -381,7 +495,7 @@
       </ul>
     </section>
 
-    <section class="closing" aria-labelledby="lp-closing-title">
+    <section class="closing" data-scene="closing" aria-labelledby="lp-closing-title">
       <div class="closing-frame">
         <div class="closing-copy">
           <h2 class="headline" id="lp-closing-title">{t("lp.closingTitle1")}<br />{t("lp.closingTitle2")}</h2>
@@ -882,6 +996,7 @@
   .desk {
     position: relative;
     container-type: inline-size;
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     aspect-ratio: 1200 / 560;
@@ -897,11 +1012,9 @@
     fill: none;
     stroke-width: 1.5;
     stroke-dasharray: 1;
-    transition: stroke-dashoffset 0.7s var(--lp-ease) 0.62s;
   }
   .wire.suggested {
     stroke-dasharray: 0.012 0.01;
-    transition: opacity 0.6s var(--lp-ease) 0.7s;
   }
   .wire[data-rel="conflicts"] {
     stroke: var(--lp-rel-conflicts);
@@ -912,13 +1025,6 @@
   .wire[data-rel="related"] {
     stroke: var(--lp-rel-related);
   }
-  .scatter .wire {
-    stroke-dashoffset: 1;
-  }
-  .scatter .wire.suggested {
-    stroke-dashoffset: 0;
-    opacity: 0;
-  }
   .wire-label {
     position: absolute;
     transform: translate(-50%, -50%);
@@ -927,7 +1033,6 @@
     background: var(--lp-bg);
     font-size: clamp(11px, 1cqi, 12.5px);
     font-weight: 600;
-    transition: opacity 0.5s var(--lp-ease) 1s;
   }
   .wire-label[data-rel="conflicts"],
   .slip-rel[data-rel="conflicts"] {
@@ -940,9 +1045,6 @@
   .wire-label[data-rel="related"],
   .slip-rel[data-rel="related"] {
     color: var(--lp-rel-related-text);
-  }
-  .scatter .wire-label {
-    opacity: 0;
   }
   .slip {
     position: absolute;
@@ -958,7 +1060,6 @@
       0 1px 0 rgb(17 28 22 / 0.06),
       0 10px 24px rgb(20 40 30 / 0.1);
     transform: rotate(var(--fr, 0deg));
-    transition: transform 0.9s var(--lp-ease) var(--d, 0ms);
   }
   .slip-meta {
     display: flex;
@@ -980,7 +1081,8 @@
   .slip mark,
   .t-text mark,
   .page-sheet mark {
-    background: var(--lp-amber-wash);
+    /* A gradient, so a scene can lay the mark across the phrase. */
+    background: linear-gradient(var(--lp-amber-wash), var(--lp-amber-wash)) no-repeat 0 0 / 100% 100%;
     color: inherit;
     padding: 0 2px;
     border-radius: 2px;
@@ -1015,9 +1117,6 @@
     width: 26.67%;
     height: 23.2%;
     --fr: -0.8deg;
-    --sx: -70px;
-    --sy: -40px;
-    --sr: -7deg;
   }
   .log {
     left: 5%;
@@ -1025,9 +1124,6 @@
     width: 26.67%;
     height: 23.2%;
     --fr: 0.6deg;
-    --sx: -100px;
-    --sy: 50px;
-    --sr: 5deg;
   }
   .shift {
     left: 70%;
@@ -1035,9 +1131,6 @@
     width: 26.67%;
     height: 23.2%;
     --fr: 0.7deg;
-    --sx: 80px;
-    --sy: -50px;
-    --sr: 6deg;
   }
   .law {
     left: 68.33%;
@@ -1045,12 +1138,6 @@
     width: 26.67%;
     height: 23.2%;
     --fr: -0.6deg;
-    --sx: 100px;
-    --sy: 40px;
-    --sr: -5deg;
-  }
-  .scatter .source-slip {
-    transform: translate(var(--sx), var(--sy)) rotate(var(--sr));
   }
   .legend {
     margin-top: 22px;
@@ -1217,6 +1304,7 @@
     border-top: 1px solid var(--lp-line);
   }
   .transcript {
+    width: 100%;
     margin: 0 auto;
     padding: 10px clamp(18px, 3vw, 36px) 16px;
     max-width: 980px;
@@ -1503,6 +1591,275 @@
   }
   .foot-notes p:first-child {
     color: var(--lp-ink);
+  }
+
+  /*
+   * Scroll-driven scenes, only once the script sets .scrolly (motion welcome). On .pinned screens
+   * each scene is a tall track whose stage stays put while its progress moves the material; every
+   * value falls back to the finished state, which is also the static page.
+   */
+  .plate-bg,
+  .step-rule {
+    display: none;
+  }
+  .scrolly .sheet {
+    translate: 0 calc(var(--hv, 0) * -64px);
+  }
+  .scrolly .opening {
+    translate: 0 calc(var(--hv, 0) * -28px);
+    opacity: calc(1 - var(--hv, 0) * 0.5);
+  }
+  /* The finding's slip rises from the band's edge, then is checked. */
+  .scrolly .closing-slip {
+    transform: translateY(calc((1 - var(--cs, 1)) * 85%));
+  }
+  .scrolly .closing-done {
+    opacity: var(--ck, 1);
+    transform: translateY(calc((1 - var(--ck, 1)) * 6px));
+  }
+
+  .pinned .gather-scene {
+    height: 280vh;
+  }
+  .pinned .steps-scene {
+    height: 270vh;
+  }
+  .pinned .signal-scene {
+    height: 200vh;
+  }
+  .pinned .page-scene {
+    height: 190vh;
+  }
+  .pinned .stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: grid;
+    align-content: safe center;
+  }
+
+  /* The sources come out of the file one at a time, each threaded to the statement as it lands. */
+  .pinned .statement {
+    opacity: var(--g0, 1);
+    transform: scale(calc(0.94 + 0.06 * var(--g0, 1)));
+  }
+  .pinned .source-slip {
+    opacity: clamp(0, var(--k) * 1.6, 1);
+    transform: translate(calc((1 - var(--k)) * var(--fx)), calc((1 - var(--k)) * var(--fy)))
+      rotate(calc(var(--fr) + (1 - var(--k)) * var(--fs)));
+  }
+  .pinned .statement,
+  .pinned .source-slip {
+    will-change: transform, opacity;
+  }
+  .pinned .source-slip.bap {
+    --k: var(--g1, 1);
+    --fx: -34cqi;
+    --fy: -9cqi;
+    --fs: -9deg;
+  }
+  .pinned .source-slip.log {
+    --k: var(--g2, 1);
+    --fx: -36cqi;
+    --fy: 11cqi;
+    --fs: 7deg;
+  }
+  .pinned .source-slip.shift {
+    --k: var(--g3, 1);
+    --fx: 34cqi;
+    --fy: -10cqi;
+    --fs: 8deg;
+  }
+  .pinned .source-slip.law {
+    --k: var(--g4, 1);
+    --fx: 36cqi;
+    --fy: 10cqi;
+    --fs: -7deg;
+  }
+  .pinned [data-slip="bap"] {
+    --w: var(--w1, 1);
+  }
+  .pinned [data-slip="log"] {
+    --w: var(--w2, 1);
+  }
+  .pinned [data-slip="shift"] {
+    --w: var(--w3, 1);
+  }
+  .pinned [data-slip="law"] {
+    --w: var(--w4, 1);
+  }
+  .pinned .wire {
+    stroke-dashoffset: calc(1 - var(--w));
+  }
+  .pinned .wire.suggested {
+    stroke-dashoffset: 0;
+    opacity: var(--w);
+  }
+  .pinned .wire-label {
+    opacity: clamp(0, (var(--w) - 0.6) * 2.5, 1);
+  }
+  .pinned .legend {
+    opacity: var(--gl, 1);
+  }
+
+  /* How it works: one plate; each step's paper rises from its edge while the last one sinks back. */
+  .pinned .stage > .section-head {
+    margin-bottom: 36px;
+  }
+  .pinned .steps-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+    column-gap: clamp(32px, 5vw, 88px);
+  }
+  .pinned .plate-bg {
+    display: block;
+    grid-area: 1 / 2;
+    border-radius: 22px;
+    background: var(--lp-forest-deep) var(--lp-cloth) repeat;
+    background-size: 1300px auto;
+  }
+  .pinned .steps {
+    grid-area: 1 / 1 / 2 / 3;
+  }
+  .pinned .step,
+  .pinned .step.flip {
+    grid-area: 1 / 1;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+    align-items: stretch;
+    padding: 0;
+    border-top: 0;
+  }
+  .pinned .step.flip .caption {
+    order: 0;
+  }
+  .pinned .step:nth-child(1) {
+    --in: 1;
+    --out: var(--h1o, 0);
+  }
+  .pinned .step:nth-child(2) {
+    --in: var(--h2, 0);
+    --out: var(--h2o, 0);
+  }
+  .pinned .step:nth-child(3) {
+    --in: var(--h3, 0);
+    --out: 0;
+  }
+  /* Captions hand over in turn (out, then in); the papers overlap as one sinks and the next rises. */
+  .pinned .caption {
+    align-self: center;
+    opacity: calc(clamp(0, var(--in) * 2 - 1, 1) - clamp(0, var(--out) * 2, 1));
+    transform: translateY(calc((1 - var(--in)) * 28px - var(--out) * 28px));
+  }
+  .pinned .plate {
+    min-height: min(440px, 62vh);
+    background: none;
+  }
+  .pinned .vignette {
+    transform: translateY(calc((1 - var(--in)) * 112% + var(--out) * 112%));
+    will-change: transform;
+  }
+  .pinned .step-rule {
+    display: block;
+    grid-area: 1 / 1;
+    align-self: end;
+    height: 1px;
+    background: var(--lp-line);
+  }
+  .pinned .step-rule span {
+    display: block;
+    height: 100%;
+    background: var(--lp-forest);
+    transform: scaleX(var(--hp, 1));
+    transform-origin: left center;
+  }
+
+  /* Signal: the hearing fills in line by line, then one line comes forward and the rest go quiet. */
+  .pinned .t-row:nth-child(1) {
+    --r: var(--r1, 1);
+  }
+  .pinned .t-row:nth-child(2) {
+    --r: var(--r2, 1);
+  }
+  .pinned .t-row:nth-child(3) {
+    --r: var(--r3, 1);
+  }
+  .pinned .t-row:nth-child(4) {
+    --r: var(--r4, 1);
+  }
+  .pinned .t-row:nth-child(5) {
+    --r: var(--r5, 1);
+  }
+  .pinned .t-row {
+    opacity: calc(var(--r) * (1 - 0.14 * var(--fw, 1)));
+    transform: translateY(calc((1 - var(--r)) * 14px));
+  }
+  .pinned .t-row.raised {
+    position: relative;
+    opacity: var(--r);
+    transform: translateY(calc((1 - var(--r)) * 14px)) scale(calc(1 + 0.018 * var(--fw, 1)));
+    transform-origin: 0 50%;
+  }
+  .pinned .t-row.raised::before {
+    content: "";
+    position: absolute;
+    inset: 4px -16px;
+    z-index: -1;
+    border-radius: 8px;
+    background: #fffdf8;
+    box-shadow: 0 10px 28px rgb(20 40 30 / 0.12);
+    opacity: var(--fw, 1);
+  }
+  .pinned .t-row.raised mark {
+    background-size: calc(var(--mk, 1) * 100%) 100%;
+  }
+  .pinned .t-row.raised .pill,
+  .pinned .t-row.raised .t-note {
+    opacity: var(--nt, 1);
+    transform: translateY(calc((1 - var(--nt, 1)) * 8px));
+  }
+
+  /* The page is laid down, the exact phrase is marked, then the note is pinned beside it. */
+  .pinned .page-sheet {
+    opacity: calc(0.2 + 0.8 * var(--pg, 1));
+    transform: translateY(calc((1 - var(--pg, 1)) * 90px)) rotate(calc((1 - var(--pg, 1)) * -1.4deg));
+    will-change: transform, opacity;
+  }
+  .pinned .page-sheet mark {
+    background-size: calc(var(--hl, 1) * 100%) 100%;
+  }
+  .pinned .in-margin,
+  .pinned .below-page {
+    opacity: var(--nt, 1);
+    transform: translateX(calc((1 - var(--nt, 1)) * 28px));
+  }
+  .pinned .in-margin::before {
+    transform: scaleX(var(--rl, 1));
+    transform-origin: left center;
+  }
+
+  /* Narrow or short screens: no pinning; each piece moves with its own pass through the view. */
+  .scrolly:not(.pinned) .slip[data-rise] {
+    opacity: calc(0.15 + 0.85 * var(--p, 1));
+    transform: translateX(calc((1 - var(--p, 1)) * var(--from, -24px)));
+  }
+  .scrolly:not(.pinned) .shift[data-rise],
+  .scrolly:not(.pinned) .law[data-rise] {
+    --from: 24px;
+  }
+  .scrolly:not(.pinned) .plate[data-rise] .vignette {
+    transform: translateY(calc((1 - var(--p, 1)) * 70%));
+  }
+  .scrolly:not(.pinned) .t-row[data-rise] {
+    opacity: calc(0.2 + 0.8 * var(--p, 1));
+    transform: translateX(calc((1 - var(--p, 1)) * -16px));
+  }
+  .scrolly:not(.pinned) .t-row.raised[data-rise] mark,
+  .scrolly:not(.pinned) mark[data-rise] {
+    background-size: calc(var(--p, 1) * 100%) 100%;
+  }
+  .scrolly:not(.pinned) .below-page[data-rise] {
+    opacity: calc(0.15 + 0.85 * var(--p, 1));
+    transform: translateX(calc((1 - var(--p, 1)) * 20px));
   }
 
   @media (min-width: 1600px) {
