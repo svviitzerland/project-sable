@@ -329,7 +329,7 @@
       </figure>
     </section>
 
-    <section class="spread wrap" aria-labelledby="lp-page-title">
+    <section class="page-spread wrap" aria-labelledby="lp-page-title">
       <header class="section-head">
         <h2 class="headline" id="lp-page-title">{t("lp.pageTitle")}</h2>
         <div class="spread-text">
@@ -338,7 +338,7 @@
         </div>
       </header>
       <div class="page-row">
-        <div class="page paper" aria-label={t("lp.sample")}>
+        <div class="page-sheet paper" aria-label={t("lp.sample")}>
           <p class="page-folio tabular">{samplePage.folio}</p>
           {#each samplePage.heading as line (line)}<p class="page-heading">{line}</p>{/each}
           <p class="page-intro">{samplePage.intro}</p>
@@ -979,7 +979,7 @@
   }
   .slip mark,
   .t-text mark,
-  .page mark {
+  .page-sheet mark {
     background: var(--lp-amber-wash);
     color: inherit;
     padding: 0 2px;
@@ -1286,7 +1286,8 @@
   }
 
   /* The page: a real-looking source document; Jude's note stays in the margin, outside the record. */
-  .spread {
+  /* Not .spread or .page: the PDF.js viewer stylesheet is global and styles both names. */
+  .page-spread {
     padding: var(--lp-section) 0;
     border-top: 1px solid var(--lp-line);
   }
@@ -1302,7 +1303,7 @@
     grid-template-columns: minmax(0, 720px) minmax(240px, 300px);
     gap: 0;
   }
-  .page {
+  .page-sheet {
     --page-pad: clamp(28px, 5vw, 68px);
     position: relative;
     padding: clamp(36px, 5vw, 60px) var(--page-pad) 56px;
@@ -1758,7 +1759,7 @@
     .t-note {
       grid-column: 1;
     }
-    .page {
+    .page-sheet {
       --page-pad: 22px;
       font-size: 13.5px;
       padding: 40px 22px 48px;
