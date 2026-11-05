@@ -22,10 +22,17 @@
 
   /**
    * Choose one thing in the case to start from: a finding, a hearing statement, or a document
-   * (whole, or one of its passages). Shared by the findings board and Keterkaitan (connections).
+   * (whole, or one of its passages). Shared by the findings board and Keterkaitan, where it also
+   * picks what to pair evidence with.
    */
   type Kind = "finding" | "statement" | "document";
-  let { caseId, kinds, onpick }: { caseId: string; kinds: Kind[]; onpick: (ref: BoardRef) => void } = $props();
+  let {
+    caseId,
+    kinds,
+    onpick,
+    wholeDoc = true,
+    suggest = true,
+  }: { caseId: string; kinds: Kind[]; onpick: (ref: BoardRef) => void; wholeDoc?: boolean; suggest?: boolean } = $props();
 
   // svelte-ignore state_referenced_locally
   let tab = $state<Kind>(kinds[0]);
@@ -44,7 +51,7 @@
       .sort((a, b) => Number(needsLook(b)) - Number(needsLook(a))),
   );
   // Without findings on offer, the statements behind the open ones are the natural way in.
-  let quick = $derived(kinds.includes("finding") ? [] : findingsOfCase(caseId).filter(needsLook).slice(0, 4));
+  let quick = $derived(kinds.includes("finding") || !suggest ? [] : findingsOfCase(caseId).filter(needsLook).slice(0, 4));
   let statementOptions = $derived.by(() => {
     const q = query.trim().toLowerCase();
     return hearingsOf(caseId)
@@ -127,7 +134,7 @@
             <KindIcon kind="document" size={16} />
             <span class="text"><strong>{d.title}</strong><span class="xsmall muted">{l(d.kind)} · {t("docs.passages", { n: passagesOf(d.id).length })}</span></span>
           </button>
-          <button class="btn btn-sm" onclick={() => onpick({ kind: "document", id: d.id })}>{t("board.wholeDoc")}</button>
+          {#if wholeDoc}<button class="btn btn-sm" onclick={() => onpick({ kind: "document", id: d.id })}>{t("board.wholeDoc")}</button>{/if}
         </div>
         {#if openDoc === d.id}
           <ul class="passages">

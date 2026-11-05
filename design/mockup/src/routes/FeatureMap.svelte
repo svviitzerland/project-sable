@@ -35,7 +35,7 @@
       ],
       proposed: [
         L("Ringkasan perkara sebagai pusat: sidang langsung, antrean tinjauan, sidang berikutnya, dokumen", "Case overview as the hub: live hearing, review queue, next hearing, documents"),
-        L("Lima bagian menurut alur kerja: Sidang dan Dokumen mengumpulkan, Temuan memproses, Keterkaitan menelusuri; asisten menjadi lapisan", "Five sections in the order work flows: Hearings and Documents gather, Findings processes, Connections traces; the assistant becomes a layer"),
+        L("Lima bagian menurut alur kerja: Sidang dan Dokumen mengumpulkan, Temuan memproses, Keterkaitan mengelompokkan bukti; asisten menjadi lapisan", "Five sections in the order work flows: Hearings and Documents gather, Findings processes, Connections groups the evidence; the assistant becomes a layer"),
         L("Temuan hanya diproses di Temuan; di bagian lain temuan berupa tautan ke sana", "Findings are processed only in Findings; everywhere else they are links into it"),
         L("Rail penuh → rail ikon → bilah bawah sesuai lebar layar", "Full rail → icon rail → bottom bar by screen width"),
         L("Pengaturan dan ekspor pindah ke menu perkara (⋯)", "Settings and export move into the case menu (⋯)"),
@@ -178,8 +178,9 @@
       today: [L("Peta bukti di dalam Bukti", "The evidence map inside Evidence")],
       proposed: [
         L("Halaman sendiri, terpisah dari Dokumen", "Its own page, apart from Documents"),
-        L("Pilih satu hal, lihat apa yang terkait, yang terkuat di atas, dengan jejak untuk kembali", "Pick one thing, see what relates to it, strongest first, with a trail back"),
-        L("Temuan tentang hal itu tampil sebagai tautan ke Temuan", "Findings about it show as links into Findings"),
+        L("Peta semua bukti menurut jenisnya: keterangan sidang, temuan, dan kutipan dokumen", "A map of all evidence by type: hearing testimony, findings and document passages"),
+        L("Memilih satu bukti mengumpulkan kelompoknya: semua yang terhubung lewat pasangan, langsung atau tidak", "Choosing one piece of evidence gathers its group: everything its pairings reach, directly or not"),
+        L("Pasangan dikonfirmasi, diubah jenis hubungannya, dilepas, atau ditambah; temuan tetap tautan ke Temuan", "Pairings are confirmed, relabelled, taken apart or added; findings stay links into Findings"),
       ],
       open: () => go("/case/c1/connections?of=statement:s208"),
     },

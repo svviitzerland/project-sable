@@ -6,7 +6,7 @@ import type { L10n, Relation } from "./types";
 /**
  * What relates to what, case-wide. The findings board uses it: the lawyer picks a starting
  * point (usually a finding), Jude suggests what relates to it, and only what the lawyer pins goes
- * on the board. Keterkaitan (connections) uses the same suggestions, ranked.
+ * on the board.
  */
 export type BoardKind = "finding" | "statement" | "passage" | "document";
 export interface BoardRef {
